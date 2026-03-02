@@ -12,9 +12,9 @@ import { Label } from '@/components/ui/label';
 import {
   useCreate,
   useGetIdentity,
-  // useList,
   HttpError,
   useOne,
+  useInvalidate,
 } from '@refinedev/core';
 import { cleanInviteCode } from '@/lib/utils/classCode';
 import { CheckCircle2 } from 'lucide-react';
@@ -41,12 +41,13 @@ export const JoinClassModal = ({
   } = useCreate();
   const isLoading = isPending || false;
 
-  const { result: classData } = useOne<Class>({
+  const invalidate = useInvalidate();
+  const { query } = useOne<Class>({
     resource: 'classes',
     id: classId,
   });
 
-  console.log('classData in JoinClassModal:', classData);
+  const classData = (query?.data as { data?: Class } | undefined)?.data ?? (query?.data as Class | undefined);
 
   const handleJoin = () => {
     const cleanedCode = cleanInviteCode(inviteCode);
@@ -72,7 +73,7 @@ export const JoinClassModal = ({
     }
 
     // Check if class is active
-    if (classData.status !== 'active') {
+    if (classData?.status !== 'active') {
       setError('This class is not accepting new students.');
       return;
     }
@@ -93,6 +94,8 @@ export const JoinClassModal = ({
           setInviteCode('');
           setError('');
           onOpenChange(false);
+          invalidate({ resource: 'classes', invalidates: ['detail'], id: String(classId) });
+          invalidate({ resource: 'enrollments', invalidates: ['list'] });
         },
         onError: (error: HttpError) => {
           console.error('Join class error:', error);

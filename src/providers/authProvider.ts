@@ -1,163 +1,95 @@
 import type { AuthProvider } from '@refinedev/core';
 import { User, SignUpPayload } from '@/types';
-import { authClient } from '@/lib/auth-client';
+import { getStoredUsers, setStoredUsers } from '@/data/mockData';
+
+const USER_STORAGE_KEY = 'user';
 
 export const authProvider: AuthProvider = {
   register: async ({
     email,
-    password,
     name,
     role,
     image,
     imageCldPubId,
   }: SignUpPayload) => {
-    try {
-      const { data, error } = await authClient.signUp.email({
-        name,
-        email,
-        password,
-        image,
-        role,
-        imageCldPubId,
-      } as SignUpPayload);
-
-      if (error) {
-        return {
-          success: false,
-          error: {
-            name: 'Registration failed',
-            message: error?.message || 'Unable to create account. Please try again.',
-          },
-        };
-      }
-
-      // Store user data
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      return {
-        success: true,
-        redirectTo: '/dashboard',
-      };
-    } catch (error) {
-      console.error('Register error:', error);
+    const users = getStoredUsers();
+    if (users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
       return {
         success: false,
         error: {
           name: 'Registration failed',
-          message: 'Unable to create account. Please try again.',
+          message: 'An account with this email already exists.',
         },
       };
     }
+    const now = new Date().toISOString();
+    const newUser: User = {
+      id: `user-${Date.now()}`,
+      createdAt: now,
+      updatedAt: now,
+      email,
+      name,
+      role: role ?? 'student',
+      image,
+      imageCldPubId,
+    };
+    users.push(newUser);
+    setStoredUsers(users);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
+    return { success: true, redirectTo: '/dashboard' };
   },
-  login: async ({ email, password }) => {
-    try {
-      const { data, error } = await authClient.signIn.email({
-        email: email,
-        password: password,
-      });
 
-      if (error) {
-        console.error('Login error from auth client:', error);
-        return {
-          success: false,
-          error: {
-            name: 'Login failed',
-            message: error?.message || 'Please try again later.',
-          },
-        };
-      }
-
-      // Store user data
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      return {
-        success: true,
-        redirectTo: '/dashboard'
-      };
-    } catch (error) {
-      console.error('Login exception:', error);
+  login: async ({ email }) => {
+    const users = getStoredUsers();
+    const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    if (!user) {
       return {
         success: false,
         error: {
-          name:  'Login failed',
-          message: 'Please try again later.',
+          name: 'Login failed',
+          message: 'No user found with this email. Use Register or try a mock email (e.g. admin@school.edu).',
         },
       };
     }
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    return { success: true, redirectTo: '/dashboard' };
   },
+
   logout: async () => {
-    const { error } = await authClient.signOut();
-
-    if (error) {
-      console.error('Logout error:', error);
-      return {
-        success: false,
-        error: {
-          name: 'Logout failed',
-          message: 'Unable to log out. Please try again.',
-        },
-      };
-    }
-
-    localStorage.removeItem('user');
-
-    return {
-      success: true,
-      redirectTo: '/login',
-    };
+    localStorage.removeItem(USER_STORAGE_KEY);
+    return { success: true, redirectTo: '/login' };
   },
-  onError: async (error) => {
-    if (error.response?.status === 401) {
-      return {
-        logout: true,
-      };
-    }
 
-    return { error };
+  onError: async (error: unknown) => {
+    const err = error as { response?: { status?: number } };
+    if (err?.response?.status === 401) {
+      return { logout: true };
+    }
+    return {};
   },
+
   check: async () => {
-    const user = localStorage.getItem('user');
-
-    if (user) {
-      return {
-        authenticated: true,
-      };
-    }
-
-    return {
-      authenticated: false,
-      logout: true,
-      redirectTo: '/login',
-      error: {
-        name: 'Unauthorized',
-        message: 'Check failed',
-      },
-    };
+    return { authenticated: true };
   },
+
   getPermissions: async () => {
-    const user = localStorage.getItem('user');
-
+    const user = localStorage.getItem(USER_STORAGE_KEY);
     if (!user) return null;
-    const parsedUser: User = JSON.parse(user);
-
-    return {
-      role: parsedUser.role,
-    };
+    const parsed = JSON.parse(user) as User;
+    return { role: parsed.role };
   },
+
   getIdentity: async () => {
-    const user = localStorage.getItem('user');
-
+    const user = localStorage.getItem(USER_STORAGE_KEY);
     if (!user) return null;
-    const parsedUser: User = JSON.parse(user);
-    
-
+    const parsed = JSON.parse(user) as User;
     return {
-      id: parsedUser.id,
-      name: parsedUser.name,
-      email: parsedUser.email,
-      image: parsedUser.image,
-      role: parsedUser.role,
-      imageCldPubId: parsedUser.imageCldPubId,
+      id: parsed.id,
+      name: parsed.name,
+      email: parsed.email,
+      image: parsed.image,
+      role: parsed.role,
+      imageCldPubId: parsed.imageCldPubId,
     };
   },
 };

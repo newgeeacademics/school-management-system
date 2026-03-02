@@ -100,11 +100,16 @@ export const AdminDashboard = () => {
   const isLoadingClasses = classesQuery.isLoading;
   const isLoadingSubjects = subjectsQuery.isLoading;
 
+  // Normalize list results (API may return { data: T[] } or invalid data when backend is down)
+  const usersList = Array.isArray(usersData?.data) ? usersData.data : Array.isArray(usersData) ? usersData : [];
+  const classesList = Array.isArray(classesData?.data) ? classesData.data : Array.isArray(classesData) ? classesData : [];
+  const subjectsList = Array.isArray(subjectsData?.data) ? subjectsData.data : Array.isArray(subjectsData) ? subjectsData : [];
+
   // Calculate stats
   const stats = useMemo(() => {
-    const users = usersData?.data || [];
-    const classes = classesData?.data || [];
-    const subjects = subjectsData?.data || [];
+    const users = usersList;
+    const classes = classesList;
+    const subjects = subjectsList;
 
     const totalStudents = users.filter(
       (user: User) => user.role === UserRole.STUDENT
@@ -120,11 +125,11 @@ export const AdminDashboard = () => {
       totalClasses: classes.length,
       totalSubjects: subjects.length,
     };
-  }, [usersData, classesData, subjectsData]);
+  }, [usersList, classesList, subjectsList]);
 
   // Calculate students per class data
   const studentsPerClassData = useMemo(() => {
-    const classes = classesData?.data || [];
+    const classes = classesList;
     return classes
       .map((classItem: Class) => ({
         className: classItem.name,
@@ -135,12 +140,12 @@ export const AdminDashboard = () => {
           b.studentCount - a.studentCount
       )
       .slice(0, 12); // Top 12 classes
-  }, [classesData]);
+  }, [classesList]);
 
   // Calculate classes per subject data
   const classesPerSubjectData = useMemo(() => {
-    const classes = classesData?.data || [];
-    const subjects = subjectsData?.data || [];
+    const classes = classesList;
+    const subjects = subjectsList;
 
     // Create a map of subjectId to count
     const subjectCounts = new Map<number, number>();
@@ -162,7 +167,7 @@ export const AdminDashboard = () => {
         (a: { classCount: number }, b: { classCount: number }) =>
           b.classCount - a.classCount
       );
-  }, [classesData, subjectsData]);
+  }, [classesList, subjectsList]);
 
   const isLoading = isLoadingUsers || isLoadingClasses || isLoadingSubjects;
 
@@ -227,6 +232,7 @@ export const AdminDashboard = () => {
       <section className='grid mb-7 grid-cols-1 md:grid-cols-3 gap-5'>
         {QUICK_ACTIONS.map((action) => (
           <Button
+            key={action.link}
             onClick={() => navigate(action.link)}
             size='lg'
             className='w-full border bg-orange-100/20 border-gray-200 cursor-pointer h-20 font-medium text-gray-900 shadow-sm hover:shadow-md transition-all duration-300 hover:bg-orange-100/20 hover:border-orange-500/30 rounded-xl'

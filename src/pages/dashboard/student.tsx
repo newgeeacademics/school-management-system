@@ -27,7 +27,7 @@ export const StudentDashboard = () => {
   });
 
   const isLoading = classesQuery.isLoading;
-  const enrolledClasses = enrollments.data;
+  const enrolledClasses = Array.isArray(enrollments?.data) ? enrollments.data : [];
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
 
   // Get today's schedule
@@ -106,7 +106,7 @@ export const StudentDashboard = () => {
                     key={index}
                     className='flex items-start gap-4 p-4 rounded-lg border border-border bg-muted/30 transition-all '
                     onClick={() =>
-                      navigate(`/classes/show/${item.classItem.id}`)
+                      navigate(`/classes/show/${item.classItem.class?.id ?? item.classItem.classId}`)
                     }
                   >
                     <div className='bg-gradient-teal h-full w-fit p-4 rounded-md text-white'>
