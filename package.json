@@ -87,7 +87,7 @@
     "vite": "^6.3.5"
   },
   "scripts": {
-    "dev": "refine dev",
+    "dev": "vite",
     "build": "tsc && refine build",
     "start": "refine start",
     "refine": "refine"

@@ -1,4 +1,4 @@
-'use client';
+`use client`;
 
 import React from 'react';
 import {
@@ -276,8 +276,6 @@ function SidebarHeader() {
           }
         )}
       >
-        <img src='/assets/logo-icon.png' alt='Logo' className='h-7' />
-
         <h2
           className={cn(
             'text-white',
@@ -291,7 +289,7 @@ function SidebarHeader() {
             }
           )}
         >
-          Class Management
+          Gestion des classes
         </h2>
       </div>
 

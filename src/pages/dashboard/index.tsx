@@ -9,7 +9,7 @@ export const Dashboard = () => {
   if (isLoading) {
     return (
       <div className='flex h-96 items-center justify-center'>
-        <p className='text-muted-foreground'>Loading dashboard...</p>
+        <p className='text-muted-foreground'>Chargement du tableau de bord...</p>
       </div>
     );
   }

@@ -69,7 +69,13 @@ export const authProvider: AuthProvider = {
   },
 
   check: async () => {
-    return { authenticated: true };
+    const user = localStorage.getItem(USER_STORAGE_KEY);
+
+    if (user) {
+      return { authenticated: true };
+    }
+
+    return { authenticated: false };
   },
 
   getPermissions: async () => {

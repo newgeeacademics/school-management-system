@@ -1,5 +1,4 @@
 import { Authenticated, Refine } from '@refinedev/core';
-import { DevtoolsPanel, DevtoolsProvider } from '@refinedev/devtools';
 import { RefineKbar, RefineKbarProvider } from '@refinedev/kbar';
 
 import routerProvider, {
@@ -15,13 +14,14 @@ import { Toaster } from './components/refine-ui/notification/toaster';
 import { Login } from './pages/login';
 import { Register } from './pages/register';
 import { Dashboard } from './pages/dashboard';
-import { authProvider } from './providers/authProvider';
+import { LandingPage } from './pages/landing';
 import { UsersList } from './pages/users/list';
 import { SubjectsList } from './pages/subjects/list';
 import { SubjectsCreate } from './pages/subjects/create';
 import { ClassesList } from './pages/classes/list';
 import { EnrollmentList } from './pages/enrollments';
 import { mockDataProvider } from './providers/mockDataProvider';
+import { authProvider } from './providers/authProvider';
 import { UsersEdit } from './pages/users/edit';
 import { SubjectsEdit } from './pages/subjects/edit';
 import { ClassesCreate } from './pages/classes/create';
@@ -33,8 +33,7 @@ function App() {
   return (
     <BrowserRouter>
       <RefineKbarProvider>
-        <DevtoolsProvider>
-          <Refine
+        <Refine
             routerProvider={routerProvider}
             authProvider={authProvider}
             dataProvider={mockDataProvider}
@@ -43,7 +42,7 @@ function App() {
                 name: 'dashboard',
                 list: '/dashboard',
                 meta: {
-                  label: 'Dashboard',
+                  label: 'Tableau de bord',
                   icon: <Home className='text-gray-200' />,
                 },
               },
@@ -51,7 +50,7 @@ function App() {
                 name: 'enrollments',
                 list: '/enrollments',
                 meta: {
-                  label: 'Join Classes',
+                  label: 'Inscriptions',
                   icon: <Layers className='text-gray-200' />,
                 },
               },
@@ -61,7 +60,7 @@ function App() {
                 edit: '/users/edit/:id',
                 show: '/users/show/:id',
                 meta: {
-                  label: 'Faculty',
+                  label: 'Personnel',
                   icon: <User className='text-gray-200' />,
                 },
               },
@@ -72,7 +71,7 @@ function App() {
                 edit: '/subjects/edit/:id',
                 show: '/subjects/show/:id',
                 meta: {
-                  label: 'Subjects',
+                  label: 'Matières',
                   icon: <BookOpen className='text-gray-200' />,
                 },
               },
@@ -90,10 +89,16 @@ function App() {
             ]}
           >
             <Routes>
-              {/* Public Routes */}
+              {/* Public landing page - always reachable */}
+              <Route path='/' element={<LandingPage />} />
+
+              {/* Public auth routes (login/register) */}
               <Route
                 element={
-                  <Authenticated key='public-routes' fallback={<Outlet />}>
+                  <Authenticated
+                    key='public-routes'
+                    fallback={<Outlet />}
+                  >
                     <NavigateToResource fallbackTo='/dashboard' />
                   </Authenticated>
                 }
@@ -102,7 +107,7 @@ function App() {
                 <Route path='/register' element={<Register />} />
               </Route>
 
-              {/* Protected Routes */}
+              {/* Protected app routes */}
               <Route
                 element={
                   <Authenticated key='protected-routes'>
@@ -112,12 +117,6 @@ function App() {
                   </Authenticated>
                 }
               >
-                {/* Default route after login */}
-                <Route
-                  index
-                  element={<NavigateToResource fallbackTo='/dashboard' />}
-                />
-
                 <Route path='/dashboard' element={<Dashboard />} />
 
                 <Route path='users'>
@@ -152,8 +151,6 @@ function App() {
             <RefineKbar />
             <UnsavedChangesNotifier />
           </Refine>
-          <DevtoolsPanel />
-        </DevtoolsProvider>
       </RefineKbarProvider>
     </BrowserRouter>
   );

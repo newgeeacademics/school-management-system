@@ -75,7 +75,7 @@ const UserDropdown = () => {
         <DropdownMenuItem asChild>
           <Link to={`/users/edit/${user?.id}`} className='cursor-pointer'>
             <UserIcon />
-            <span>Profile</span>
+            <span>Profil</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -87,7 +87,7 @@ const UserDropdown = () => {
         >
           <LogOutIcon className='text-destructive hover:text-destructive' />
           <span className='text-destructive hover:text-destructive'>
-            {isLoggingOut ? 'Logging out...' : 'Logout'}
+            {isLoggingOut ? 'Déconnexion...' : 'Se déconnecter'}
           </span>
         </DropdownMenuItem>
       </DropdownMenuContent>

@@ -28,12 +28,12 @@ export function ErrorComponent() {
     if (resource && action) {
       setErrorMessage(
         translate(
-          "pages.error.info",
+          "pages.error.info.fr",
           {
             action: action,
             resource: resource?.name,
           },
-          `You may have forgotten to add the "${action}" component to "${resource?.name}" resource.`
+          `Vous avez peut-être oublié d&apos;ajouter le composant "${action}" à la ressource "${resource?.name}".`
         )
       );
     }
@@ -82,7 +82,7 @@ export function ErrorComponent() {
 
         <div className={cn("space-y-4")}>
           <h1 className={cn("text-2xl", "font-semibold", "text-foreground")}>
-            {translate("pages.error.title", "Page not found.")}
+            {translate("pages.error.title.fr", "Page introuvable.")}
           </h1>
 
           <div
@@ -90,8 +90,8 @@ export function ErrorComponent() {
           >
             <p className={cn("text-muted-foreground")}>
               {translate(
-                "pages.error.description",
-                "The page you're looking for does not exist."
+                "pages.error.description.fr",
+                "La page que vous recherchez n&apos;existe pas."
               )}
             </p>
             {errorMessage && (
