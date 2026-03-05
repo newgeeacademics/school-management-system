@@ -1,202 +1,379 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-type AuthMode = 'signin' | 'signup';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+
+const SCHOOL_TYPE_OPTIONS = [
+  'Maternelle',
+  'Primaire',
+  'Secondaire',
+  'Université',
+  'Centre de formation',
+  'Autre',
+];
+
+const SCHOOL_SYSTEM_OPTIONS = ['Ivoirien', 'Français', 'International', 'Autre'];
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const [mode, setMode] = React.useState<AuthMode>('signup');
-  const [signInValues, setSignInValues] = React.useState({
-    email: '',
-    password: '',
-  });
-  const [signUpValues, setSignUpValues] = React.useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+  const [values, setValues] = React.useState({
+    name: '',
+    type: '',
+    system: '',
+    country: '',
+    city: '',
+    district: '',
+    address: '',
+    gps: '',
+    mainPhone: '',
+    officialEmail: '',
+    headName: '',
+    headPhone: '',
+    website: '',
+    studentCount: '',
+    teacherCount: '',
+    series: '',
   });
 
-  const handleSignInChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const { name, value } = e.target;
-    setSignInValues((prev) => ({ ...prev, [name]: value }));
-  };
+  const [logoFile, setLogoFile] = React.useState<File | null>(null);
 
-  const handleSignUpChange = (
-    e: React.ChangeEvent<HTMLInputElement>
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setSignUpValues((prev) => ({ ...prev, [name]: value }));
+    setValues((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // For now, just simulate auth and go to dashboard
-    if (mode === 'signup') {
-      // Here you could add basic validation or API call
-      navigate('/dashboard');
-    } else {
-      navigate('/dashboard');
-    }
+    // Ici vous pourriez appeler une API ou stocker en localStorage
+    // Pour l’instant on redirige simplement vers le tableau de bord.
+    navigate('/dashboard');
   };
-
-  const isSignIn = mode === 'signin';
 
   return (
     <div className='min-h-screen bg-slate-50 flex px-4 py-6'>
-      <div className='w-full max-w-6xl mx-auto grid gap-10 md:grid-cols-2 min-h-screen'>
-        {/* Left: auth form with switch */}
+      <div className='w-full max-w-6xl mx-auto grid gap-10 md:grid-cols-[1.4fr,1fr]'>
         <div className='flex flex-col justify-center'>
           <div className='mb-6'>
             <p className='text-xs font-semibold uppercase tracking-[0.18em] text-blue-600 mb-2'>
               Classroom
             </p>
             <h1 className='text-3xl font-semibold text-slate-900'>
-              {isSignIn ? 'Connectez-vous à votre espace' : 'Créez votre compte'}
+              Inscription de votre établissement
             </h1>
             <p className='mt-2 text-sm text-slate-600'>
-              {isSignIn
-                ? 'Accédez à votre tableau de bord et à la gestion de votre établissement.'
-                : 'En quelques étapes, créez un compte pour votre établissement et commencez à organiser votre année scolaire.'}
+              Renseignez les informations de base de votre école pour préparer le
+              tableau de bord (classes, enseignants, emplois du temps…).
             </p>
           </div>
 
-          <div className='mb-4 inline-flex rounded-full bg-slate-100 p-1 w-full max-w-xs'>
-            <button
-              type='button'
-              onClick={() => setMode('signin')}
-              className={`flex-1 rounded-full px-3 py-2 text-xs font-medium transition-colors ${
-                isSignIn
-                  ? 'bg-white shadow-sm text-slate-900'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              Se connecter
-            </button>
-            <button
-              type='button'
-              onClick={() => setMode('signup')}
-              className={`flex-1 rounded-full px-3 py-2 text-xs font-medium transition-colors ${
-                !isSignIn
-                  ? 'bg-white shadow-sm text-slate-900'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              S&apos;inscrire
-            </button>
-          </div>
+          <Card className='shadow-sm border-slate-200'>
+            <CardHeader>
+              <CardTitle>Informations générales</CardTitle>
+              <CardDescription className='text-xs'>
+                Ces champs décrivent l&apos;identité et la localisation de votre
+                établissement.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form
+                onSubmit={handleSubmit}
+                className='space-y-5 text-xs'
+                noValidate
+              >
+                <div className='grid gap-3 md:grid-cols-2'>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='school-name'>Nom de l’école</Label>
+                    <Input
+                      id='school-name'
+                      name='name'
+                      value={values.name}
+                      onChange={handleChange}
+                      placeholder="Ex : Groupe scolaire Les Pionniers"
+                      required
+                    />
+                  </div>
+                  <div className='grid gap-1.5'>
+                    <Label>Type d’école</Label>
+                    <Select
+                      value={values.type}
+                      onValueChange={(value) =>
+                        setValues((prev) => ({ ...prev, type: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder='Sélectionner un type' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SCHOOL_TYPE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt} value={opt}>
+                            {opt}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className='grid gap-1.5'>
+                    <Label>Système scolaire</Label>
+                    <Select
+                      value={values.system}
+                      onValueChange={(value) =>
+                        setValues((prev) => ({ ...prev, system: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder='Ex : Ivoirien, Français…' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SCHOOL_SYSTEM_OPTIONS.map((opt) => (
+                          <SelectItem key={opt} value={opt}>
+                            {opt}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='country'>Pays</Label>
+                    <Input
+                      id='country'
+                      name='country'
+                      value={values.country}
+                      onChange={handleChange}
+                      placeholder='Ex : Côte d’Ivoire'
+                      required
+                    />
+                  </div>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='city'>Ville</Label>
+                    <Input
+                      id='city'
+                      name='city'
+                      value={values.city}
+                      onChange={handleChange}
+                      placeholder='Ex : Abidjan'
+                      required
+                    />
+                  </div>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='district'>Commune / quartier</Label>
+                    <Input
+                      id='district'
+                      name='district'
+                      value={values.district}
+                      onChange={handleChange}
+                      placeholder='Ex : Cocody, Yopougon…'
+                    />
+                  </div>
+                </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className='space-y-4 rounded-2xl bg-white p-5 shadow-sm border border-slate-200'
-          >
-            {!isSignIn && (
-              <div>
-                <label className='block text-xs font-medium text-slate-700 mb-1.5'>
-                  Nom complet
-                </label>
-                <input
-                  name='fullName'
-                  value={signUpValues.fullName}
-                  onChange={handleSignUpChange}
-                  className='block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white'
-                  placeholder='Ex : Jean Dupont'
-                  required
-                />
-              </div>
-            )}
+                <div className='grid gap-3 md:grid-cols-[1.4fr,1fr]'>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='address'>Adresse précise</Label>
+                    <Textarea
+                      id='address'
+                      name='address'
+                      rows={2}
+                      value={values.address}
+                      onChange={handleChange}
+                      placeholder='Rue, lot, repères pour trouver facilement l’établissement.'
+                    />
+                  </div>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='gps'>Localisation GPS (lien ou coordonnées)</Label>
+                    <Input
+                      id='gps'
+                      name='gps'
+                      value={values.gps}
+                      onChange={handleChange}
+                      placeholder='Ex : lien Google Maps'
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <label className='block text-xs font-medium text-slate-700 mb-1.5'>
-                Email
-              </label>
-              <input
-                type='email'
-                name='email'
-                value={isSignIn ? signInValues.email : signUpValues.email}
-                onChange={isSignIn ? handleSignInChange : handleSignUpChange}
-                className='block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white'
-                placeholder='vous@exemple.com'
-                required
-              />
-            </div>
+                <div className='grid gap-3 md:grid-cols-2'>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='mainPhone'>Numéro principal</Label>
+                    <Input
+                      id='mainPhone'
+                      name='mainPhone'
+                      value={values.mainPhone}
+                      onChange={handleChange}
+                      placeholder='Ex : +225 XX XX XX XX'
+                      required
+                    />
+                  </div>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='officialEmail'>Email officiel</Label>
+                    <Input
+                      id='officialEmail'
+                      type='email'
+                      name='officialEmail'
+                      value={values.officialEmail}
+                      onChange={handleChange}
+                      placeholder='contact@ecole.exemple'
+                      required
+                    />
+                  </div>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='headName'>
+                      Nom du responsable (directeur / fondateur)
+                    </Label>
+                    <Input
+                      id='headName'
+                      name='headName'
+                      value={values.headName}
+                      onChange={handleChange}
+                      placeholder='Ex : Mme Kouadio'
+                    />
+                  </div>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='headPhone'>Numéro du responsable</Label>
+                    <Input
+                      id='headPhone'
+                      name='headPhone'
+                      value={values.headPhone}
+                      onChange={handleChange}
+                      placeholder='Ex : +225 XX XX XX XX'
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <label className='block text-xs font-medium text-slate-700 mb-1.5'>
-                Mot de passe
-              </label>
-              <input
-                type='password'
-                name='password'
-                value={isSignIn ? signInValues.password : signUpValues.password}
-                onChange={isSignIn ? handleSignInChange : handleSignUpChange}
-                className='block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white'
-                placeholder='Au moins 8 caractères'
-                required
-              />
-            </div>
+                <div className='grid gap-3 md:grid-cols-[1.4fr,1fr]'>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='website'>Site web (si disponible)</Label>
+                    <Input
+                      id='website'
+                      type='url'
+                      name='website'
+                      value={values.website}
+                      onChange={handleChange}
+                      placeholder='https://…'
+                    />
+                  </div>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='logo'>Logo de l’école (upload)</Label>
+                    <Input
+                      id='logo'
+                      type='file'
+                      accept='image/*'
+                      onChange={(e) =>
+                        setLogoFile(e.target.files?.[0] ?? null)
+                      }
+                    />
+                    {logoFile && (
+                      <p className='text-[10px] text-muted-foreground'>
+                        Fichier sélectionné : {logoFile.name}
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-            {!isSignIn && (
-              <div>
-                <label className='block text-xs font-medium text-slate-700 mb-1.5'>
-                  Confirmer le mot de passe
-                </label>
-                <input
-                  type='password'
-                  name='confirmPassword'
-                  value={signUpValues.confirmPassword}
-                  onChange={handleSignUpChange}
-                  className='block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white'
-                  placeholder='Répétez votre mot de passe'
-                  required
-                />
-              </div>
-            )}
+                <div className='grid gap-3 md:grid-cols-3'>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='studentCount'>Nombre d’élèves</Label>
+                    <Input
+                      id='studentCount'
+                      type='number'
+                      min={0}
+                      name='studentCount'
+                      value={values.studentCount}
+                      onChange={handleChange}
+                      placeholder='Ex : 250'
+                    />
+                  </div>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='teacherCount'>Nombre d’enseignants</Label>
+                    <Input
+                      id='teacherCount'
+                      type='number'
+                      min={0}
+                      name='teacherCount'
+                      value={values.teacherCount}
+                      onChange={handleChange}
+                      placeholder='Ex : 25'
+                    />
+                  </div>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='series'>Séries proposées (si secondaire)</Label>
+                    <Input
+                      id='series'
+                      name='series'
+                      value={values.series}
+                      onChange={handleChange}
+                      placeholder='Ex : Série A, C, D…'
+                    />
+                  </div>
+                </div>
 
-            {isSignIn && (
-              <div className='flex items-center justify-between text-xs'>
-                <label className='inline-flex items-center gap-2 text-slate-600'>
-                  <input
-                    type='checkbox'
-                    className='h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500'
-                  />
-                  <span>Rester connecté</span>
-                </label>
-                <button
-                  type='button'
-                  className='font-medium text-blue-600 hover:text-blue-700'
-                >
-                  Mot de passe oublié ?
-                </button>
-              </div>
-            )}
-
-            <button
-              type='submit'
-              className='mt-2 inline-flex w-full items-center justify-center rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors'
-            >
-              {isSignIn ? 'Se connecter' : 'Créer mon compte'}
-            </button>
-
-            <p className='text-[11px] text-slate-500 leading-relaxed'>
-              En continuant, vous acceptez nos{' '}
-              <span className='underline'>conditions d&apos;utilisation</span> et notre{' '}
-              <span className='underline'>politique de confidentialité</span>.
-            </p>
-          </form>
+                <div className='pt-1 flex items-center justify-between gap-3'>
+                  <p className='text-[11px] text-slate-500 leading-relaxed'>
+                    Ces informations pourront être modifiées plus tard depuis le
+                    tableau de bord.
+                  </p>
+                  <Button type='submit' size='sm'>
+                    Enregistrer l’établissement
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Right: full image that never changes */}
-        <div className='hidden md:block h-full w-full'>
-          <img
-            src='https://images.pexels.com/photos/3184328/pexels-photo-3184328.jpeg?auto=compress&cs=tinysrgb&w=1600'
-            alt="Équipe éducative en réunion dans un établissement scolaire"
-            className='h-full w-full object-cover'
-          />
+        <div className='hidden md:flex h-full w-full items-center'>
+          <Card className='w-full shadow-sm border-slate-200'>
+            <CardHeader>
+              <CardTitle>Aperçu de ce que vous préparez</CardTitle>
+              <CardDescription className='text-xs'>
+                Ces données alimenteront ensuite les vues &quot;Classes&quot;,
+                &quot;Enseignants&quot; et &quot;Emploi du temps&quot; du
+                tableau de bord.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-3 text-xs'>
+              <p className='font-medium text-slate-900'>
+                {values.name || 'Nom de votre établissement'}
+              </p>
+              <p className='text-slate-600'>
+                {values.type || 'Type non renseigné'} •{' '}
+                {values.system || 'Système non renseigné'}
+              </p>
+              <p className='text-slate-600'>
+                {[values.city, values.district, values.country]
+                  .filter(Boolean)
+                  .join(', ') || 'Localisation à renseigner'}
+              </p>
+              <p className='text-slate-500'>
+                Élèves : {values.studentCount || '—'} • Enseignants :{' '}
+                {values.teacherCount || '—'}
+              </p>
+              {values.series && (
+                <p className='text-slate-500'>
+                  Séries : <span className='font-medium'>{values.series}</span>
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
