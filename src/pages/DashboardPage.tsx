@@ -586,28 +586,31 @@ export const DashboardPage: React.FC = () => {
       </Sidebar>
 
       <SidebarInset>
-        <header className='flex items-center justify-between gap-4 border-b px-4 md:px-6 py-3 md:py-4'>
-          <div className='flex items-center gap-3'>
-            <div className='md:hidden'>
-              <SidebarTrigger />
-            </div>
-            <div className='space-y-1'>
-            <p className='text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground'>
-              {current.kicker}
-            </p>
-            <h1 className='text-xl font-semibold leading-tight'>
-              {current.title}
-            </h1>
-            <p className='text-xs text-muted-foreground'>
-              {current.description}
-            </p>
-            </div>
+        <header className='border-b px-4 md:px-6 py-3 md:py-4'>
+          {/* Ligne 1 : bouton d’extension du menu, toujours en haut à gauche */}
+          <div className='flex items-center justify-between md:justify-start mb-3'>
+            <SidebarTrigger />
           </div>
-          <div className='flex items-center gap-2'>
-            <Badge variant='outline' className='text-xs px-3 py-1'>
-              Année scolaire 2024–2025
-            </Badge>
-            <Button size='sm'>{current.cta}</Button>
+
+          {/* Ligne 2 : titre + actions, avec layout colonne sur mobile et rangée sur desktop */}
+          <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+            <div className='space-y-1'>
+              <p className='text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground'>
+                {current.kicker}
+              </p>
+              <h1 className='text-xl font-semibold leading-tight'>
+                {current.title}
+              </h1>
+              <p className='text-xs text-muted-foreground'>
+                {current.description}
+              </p>
+            </div>
+            <div className='flex items-center gap-2'>
+              <Badge variant='outline' className='text-xs px-3 py-1'>
+                Année scolaire 2024–2025
+              </Badge>
+              <Button size='sm'>{current.cta}</Button>
+            </div>
           </div>
         </header>
 
@@ -1633,7 +1636,30 @@ export const DashboardPage: React.FC = () => {
                           <p className='text-sm font-semibold text-foreground'>
                             {classe.name}
                           </p>
-                          <div className='overflow-x-auto rounded-lg border border-border/70 bg-card'>
+                          {/* Vue mobile : listes verticales, pas de défilement horizontal */}
+                          <div className='grid gap-2 md:hidden'>
+                            {slotsForClass.map((slot) => (
+                              <div
+                                key={slot.id}
+                                className='rounded-md border border-border/80 px-3 py-2'
+                              >
+                                <p className='text-[11px] font-medium text-foreground'>
+                                  {getCourseName(slot.courseId)}
+                                </p>
+                                <p className='text-[11px] text-muted-foreground'>
+                                  {slot.day} • {slot.time}
+                                </p>
+                                {slot.room && (
+                                  <p className='text-[11px] text-muted-foreground'>
+                                    Salle : {slot.room}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Vue desktop : tableau complet, avec scroll horizontal si besoin */}
+                          <div className='hidden md:block overflow-x-auto rounded-lg border border-border/70 bg-card'>
                             <table className='w-full border-collapse text-[11px]'>
                               <thead className='bg-muted/60'>
                                 <tr>
