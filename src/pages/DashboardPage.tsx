@@ -37,6 +37,7 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarSeparator,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 
 type SectionId =
@@ -585,8 +586,12 @@ export const DashboardPage: React.FC = () => {
       </Sidebar>
 
       <SidebarInset>
-        <header className='flex items-center justify-between gap-4 border-b px-6 py-4'>
-          <div className='space-y-1'>
+        <header className='flex items-center justify-between gap-4 border-b px-4 md:px-6 py-3 md:py-4'>
+          <div className='flex items-center gap-3'>
+            <div className='md:hidden'>
+              <SidebarTrigger />
+            </div>
+            <div className='space-y-1'>
             <p className='text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground'>
               {current.kicker}
             </p>
@@ -596,6 +601,7 @@ export const DashboardPage: React.FC = () => {
             <p className='text-xs text-muted-foreground'>
               {current.description}
             </p>
+            </div>
           </div>
           <div className='flex items-center gap-2'>
             <Badge variant='outline' className='text-xs px-3 py-1'>
