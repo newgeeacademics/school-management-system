@@ -380,9 +380,6 @@ export const DashboardPage: React.FC = () => {
   const getCourseName = (id?: string) =>
     id ? courses.find((c) => c.id === id)?.name ?? '—' : '—';
 
-  const getRoomName = (name?: string) =>
-    name || 'Salle non définie';
-
   const handleCreateClass = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClass.name.trim()) return;
