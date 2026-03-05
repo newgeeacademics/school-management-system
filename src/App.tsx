@@ -1,159 +1,23 @@
-import { Authenticated, Refine } from '@refinedev/core';
-import { RefineKbar, RefineKbarProvider } from '@refinedev/kbar';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-import routerProvider, {
-  NavigateToResource,
-  UnsavedChangesNotifier,
-} from '@refinedev/react-router';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { LandingPage } from './pages/LandingPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { DashboardPage } from './pages/DashboardPage';
 
-import { BrowserRouter, Outlet, Route, Routes } from 'react-router';
-import './App.css';
-import { ErrorComponent } from './components/refine-ui/layout/error-component';
-import { Layout } from './components/refine-ui/layout/layout';
-import { Toaster } from './components/refine-ui/notification/toaster';
-import { Login } from './pages/login';
-import { Register } from './pages/register';
-import { Dashboard } from './pages/dashboard';
-import { LandingPage } from './pages/landing';
-import { UsersList } from './pages/users/list';
-import { SubjectsList } from './pages/subjects/list';
-import { SubjectsCreate } from './pages/subjects/create';
-import { ClassesList } from './pages/classes/list';
-import { EnrollmentList } from './pages/enrollments';
-import { mockDataProvider } from './providers/mockDataProvider';
-import { authProvider } from './providers/authProvider';
-import { UsersEdit } from './pages/users/edit';
-import { SubjectsEdit } from './pages/subjects/edit';
-import { ClassesCreate } from './pages/classes/create';
-import { ClassesEdit } from './pages/classes/edit';
-import { ClassesShow } from './pages/classes/show';
-import { BookOpen, GraduationCap, Home, Layers, User } from 'lucide-react';
-
-function App() {
+export const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <RefineKbarProvider>
-        <Refine
-            routerProvider={routerProvider}
-            authProvider={authProvider}
-            dataProvider={mockDataProvider}
-            resources={[
-              {
-                name: 'dashboard',
-                list: '/dashboard',
-                meta: {
-                  label: 'Tableau de bord',
-                  icon: <Home className='text-gray-200' />,
-                },
-              },
-              {
-                name: 'enrollments',
-                list: '/enrollments',
-                meta: {
-                  label: 'Inscriptions',
-                  icon: <Layers className='text-gray-200' />,
-                },
-              },
-              {
-                name: 'users',
-                list: '/users',
-                edit: '/users/edit/:id',
-                show: '/users/show/:id',
-                meta: {
-                  label: 'Personnel',
-                  icon: <User className='text-gray-200' />,
-                },
-              },
-              {
-                name: 'subjects',
-                list: '/subjects',
-                create: '/subjects/create',
-                edit: '/subjects/edit/:id',
-                show: '/subjects/show/:id',
-                meta: {
-                  label: 'Matières',
-                  icon: <BookOpen className='text-gray-200' />,
-                },
-              },
-              {
-                name: 'classes',
-                list: '/classes',
-                create: '/classes/create',
-                edit: '/classes/edit/:id',
-                show: '/classes/show/:id',
-                meta: {
-                  label: 'Classes',
-                  icon: <GraduationCap className='text-gray-200' />,
-                },
-              },
-            ]}
-          >
-            <Routes>
-              {/* Public landing page - always reachable */}
-              <Route path='/' element={<LandingPage />} />
-
-              {/* Public auth routes (login/register) */}
-              <Route
-                element={
-                  <Authenticated
-                    key='public-routes'
-                    fallback={<Outlet />}
-                  >
-                    <NavigateToResource fallbackTo='/dashboard' />
-                  </Authenticated>
-                }
-              >
-                <Route path='/login' element={<Login />} />
-                <Route path='/register' element={<Register />} />
-              </Route>
-
-              {/* Protected app routes */}
-              <Route
-                element={
-                  <Authenticated key='protected-routes'>
-                    <Layout>
-                      <Outlet />
-                    </Layout>
-                  </Authenticated>
-                }
-              >
-                <Route path='/dashboard' element={<Dashboard />} />
-
-                <Route path='users'>
-                  <Route index element={<UsersList />} />
-                  <Route path='edit/:id' element={<UsersEdit />} />
-                </Route>
-
-                <Route path='subjects'>
-                  <Route index element={<SubjectsList />} />
-                  <Route path='create' element={<SubjectsCreate />} />
-                  <Route path='edit/:id' element={<SubjectsEdit />} />
-                </Route>
-
-                <Route path='classes'>
-                  <Route index element={<ClassesList />} />
-                  <Route path='create' element={<ClassesCreate />} />
-                  <Route path='edit/:id' element={<ClassesEdit />} />
-                  <Route path='show/:id' element={<ClassesShow />} />
-                </Route>
-
-                <Route path='/enrollments' element={<EnrollmentList />} />
-
-                {/* Refine resource routes */}
-                <Route path='/*' element={<Outlet />} />
-
-                {/* Catch-all */}
-                <Route path='*' element={<ErrorComponent />} />
-              </Route>
-            </Routes>
-
-            <Toaster />
-            <RefineKbar />
-            <UnsavedChangesNotifier />
-          </Refine>
-      </RefineKbarProvider>
-    </BrowserRouter>
+    <TooltipProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path='/' element={<LandingPage />} />
+          <Route path='/register' element={<RegisterPage />} />
+          <Route path='/dashboard' element={<DashboardPage />} />
+          <Route path='*' element={<Navigate to='/' replace />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
   );
-}
+};
 
-export default App;
