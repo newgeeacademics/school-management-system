@@ -21,3 +21,19 @@ export function setStoredRole(role: UserRole): void {
 export function clearStoredRole(): void {
   localStorage.removeItem(STORAGE_KEY);
 }
+
+const STUDENT_ID_KEY = 'classroom_test_student_id';
+
+/** When role is student, which student record represents the current user. */
+export function getStoredStudentId(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(STUDENT_ID_KEY);
+}
+
+export function setStoredStudentId(id: string): void {
+  localStorage.setItem(STUDENT_ID_KEY, id);
+}
+
+export function clearStoredStudentId(): void {
+  localStorage.removeItem(STUDENT_ID_KEY);
+}

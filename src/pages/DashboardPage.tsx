@@ -13,7 +13,7 @@ import {
   Wallet,
 } from 'lucide-react';
 
-import { getStoredRole, clearStoredRole, type UserRole } from '@/lib/auth';
+import { getStoredRole, clearStoredRole, getStoredStudentId, setStoredStudentId, type UserRole } from '@/lib/auth';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -54,9 +54,11 @@ import {
   type CanteenMenuItem,
   type ClassItem,
   type Course,
+  type Matiere,
   type NewCanteenItemFormState,
   type NewClassFormState,
   type NewCourseFormState,
+  type NewMatiereFormState,
   type NewEventFormState,
   type NewParentFormState,
   type NewPaymentReceiptFormState,
@@ -81,6 +83,7 @@ import { CalendarSection } from './dashboard/CalendarSection';
 import { CanteenSection } from './dashboard/CanteenSection';
 import { ClassesSection } from './dashboard/ClassesSection';
 import { CoursesSection } from './dashboard/CoursesSection';
+import { MatieresSection } from './dashboard/MatieresSection';
 import { OverviewSection } from './dashboard/OverviewSection';
 import { ParentsSection } from './dashboard/ParentsSection';
 import { PaymentsSection } from './dashboard/PaymentsSection';
@@ -99,6 +102,7 @@ const navItems: { id: SectionId; label: string; icon: React.ComponentType<any> }
     { id: 'students', label: 'Élèves', icon: Users },
     { id: 'parents', label: 'Parents', icon: Users },
     { id: 'courses', label: 'Cours', icon: BookOpen },
+    { id: 'matieres', label: 'Matières', icon: BookOpen },
     { id: 'rooms', label: 'Salles', icon: MapPin },
     { id: 'calendar', label: 'Calendrier', icon: Calendar },
     { id: 'schedule', label: 'Emploi du temps', icon: ClipboardList },
@@ -187,6 +191,13 @@ const sectionConfig: Record<
     description:
       'Définissez les cours qui seront utilisés dans l’emploi du temps et les bulletins.',
     cta: 'Créer un cours',
+  },
+  matieres: {
+    kicker: 'Enseignement',
+    title: 'Matières',
+    description:
+      'Créez et gérez les matières enseignées (mathématiques, français, etc.).',
+    cta: 'Créer une matière',
   },
   rooms: {
     kicker: 'Salles et espaces',
@@ -348,6 +359,7 @@ export const DashboardPage: React.FC = () => {
 
   const currentNavItems = role ? roleNavItems[role] : [];
   const [activeSection, setActiveSection] = React.useState<SectionId>('overview');
+  const [currentStudentId, setCurrentStudentId] = React.useState<string | null>(() => getStoredStudentId());
 
   React.useEffect(() => {
     if (role && currentNavItems.length > 0 && !currentNavItems.some((i) => i.id === activeSection)) {
@@ -360,6 +372,7 @@ export const DashboardPage: React.FC = () => {
   const [students, setStudents] = React.useState<Student[]>([]);
   const [parents, setParents] = React.useState<ParentContact[]>([]);
   const [courses, setCourses] = React.useState<Course[]>(initialCourses);
+  const [matieres, setMatieres] = React.useState<Matiere[]>([]);
   const [rooms, setRooms] = React.useState<Room[]>(initialRooms);
   const [events, setEvents] = React.useState<CalendarEvent[]>(initialEvents);
   const [schedule, setSchedule] =
@@ -399,6 +412,9 @@ export const DashboardPage: React.FC = () => {
     name: '',
     level: '',
   });
+
+  const [newMatiere, setNewMatiere] =
+    React.useState<NewMatiereFormState>({ name: '' });
 
   const [newEvent, setNewEvent] =
     React.useState<NewEventFormState>({
@@ -611,6 +627,7 @@ export const DashboardPage: React.FC = () => {
         note: newTransportRoute.note.trim() || undefined,
         waypoints: payload?.waypoints,
         routePolyline: payload?.routePolyline,
+        studentIds: [],
       },
     ]);
     setNewTransportRoute({
@@ -621,6 +638,24 @@ export const DashboardPage: React.FC = () => {
       note: '',
     });
   };
+
+  const handleUpdateRouteStudents = (routeId: string, studentIds: string[]) => {
+    setTransportRoutes((prev) =>
+      prev.map((r) => (r.id === routeId ? { ...r, studentIds } : r)),
+    );
+  };
+
+  const handleStudentIdChange = (id: string) => {
+    setStoredStudentId(id);
+    setCurrentStudentId(id);
+  };
+
+  const transportRoutesForView =
+    role === 'student'
+      ? transportRoutes.filter((r) =>
+          (r.studentIds ?? []).includes(currentStudentId ?? ''),
+        )
+      : transportRoutes;
 
   const handleCreateClass = (e: React.FormEvent) => {
     e.preventDefault();
@@ -703,6 +738,17 @@ export const DashboardPage: React.FC = () => {
       },
     ]);
     setNewCourse({ name: '', level: '' });
+  };
+
+  const handleCreateMatiere = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMatiere.name.trim()) return;
+    const id = `mat-${Date.now()}`;
+    setMatieres((prev) => [
+      ...prev,
+      { id, name: newMatiere.name.trim() },
+    ]);
+    setNewMatiere({ name: '' });
   };
 
   const handleCreateEvent = (e: React.FormEvent) => {
@@ -948,6 +994,15 @@ export const DashboardPage: React.FC = () => {
             />
           )}
 
+          {activeSection === 'matieres' && (
+            <MatieresSection
+              matieres={matieres}
+              newMatiere={newMatiere}
+              setNewMatiere={setNewMatiere}
+              onCreateMatiere={handleCreateMatiere}
+            />
+          )}
+
           {activeSection === 'rooms' && (
             <RoomsSection
               rooms={rooms}
@@ -1023,16 +1078,21 @@ export const DashboardPage: React.FC = () => {
               setNewItem={setNewCanteenItem}
               onCreateItem={handleCreateCanteenItem}
               dayOptions={DAY_OPTIONS}
+              readOnly={role === 'student'}
             />
           )}
 
           {activeSection === 'transport' && (
             <TransportSection
-              routes={transportRoutes}
+              routes={transportRoutesForView}
               newRoute={newTransportRoute}
               setNewRoute={setNewTransportRoute}
               onCreateRoute={handleCreateTransportRoute}
-              readOnly={role === 'parent'}
+              onUpdateRouteStudents={handleUpdateRouteStudents}
+              readOnly={role === 'parent' || role === 'student'}
+              students={students}
+              currentStudentId={role === 'student' ? currentStudentId : undefined}
+              onStudentIdChange={role === 'student' ? handleStudentIdChange : undefined}
             />
           )}
         </main>

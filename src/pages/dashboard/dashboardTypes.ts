@@ -7,6 +7,7 @@ export type SectionId =
   | 'students'
   | 'parents'
   | 'courses'
+  | 'matieres'
   | 'rooms'
   | 'calendar'
   | 'schedule'
@@ -48,6 +49,11 @@ export type Course = {
   id: string;
   name: string;
   level: string;
+};
+
+export type Matiere = {
+  id: string;
+  name: string;
 };
 
 export type Room = {
@@ -99,6 +105,8 @@ export type TransportRoute = {
   /** Saved trajet for display on map (e.g. for parents). */
   waypoints?: TransportRouteWaypoint[];
   routePolyline?: [number, number][];
+  /** Student IDs assigned to this route (see this trajet in their dashboard). */
+  studentIds?: string[];
 };
 
 export type PaymentReminder = {
@@ -148,6 +156,10 @@ export type NewParentFormState = {
 export type NewCourseFormState = {
   name: string;
   level: string;
+};
+
+export type NewMatiereFormState = {
+  name: string;
 };
 
 export type NewRoomFormState = {

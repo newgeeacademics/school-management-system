@@ -8,10 +8,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
 import type {
   NewTransportRouteFormState,
   TransportRoute,
   SetStateAction,
+  Student,
 } from './dashboardTypes';
 
 type TransportSectionProps = {
@@ -19,7 +28,11 @@ type TransportSectionProps = {
   newRoute: NewTransportRouteFormState;
   setNewRoute: SetStateAction<NewTransportRouteFormState>;
   onCreateRoute: (e: React.FormEvent, payload?: { waypoints: { lat: number; lng: number; name: string }[]; routePolyline: [number, number][] }) => void;
+  onUpdateRouteStudents?: (routeId: string, studentIds: string[]) => void;
   readOnly?: boolean;
+  students?: Student[];
+  currentStudentId?: string | null;
+  onStudentIdChange?: (id: string) => void;
 };
 
 export const TransportSection: React.FC<TransportSectionProps> = ({
@@ -27,7 +40,11 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
   newRoute,
   setNewRoute,
   onCreateRoute,
+  onUpdateRouteStudents,
   readOnly = false,
+  students = [],
+  currentStudentId,
+  onStudentIdChange,
 }) => {
   const [startStopId, setStartStopId] = React.useState<string>('');
   const [endStopId, setEndStopId] = React.useState<string>('');
@@ -280,6 +297,37 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
       </div>
       )}
 
+      {readOnly && onStudentIdChange && students.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className='text-sm font-medium'>
+              Mon profil élève
+            </CardTitle>
+            <p className='text-xs text-muted-foreground mt-1'>
+              Sélectionnez votre profil pour afficher les trajets qui vous sont assignés.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <Label className='text-xs'>Je suis</Label>
+            <Select
+              value={currentStudentId ?? ''}
+              onValueChange={onStudentIdChange}
+            >
+              <SelectTrigger className='mt-1 max-w-xs'>
+                <SelectValue placeholder='Choisir un élève…' />
+              </SelectTrigger>
+              <SelectContent>
+                {students.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className='text-sm font-medium'>
@@ -289,7 +337,11 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
         <CardContent className='space-y-2 text-xs'>
           {routes.length === 0 ? (
             <p className='text-muted-foreground'>
-              Aucun trajet enregistré. Ajoutez des lignes ci-dessus.
+              {readOnly && onStudentIdChange
+                ? currentStudentId
+                  ? 'Aucun trajet ne vous est assigné. Demandez à l\'établissement de vous ajouter à un véhicule.'
+                  : 'Choisissez votre profil élève ci-dessus pour voir vos trajets.'
+                : 'Aucun trajet enregistré. Ajoutez des lignes ci-dessus.'}
             </p>
           ) : (
             <div className='grid gap-2 md:grid-cols-2 lg:grid-cols-3'>
@@ -314,6 +366,69 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
                     <p className='mt-1 text-[11px] text-muted-foreground italic'>
                       {route.note}
                     </p>
+                  )}
+                  {!readOnly && onUpdateRouteStudents && (
+                    <div className='mt-2 pt-2 border-t border-border/60'>
+                      <p className='text-[11px] text-muted-foreground mb-1'>
+                        Élèves dans ce véhicule
+                      </p>
+                      <div className='flex flex-wrap gap-1'>
+                        {(route.studentIds ?? []).map((id) => {
+                          const s = students.find((st) => st.id === id);
+                          return (
+                            <span
+                              key={id}
+                              className='inline-flex items-center gap-0.5 rounded bg-muted px-1.5 py-0.5 text-[11px]'
+                            >
+                              {s?.name ?? id}
+                              <button
+                                type='button'
+                                className='text-red-600 hover:underline'
+                                onClick={() =>
+                                  onUpdateRouteStudents(
+                                    route.id,
+                                    (route.studentIds ?? []).filter((x) => x !== id),
+                                  )
+                                }
+                                aria-label={`Retirer ${s?.name ?? id}`}
+                              >
+                                ×
+                              </button>
+                            </span>
+                          );
+                        })}
+                        {students.some((s) => !(route.studentIds ?? []).includes(s.id)) ? (
+                          <Select
+                            key={`${route.id}-${(route.studentIds ?? []).length}`}
+                            value=''
+                            onValueChange={(value) => {
+                              if (!value) return;
+                              onUpdateRouteStudents(route.id, [
+                                ...(route.studentIds ?? []),
+                                value,
+                              ]);
+                            }}
+                          >
+                            <SelectTrigger className='h-6 w-auto min-w-[100px] text-[11px] border-dashed'>
+                              <SelectValue placeholder='+ Ajouter un élève' />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {students
+                                .filter((s) => !(route.studentIds ?? []).includes(s.id))
+                                .map((s) => (
+                                  <SelectItem key={s.id} value={s.id}>
+                                    {s.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        ) : students.length > 0 ? (
+                          <span className='text-[10px] text-muted-foreground'>
+                            Tous assignés
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}

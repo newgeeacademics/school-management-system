@@ -38,6 +38,7 @@ type CanteenSectionProps = {
   setNewItem: SetStateAction<NewCanteenItemFormState>;
   onCreateItem: (e: React.FormEvent) => void;
   dayOptions: string[];
+  readOnly?: boolean;
 };
 
 export const CanteenSection: React.FC<CanteenSectionProps> = ({
@@ -46,10 +47,12 @@ export const CanteenSection: React.FC<CanteenSectionProps> = ({
   setNewItem,
   onCreateItem,
   dayOptions,
+  readOnly = false,
 }) => {
   return (
     <section className='space-y-5'>
       <div className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)]'>
+        {!readOnly && (
         <Card>
           <CardHeader>
             <CardTitle className='text-sm font-medium'>
@@ -135,11 +138,12 @@ export const CanteenSection: React.FC<CanteenSectionProps> = ({
             </form>
           </CardContent>
         </Card>
+        )}
 
         <Card>
           <CardHeader>
             <CardTitle className='text-sm font-medium'>
-              Résumé des menus
+              {readOnly ? 'Menu de la cantine' : 'Résumé des menus'}
             </CardTitle>
           </CardHeader>
           <CardContent className='space-y-2 text-xs text-muted-foreground'>
