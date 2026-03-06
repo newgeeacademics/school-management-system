@@ -1,0 +1,505 @@
+import React, { useMemo } from 'react';
+
+import { RouteMap } from '@/components/RouteMap';
+import { fetchRoadRoute } from '@/lib/osrm';
+import { TRANSPORT_NODES } from '@/lib/transportGraph';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+import type {
+  NewTransportRouteFormState,
+  TransportRoute,
+  SetStateAction,
+} from './dashboardTypes';
+
+type TransportSectionProps = {
+  routes: TransportRoute[];
+  newRoute: NewTransportRouteFormState;
+  setNewRoute: SetStateAction<NewTransportRouteFormState>;
+  onCreateRoute: (e: React.FormEvent, payload?: { waypoints: { lat: number; lng: number; name: string }[]; routePolyline: [number, number][] }) => void;
+  readOnly?: boolean;
+};
+
+export const TransportSection: React.FC<TransportSectionProps> = ({
+  routes,
+  newRoute,
+  setNewRoute,
+  onCreateRoute,
+  readOnly = false,
+}) => {
+  const [startStopId, setStartStopId] = React.useState<string>('');
+  const [endStopId, setEndStopId] = React.useState<string>('');
+  const [stopIds, setStopIds] = React.useState<string[]>([]);
+  const [selectionMode, setSelectionMode] = React.useState<'start' | 'stop' | 'end'>('start');
+  const [startQuery, setStartQuery] = React.useState('');
+  const [stops, setStops] = React.useState(TRANSPORT_NODES);
+  const [roadRoutePositions, setRoadRoutePositions] = React.useState<
+    [number, number][] | null
+  >(null);
+  const [routeLoading, setRouteLoading] = React.useState(false);
+
+  const pathNodeIds = useMemo(() => {
+    if (!startStopId || !endStopId) return [];
+    const ids = [startStopId, ...stopIds, endStopId];
+    const uniqueIds: string[] = [];
+    for (const id of ids) {
+      if (!uniqueIds.includes(id)) uniqueIds.push(id);
+    }
+    return uniqueIds;
+  }, [startStopId, endStopId, stopIds]);
+
+  React.useEffect(() => {
+    // Ensure start/end are not duplicated in intermediate stops
+    setStopIds((prev) =>
+      prev.filter((id) => id !== startStopId && id !== endStopId),
+    );
+  }, [startStopId, endStopId]);
+
+  React.useEffect(() => {
+    if (pathNodeIds.length < 2) {
+      setRoadRoutePositions(null);
+      return;
+    }
+    const waypoints = pathNodeIds
+      .map((id) => stops.find((n) => n.id === id))
+      .filter(Boolean)
+      .map((n) => ({ lat: n!.lat, lng: n!.lng }));
+    setRouteLoading(true);
+    fetchRoadRoute(waypoints)
+      .then((positions) => setRoadRoutePositions(positions))
+      .catch(() => setRoadRoutePositions(null))
+      .finally(() => setRouteLoading(false));
+  }, [pathNodeIds, stops]);
+
+  const startName =
+    stops.find((n) => n.id === startStopId)?.name ?? '—';
+  const endName =
+    stops.find((n) => n.id === endStopId)?.name ?? '—';
+
+  const handleStartQuerySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = startQuery.trim();
+    if (!query) return;
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          query,
+        )}&limit=1`,
+        {
+          headers: {
+            'Accept-Language': 'fr',
+          },
+        },
+      );
+      if (!res.ok) return;
+      const data = (await res.json()) as Array<{
+        lat: string;
+        lon: string;
+        display_name: string;
+      }>;
+      if (!data.length) return;
+      const best = data[0];
+      const id = `custom-${Date.now()}`;
+      const newStop = {
+        id,
+        name: best.display_name,
+        lat: parseFloat(best.lat),
+        lng: parseFloat(best.lon),
+      };
+      setStops((prev) => [...prev, newStop]);
+      setStartStopId(id);
+    } catch {
+      // ignore network errors for now
+    }
+  };
+
+  const handleSelectNode = (id: string) => {
+    if (selectionMode === 'start') {
+      setStartStopId(id);
+      return;
+    }
+    if (selectionMode === 'end') {
+      setEndStopId(id);
+      return;
+    }
+    // selectionMode === 'stop'
+    setStopIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    );
+  };
+
+  const handleMapClick = (lat: number, lng: number) => {
+    const id = `custom-${Date.now()}`;
+    const name = `Point (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+    const newStop = { id, name, lat, lng };
+    setStops((prev) => [...prev, newStop]);
+    if (selectionMode === 'start') {
+      setStartStopId(id);
+    } else if (selectionMode === 'end') {
+      setEndStopId(id);
+    } else {
+      setStopIds((prev) => [...prev, id]);
+    }
+  };
+
+  const handleRemoveNode = (id: string) => {
+    setStops((prev) => prev.filter((n) => n.id !== id));
+    if (startStopId === id) setStartStopId('');
+    if (endStopId === id) setEndStopId('');
+    setStopIds((prev) => prev.filter((s) => s !== id));
+  };
+
+  const clearDeparture = () => setStartStopId('');
+  const clearArrival = () => setEndStopId('');
+  const removeIntermediateStop = (id: string) =>
+    setStopIds((prev) => prev.filter((s) => s !== id));
+
+  const handleSubmitRoute = (e: React.FormEvent) => {
+    const waypoints =
+      pathNodeIds.length >= 2
+        ? pathNodeIds
+            .map((id) => stops.find((n) => n.id === id))
+            .filter(Boolean)
+            .map((n) => ({ lat: n!.lat, lng: n!.lng, name: n!.name }))
+        : undefined;
+    const routePolyline =
+      roadRoutePositions && roadRoutePositions.length >= 2 ? roadRoutePositions : undefined;
+    onCreateRoute(e, waypoints && routePolyline ? { waypoints, routePolyline } : undefined);
+  };
+
+  const routesWithTrajet = routes.filter((r) => r.routePolyline && r.routePolyline.length >= 2);
+
+  return (
+    <section className='space-y-5'>
+      {!readOnly && (
+      <div className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)]'>
+        <Card>
+          <CardHeader>
+            <CardTitle className='text-sm font-medium'>
+              Ajouter un trajet / ligne
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form
+              className='space-y-3 text-xs'
+              onSubmit={handleSubmitRoute}
+            >
+              <div className='grid gap-2 sm:grid-cols-2'>
+                <div className='grid gap-2'>
+                  <Label htmlFor='transport-name'>Nom de la ligne</Label>
+                  <Input
+                    id='transport-name'
+                    value={newRoute.name}
+                    onChange={(e) =>
+                      setNewRoute((r) => ({ ...r, name: e.target.value }))
+                    }
+                    placeholder='Ex : Ligne A, Centre – École'
+                    required
+                  />
+                </div>
+                <div className='grid gap-2'>
+                  <Label htmlFor='transport-driver'>Conducteur</Label>
+                  <Input
+                    id='transport-driver'
+                    value={newRoute.driverName}
+                    onChange={(e) =>
+                      setNewRoute((r) => ({ ...r, driverName: e.target.value }))
+                    }
+                    placeholder='Nom du conducteur'
+                    required
+                  />
+                </div>
+              </div>
+              <div className='grid gap-2 sm:grid-cols-2'>
+                <div className='grid gap-2'>
+                  <Label htmlFor='transport-departure'>Heure de départ</Label>
+                  <Input
+                    id='transport-departure'
+                    value={newRoute.departureTime}
+                    onChange={(e) =>
+                      setNewRoute((r) => ({
+                        ...r,
+                        departureTime: e.target.value,
+                      }))
+                    }
+                    placeholder='Ex : 7h00, 7h30'
+                    required
+                  />
+                </div>
+                <div className='grid gap-2'>
+                  <Label htmlFor='transport-return'>Heure de retour</Label>
+                  <Input
+                    id='transport-return'
+                    value={newRoute.returnTime}
+                    onChange={(e) =>
+                      setNewRoute((r) => ({ ...r, returnTime: e.target.value }))
+                    }
+                    placeholder='Ex : 16h30 (optionnel)'
+                  />
+                </div>
+              </div>
+              <div className='grid gap-2'>
+                <Label htmlFor='transport-note'>Note (optionnel)</Label>
+                <Input
+                  id='transport-note'
+                  value={newRoute.note}
+                  onChange={(e) =>
+                    setNewRoute((r) => ({ ...r, note: e.target.value }))
+                  }
+                  placeholder='Ex : Passage par la mairie'
+                />
+              </div>
+              <p className='text-[10px] text-muted-foreground'>
+                Définir le départ et l&apos;arrivée sur la carte ci-dessous
+                avant d&apos;enregistrer pour que les parents voient le trajet.
+              </p>
+              <Button type='submit' size='sm' className='mt-1'>
+                Enregistrer le trajet
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className='text-sm font-medium'>
+              Résumé du transport
+            </CardTitle>
+          </CardHeader>
+          <CardContent className='space-y-2 text-xs text-muted-foreground'>
+            <p>
+              Lignes enregistrées :{' '}
+              <span className='font-medium text-foreground'>
+                {routes.length}
+              </span>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className='text-sm font-medium'>
+            Lignes de ramassage
+          </CardTitle>
+        </CardHeader>
+        <CardContent className='space-y-2 text-xs'>
+          {routes.length === 0 ? (
+            <p className='text-muted-foreground'>
+              Aucun trajet enregistré. Ajoutez des lignes ci-dessus.
+            </p>
+          ) : (
+            <div className='grid gap-2 md:grid-cols-2 lg:grid-cols-3'>
+              {routes.map((route) => (
+                <div
+                  key={route.id}
+                  className='rounded-md border border-border/80 px-3 py-2'
+                >
+                  <p className='text-sm font-medium text-foreground'>
+                    {route.name}
+                  </p>
+                  <p className='text-[11px] text-muted-foreground'>
+                    Conducteur : {route.driverName}
+                  </p>
+                  <p className='text-[11px] text-muted-foreground'>
+                    Départ : {route.departureTime}
+                    {route.returnTime
+                      ? ` · Retour : ${route.returnTime}`
+                      : ''}
+                  </p>
+                  {route.note && (
+                    <p className='mt-1 text-[11px] text-muted-foreground italic'>
+                      {route.note}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {readOnly ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className='text-sm font-medium'>
+              Carte des trajets
+            </CardTitle>
+            <p className='text-xs text-muted-foreground mt-1'>
+              Trajets de ramassage scolaire enregistrés par l&apos;établissement.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <RouteMap
+              nodes={[]}
+              pathNodeIds={[]}
+              savedRoutes={routesWithTrajet.map((r) => ({
+                polyline: r.routePolyline!,
+                waypoints: r.waypoints,
+              }))}
+              center={[7.54, -5.55]}
+              zoom={6}
+              className='h-[360px] w-full rounded-lg border border-border/70 overflow-hidden'
+            />
+          </CardContent>
+        </Card>
+      ) : (
+      <Card>
+        <CardHeader>
+          <CardTitle className='text-sm font-medium'>
+            Carte du trajet (algorithme de Dijkstra)
+          </CardTitle>
+          <p className='text-xs text-muted-foreground mt-1'>
+            Utilisez les boutons ci-dessous pour choisir si le prochain clic
+            sur la carte définit un départ, un arrêt intermédiaire ou une
+            arrivée. Le plus court chemin est ensuite calculé avec
+            l&apos;algorithme de Dijkstra et tracé sur le réseau routier.
+          </p>
+        </CardHeader>
+        <CardContent className='space-y-4'>
+          <form
+            className='grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_auto] text-[11px]'
+            onSubmit={handleStartQuerySubmit}
+          >
+            <div className='grid gap-1'>
+              <Label htmlFor='transport-start-query'>Départ (par nom)</Label>
+              <Input
+                id='transport-start-query'
+                value={startQuery}
+                onChange={(e) => setStartQuery(e.target.value)}
+                placeholder='Ex : École, Mairie...'
+              />
+            </div>
+            <div className='flex items-end'>
+              <Button type='submit' size='xs' className='mt-1'>
+                Définir le départ
+              </Button>
+            </div>
+          </form>
+          <div className='flex flex-wrap items-center gap-2 text-[11px]'>
+            <span className='text-muted-foreground'>
+              Action du clic sur la carte :
+            </span>
+            <Button
+              type='button'
+              size='xs'
+              variant={selectionMode === 'start' ? 'default' : 'outline'}
+              onClick={() => setSelectionMode('start')}
+            >
+              Définir le départ
+            </Button>
+            <Button
+              type='button'
+              size='xs'
+              variant={selectionMode === 'stop' ? 'default' : 'outline'}
+              onClick={() => setSelectionMode('stop')}
+            >
+              Ajouter / retirer un arrêt
+            </Button>
+            <Button
+              type='button'
+              size='xs'
+              variant={selectionMode === 'end' ? 'default' : 'outline'}
+              onClick={() => setSelectionMode('end')}
+            >
+              Définir l&apos;arrivée
+            </Button>
+          </div>
+          <p className='text-[11px] text-muted-foreground'>
+            Départ :{' '}
+            <span className='font-medium text-foreground'>{startName}</span>
+            {startStopId && (
+              <button
+                type='button'
+                className='ml-1 text-red-600 hover:underline'
+                onClick={clearDeparture}
+                aria-label='Supprimer le départ'
+              >
+                ×
+              </button>
+            )}{' '}
+            · Arrivée :{' '}
+            <span className='font-medium text-foreground'>{endName}</span>
+            {endStopId && (
+              <button
+                type='button'
+                className='ml-1 text-red-600 hover:underline'
+                onClick={clearArrival}
+                aria-label="Supprimer l'arrivée"
+              >
+                ×
+              </button>
+            )}
+          </p>
+          {!!stopIds.length && (
+            <p className='text-[11px] text-muted-foreground'>
+              Arrêts intermédiaires (ordre du trajet) :{' '}
+              {stopIds.map((id, idx) => {
+                const name = stops.find((n) => n.id === id)?.name ?? id;
+                return (
+                  <span key={id} className='mr-1 inline-flex items-center gap-0.5'>
+                    <span className='font-medium text-foreground'>
+                      Arrêt {idx + 1} : {name}
+                    </span>
+                    <button
+                      type='button'
+                      className='text-red-600 hover:underline'
+                      onClick={() => removeIntermediateStop(id)}
+                      aria-label={`Retirer arrêt ${idx + 1}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                );
+              })}
+            </p>
+          )}
+          {pathNodeIds.length >= 2 && (
+            <p className='text-[11px] text-muted-foreground'>
+              Trajet :{' '}
+              <span className='font-medium text-foreground'>
+                {pathNodeIds
+                  .map((id, idx) => {
+                    const name = stops.find((n) => n.id === id)?.name ?? '—';
+                    if (idx === 0) return `Départ (${name})`;
+                    if (idx === pathNodeIds.length - 1)
+                      return `Arrivée (${name})`;
+                    return `Arrêt ${idx} (${name})`;
+                  })
+                  .join(' → ')}
+              </span>
+              {roadRoutePositions && (
+                <span className='ml-1 text-[10px] text-muted-foreground'>
+                  · tracé sur les routes (OSRM)
+                </span>
+              )}
+            </p>
+          )}
+          {routeLoading && pathNodeIds.length >= 2 && (
+            <p className='text-[11px] text-muted-foreground'>
+              Calcul du tracé sur les routes…
+            </p>
+          )}
+          <RouteMap
+            nodes={stops}
+            pathNodeIds={pathNodeIds}
+            roadRoutePositions={roadRoutePositions}
+            startStopId={startStopId}
+            endStopId={endStopId}
+            stopIds={stopIds}
+            center={[7.54, -5.55]}
+            zoom={6}
+            className='h-[360px] w-full rounded-lg border border-border/70 overflow-hidden'
+            onSelectNode={handleSelectNode}
+            onMapClick={handleMapClick}
+            onRemoveNode={handleRemoveNode}
+          />
+        </CardContent>
+      </Card>
+      )}
+    </section>
+  );
+};

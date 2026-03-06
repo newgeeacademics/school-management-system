@@ -65,8 +65,7 @@ export const RegisterPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Ici vous pourriez appeler une API ou stocker en localStorage
-    // Pour l’instant on redirige simplement vers le tableau de bord.
+
     navigate('/dashboard');
   };
 

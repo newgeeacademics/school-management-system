@@ -1,4 +1,6 @@
 import React from 'react';
+
+
 import { Link } from 'react-router-dom';
 
 export const LandingPage: React.FC = () => {
@@ -23,10 +25,10 @@ export const LandingPage: React.FC = () => {
               Créer un établissement
             </Link>
             <Link
-              to='/dashboard'
+              to='/login'
               className='inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-1.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors'
             >
-              Tableau de bord
+              Se connecter
             </Link>
           </nav>
         </div>
@@ -60,10 +62,10 @@ export const LandingPage: React.FC = () => {
                     Créer un compte établissement
                   </Link>
                   <Link
-                    to='/dashboard'
+                    to='/login'
                     className='text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors'
                   >
-                    Voir les informations enregistrées
+                    Se connecter au tableau de bord
                   </Link>
                 </div>
               </div>
