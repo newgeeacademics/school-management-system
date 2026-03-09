@@ -51,6 +51,8 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
   const [stopIds, setStopIds] = React.useState<string[]>([]);
   const [selectionMode, setSelectionMode] = React.useState<'start' | 'stop' | 'end'>('start');
   const [startQuery, setStartQuery] = React.useState('');
+  const [endQuery, setEndQuery] = React.useState('');
+  const [stopQuery, setStopQuery] = React.useState('');
   const [stops, setStops] = React.useState(TRANSPORT_NODES);
   const [roadRoutePositions, setRoadRoutePositions] = React.useState<
     [number, number][] | null
@@ -73,6 +75,16 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
       prev.filter((id) => id !== startStopId && id !== endStopId),
     );
   }, [startStopId, endStopId]);
+
+  // Auto-advance from departure to arrival mode when departure is set
+  React.useEffect(() => {
+    if (startStopId && selectionMode === 'start') {
+      setSelectionMode('end');
+    }
+  }, [startStopId, selectionMode]);
+
+  // Display mode: when departure is set, never show 'start' as active (prevents stuck button)
+  const displayMode = startStopId && selectionMode === 'start' ? 'end' : selectionMode;
 
   React.useEffect(() => {
     if (pathNodeIds.length < 2) {
@@ -97,6 +109,9 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
 
   const handleStartQuerySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Blur the submit button immediately so it doesn't stay stuck in pressed state
+    const submitter = (e.nativeEvent as SubmitEvent).submitter;
+    if (submitter instanceof HTMLElement) submitter.blur();
     const query = startQuery.trim();
     if (!query) return;
     try {
@@ -127,21 +142,102 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
       };
       setStops((prev) => [...prev, newStop]);
       setStartStopId(id);
+      setSelectionMode('end'); // Auto-advance so next action defines arrival
+    } catch {
+      // ignore network errors for now
+    }
+  };
+
+  const handleEndQuerySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const submitter = (e.nativeEvent as SubmitEvent).submitter;
+    if (submitter instanceof HTMLElement) submitter.blur();
+    const query = endQuery.trim();
+    if (!query) return;
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          query,
+        )}&limit=1`,
+        {
+          headers: {
+            'Accept-Language': 'fr',
+          },
+        },
+      );
+      if (!res.ok) return;
+      const data = (await res.json()) as Array<{
+        lat: string;
+        lon: string;
+        display_name: string;
+      }>;
+      if (!data.length) return;
+      const best = data[0];
+      const id = `custom-${Date.now()}`;
+      const newStop = {
+        id,
+        name: best.display_name,
+        lat: parseFloat(best.lat),
+        lng: parseFloat(best.lon),
+      };
+      setStops((prev) => [...prev, newStop]);
+      setEndStopId(id);
+    } catch {
+      // ignore network errors for now
+    }
+  };
+
+  const handleStopQuerySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const submitter = (e.nativeEvent as SubmitEvent).submitter;
+    if (submitter instanceof HTMLElement) submitter.blur();
+    const query = stopQuery.trim();
+    if (!query) return;
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          query,
+        )}&limit=1`,
+        {
+          headers: {
+            'Accept-Language': 'fr',
+          },
+        },
+      );
+      if (!res.ok) return;
+      const data = (await res.json()) as Array<{
+        lat: string;
+        lon: string;
+        display_name: string;
+      }>;
+      if (!data.length) return;
+      const best = data[0];
+      const id = `custom-${Date.now()}`;
+      const newStop = {
+        id,
+        name: best.display_name,
+        lat: parseFloat(best.lat),
+        lng: parseFloat(best.lon),
+      };
+      setStops((prev) => [...prev, newStop]);
+      setStopIds((prev) => [...prev, id]);
+      setStopQuery('');
     } catch {
       // ignore network errors for now
     }
   };
 
   const handleSelectNode = (id: string) => {
-    if (selectionMode === 'start') {
+    if (displayMode === 'start') {
       setStartStopId(id);
+      setSelectionMode('end');
+      (document.activeElement as HTMLElement)?.blur?.();
       return;
     }
-    if (selectionMode === 'end') {
+    if (displayMode === 'end') {
       setEndStopId(id);
       return;
     }
-    // selectionMode === 'stop'
     setStopIds((prev) =>
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
     );
@@ -152,9 +248,11 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
     const name = `Point (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
     const newStop = { id, name, lat, lng };
     setStops((prev) => [...prev, newStop]);
-    if (selectionMode === 'start') {
+    if (displayMode === 'start') {
       setStartStopId(id);
-    } else if (selectionMode === 'end') {
+      setSelectionMode('end');
+      (document.activeElement as HTMLElement)?.blur?.();
+    } else if (displayMode === 'end') {
       setEndStopId(id);
     } else {
       setStopIds((prev) => [...prev, id]);
@@ -494,6 +592,44 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
               </Button>
             </div>
           </form>
+          <form
+            className='grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_auto] text-[11px]'
+            onSubmit={handleEndQuerySubmit}
+          >
+            <div className='grid gap-1'>
+              <Label htmlFor='transport-end-query'>Arrivée (par nom)</Label>
+              <Input
+                id='transport-end-query'
+                value={endQuery}
+                onChange={(e) => setEndQuery(e.target.value)}
+                placeholder='Ex : École, Mairie...'
+              />
+            </div>
+            <div className='flex items-end'>
+              <Button type='submit' size='xs' className='mt-1'>
+                Définir l&apos;arrivée
+              </Button>
+            </div>
+          </form>
+          <form
+            className='grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_auto] text-[11px]'
+            onSubmit={handleStopQuerySubmit}
+          >
+            <div className='grid gap-1'>
+              <Label htmlFor='transport-stop-query'>Arrêt intermédiaire (par nom)</Label>
+              <Input
+                id='transport-stop-query'
+                value={stopQuery}
+                onChange={(e) => setStopQuery(e.target.value)}
+                placeholder='Ex : Mairie, Gare...'
+              />
+            </div>
+            <div className='flex items-end'>
+              <Button type='submit' size='xs' className='mt-1'>
+                Ajouter l&apos;arrêt
+              </Button>
+            </div>
+          </form>
           <div className='flex flex-wrap items-center gap-2 text-[11px]'>
             <span className='text-muted-foreground'>
               Action du clic sur la carte :
@@ -501,7 +637,7 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
             <Button
               type='button'
               size='xs'
-              variant={selectionMode === 'start' ? 'default' : 'outline'}
+              variant={displayMode === 'start' ? 'default' : 'outline'}
               onClick={() => setSelectionMode('start')}
             >
               Définir le départ
@@ -509,7 +645,7 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
             <Button
               type='button'
               size='xs'
-              variant={selectionMode === 'stop' ? 'default' : 'outline'}
+              variant={displayMode === 'stop' ? 'default' : 'outline'}
               onClick={() => setSelectionMode('stop')}
             >
               Ajouter / retirer un arrêt
@@ -517,7 +653,7 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
             <Button
               type='button'
               size='xs'
-              variant={selectionMode === 'end' ? 'default' : 'outline'}
+              variant={displayMode === 'end' ? 'default' : 'outline'}
               onClick={() => setSelectionMode('end')}
             >
               Définir l&apos;arrivée
