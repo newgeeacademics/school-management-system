@@ -7,9 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type {
   CalendarEvent,
   ClassItem,
+  PaymentReceipt,
   SectionId,
   Student,
   Teacher,
+  TransportRoute,
 } from './dashboardTypes';
 
 type OverviewSectionProps = {
@@ -20,6 +22,9 @@ type OverviewSectionProps = {
   onNavigate: (section: SectionId) => void;
   totalDue?: number;
   amountPaid?: number;
+  remindersCount?: number;
+  receipts?: PaymentReceipt[];
+  transportRoutes?: TransportRoute[];
 };
 
 export const OverviewSection: React.FC<OverviewSectionProps> = ({
@@ -30,10 +35,18 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
   onNavigate,
   totalDue,
   amountPaid,
+  remindersCount,
+  receipts,
+  transportRoutes,
 }) => {
   const remaining =
     typeof totalDue === 'number' && typeof amountPaid === 'number'
       ? Math.max(0, totalDue - amountPaid)
+      : undefined;
+
+  const totalReceived =
+    receipts && receipts.length > 0
+      ? receipts.reduce((sum, r) => sum + (r.amount || 0), 0)
       : undefined;
 
   return (
@@ -91,7 +104,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
           <Card>
             <CardHeader className='flex flex-row items-center justify-between pb-2'>
               <CardTitle className='text-xs font-medium text-muted-foreground'>
-                Paiements (exemple)
+                Paiements (démo)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -104,6 +117,30 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
               <p className='mt-1 text-[11px] text-muted-foreground'>
                 Total : {totalDue?.toLocaleString('fr-FR')} • Payé :{' '}
                 {amountPaid?.toLocaleString('fr-FR')}
+              </p>
+              {typeof totalReceived === 'number' && (
+                <p className='mt-1 text-[11px] text-muted-foreground'>
+                  Montant enregistré via reçus :{' '}
+                  {totalReceived.toLocaleString('fr-FR')} XOF
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {transportRoutes && transportRoutes.length > 0 && (
+          <Card className='md:col-span-3 lg:col-span-1'>
+            <CardHeader className='flex flex-row items-center justify-between pb-2'>
+              <CardTitle className='text-xs font-medium text-muted-foreground'>
+                Transport scolaire
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className='text-2xl font-semibold'>
+                {transportRoutes.length.toString().padStart(2, '0')}
+              </p>
+              <p className='mt-1 text-xs text-muted-foreground'>
+                Lignes de ramassage configurées (mode démo).
               </p>
             </CardContent>
           </Card>
@@ -141,7 +178,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
         <Card>
           <CardHeader>
             <CardTitle className='text-sm font-medium'>
-              Raccourcis rapides
+              Raccourcis & suivi finance
             </CardTitle>
           </CardHeader>
           <CardContent className='space-y-2'>
@@ -169,6 +206,11 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
             >
               Créer un emploi du temps
             </Button>
+            {typeof remindersCount === 'number' && remindersCount > 0 && (
+              <p className='mt-2 text-[11px] text-muted-foreground'>
+                {remindersCount} rappel(s) de paiement en attente.
+              </p>
+            )}
           </CardContent>
         </Card>
       </section>

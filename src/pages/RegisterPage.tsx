@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
+const STORAGE_KEY_SCHOOL = 'classroom_school_profile';
+
 const SCHOOL_TYPE_OPTIONS = [
   'Maternelle',
   'Primaire',
@@ -65,6 +67,17 @@ export const RegisterPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Mode front-only : on persiste la configuration d’établissement en localStorage
+    try {
+      const payload = {
+        ...values,
+        logoFileName: logoFile?.name ?? null,
+        createdAt: new Date().toISOString(),
+      };
+      window.localStorage.setItem(STORAGE_KEY_SCHOOL, JSON.stringify(payload));
+    } catch {
+      // ignore storage errors in demo mode
+    }
 
     navigate('/dashboard');
   };

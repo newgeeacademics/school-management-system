@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -41,10 +41,10 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
   getTeacherName,
   schoolTypes,
 }) => {
-  const hasSingleType = schoolTypes.length === 1;
-  const effectiveType = hasSingleType ? schoolTypes[0] : (newClass.schoolType as SchoolType | '');
+  const effectiveType: SchoolType | '' =
+    schoolTypes.length > 0 ? schoolTypes[0] : '';
   const levelOptions = effectiveType
-    ? LEVELS_BY_SCHOOL_TYPE[effectiveType as SchoolType] ?? []
+    ? LEVELS_BY_SCHOOL_TYPE[effectiveType]
     : [];
 
   const classNameOptions = React.useMemo(() => {
@@ -67,33 +67,6 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
               className='space-y-3 text-xs'
               onSubmit={onCreateClass}
             >
-              {!hasSingleType && schoolTypes.length > 0 && (
-                <div className='grid gap-2'>
-                  <Label htmlFor='class-school-type'>Type d&apos;établissement</Label>
-                  <Select
-                    value={newClass.schoolType}
-                    onValueChange={(value) =>
-                      setNewClass((c) => ({
-                        ...c,
-                        schoolType: value,
-                        level: '',
-                        name: '',
-                      }))
-                    }
-                  >
-                    <SelectTrigger id='class-school-type'>
-                      <SelectValue placeholder='Choisir un type (primaire, maternelle, collège, lycée, université)' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {schoolTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
               <div className='grid gap-2'>
                 <Label htmlFor='class-level'>Niveau</Label>
                 <Select
@@ -101,16 +74,13 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
                   onValueChange={(value) =>
                     setNewClass((c) => ({ ...c, level: value, name: '' }))
                   }
-                  disabled={!hasSingleType && !newClass.schoolType}
                 >
                   <SelectTrigger id='class-level'>
                     <SelectValue
                       placeholder={
-                        hasSingleType
-                          ? `Choisir un niveau (${schoolTypes[0]})`
-                          : newClass.schoolType
-                            ? `Choisir un niveau`
-                            : 'Sélectionnez d\'abord un type'
+                        effectiveType
+                          ? `Choisir un niveau (${effectiveType})`
+                          : 'Choisir un niveau'
                       }
                     />
                   </SelectTrigger>

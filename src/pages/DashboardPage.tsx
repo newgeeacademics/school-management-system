@@ -1,9 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  BarChart2,
   BookOpen,
   Calendar,
   Car,
+  CheckSquare,
   ClipboardList,
   GraduationCap,
   MapPin,
@@ -50,11 +52,14 @@ import {
 } from './dashboard/dashboardConstants';
 import {
   type AppUser,
+  type AttendanceRecord,
   type CalendarEvent,
   type CanteenMenuItem,
   type ClassItem,
   type Course,
   type Matiere,
+  type Evaluation,
+  type NewEvaluationFormState,
   type NewCanteenItemFormState,
   type NewClassFormState,
   type NewCourseFormState,
@@ -76,6 +81,7 @@ import {
   type ScheduleItem,
   type SectionId,
   type Student,
+  type StudentGrade,
   type Teacher,
   type TransportRoute,
 } from './dashboard/dashboardTypes';
@@ -87,12 +93,15 @@ import { MatieresSection } from './dashboard/MatieresSection';
 import { OverviewSection } from './dashboard/OverviewSection';
 import { ParentsSection } from './dashboard/ParentsSection';
 import { PaymentsSection } from './dashboard/PaymentsSection';
+import { AttendanceSection } from './dashboard/AttendanceSection';
 import { RoomsSection } from './dashboard/RoomsSection';
 import { ScheduleSection } from './dashboard/ScheduleSection';
 import { StudentsSection } from './dashboard/StudentsSection';
 import { TeachersSection } from './dashboard/TeachersSection';
 import { TransportSection } from './dashboard/TransportSection';
+import { ReportsSection } from './dashboard/ReportsSection';
 import { UsersSection } from './dashboard/UsersSection';
+import { GradesSection } from './dashboard/GradesSection';
 
 const navItems: { id: SectionId; label: string; icon: React.ComponentType<any> }[] =
   [
@@ -106,9 +115,12 @@ const navItems: { id: SectionId; label: string; icon: React.ComponentType<any> }
     { id: 'rooms', label: 'Salles', icon: MapPin },
     { id: 'calendar', label: 'Calendrier', icon: Calendar },
     { id: 'schedule', label: 'Emploi du temps', icon: ClipboardList },
+    { id: 'grades', label: 'Notes & bulletins', icon: BarChart2 },
+    { id: 'attendance', label: 'Présences', icon: CheckSquare },
     { id: 'payments', label: 'Paiements', icon: Wallet },
     { id: 'canteen', label: 'Cantine', icon: Utensils },
     { id: 'transport', label: 'Transport', icon: Car },
+    { id: 'reports', label: 'Rapports', icon: BarChart2 },
     { id: 'users', label: 'Administration', icon: ShieldCheck },
   ];
 
@@ -117,6 +129,8 @@ const roleNavItems: Record<UserRole, { id: SectionId; label: string; icon: React
   teacher: [
     { id: 'overview', label: 'Vue d’ensemble', icon: GraduationCap },
     { id: 'classes', label: 'Mes classes', icon: Users },
+    { id: 'grades', label: 'Notes & bulletins', icon: BarChart2 },
+    { id: 'attendance', label: 'Présences', icon: CheckSquare },
     { id: 'schedule', label: 'Emploi du temps', icon: ClipboardList },
     { id: 'calendar', label: 'Calendrier', icon: Calendar },
   ],
@@ -128,13 +142,14 @@ const roleNavItems: Record<UserRole, { id: SectionId; label: string; icon: React
     { id: 'payments', label: 'Paiements', icon: Wallet },
     { id: 'schedule', label: 'Emplois du temps', icon: ClipboardList },
     { id: 'calendar', label: 'Événements', icon: Calendar },
+    { id: 'reports', label: 'Rapports', icon: BarChart2 },
   ],
   student: [
     { id: 'overview', label: 'Vue d’ensemble', icon: GraduationCap },
     { id: 'schedule', label: 'Mon emploi du temps', icon: ClipboardList },
     { id: 'courses', label: 'Mes cours', icon: BookOpen },
-     { id: 'canteen', label: 'Cantine', icon: Utensils },
-     { id: 'transport', label: 'Transport', icon: Car },
+    { id: 'canteen', label: 'Cantine', icon: Utensils },
+    { id: 'transport', label: 'Transport', icon: Car },
     { id: 'calendar', label: 'Calendrier', icon: Calendar },
   ],
 };
@@ -220,6 +235,13 @@ const sectionConfig: Record<
       'Préparez un premier aperçu de l’emploi du temps par classe et par cours.',
     cta: 'Ajouter un créneau',
   },
+  attendance: {
+    kicker: 'Suivi des présences',
+    title: 'Feuilles d’appel',
+    description:
+      'Marquez rapidement présents, absents et retards pour chaque classe.',
+    cta: '',
+  },
   users: {
     kicker: 'Administration',
     title: 'Utilisateurs et rôles',
@@ -232,6 +254,13 @@ const sectionConfig: Record<
     title: 'Paiements',
     description:
       'Consultez le montant total à payer, ce qui a été réglé et le restant dû.',
+    cta: '',
+  },
+  grades: {
+    kicker: 'Gestion des notes',
+    title: 'Notes & bulletins (démo)',
+    description:
+      'Créez des évaluations, saisissez les notes et préparez le conseil de classe.',
     cta: '',
   },
   canteen: {
@@ -248,12 +277,20 @@ const sectionConfig: Record<
       'Suivez les lignes de ramassage scolaire : conducteur, horaires et remarques.',
     cta: 'Ajouter un trajet',
   },
+  reports: {
+    kicker: 'Rapports et synthèses',
+    title: 'Rapports & statistiques',
+    description:
+      'Obtenez une vue globale sur les présences et les paiements (mode démo, sans backend).',
+    cta: '',
+  },
 };
 
 const roleSectionOverrides: Partial<Record<UserRole, Partial<Record<SectionId, { kicker: string; title: string; description: string; cta: string }>>>> = {
   teacher: {
     overview: { kicker: 'Vue d’ensemble', title: 'Tableau de bord enseignant', description: 'Vos classes et prochains événements.', cta: '' },
     classes: { kicker: 'Mes classes', title: 'Classes dont vous êtes responsable', description: 'Liste des classes que vous enseignez.', cta: '' },
+    attendance: { kicker: 'Présences', title: 'Feuilles d’appel', description: 'Présences, absences et retards pour vos classes.', cta: '' },
     schedule: { kicker: 'Emploi du temps', title: 'Mon emploi du temps', description: 'Vos créneaux par jour et par classe.', cta: '' },
     calendar: { kicker: 'Calendrier', title: 'Événements et dates clés', description: 'Réunions, conseils de classe, examens.', cta: '' },
   },
@@ -263,6 +300,7 @@ const roleSectionOverrides: Partial<Record<UserRole, Partial<Record<SectionId, {
     canteen: { kicker: 'Cantine', title: 'Menus de la cantine', description: 'Plats prévus pour vos enfants cette semaine.', cta: '' },
     transport: { kicker: 'Transport', title: 'Ramassage scolaire', description: 'Horaires et trajets de ramassage scolaire.', cta: '' },
     payments: { kicker: 'Frais scolaires', title: 'Paiements', description: 'Total à payer, montant réglé et restant dû.', cta: '' },
+    reports: { kicker: 'Rapports', title: 'Rapports famille', description: 'Vue simplifiée des présences et paiements (démo).', cta: '' },
     schedule: { kicker: 'Emplois du temps', title: 'Emplois du temps des enfants', description: 'Consultez les emplois du temps par enfant.', cta: '' },
     calendar: { kicker: 'Événements', title: 'Événements à venir', description: 'Sorties, réunions, conseils de classe.', cta: '' },
   },
@@ -378,7 +416,21 @@ export const DashboardPage: React.FC = () => {
   const [schedule, setSchedule] =
     React.useState<ScheduleItem[]>(initialSchedule);
 
-  const [schoolTypes] = React.useState<SchoolType[]>(() => [...SCHOOL_TYPES]);
+  const [schoolTypes] = React.useState<SchoolType[]>(() => {
+    // En réel: viendra du backend. Ici, on relit le type choisi à l'inscription.
+    try {
+      const raw = window.localStorage.getItem('classroom_school_profile');
+      if (raw) {
+        const data = JSON.parse(raw) as { type?: string } | null;
+        if (data?.type && SCHOOL_TYPES.includes(data.type as SchoolType)) {
+          return [data.type as SchoolType];
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+    return [...SCHOOL_TYPES];
+  });
   const [newClass, setNewClass] = React.useState<NewClassFormState>({
     name: '',
     schoolType: '',
@@ -409,9 +461,10 @@ export const DashboardPage: React.FC = () => {
 
   const [newCourse, setNewCourse] =
     React.useState<NewCourseFormState>({
-    name: '',
-    level: '',
-  });
+      name: '',
+      matiereId: '',
+      level: '',
+    });
 
   const [newMatiere, setNewMatiere] =
     React.useState<NewMatiereFormState>({ name: '' });
@@ -490,6 +543,21 @@ export const DashboardPage: React.FC = () => {
   const current =
     (role && roleSectionOverrides[role]?.[activeSection]) ?? sectionConfig[activeSection];
 
+  const [attendanceRecords, setAttendanceRecords] = React.useState<AttendanceRecord[]>([]);
+
+  const [evaluations, setEvaluations] = React.useState<Evaluation[]>([]);
+  const [grades, setGrades] = React.useState<StudentGrade[]>([]);
+  const [newEvaluation, setNewEvaluation] = React.useState<NewEvaluationFormState>({
+    classId: '',
+    courseId: '',
+    label: '',
+    date: '',
+    period: 'Trimestre 1',
+    type: 'Devoir',
+    coefficient: '1',
+    maxScore: '20',
+  });
+
   const getTeacherName = (id?: string) =>
     id ? teachers.find((t) => t.id === id)?.name ?? '—' : '—';
 
@@ -498,6 +566,9 @@ export const DashboardPage: React.FC = () => {
 
   const getCourseName = (id?: string) =>
     id ? courses.find((c) => c.id === id)?.name ?? '—' : '—';
+
+  const getMatiereName = (id?: string) =>
+    id ? matieres.find((m) => m.id === id)?.name ?? '—' : '—';
 
   const handleCreateParent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -727,17 +798,21 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateCourse = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCourse.name.trim()) return;
+    if (!newCourse.matiereId) return;
+    const matiereName = getMatiereName(newCourse.matiereId);
+    const name =
+      newCourse.name.trim() || (matiereName !== '—' ? matiereName : 'Cours sans nom');
     const id = `co-${Date.now()}`;
     setCourses((prev) => [
       ...prev,
       {
         id,
-        name: newCourse.name.trim(),
+        name,
+        matiereId: newCourse.matiereId,
         level: newCourse.level.trim() || 'Niveau non défini',
       },
     ]);
-    setNewCourse({ name: '', level: '' });
+    setNewCourse({ name: '', matiereId: '', level: '' });
   };
 
   const handleCreateMatiere = (e: React.FormEvent) => {
@@ -816,6 +891,70 @@ export const DashboardPage: React.FC = () => {
       name: '',
       type: '',
       capacity: '',
+    });
+  };
+
+  const handleCreateEvaluation = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEvaluation.classId || !newEvaluation.courseId || !newEvaluation.label.trim()) return;
+    const coef = Number(newEvaluation.coefficient || '1') || 1;
+    const maxScore = Number(newEvaluation.maxScore || '20') || 20;
+    const id = `ev-${Date.now()}`;
+    setEvaluations((prev) => [
+      ...prev,
+      {
+        id,
+        classId: newEvaluation.classId,
+        courseId: newEvaluation.courseId,
+        label: newEvaluation.label.trim(),
+        date: newEvaluation.date || new Date().toISOString().slice(0, 10),
+        period: newEvaluation.period,
+        type: newEvaluation.type,
+        coefficient: coef,
+        maxScore,
+      },
+    ]);
+    setNewEvaluation({
+      classId: '',
+      courseId: '',
+      label: '',
+      date: '',
+      period: newEvaluation.period,
+      type: newEvaluation.type,
+      coefficient: '1',
+      maxScore: '20',
+    });
+  };
+
+  const handleUpdateGrade = (evaluationId: string, studentId: string, score: number | '') => {
+    setGrades((prev) => {
+      const existingIndex = prev.findIndex(
+        (g) => g.evaluationId === evaluationId && g.studentId === studentId,
+      );
+      if (score === '' || Number.isNaN(score)) {
+        if (existingIndex === -1) return prev;
+        const clone = [...prev];
+        clone.splice(existingIndex, 1);
+        return clone;
+      }
+      const value = Number(score);
+      if (existingIndex === -1) {
+        return [
+          ...prev,
+          {
+            id: `gr-${Date.now()}-${studentId}`,
+            evaluationId,
+            studentId,
+            score: value,
+          },
+        ];
+      }
+      const clone = [...prev];
+      clone[existingIndex] = {
+        ...clone[existingIndex],
+        score: value,
+      };
+      return clone;
     });
   };
 
@@ -934,6 +1073,9 @@ export const DashboardPage: React.FC = () => {
               onNavigate={setActiveSection}
               totalDue={parentFeesTotal}
               amountPaid={parentFeesPaid}
+              remindersCount={paymentReminders.length}
+              receipts={paymentReceipts}
+              transportRoutes={transportRoutes}
             />
           )}
 
@@ -990,6 +1132,7 @@ export const DashboardPage: React.FC = () => {
               setNewCourse={setNewCourse}
               onCreateCourse={handleCreateCourse}
               courseLevelOptions={COURSE_LEVEL_OPTIONS}
+              matieres={matieres}
               readOnly={role === 'student'}
             />
           )}
@@ -1093,6 +1236,39 @@ export const DashboardPage: React.FC = () => {
               students={students}
               currentStudentId={role === 'student' ? currentStudentId : undefined}
               onStudentIdChange={role === 'student' ? handleStudentIdChange : undefined}
+            />
+          )}
+
+          {activeSection === 'attendance' && (
+            <AttendanceSection
+              classes={classes}
+              students={students}
+              records={attendanceRecords}
+              setRecords={setAttendanceRecords}
+            />
+          )}
+
+          {activeSection === 'grades' && (
+            <GradesSection
+              classes={classes}
+              courses={courses}
+              students={students}
+              evaluations={evaluations}
+              grades={grades}
+              newEvaluation={newEvaluation}
+              setNewEvaluation={setNewEvaluation}
+              onCreateEvaluation={handleCreateEvaluation}
+              onUpdateGrade={handleUpdateGrade}
+            />
+          )}
+
+          {activeSection === 'reports' && (
+            <ReportsSection
+              classes={classes}
+              students={students}
+              attendance={attendanceRecords}
+              reminders={paymentReminders}
+              receipts={paymentReceipts}
             />
           )}
         </main>

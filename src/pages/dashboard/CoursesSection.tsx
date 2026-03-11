@@ -14,6 +14,7 @@ import {
 
 import type {
   Course,
+  Matiere,
   NewCourseFormState,
   SetStateAction,
 } from './dashboardTypes';
@@ -25,6 +26,7 @@ type CoursesSectionProps = {
   onCreateCourse: (e: React.FormEvent) => void;
   courseLevelOptions: string[];
   readOnly?: boolean;
+  matieres: Matiere[];
 };
 
 export const CoursesSection: React.FC<CoursesSectionProps> = ({
@@ -34,6 +36,7 @@ export const CoursesSection: React.FC<CoursesSectionProps> = ({
   onCreateCourse,
   courseLevelOptions,
   readOnly = false,
+  matieres,
 }) => {
   return (
     <section className='space-y-5'>
@@ -50,16 +53,24 @@ export const CoursesSection: React.FC<CoursesSectionProps> = ({
               onSubmit={onCreateCourse}
             >
               <div className='grid gap-2'>
-                <Label htmlFor='course-name'>Nom du cours</Label>
-                <Input
-                  id='course-name'
-                  value={newCourse.name}
-                  onChange={(e) =>
-                    setNewCourse((c) => ({ ...c, name: e.target.value }))
+                <Label htmlFor='course-matiere'>Matière</Label>
+                <Select
+                  value={newCourse.matiereId}
+                  onValueChange={(value) =>
+                    setNewCourse((c) => ({ ...c, matiereId: value }))
                   }
-                  placeholder='Ex : Physique-Chimie'
-                  required
-                />
+                >
+                  <SelectTrigger id='course-matiere'>
+                    <SelectValue placeholder='Choisir une matière' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {matieres.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className='grid gap-2'>
                 <Label htmlFor='course-level'>Niveau concerné</Label>
@@ -81,7 +92,18 @@ export const CoursesSection: React.FC<CoursesSectionProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-              <Button type='submit' size='sm'>
+              <div className='grid gap-2'>
+                <Label htmlFor='course-name'>Libellé (optionnel)</Label>
+                <Input
+                  id='course-name'
+                  value={newCourse.name}
+                  onChange={(e) =>
+                    setNewCourse((c) => ({ ...c, name: e.target.value }))
+                  }
+                  placeholder='Ex : Mathématiques 6ème A'
+                />
+              </div>
+              <Button type='submit' size='sm' disabled={!newCourse.matiereId}>
                 Ajouter
               </Button>
             </form>

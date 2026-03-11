@@ -11,10 +11,13 @@ export type SectionId =
   | 'rooms'
   | 'calendar'
   | 'schedule'
+  | 'attendance'
+  | 'grades'
   | 'users'
   | 'payments'
   | 'canteen'
-  | 'transport';
+  | 'transport'
+  | 'reports';
 
 export type Teacher = {
   id: string;
@@ -47,7 +50,11 @@ export type ParentContact = {
 
 export type Course = {
   id: string;
+  /** Libellé du cours (optionnel, peut reprendre le nom de la matière). */
   name: string;
+  /** Référence vers la matière (Mathématiques, Français, etc.). */
+  matiereId?: string;
+  /** Niveau / cycle concerné (ex. Collège, Lycée, 3ème…). */
   level: string;
 };
 
@@ -81,6 +88,16 @@ export type ScheduleItem = {
   room?: string;
 };
 
+export type AttendanceStatus = 'Présent' | 'Absent' | 'Retard';
+
+export type AttendanceRecord = {
+  id: string;
+  date: string;
+  classId?: string;
+  studentId: string;
+  status: AttendanceStatus;
+};
+
 export type CanteenMenuItem = {
   id: string;
   day: string;
@@ -107,6 +124,27 @@ export type TransportRoute = {
   routePolyline?: [number, number][];
   /** Student IDs assigned to this route (see this trajet in their dashboard). */
   studentIds?: string[];
+};
+
+export type EvaluationPeriod = 'Trimestre 1' | 'Trimestre 2' | 'Trimestre 3' | 'Semestre 1' | 'Semestre 2';
+
+export type Evaluation = {
+  id: string;
+  classId: string;
+  courseId: string;
+  label: string;
+  date: string;
+  period: EvaluationPeriod;
+  type: 'Devoir' | 'Interro' | 'Examen';
+  coefficient: number;
+  maxScore: number;
+};
+
+export type StudentGrade = {
+  id: string;
+  evaluationId: string;
+  studentId: string;
+  score: number;
 };
 
 export type PaymentReminder = {
@@ -155,6 +193,7 @@ export type NewParentFormState = {
 
 export type NewCourseFormState = {
   name: string;
+  matiereId: string;
   level: string;
 };
 
@@ -197,6 +236,17 @@ export type NewTransportRouteFormState = {
   departureTime: string;
   returnTime: string;
   note: string;
+};
+
+export type NewEvaluationFormState = {
+  classId: string;
+  courseId: string;
+  label: string;
+  date: string;
+  period: EvaluationPeriod;
+  type: Evaluation['type'];
+  coefficient: string;
+  maxScore: string;
 };
 
 export type NewPaymentReminderFormState = {
