@@ -6,7 +6,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useGo, useResourceParams, useTranslate } from "@refinedev/core";
+import { useGo, useResourceParams } from "@refinedev/core";
+import { useTranslation } from "@/i18n";
 import { ChevronLeft, InfoIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -18,8 +19,7 @@ import { useEffect, useState } from "react";
  */
 export function ErrorComponent() {
   const [errorMessage, setErrorMessage] = useState<string>();
-
-  const translate = useTranslate();
+  const { t } = useTranslation();
   const go = useGo();
 
   const { resource, action } = useResourceParams();
@@ -27,17 +27,10 @@ export function ErrorComponent() {
   useEffect(() => {
     if (resource && action) {
       setErrorMessage(
-        translate(
-          "pages.error.info",
-          {
-            action: action,
-            resource: resource?.name,
-          },
-          `You may have forgotten to add the "${action}" component to "${resource?.name}" resource.`
-        )
+        `You may have forgotten to add the "${action}" component to "${resource?.name}" resource.`
       );
     }
-  }, [resource, action, translate]);
+  }, [resource, action]);
 
   return (
     <div
@@ -82,17 +75,14 @@ export function ErrorComponent() {
 
         <div className={cn("space-y-4")}>
           <h1 className={cn("text-2xl", "font-semibold", "text-foreground")}>
-            {translate("pages.error.title", "Page not found.")}
+            {t("errors.pageNotFound")}
           </h1>
 
           <div
             className={cn("flex", "items-center", "justify-center", "gap-2")}
           >
             <p className={cn("text-muted-foreground")}>
-              {translate(
-                "pages.error.description",
-                "The page you're looking for does not exist."
-              )}
+              {t("errors.pageNotFoundDesc")}
             </p>
             {errorMessage && (
               <TooltipProvider>
@@ -124,7 +114,7 @@ export function ErrorComponent() {
           className={cn("flex", "items-center", "gap-2", "mx-auto")}
         >
           <ChevronLeft className={cn("h-4", "w-4")} />
-          {translate("pages.error.backHome", "Back to homepage")}
+          {t("errors.backHome")}
         </Button>
       </div>
     </div>

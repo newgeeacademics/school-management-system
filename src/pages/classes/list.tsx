@@ -18,9 +18,11 @@ import { Badge } from '@/components/ui/badge';
 import { useNavigation, useList } from '@refinedev/core';
 import { Subject, User, Class } from '@/types';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/i18n';
 
 export const ClassesList = () => {
-  const { edit } = useNavigation();
+  const { show } = useNavigation();
+  const { t } = useTranslation();
   const [globalFilter, setGlobalFilter] = useState('');
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [teacherFilter, setTeacherFilter] = useState<string>('all');
@@ -58,7 +60,9 @@ export const ClassesList = () => {
         accessorKey: 'bannerUrl',
         size: 80,
         header: () => (
-          <div className='flex ml-2 font-bold items-center gap-1'>Banner</div>
+          <div className='flex ml-2 font-bold items-center gap-1'>
+            {t('classes.banner')}
+          </div>
         ),
         cell: ({ getValue }) => {
           const bannerUrl = getValue<string>();
@@ -79,7 +83,7 @@ export const ClassesList = () => {
         size: 300,
         header: () => (
           <div className='flex ml-2 font-bold items-center gap-1'>
-            Class Name
+            {t('classes.className')}
           </div>
         ),
         cell: ({ getValue }) => {
@@ -94,7 +98,9 @@ export const ClassesList = () => {
         accessorKey: 'status',
         size: 100,
         header: () => (
-          <div className='flex font-bold items-center gap-1'>Status</div>
+          <div className='flex font-bold items-center gap-1'>
+            {t('classes.status')}
+          </div>
         ),
         cell: ({ getValue }) => {
           const status = getValue<string>();
@@ -118,7 +124,9 @@ export const ClassesList = () => {
         accessorKey: 'subject',
         size: 200,
         header: () => (
-          <div className='flex font-bold items-center gap-1'>Subject</div>
+          <div className='flex font-bold items-center gap-1'>
+            {t('classes.subject')}
+          </div>
         ),
         cell: ({ row }) => {
           const subject = row.original.subject;
@@ -134,7 +142,9 @@ export const ClassesList = () => {
         accessorKey: 'teacher',
         size: 100,
         header: () => (
-          <div className='flex font-bold items-center gap-1'>Teacher</div>
+          <div className='flex font-bold items-center gap-1'>
+            {t('classes.teacher')}
+          </div>
         ),
         cell: ({ row }) => {
           const teacher = row.original.teacher;
@@ -150,7 +160,9 @@ export const ClassesList = () => {
         accessorKey: 'capacity',
         size: 80,
         header: () => (
-          <div className='flex font-bold items-center gap-1'>Capacity</div>
+          <div className='flex font-bold items-center gap-1'>
+            {t('classes.capacity')}
+          </div>
         ),
         cell: ({ getValue }) => {
           const capacity = getValue<number>();
@@ -160,7 +172,7 @@ export const ClassesList = () => {
         },
       },
     ],
-    []
+    [t]
   );
 
   const table = useTable<Class>({
@@ -211,32 +223,30 @@ export const ClassesList = () => {
 
       <div className='space-y-4 mb-2'>
         <h1 className='text-3xl font-bold text-foreground tracking-tight'>
-          Classes
+          {t('classes.title')}
         </h1>
         <div className='flex flex-col gap-5 lg:flex-row justify-between'>
-          <p>Manage and organize all classes.</p>
+          <p>{t('classes.subtitle')}</p>
 
           <div className='flex flex-col gap-3 sm:flex-row sm:gap-2 w-full sm:w-auto'>
-            {/* Search Input */}
             <div className='relative max-h-9 w-full md:max-w-72'>
               <Search className='absolute left-3 text-orange-600 top-1/2 -translate-y-1/2 h-4 w-4' />
               <Input
                 type='text'
-                placeholder='Search by name...'
+                placeholder={t('subjects.searchByName')}
                 className='pl-10 bg-white w-full'
                 value={globalFilter}
                 onChange={(e) => setGlobalFilter(e.target.value)}
               />
             </div>
 
-            {/* Filter and Create Button Row */}
             <div className='flex flex-col sm:flex-row gap-2 w-full sm:w-auto'>
               <Select value={subjectFilter} onValueChange={setSubjectFilter}>
                 <SelectTrigger className='flex-1 w-full bg-white text-orange-600 sm:flex-initial sm:w-[180px] h-11'>
-                  <SelectValue placeholder='Filter by subject' />
+                  <SelectValue placeholder={t('classes.filterBySubject')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='all'>All Subjects</SelectItem>
+                  <SelectItem value='all'>{t('classes.allSubjects')}</SelectItem>
                   {subjects.map((subject: Subject) => (
                     <SelectItem key={subject.id} value={subject.id.toString()}>
                       {subject.code} - {subject.name}
@@ -247,10 +257,10 @@ export const ClassesList = () => {
 
               <Select value={teacherFilter} onValueChange={setTeacherFilter}>
                 <SelectTrigger className='flex-1 w-full bg-white text-orange-600 sm:flex-initial sm:w-[180px] h-11'>
-                  <SelectValue placeholder='Filter by teacher' />
+                  <SelectValue placeholder={t('classes.filterByTeacher')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='all'>All Teachers</SelectItem>
+                  <SelectItem value='all'>{t('classes.allTeachers')}</SelectItem>
                   {teachers.map((teacher: User) => (
                     <SelectItem key={teacher.id} value={teacher.id.toString()}>
                       {teacher.name}
@@ -261,7 +271,7 @@ export const ClassesList = () => {
 
               <CreateButton
                 resource='classes'
-                className='h-9 bg-purple-500 shrink-0'
+                className='h-9 bg-blue-500 hover:bg-blue-600 shrink-0'
               />
             </div>
           </div>
@@ -271,7 +281,7 @@ export const ClassesList = () => {
       <DataTable
         table={table}
         onRowClick={(classItem) => {
-          edit('classes', classItem.id);
+          show('classes', classItem.id);
         }}
       />
     </ListView>

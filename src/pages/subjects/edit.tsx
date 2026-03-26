@@ -37,12 +37,14 @@ import { Loader2 } from 'lucide-react';
 import { Subject } from '@/types';
 import { subjectSchema } from '@/lib/schema';
 import { ConfirmationModal } from '@/components/refine-ui/modals/confirmation-modal';
+import { useTranslation } from '@/i18n';
 
 export const SubjectsEdit = () => {
   const { id } = useResourceParams();
   const { list } = useNavigation();
   const invalidate = useInvalidate();
   const back = useBack();
+  const { t } = useTranslation();
 
   const form = useForm({
     resolver: zodResolver(subjectSchema),
@@ -109,7 +111,7 @@ export const SubjectsEdit = () => {
           <div className='flex flex-col items-center gap-4'>
             <Loader2 className='h-12 w-12 animate-spin text-orange-600' />
             <p className='text-lg font-semibold text-gray-600'>
-              Loading subject data...
+              {t('subjects.loadingSubject')}
             </p>
           </div>
         </div>
@@ -122,11 +124,11 @@ export const SubjectsEdit = () => {
       <Breadcrumb />
 
       <h1 className='text-3xl font-bold text-foreground tracking-tight'>
-        Edit Subject
+        {t('subjects.editSubject')}
       </h1>
       <div className='flex flex-col gap-5 md:flex-row justify-between'>
-        <p>Provide the required information below to update.</p>
-        <Button onClick={() => back()}>Go Back</Button>
+        <p>{t('subjects.createDesc')}</p>
+        <Button onClick={() => back()}>{t('common.goBack')}</Button>
       </div>
 
       <Separator />
@@ -150,11 +152,11 @@ export const SubjectsEdit = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-gray-900 font-semibold'>
-                        Subject Name <span className='text-orange-600'>*</span>
+                        {t('subjects.subjectName')} <span className='text-orange-600'>*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder='Mathematics'
+                          placeholder={t('subjects.placeholderName')}
                           {...field}
                           className='bg-gray-0 border-2 border-gray-200 transition-all duration-300 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 h-11'
                         />
@@ -171,13 +173,13 @@ export const SubjectsEdit = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className='text-gray-900 font-semibold'>
-                          Subject Code{' '}
+                          {t('subjects.subjectCode')}{' '}
                           <span className='text-orange-600'>*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
                             type='text'
-                            placeholder='MATH101'
+                            placeholder={t('subjects.placeholderCode')}
                             {...field}
                             className='bg-gray-0 border-2 border-gray-200 transition-all duration-300 h-11'
                           />
@@ -192,7 +194,7 @@ export const SubjectsEdit = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className='text-gray-900 font-semibold'>
-                          Department <span className='text-orange-600'>*</span>
+                          {t('subjects.department')} <span className='text-orange-600'>*</span>
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
@@ -200,7 +202,7 @@ export const SubjectsEdit = () => {
                         >
                           <FormControl>
                             <SelectTrigger className='bg-gray-0 w-full !h-11 border-2 border-gray-200'>
-                              <SelectValue placeholder='Select a department' />
+                              <SelectValue placeholder={t('subjects.selectDepartment')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -223,12 +225,12 @@ export const SubjectsEdit = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-gray-900 font-semibold'>
-                        Subject Description{' '}
+                        {t('subjects.subjectDescription')}{' '}
                         <span className='text-orange-600'>*</span>
                       </FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder='Introduction to Mathematics'
+                          placeholder={t('subjects.placeholderDescription')}
                           {...field}
                           className='bg-gray-0 border-2 border-gray-200 transition-all duration-300 h-20'
                         />
@@ -247,23 +249,23 @@ export const SubjectsEdit = () => {
                       variant='destructive'
                       className='max-sm:w-full h-12 px-6 font-semibold transition-all duration-300 cursor-pointer'
                     >
-                      Delete
+                      {t('common.delete')}
                     </Button>
                   </ConfirmationModal>
 
                   <Button
                     type='submit'
                     size='lg'
-                    className='max-sm:w-full h-12 font-semibold text-white shadow-lg transition-all duration-300 cursor-pointer bg-purple-500'
+                    className='max-sm:w-full h-12 font-semibold text-white shadow-lg transition-all duration-300 cursor-pointer bg-blue-500 hover:bg-blue-600'
                     disabled={isSubmitting || isPending}
                   >
                     {isSubmitting ? (
                       <div className='flex gap-1'>
-                        <span>Saving... </span>{' '}
+                        <span>{t('subjects.saving')} </span>{' '}
                         <Loader2 className='inline-block ml-2 animate-spin' />
                       </div>
                     ) : (
-                      'Save Changes'
+                      t('subjects.saveChanges')
                     )}
                   </Button>
                 </section>

@@ -5,9 +5,61 @@ export type SignUpPayload = {
   email: string;
   name: string;
   password: string;
+  username?: string;
   image?: string;
   imageCldPubId?: string;
   role: UserRole;
+};
+
+export type School = {
+  id: string;
+  name: string;
+  type: string;
+  system: string;
+  country: string;
+  city: string;
+  commune: string;
+  address: string;
+  gpsLat: number | null;
+  gpsLng: number | null;
+  phone: string;
+  officialEmail: string;
+  directorName: string;
+  directorPhone: string;
+  website: string;
+  logoUrl: string;
+  logoCldPubId: string;
+  studentCount: number | null;
+  teacherCount: number | null;
+  series: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SchoolRegistrationPayload = {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  schoolName: string;
+  schoolType: string;
+  system: string;
+  country: string;
+  city: string;
+  commune: string;
+  address: string;
+  gpsLat?: number | string;
+  gpsLng?: number | string;
+  phone: string;
+  officialEmail: string;
+  directorName: string;
+  directorPhone: string;
+  website: string;
+  logoUrl?: string;
+  logoCldPubId?: string;
+  studentCount?: number | string;
+  teacherCount?: number | string;
+  series?: string[];
 };
 
 export enum UserRole {
@@ -29,12 +81,14 @@ export type User = {
   id: string;
   createdAt: string;
   updatedAt: string;
+  username?: string;
   email: string;
   name: string;
   role: UserRole;
   image?: string;
   imageCldPubId?: string;
   department?: string;
+  schoolId?: string | null;
 };
 
 export type Subject = {
@@ -52,11 +106,21 @@ export type ClassSchedule = {
   endTime: string;
 };
 
+/** Class group (e.g. 5ème A, 5ème B) – name + capacity, no subject/teacher */
+export type ClassGroup = {
+  id: number;
+  name: string;
+  capacity: number;
+  term?: string;
+};
+
 export type Class = {
   id: number;
   name: string;
   subjectId: number;
   teacherId: string;
+  classGroupId?: number;
+  term?: string;
   capacity?: number;
   description?: string;
   status: 'active' | 'inactive';
@@ -65,6 +129,7 @@ export type Class = {
   schedules?: ClassSchedule[];
   subject?: Subject;
   teacher?: User;
+  classGroup?: ClassGroup;
   inviteCode?: string;
   students?: {
     id: string;

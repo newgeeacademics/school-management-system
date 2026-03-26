@@ -6,7 +6,7 @@ export const facultySchema = z.object({
   role: z.enum(['admin', 'teacher', 'student'], {
     required_error: 'Please select a role',
   }),
-  department: z.string(),
+  department: z.string().optional().default(''),
   image: z.string().optional(),
   imageCldPubId: z.string().optional(),
 });
@@ -28,9 +28,20 @@ const scheduleSchema = z.object({
   endTime: z.string().min(1, "End time is required"),
 });
 
+export const classGroupSchema = z.object({
+  name: z.string().min(2, "Class group name must be at least 2 characters").max(50, "Class group name must be at most 50 characters"),
+  capacity: z.number({ required_error: "Capacity is required" }).min(1, "Capacity must be at least 1"),
+  term: z.string().optional(),
+});
+
 export const classSchema = z.object({
   name: z.string().min(2, "Class name must be at least 2 characters").max(50, "Class name must be at most 50 characters"),
+  term: z.string().optional(),
   description: z.string().optional(),
+  classGroupId: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? undefined : Number(val)),
+    z.number().optional()
+  ),
   subjectId: z.preprocess(
     (val) => (val === '' || val === undefined || val === null ? undefined : Number(val)),
     z.number({ required_error: "Subject is required" }).min(1, "Subject is required")
@@ -45,6 +56,8 @@ export const classSchema = z.object({
   bannerCldPubId: z.string().optional(),
   inviteCode: z.string().optional(),
   schedules: z.array(scheduleSchema).optional(),
+  /** Used only on create: student ids to enroll in the new class (not persisted on class). */
+  selectedStudentIds: z.array(z.string()).optional(),
 });
 
 export const enrollmentSchema = z.object({

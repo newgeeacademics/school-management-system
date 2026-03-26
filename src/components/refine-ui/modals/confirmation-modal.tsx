@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 import { useState } from 'react';
+import { useTranslation } from '@/i18n';
 
 export const ConfirmationModal = ({
   onClickHandler,
@@ -22,6 +23,7 @@ export const ConfirmationModal = ({
   children: React.ReactNode;
 }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -29,10 +31,10 @@ export const ConfirmationModal = ({
       <AlertDialogContent className='bg-card border-border'>
         <AlertDialogHeader>
           <AlertDialogTitle className='text-foreground'>
-            Are you sure you want to delete?
+            {t('confirmationModal.title')}
           </AlertDialogTitle>
           <AlertDialogDescription className='text-muted-foreground'>
-            This action cannot be undone. This will permanently delete the item.
+            {t('confirmationModal.description')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -40,14 +42,14 @@ export const ConfirmationModal = ({
             className='border-border cursor-pointer text-foreground hover:bg-accent hover:text-accent-foreground'
             disabled={isPending}
           >
-            Cancel
+            {t('confirmationModal.cancel')}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onClickHandler}
             disabled={isPending}
             className='bg-destructive cursor-pointer text-white hover:bg-destructive/90'
           >
-            {isPending ? 'Deleting...' : 'Confirm Delete'}
+            {isPending ? t('confirmationModal.deleting') : t('confirmationModal.confirmDelete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

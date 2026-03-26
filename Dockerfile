@@ -16,17 +16,20 @@ RUN \
 
 FROM base as builder
 
-ENV NODE_ENV production
+# Development mode only - production builds disabled
+ENV NODE_ENV development
 
 COPY --from=deps /app/refine/node_modules ./node_modules
 
 COPY . .
 
-RUN npm run build
+# Note: Production builds are disabled - this is dev-only setup
+# RUN npm run build
 
 FROM base as runner
 
-ENV NODE_ENV production
+# Development mode only - production builds disabled
+ENV NODE_ENV development
 
 RUN npm install -g serve
 

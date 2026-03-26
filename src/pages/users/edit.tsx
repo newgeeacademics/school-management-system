@@ -336,7 +336,7 @@ export const UsersEdit = () => {
                   <Button
                     type='submit'
                     size='lg'
-                    className='max-sm:w-full h-12 font-semibold text-white shadow-lg transition-all duration-300 cursor-pointer bg-purple-500'
+                    className='max-sm:w-full h-12 font-semibold text-white shadow-lg transition-all duration-300 cursor-pointer bg-blue-500 hover:bg-blue-600'
                     disabled={isSubmitting || isPending}
                   >
                     {isSubmitting ? (

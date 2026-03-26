@@ -1,4 +1,5 @@
 import { UserAvatar } from '@/components/refine-ui/layout/user-avatar';
+import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +11,7 @@ import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { Link, useGetIdentity, useLogout } from '@refinedev/core';
 import { LogOutIcon, UserIcon } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 export const Header = () => {
   const { isMobile } = useSidebar();
@@ -20,6 +22,7 @@ export const Header = () => {
 function DesktopHeader() {
   return (
     <header className='sticky top-0 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-sidebar pr-3 justify-end z-40'>
+      <LanguageSwitcher className="mr-1" />
       <UserDropdown />
     </header>
   );
@@ -41,13 +44,14 @@ function MobileHeader() {
 
       <div
         className={cn(
-          'whitespace-nowrap flex flex-row h-full items-center justify-start gap-2 transition-discrete duration-200',
+          'whitespace-nowrap flex flex-row h-full items-center justify-end gap-1 transition-discrete duration-200',
           {
             'pl-3': !open,
             'pl-5': open,
           }
         )}
       >
+        <LanguageSwitcher />
         <UserDropdown />
       </div>
     </header>
@@ -57,6 +61,7 @@ function MobileHeader() {
 const UserDropdown = () => {
   const { data: user } = useGetIdentity();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
+  const { t } = useTranslation();
 
   return (
     <DropdownMenu>
@@ -73,9 +78,9 @@ const UserDropdown = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end'>
         <DropdownMenuItem asChild>
-          <Link to={`/users/edit/${user?.id}`} className='cursor-pointer'>
+          <Link to='/profile' className='cursor-pointer'>
             <UserIcon />
-            <span>Profile</span>
+            <span>{t('common.profile')}</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -87,7 +92,7 @@ const UserDropdown = () => {
         >
           <LogOutIcon className='text-destructive hover:text-destructive' />
           <span className='text-destructive hover:text-destructive'>
-            {isLoggingOut ? 'Logging out...' : 'Logout'}
+            {isLoggingOut ? t('common.loggingOut') : t('common.logout')}
           </span>
         </DropdownMenuItem>
       </DropdownMenuContent>

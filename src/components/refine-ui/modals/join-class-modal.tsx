@@ -19,6 +19,8 @@ import {
 import { cleanInviteCode } from '@/lib/utils/classCode';
 import { CheckCircle2 } from 'lucide-react';
 import { User, Class } from '@/types';
+import { useTranslation } from '@/i18n';
+import { toast } from 'sonner';
 
 interface JoinClassModalProps {
   open: boolean;
@@ -34,6 +36,7 @@ export const JoinClassModal = ({
   const [inviteCode, setInviteCode] = useState('');
   const [error, setError] = useState('');
   const { data: identity } = useGetIdentity<User>();
+  const { t } = useTranslation();
 
   const {
     mutate: createEnrollment,
@@ -41,39 +44,40 @@ export const JoinClassModal = ({
   } = useCreate();
   const isLoading = isPending || false;
 
-  const { result: classData } = useOne<Class>({
+  const { result: classData, query: classQuery } = useOne<Class>({
     resource: 'classes',
     id: classId,
+    queryOptions: { enabled: open && !!classId },
   });
-
-  console.log('classData in JoinClassModal:', classData);
 
   const handleJoin = () => {
     const cleanedCode = cleanInviteCode(inviteCode);
 
-    // Validate code length
     if (!cleanedCode || cleanedCode.length !== 6) {
-      setError('Please enter a valid 6-character invite code');
+      setError(t('joinClassModal.invalidCode'));
       return;
     }
 
-    // Validate user identity
     if (!identity?.id) {
-      setError('Unable to identify user. Please try logging in again.');
+      setError(t('joinClassModal.unableToIdentify'));
       return;
     }
 
-    // Validate that the invite code exists in a class
-    const matchingClass = classData?.inviteCode === cleanedCode;
+    if (!classData) {
+      setError(t('joinClassModal.classNotFound'));
+      return;
+    }
+
+    const classCodeNormalized = cleanInviteCode(classData.inviteCode ?? '');
+    const matchingClass = classCodeNormalized.length === 6 && classCodeNormalized === cleanedCode;
 
     if (!matchingClass) {
-      setError('Invalid invite code. Please check and try again.');
+      setError(t('joinClassModal.invalidInviteCode'));
       return;
     }
 
-    // Check if class is active
     if (classData.status !== 'active') {
-      setError('This class is not accepting new students.');
+      setError(t('joinClassModal.classNotAccepting'));
       return;
     }
 
@@ -84,12 +88,15 @@ export const JoinClassModal = ({
       {
         resource: 'enrollments',
         values: {
-          studentId: identity.id,
-          classId: classData.id,
+          studentId: String(identity.id),
+          classId: Number(classData.id),
         },
       },
       {
         onSuccess: () => {
+          toast.success(t('joinClassModal.joinSuccess'), {
+            description: classData?.name ? t('joinClassModal.joinSuccessDesc', { name: classData.name }) : undefined,
+          });
           setInviteCode('');
           setError('');
           onOpenChange(false);
@@ -97,7 +104,7 @@ export const JoinClassModal = ({
         onError: (error: HttpError) => {
           console.error('Join class error:', error);
           const errorMessage =
-            error?.message || 'Failed to join class. Please try again.';
+            error?.message || t('joinClassModal.failedToJoin');
           setError(errorMessage);
         },
       }
@@ -129,18 +136,18 @@ export const JoinClassModal = ({
             <div className='w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center'>
               <CheckCircle2 className='h-6 w-6 text-white' />
             </div>
-            Join Class
+            {t('joinClassModal.title')}
           </DialogTitle>
           <DialogDescription className='text-sm pt-2'>
-            {(classData?.students?.length ?? 0) >=
-            (classData?.capacity || 0) ? (
+            {classQuery?.isFetching ? (
+              <span className="text-muted-foreground">{t('common.loading')}</span>
+            ) : (classData?.students?.length ?? 0) >= (classData?.capacity ?? 0) ? (
               <span className='text-red-500 font-bold'>
-                You can no longer join. This class is full.
+                {t('joinClassModal.classFull')}
               </span>
             ) : (
               <span>
-                Enter the 6-character invite code provided by your teacher to
-                join the class.
+                {t('joinClassModal.enterCode')}
               </span>
             )}
           </DialogDescription>
@@ -149,10 +156,10 @@ export const JoinClassModal = ({
         <div className='space-y-4 pt-4'>
           <div className='space-y-2'>
             <Label htmlFor='inviteCode' className='text-sm font-semibold'>
-              Invite Code
+              {t('joinClassModal.inviteCode')}
             </Label>
             <p className='text-xs text-gray-500'>
-              The code is case-insensitive and should be 6 characters long
+              {t('joinClassModal.codeHint')}
             </p>
             <Input
               id='inviteCode'
@@ -164,7 +171,10 @@ export const JoinClassModal = ({
               }`}
               maxLength={7}
               disabled={
-                isLoading || classData?.capacity === classData?.students?.length
+                isLoading ||
+                classQuery?.isFetching ||
+                !classData ||
+                (classData?.capacity != null && (classData?.students?.length ?? 0) >= classData.capacity)
               }
             />
             {error && (
@@ -181,18 +191,25 @@ export const JoinClassModal = ({
               onClick={handleClose}
               className='flex-1'
               disabled={
-                isLoading || classData?.capacity === classData?.students?.length
+                isLoading ||
+                classQuery?.isFetching ||
+                (classData?.capacity != null && (classData?.students?.length ?? 0) >= classData.capacity)
               }
             >
-              Cancel
+              {t('joinClassModal.cancel')}
             </Button>
             <Button
               type='button'
               onClick={handleJoin}
               className='flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold'
-              disabled={inviteCode.length !== 6 || isLoading}
+              disabled={
+                inviteCode.length !== 6 ||
+                isLoading ||
+                classQuery?.isFetching ||
+                !classData
+              }
             >
-              {isLoading ? 'Joining...' : 'Join Class'}
+              {isLoading ? t('joinClassModal.joining') : t('joinClassModal.join')}
             </Button>
           </div>
         </div>

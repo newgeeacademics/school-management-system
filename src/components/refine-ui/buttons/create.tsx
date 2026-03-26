@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { type BaseKey, useCreateButton } from "@refinedev/core";
 import { Plus } from "lucide-react";
 import React from "react";
+import { useTranslation } from "@/i18n";
 
 type CreateButtonProps = {
   /**
@@ -34,6 +35,7 @@ export const CreateButton = React.forwardRef<
     accessControl,
     meta,
   });
+  const { t } = useTranslation();
 
   const isDisabled = disabled || rest.disabled;
   const isHidden = hidden || rest.hidden;
@@ -59,7 +61,7 @@ export const CreateButton = React.forwardRef<
         {children ?? (
           <div className="flex items-center gap-2 font-semibold">
             <Plus className="w-4 h-4" />
-            <span>{label ?? "Create"}</span>
+            <span>{label ?? t("common.create")}</span>
           </div>
         )}
       </LinkComponent>

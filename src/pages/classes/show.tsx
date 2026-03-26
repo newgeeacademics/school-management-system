@@ -6,26 +6,38 @@ import { ShowView } from '@/components/refine-ui/views/show-view';
 import {
   useResourceParams,
   useOne,
+  useList,
   useGetIdentity,
   useDelete,
   useInvalidate,
 } from '@refinedev/core';
-import { Calendar, Clock, Users, Trash2 } from 'lucide-react';
+import { Calendar, Clock, Users, Trash2, UserPlus } from 'lucide-react';
 import { Class, User, UserRole } from '@/types';
 import { bannerPhoto } from '@/lib/cloudinary';
 import { formatDate, formatTime12Hour } from '@/lib/utils';
 import { JoinClassModal } from '@/components/refine-ui/modals/join-class-modal';
-import { useState } from 'react';
+import { AddStudentsModal } from '@/components/refine-ui/modals/add-students-modal';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ConfirmationModal } from '@/components/refine-ui/modals/confirmation-modal';
+import { useTranslation } from '@/i18n';
+
+type EnrolledStudent = {
+  id: string;
+  name: string;
+  email: string;
+  enrolledAt: string;
+  enrollmentId: number | string;
+};
 
 export const ClassesShow = () => {
   const { id } = useResourceParams();
   const [open, setOpen] = useState(false);
+  const [addStudentsOpen, setAddStudentsOpen] = useState(false);
   const { data: identity } = useGetIdentity<User>();
   const invalidate = useInvalidate();
+  const { t } = useTranslation();
 
-  // Fetch class data
   const {
     query: { data: classQueryData, isLoading: isClassLoading },
   } = useOne<Class>({
@@ -33,31 +45,71 @@ export const ClassesShow = () => {
     id: id as string,
   });
 
+  const { result: enrollmentsResult } = useList<{ id: number; classId: number; studentId: string; enrolledAt: string }>({
+    resource: 'enrollments',
+    filters: [{ field: 'classId', value: id }],
+    pagination: { pageSize: 500 },
+    queryOptions: { enabled: !!id },
+  });
+
+  const { result: usersResult } = useList<User>({
+    resource: 'users',
+    pagination: { pageSize: 500 },
+    queryOptions: { enabled: !!id },
+  });
+
   const classData = classQueryData?.data;
   const isStudent = identity?.role === UserRole.STUDENT;
+  const canAddStudents = !isStudent && !!classData?.id;
+
+  const mergedStudents = useMemo((): EnrolledStudent[] => {
+    const apiStudents = classData?.students ?? [];
+    const fromApi: EnrolledStudent[] = apiStudents.map((s) => ({
+      id: s.id,
+      name: s.name,
+      email: s.email,
+      enrolledAt: s.enrolledAt,
+      enrollmentId: s.enrollmentId ?? '',
+    }));
+    const enrollments = enrollmentsResult?.data ?? [];
+    const apiStudentIds = new Set(fromApi.map((s) => s.id));
+    const usersMap = new Map<string, User>();
+    (usersResult?.data ?? []).forEach((u) => usersMap.set(u.id, u));
+    const fromLocal: EnrolledStudent[] = enrollments
+      .filter((e) => !apiStudentIds.has(e.studentId))
+      .map((e) => {
+        const user = usersMap.get(e.studentId);
+        return {
+          id: e.studentId,
+          name: user?.name ?? e.studentId,
+          email: user?.email ?? '',
+          enrolledAt: e.enrolledAt ?? new Date().toISOString(),
+          enrollmentId: e.id,
+        };
+      });
+    return [...fromApi, ...fromLocal];
+  }, [classData?.students, enrollmentsResult?.data, usersResult?.data]);
+
   const isClassFull =
-    (classData?.students?.length ?? 0) >= (classData?.capacity || 0);
+    mergedStudents.length >= (classData?.capacity || 0);
 
   const {
     mutate: deleteEnrollment,
     mutation: { isPending },
   } = useDelete();
 
-  const onDeleteHandler = (enrollmentId: number) => {
+  const onDeleteHandler = (enrollmentId: number | string) => {
     deleteEnrollment({
       resource: 'enrollments',
       id: enrollmentId,
     });
-
     invalidate({
       resource: 'classes',
       invalidates: ['detail'],
       id: id as string,
     });
+    invalidate({ resource: 'enrollments', invalidates: ['list'] });
   };
-
-  console.log('User Identity:', identity);
-  console.log('isStudent:', isStudent);
 
   if (isClassLoading) {
     return (
@@ -78,8 +130,6 @@ export const ClassesShow = () => {
       </ShowView>
     );
   }
-
-  console.log('Class Data:', classData);
 
   return (
     <ShowView className='container max-w-6xl mx-auto pb-8 px-2 sm:px-4'>
@@ -138,8 +188,8 @@ export const ClassesShow = () => {
                 {classData?.teacher?.department}
               </p>
               <p className='text-sm font-medium '>
-                Capacity: {classData?.students?.length} / {classData.capacity}{' '}
-                students
+                Capacity: {mergedStudents.length} / {classData.capacity}{' '}
+                {t('classes.students')}
               </p>
             </div>
           </div>
@@ -205,55 +255,70 @@ export const ClassesShow = () => {
         )}
 
         {/* Enrolled Students Section - Only visible to non-students */}
-        {!isStudent && classData.students && classData.students.length > 0 && (
+        {!isStudent && (
           <>
             <Separator />
             <div>
               <h2 className='text-lg font-bold text-gray-900 mb-4 flex items-center gap-2'>
                 <div className='w-1 h-5 bg-orange-500 rounded'></div>
                 <Users className='h-5 w-5 text-orange-500' />
-                Enrolled Students ({classData.students.length}/
-                {classData.capacity || 'N/A'})
+                {t('classes.enrolledStudents')} ({mergedStudents.length}/
+                {classData.capacity ?? 'N/A'})
               </h2>
-              <div className='bg-gray-50 border border-gray-200 p-4 flex gap-2.5 flex-col'>
-                {classData.students.map((student, index) => {
-                  const displayIndex = index + 1;
-                  return (
-                    <div
-                      key={student.id}
-                      className='text-sm text-gray-500 flex justify-between items-center gap-3 p-3 bg-white rounded-lg border border-gray-200'
-                    >
-                      <div className='flex-1'>
-                        <p className='font-semibold text-gray-900'>
-                          {displayIndex}. {student.name}
-                        </p>
-                        <p className='text-xs text-gray-600'>{student.email}</p>
-                      </div>
-                      <div className='flex items-center gap-3'>
-                        <p className='text-xs text-gray-400'>
-                          joined {formatDate(student.enrolledAt)}
-                        </p>
-
-                        <ConfirmationModal
-                          onClickHandler={() =>
-                            onDeleteHandler(Number(student.enrollmentId))
-                          }
-                          isPending={isPending}
-                        >
-                          <Button
-                            type='button'
-                            variant='ghost'
-                            size='sm'
-                            className='text-red-500 cursor-pointer hover:bg-red-100 hover:text-red-700'
+              {canAddStudents && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  className='mb-3 bg-blue-600 text-white hover:bg-blue-700 border-0'
+                  onClick={() => setAddStudentsOpen(true)}
+                >
+                  <UserPlus className='h-4 w-4 mr-2' />
+                  {t('classes.addStudents')}
+                </Button>
+              )}
+              {mergedStudents.length > 0 ? (
+                <div className='bg-gray-50 border border-gray-200 p-4 flex gap-2.5 flex-col'>
+                  {mergedStudents.map((student, index) => {
+                    const displayIndex = index + 1;
+                    return (
+                      <div
+                        key={student.id}
+                        className='text-sm text-gray-500 flex justify-between items-center gap-3 p-3 bg-white rounded-lg border border-gray-200'
+                      >
+                        <div className='flex-1'>
+                          <p className='font-semibold text-gray-900'>
+                            {displayIndex}. {student.name}
+                          </p>
+                          <p className='text-xs text-gray-600'>{student.email}</p>
+                        </div>
+                        <div className='flex items-center gap-3'>
+                          <p className='text-xs text-gray-400'>
+                            {t('classes.joined')} {formatDate(student.enrolledAt)}
+                          </p>
+                          <ConfirmationModal
+                            onClickHandler={() =>
+                              onDeleteHandler(student.enrollmentId)
+                            }
+                            isPending={isPending}
                           >
-                            <Trash2 className='w-4 h-4' />
-                          </Button>
-                        </ConfirmationModal>
+                            <Button
+                              type='button'
+                              variant='ghost'
+                              size='sm'
+                              className='text-red-500 cursor-pointer hover:bg-red-100 hover:text-red-700'
+                            >
+                              <Trash2 className='w-4 h-4' />
+                            </Button>
+                          </ConfirmationModal>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className='text-sm text-muted-foreground py-2'>{t('classes.noEnrolledYet')}</p>
+              )}
             </div>
           </>
         )}
@@ -284,8 +349,8 @@ export const ClassesShow = () => {
             className='w-full mt-4 cursor-pointer bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 font-semibold shadow-md hover:shadow-lg transition-all disabled:from-gray-400 disabled:to-gray-600 '
           >
             {isClassFull
-              ? ' You can no longer join. This class is full.'
-              : 'Join Class'}
+              ? t('classes.classFull')
+              : t('classes.joinClass')}
           </Button>
         </div>
       </Card>
@@ -295,6 +360,13 @@ export const ClassesShow = () => {
         open={open}
         onOpenChange={setOpen}
       />
+      {canAddStudents && (
+        <AddStudentsModal
+          classId={classData.id}
+          open={addStudentsOpen}
+          onOpenChange={setAddStudentsOpen}
+        />
+      )}
     </ShowView>
   );
 };

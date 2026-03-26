@@ -5,6 +5,7 @@ import { Clock, Users, BookOpen } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Class } from '@/types';
 import { useNavigation } from '@refinedev/core';
+import { useTranslation } from '@/i18n';
 
 export const ClassCard = ({
   classItem,
@@ -14,6 +15,7 @@ export const ClassCard = ({
   onClickHandler?: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
 }) => {
   const { show } = useNavigation();
+  const { t } = useTranslation();
 
   return (
     <Card
@@ -70,7 +72,7 @@ export const ClassCard = ({
             </div>
             <div className='flex-1'>
               <p className='text-xs font-medium text-gray-500 mb-0.5'>
-                Subject
+                {t('classes.subject')}
               </p>
               <p className='text-sm font-bold text-gray-900'>
                 {classItem?.subject?.name}
@@ -85,7 +87,7 @@ export const ClassCard = ({
             </div>
             <div className='flex-1 min-w-0'>
               <p className='text-xs font-medium text-gray-500 mb-0.5'>
-                Instructor
+                {t('enrollments.instructor')}
               </p>
               <p className='text-sm font-bold text-gray-900 truncate'>
                 {classItem?.teacher?.name}
@@ -103,7 +105,7 @@ export const ClassCard = ({
 
               {/* Schedule List */}
               <ul className='space-y-1'>
-                <p className='text-xs font-medium text-gray-500'>Schedule</p>
+                <p className='text-xs font-medium text-gray-500'>{t('enrollments.schedule')}</p>
                 {classItem?.schedules?.slice(0, 2).map((schedule, idx) => (
                   <li
                     key={idx}
@@ -123,7 +125,8 @@ export const ClassCard = ({
                 {/* More sessions */}
                 {(classItem?.schedules?.length ?? 0) > 2 && (
                   <p className='text-xs font-medium text-gray-500'>
-                    +{(classItem?.schedules?.length ?? 0) - 2} more schedule
+                    +{(classItem?.schedules?.length ?? 0) - 2}{' '}
+                    {t('enrollments.moreSchedules')}
                     {(classItem?.schedules?.length ?? 0) - 2 > 1 ? 's' : ''}
                   </p>
                 )}
@@ -143,7 +146,7 @@ export const ClassCard = ({
               }
               className='w-full mt-4 rounded-lg cursor-pointer bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 font-semibold shadow-md hover:shadow-lg transition-all disabled:from-gray-400 disabled:to-gray-600 disabled:text-gray-500'
             >
-              Join Class {classItem?.students?.length}
+              {t('enrollments.joinClass')} {classItem?.students?.length}
             </Button>
           </div>
         )}

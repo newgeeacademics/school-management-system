@@ -1,5 +1,5 @@
-import { SignUpForm } from '@/components/refine-ui/form/sign-up-form';
+import { AuthPage } from '@/pages/auth';
 
 export const Register = () => {
-  return <SignUpForm />;
+  return <AuthPage initialMode='register' />;
 };

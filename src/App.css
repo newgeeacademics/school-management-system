@@ -1,3 +1,4 @@
+@import "leaflet/dist/leaflet.css";
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -181,8 +182,11 @@
     background: linear-gradient(90deg, var(--orange-600), var(--orange-500));
   }
 
-  .bg-purple-500 {
-    background: #7F56D9;
+  .bg-blue-500 {
+    background: #3b82f6;
+  }
+  .hover\:bg-blue-600:hover {
+    background: #2563eb;
   }
 
   .bg-gradient-orange-light {
@@ -303,18 +307,54 @@
   --red-50: #ffffff;
   --red-500: #ef4444;
 
-  /* Orange Scale */
-  --orange-30: #f6f4f0;
-  --orange-50: #fff5f0;
-  --orange-400: #ffb900;
-  
-  --orange-100: #F4EBFF;
-  --orange-500: #9E77ED;
-  --orange-600: #7F56D9;
+  /* Orange Scale (used as accent - set to blue) */
+  --orange-30: #f0f7ff;
+  --orange-50: #eff6ff;
+  --orange-400: #3b82f6;
+  --orange-100: #dbeafe;
+  --orange-500: #3b82f6;
+  --orange-600: #2563eb;
 
   /* Teal Scale */
   --teal-50: #e6f7f6;
   --teal-100: #d1f0ed;
   --teal-500: #009689;
   --teal-700: #104e64;
+}
+
+.rental-login-form {
+  animation: rentalFormReveal 0.55s ease-out both;
+}
+
+.rental-field {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: rentalFieldReveal 0.45s ease-out forwards;
+}
+
+.rental-field-1 { animation-delay: 0.08s; }
+.rental-field-2 { animation-delay: 0.16s; }
+.rental-field-3 { animation-delay: 0.24s; }
+.rental-field-4 { animation-delay: 0.32s; }
+
+@keyframes rentalFormReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes rentalFieldReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

@@ -19,9 +19,12 @@ import { cn } from '@/lib/utils';
 import { AdvancedImage } from '@cloudinary/react';
 import { profilePhoto } from '@/lib/cloudinary';
 import { useNavigation } from '@refinedev/core';
+import { useTranslation } from '@/i18n';
+import { CreateButton } from '@/components/refine-ui/buttons/create';
 
 export const UsersList = () => {
   const { edit } = useNavigation();
+  const { t } = useTranslation();
   const [globalFilter, setGlobalFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
 
@@ -32,7 +35,9 @@ export const UsersList = () => {
         accessorKey: 'imageCldPubId',
         size: 80,
         header: () => (
-          <div className='flex font-bold ml-2 items-center gap-1'>Profile</div>
+          <div className='flex font-bold ml-2 items-center gap-1'>
+            {t('common.profile')}
+          </div>
         ),
         cell: ({ getValue }) => {
           const value = getValue<string>();
@@ -50,7 +55,9 @@ export const UsersList = () => {
         accessorKey: 'name',
         size: 200,
         header: () => (
-          <div className='flex font-bold items-center gap-1'>Name</div>
+          <div className='flex font-bold items-center gap-1'>
+            {t('users.name')}
+          </div>
         ),
         cell: ({ getValue }) => {
           const name = getValue<string>();
@@ -66,7 +73,9 @@ export const UsersList = () => {
         accessorKey: 'email',
         size: 250,
         header: () => (
-          <div className='flex font-bold items-center gap-1'>Email</div>
+          <div className='flex font-bold items-center gap-1'>
+            {t('users.email')}
+          </div>
         ),
         cell: ({ getValue }) => {
           const email = getValue<string>();
@@ -78,7 +87,9 @@ export const UsersList = () => {
         accessorKey: 'role',
         size: 120,
         header: () => (
-          <div className='flex font-bold items-center gap-1'>Role</div>
+          <div className='flex font-bold items-center gap-1'>
+            {t('users.role')}
+          </div>
         ),
         cell: ({ getValue }) => {
           const role = getValue<string>();
@@ -102,7 +113,9 @@ export const UsersList = () => {
         accessorKey: 'department',
         size: 180,
         header: () => (
-          <div className='flex font-bold items-center gap-1'>Department</div>
+          <div className='flex font-bold items-center gap-1'>
+            {t('users.department')}
+          </div>
         ),
         cell: ({ getValue }) => {
           const value = getValue<string>();
@@ -110,7 +123,7 @@ export const UsersList = () => {
         },
       },
     ],
-    []
+    [t]
   );
 
   const table = useTable<User>({
@@ -147,38 +160,41 @@ export const UsersList = () => {
     <ListView className='container mx-auto pb-8 px-2 sm:px-4'>
       <Breadcrumb />
       <div className='space-y-4 mb-6'>
-        <h1 className='text-3xl font-bold text-foreground tracking-tight'>
-          Faculty
-        </h1>
+        <div className='flex flex-wrap items-center justify-between gap-4'>
+          <div>
+            <h1 className='text-3xl font-bold text-foreground tracking-tight'>
+              {t('users.title')}
+            </h1>
+            <p className='mt-2 text-muted-foreground'>
+              {t('users.subtitle')}
+            </p>
+          </div>
+          <CreateButton resource='users' className='bg-blue-600 hover:bg-blue-700 shrink-0' />
+        </div>
 
         <div className='flex flex-col gap-5 lg:flex-row justify-between'>
-          <p className='mt-2'>
-            Quick access to essential metrics and management tools.
-          </p>
-
           <div className='flex flex-col gap-3 sm:flex-row sm:gap-2 w-full sm:w-auto'>
-            {/* Search Input */}
             <div className='relative max-h-9 w-full md:max-w-72'>
               <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-600' />
               <Input
                 type='text'
-                placeholder='Search by name...'
+                placeholder={t('users.searchByName')}
                 className='pl-10 bg-white w-full'
                 value={globalFilter}
                 onChange={(e) => setGlobalFilter(e.target.value)}
               />
             </div>
 
-            {/* Filter Row */}
             <div className='flex gap-2 w-full sm:w-auto'>
               <Select value={roleFilter} onValueChange={setRoleFilter}>
                 <SelectTrigger className='flex-1 text-orange-600 bg-white sm:flex-initial sm:w-[160px] h-11'>
-                  <SelectValue placeholder='Filter by role' />
+                  <SelectValue placeholder={t('users.filterByRole')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='all'>All Roles</SelectItem>
-                  <SelectItem value='teacher'>Teacher</SelectItem>
-                  <SelectItem value='admin'>Admin</SelectItem>
+                  <SelectItem value='all'>{t('users.allRoles')}</SelectItem>
+                  <SelectItem value='student'>{t('auth.student')}</SelectItem>
+                  <SelectItem value='teacher'>{t('auth.teacher')}</SelectItem>
+                  <SelectItem value='admin'>{t('auth.admin')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

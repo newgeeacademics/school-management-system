@@ -19,9 +19,11 @@ import { Badge } from '@/components/ui/badge';
 import { DEPARTMENT_OPTIONS } from '@/constants';
 import { useNavigation } from '@refinedev/core';
 import { Subject } from '@/types';
+import { useTranslation } from '@/i18n';
 
 export const SubjectsList = () => {
   const { edit } = useNavigation();
+  const { t } = useTranslation();
   const [globalFilter, setGlobalFilter] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
 
@@ -32,7 +34,9 @@ export const SubjectsList = () => {
         accessorKey: 'code',
         size: 100,
         header: () => (
-          <div className='flex ml-2 font-bold  items-center gap-1'>Code</div>
+          <div className='flex ml-2 font-bold  items-center gap-1'>
+            {t('subjects.code')}
+          </div>
         ),
         cell: ({ getValue }) => {
           const value = getValue<string>();
@@ -48,7 +52,9 @@ export const SubjectsList = () => {
         accessorKey: 'name',
         size: 200,
         header: () => (
-          <div className='flex font-bold  items-center gap-1'>Subject Name</div>
+          <div className='flex font-bold  items-center gap-1'>
+            {t('subjects.subjectName')}
+          </div>
         ),
         cell: ({ getValue }) => {
           const name = getValue<string>();
@@ -63,7 +69,9 @@ export const SubjectsList = () => {
         accessorKey: 'department',
         size: 150,
         header: () => (
-          <div className='flex font-bold  items-center gap-1'>Department</div>
+          <div className='flex font-bold  items-center gap-1'>
+            {t('subjects.department')}
+          </div>
         ),
         cell: ({ getValue }) => {
           const value = getValue<string>();
@@ -82,7 +90,9 @@ export const SubjectsList = () => {
         accessorKey: 'description',
         size: 300,
         header: () => (
-          <div className='flex font-bold  items-center gap-1'>Description</div>
+          <div className='flex font-bold  items-center gap-1'>
+            {t('subjects.description')}
+          </div>
         ),
         cell: ({ getValue }) => {
           const description = getValue<string>();
@@ -94,7 +104,7 @@ export const SubjectsList = () => {
         },
       },
     ],
-    []
+    [t]
   );
 
   const table = useTable<Subject>({
@@ -143,35 +153,33 @@ export const SubjectsList = () => {
       <Breadcrumb />
       <div className='space-y-4 mb-2'>
         <h1 className='text-3xl font-bold text-foreground tracking-tight'>
-          Subjects
+          {t('subjects.title')}
         </h1>
         <div className='flex flex-col gap-5 lg:flex-row justify-between'>
-          <p>Quick access to essential metrics and management tools.</p>
+          <p>{t('subjects.subtitle')}</p>
 
           <div className='flex flex-col gap-3 sm:flex-row sm:gap-2 w-full sm:w-auto'>
-            {/* Search Input */}
             <div className='relative w-full max-h-9 md:max-w-72'>
               <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-600' />
               <Input
                 type='text'
-                placeholder='Search by name...'
+                placeholder={t('subjects.searchByName')}
                 className='pl-10 bg-white w-full'
                 value={globalFilter}
                 onChange={(e) => setGlobalFilter(e.target.value)}
               />
             </div>
 
-            {/* Filter and Create Button Row */}
             <div className='flex gap-2 w-full sm:w-auto'>
               <Select
                 value={departmentFilter}
                 onValueChange={setDepartmentFilter}
               >
                 <SelectTrigger className='bg-white text-orange-600 flex-1 sm:flex-initial sm:w-[180px]'>
-                  <SelectValue placeholder='Filter by department' />
+                  <SelectValue placeholder={t('subjects.filterByDepartment')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='all'>All Departments</SelectItem>
+                  <SelectItem value='all'>{t('subjects.allDepartments')}</SelectItem>
                   {DEPARTMENT_OPTIONS.map((dept) => (
                     <SelectItem key={dept.value} value={dept.value}>
                       {dept.label}
@@ -182,7 +190,7 @@ export const SubjectsList = () => {
 
               <CreateButton
                 resource='subjects'
-                className='h-9 bg-purple-500 shrink-0'
+                className='h-9 bg-blue-500 hover:bg-blue-600 shrink-0'
               />
             </div>
           </div>

@@ -7,6 +7,7 @@ import {
   useGetIdentity,
   type TreeMenuItem,
 } from '@refinedev/core';
+import { useTranslation } from '@/i18n';
 import {
   SidebarRail as ShadcnSidebarRail,
   Sidebar as ShadcnSidebar,
@@ -31,34 +32,29 @@ import { ChevronRight, ListIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocation } from 'react-router';
 
+const NAV_KEYS: Record<string, string> = {
+  dashboard: 'nav.dashboard',
+  enrollments: 'nav.joinClasses',
+  users: 'nav.faculty',
+  subjects: 'nav.subjects',
+  'class-groups': 'nav.classGroups',
+  classes: 'nav.classes',
+  announcements: 'nav.announcements',
+  profile: 'nav.profile',
+};
+
 export function Sidebar() {
   const { open } = useShadcnSidebar();
   const { menuItems, selectedKey } = useMenu();
   const { data: identity } = useGetIdentity<{ role: string }>();
   const location = useLocation();
+  const { t } = useTranslation();
 
   // Check if we're on a class details page
   const isClassDetailsPage = location.pathname.startsWith('/classes/details/');
 
-  // Filter menu items based on user role
-  const filteredMenuItems = menuItems.filter((item: TreeMenuItem) => {
-    const itemName = item.name || '';
-
-    // Student users: Only show Dashboard and Enrollments
-    if (identity?.role === 'student') {
-      return ['dashboard', 'enrollments'].includes(itemName);
-    }
-
-    // Teacher users: Show Dashboard, Classes, Subjects, and Enrollments (no Faculty)
-    if (identity?.role === 'teacher') {
-      return ['dashboard', 'classes', 'subjects', 'enrollments'].includes(
-        itemName
-      );
-    }
-
-    // Admin users: Show all modules
-    return true;
-  });
+  // Show all sections to all roles (Dashboard, Join Classes, Faculty, Subjects, Classes)
+  const filteredMenuItems = menuItems;
 
   // Update label for Classes resource based on user role
   const menuItemsWithLabels = filteredMenuItems.map((item: TreeMenuItem) => {
@@ -93,6 +89,7 @@ export function Sidebar() {
             key={item.key || item.name}
             item={item}
             selectedKey={adjustedSelectedKey}
+            t={t}
           />
         ))}
       </ShadcnSidebarContent>
@@ -103,26 +100,56 @@ export function Sidebar() {
 type MenuItemProps = {
   item: TreeMenuItem;
   selectedKey?: string;
+  t?: (key: string) => string;
 };
 
-function SidebarItem({ item, selectedKey }: MenuItemProps) {
+function SidebarItem({ item, selectedKey, t }: MenuItemProps) {
   const { open } = useShadcnSidebar();
+  const getLabel = () =>
+    t && item.name && NAV_KEYS[item.name]
+      ? t(NAV_KEYS[item.name])
+      : (item.meta?.label ?? item.label ?? item.name) as string;
 
   if (item.meta?.group) {
-    return <SidebarItemGroup item={item} selectedKey={selectedKey} />;
+    return (
+      <SidebarItemGroup
+        item={item}
+        selectedKey={selectedKey}
+        getLabel={getLabel}
+      />
+    );
   }
 
   if (item.children && item.children.length > 0) {
     if (open) {
-      return <SidebarItemCollapsible item={item} selectedKey={selectedKey} />;
+      return (
+        <SidebarItemCollapsible
+          item={item}
+          selectedKey={selectedKey}
+          getLabel={getLabel}
+        />
+      );
     }
-    return <SidebarItemDropdown item={item} selectedKey={selectedKey} />;
+    return (
+      <SidebarItemDropdown
+        item={item}
+        selectedKey={selectedKey}
+        getLabel={getLabel}
+        t={t}
+      />
+    );
   }
 
-  return <SidebarItemLink item={item} selectedKey={selectedKey} />;
+  return (
+    <SidebarItemLink item={item} selectedKey={selectedKey} getLabel={getLabel} />
+  );
 }
 
-function SidebarItemGroup({ item, selectedKey }: MenuItemProps) {
+function SidebarItemGroup({
+  item,
+  selectedKey,
+  getLabel,
+}: MenuItemProps & { getLabel: () => string }) {
   const { children } = item;
   const { open } = useShadcnSidebar();
 
@@ -148,7 +175,7 @@ function SidebarItemGroup({ item, selectedKey }: MenuItemProps) {
           }
         )}
       >
-        {getDisplayName(item)}
+        {getLabel()}
       </span>
       {children && children.length > 0 && (
         <div className={cn('flex', 'flex-col')}>
@@ -157,6 +184,7 @@ function SidebarItemGroup({ item, selectedKey }: MenuItemProps) {
               key={child.key || child.name}
               item={child}
               selectedKey={selectedKey}
+              t={undefined}
             />
           ))}
         </div>
@@ -165,8 +193,12 @@ function SidebarItemGroup({ item, selectedKey }: MenuItemProps) {
   );
 }
 
-function SidebarItemCollapsible({ item, selectedKey }: MenuItemProps) {
-  const { name, children } = item;
+function SidebarItemCollapsible({
+  item,
+  selectedKey,
+  getLabel,
+}: MenuItemProps & { getLabel: () => string }) {
+  const { children } = item;
 
   const chevronIcon = (
     <ChevronRight
@@ -183,31 +215,45 @@ function SidebarItemCollapsible({ item, selectedKey }: MenuItemProps) {
   );
 
   return (
-    <Collapsible key={`collapsible-${name}`} className={cn('w-full', 'group')}>
+    <Collapsible
+      key={`collapsible-${item.name}`}
+      className={cn('w-full', 'group')}
+    >
       <CollapsibleTrigger asChild>
-        <SidebarButton item={item} rightIcon={chevronIcon} />
+        <SidebarButton item={item} rightIcon={chevronIcon} getLabel={getLabel} />
       </CollapsibleTrigger>
       <CollapsibleContent className={cn('ml-6', 'flex', 'flex-col', 'gap-2')}>
-        {children?.map((child: TreeMenuItem) => (
-          <SidebarItem
-            key={child.key || child.name}
-            item={child}
-            selectedKey={selectedKey}
-          />
-        ))}
-      </CollapsibleContent>
+{children?.map((child: TreeMenuItem) => (
+            <SidebarItem
+              key={child.key || child.name}
+              item={child}
+              selectedKey={selectedKey}
+              t={undefined}
+            />
+          ))}
+        </CollapsibleContent>
     </Collapsible>
   );
 }
 
-function SidebarItemDropdown({ item, selectedKey }: MenuItemProps) {
+function SidebarItemDropdown({
+  item,
+  selectedKey,
+  getLabel,
+  t,
+}: MenuItemProps & { getLabel: () => string; t?: (key: string) => string }) {
   const { children } = item;
   const Link = useLink();
+
+  const getChildLabel = (child: TreeMenuItem) =>
+    t && child.name && NAV_KEYS[child.name]
+      ? t(NAV_KEYS[child.name])
+      : (getDisplayName(child) as string);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <SidebarButton item={item} />
+        <SidebarButton item={item} getLabel={getLabel} />
       </DropdownMenuTrigger>
       <DropdownMenuContent side='right' align='start'>
         {children?.map((child: TreeMenuItem) => {
@@ -226,7 +272,7 @@ function SidebarItemDropdown({ item, selectedKey }: MenuItemProps) {
                   icon={child.meta?.icon ?? child.icon}
                   isSelected={isSelected}
                 />
-                <span>{getDisplayName(child)}</span>
+                <span>{getChildLabel(child)}</span>
               </Link>
             </DropdownMenuItem>
           );
@@ -236,14 +282,26 @@ function SidebarItemDropdown({ item, selectedKey }: MenuItemProps) {
   );
 }
 
-function SidebarItemLink({ item, selectedKey }: MenuItemProps) {
+function SidebarItemLink({
+  item,
+  selectedKey,
+  getLabel,
+}: MenuItemProps & { getLabel?: () => string }) {
   const isSelected = item.key === selectedKey;
 
-  return <SidebarButton item={item} isSelected={isSelected} asLink={true} />;
+  return (
+    <SidebarButton
+      item={item}
+      isSelected={isSelected}
+      asLink={true}
+      getLabel={getLabel}
+    />
+  );
 }
 
 function SidebarHeader() {
   const { open, isMobile } = useShadcnSidebar();
+  const { t } = useTranslation();
 
   return (
     <ShadcnSidebarHeader
@@ -276,8 +334,6 @@ function SidebarHeader() {
           }
         )}
       >
-        <img src='/assets/logo-icon.png' alt='Logo' className='h-7' />
-
         <h2
           className={cn(
             'text-white',
@@ -291,7 +347,7 @@ function SidebarHeader() {
             }
           )}
         >
-          Class Management
+          {t('nav.classManagement')}
         </h2>
       </div>
 
@@ -335,6 +391,7 @@ type SidebarButtonProps = React.ComponentProps<typeof Button> & {
   rightIcon?: React.ReactNode;
   asLink?: boolean;
   onClick?: () => void;
+  getLabel?: () => string;
 };
 
 function SidebarButton({
@@ -344,9 +401,11 @@ function SidebarButton({
   asLink = false,
   className,
   onClick,
+  getLabel,
   ...props
 }: SidebarButtonProps) {
   const Link = useLink();
+  const label = getLabel ? getLabel() : getDisplayName(item);
 
   const buttonContent = (
     <>
@@ -361,7 +420,7 @@ function SidebarButton({
           'font-semibold': isSelected,
         })}
       >
-        {getDisplayName(item)}
+        {label}
       </span>
       {rightIcon}
     </>

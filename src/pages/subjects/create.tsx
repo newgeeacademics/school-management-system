@@ -29,9 +29,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { useBack } from '@refinedev/core';
 import { Loader2 } from 'lucide-react';
 import { subjectSchema } from '@/lib/schema';
+import { useTranslation } from '@/i18n';
 
 export const SubjectsCreate = () => {
   const back = useBack();
+  const { t } = useTranslation();
 
   const form = useForm({
     resolver: zodResolver(subjectSchema),
@@ -53,11 +55,11 @@ export const SubjectsCreate = () => {
       <Breadcrumb />
 
       <h1 className='text-3xl font-bold text-foreground tracking-tight'>
-        Create Subject
+        {t('subjects.createSubject')}
       </h1>
       <div className='flex flex-col gap-5 md:flex-row justify-between'>
-        <p>Provide the required information below to add a subject.</p>
-        <Button onClick={() => back()}>Go Back</Button>
+        <p>{t('subjects.createDesc')}</p>
+        <Button onClick={() => back()}>{t('common.goBack')}</Button>
       </div>
 
       <Separator />
@@ -66,7 +68,7 @@ export const SubjectsCreate = () => {
         <Card className='max-w-3xl gap-2 w-full mx-auto relative overflow-hidden border border-gray-200 shadow-sm'>
           <CardHeader className='relative z-10'>
             <CardTitle className='text-2xl pb-0 font-bold text-gradient-orange'>
-              Fill out the subject form
+              {t('subjects.formTitle')}
             </CardTitle>
           </CardHeader>
 
@@ -81,11 +83,11 @@ export const SubjectsCreate = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-gray-900 font-semibold'>
-                        Subject Name <span className='text-orange-600'>*</span>
+                        {t('subjects.subjectName')} <span className='text-orange-600'>*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder='Mathematics'
+                          placeholder={t('subjects.placeholderName')}
                           {...field}
                           className='bg-gray-0 border-2 border-gray-200 transition-all duration-300 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 h-11'
                         />
@@ -102,13 +104,13 @@ export const SubjectsCreate = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className='text-gray-900 font-semibold'>
-                          Subject Code{' '}
+                          {t('subjects.subjectCode')}{' '}
                           <span className='text-orange-600'>*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
                             type='text'
-                            placeholder='MATH101'
+                            placeholder={t('subjects.placeholderCode')}
                             {...field}
                             className='bg-gray-0 border-2 border-gray-200 transition-all duration-300 h-11'
                           />
@@ -123,7 +125,7 @@ export const SubjectsCreate = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className='text-gray-900 font-semibold'>
-                          Department <span className='text-orange-600'>*</span>
+                          {t('subjects.department')} <span className='text-orange-600'>*</span>
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
@@ -131,7 +133,7 @@ export const SubjectsCreate = () => {
                         >
                           <FormControl>
                             <SelectTrigger className='bg-gray-0 w-full !h-11 border-2 border-gray-200'>
-                              <SelectValue placeholder='Select a department' />
+                              <SelectValue placeholder={t('subjects.selectDepartment')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -154,12 +156,12 @@ export const SubjectsCreate = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-gray-900 font-semibold'>
-                        Subject Description{' '}
+                        {t('subjects.subjectDescription')}{' '}
                         <span className='text-orange-600'>*</span>
                       </FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder='Introduction to Mathematics'
+                          placeholder={t('subjects.placeholderDescription')}
                           {...field}
                           className='bg-gray-0 border-2 border-gray-200 transition-all duration-300 h-20'
                         />
@@ -174,16 +176,16 @@ export const SubjectsCreate = () => {
                 <Button
                   type='submit'
                   size='lg'
-                  className='w-full mt-2 h-12 font-semibold text-white shadow-lg cursor-pointer bg-purple-500'
+                  className='w-full mt-2 h-12 font-semibold text-white shadow-lg cursor-pointer bg-blue-500 hover:bg-blue-600'
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
                     <div className='flex gap-1'>
-                      <span>Creating Subject...</span>
+                      <span>{t('subjects.creatingSubject')}</span>
                       <Loader2 className='inline-block ml-2 animate-spin' />
                     </div>
                   ) : (
-                    'Create Subject'
+                    t('subjects.createSubject')
                   )}
                 </Button>
               </form>

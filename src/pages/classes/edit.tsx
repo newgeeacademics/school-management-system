@@ -66,6 +66,7 @@ export const ClassesEdit = () => {
     },
     defaultValues: {
       name: '',
+      term: '',
       subjectId: 0,
       teacherId: '',
       capacity: 0,
@@ -163,6 +164,7 @@ export const ClassesEdit = () => {
   if (classData && !getValues('subjectId')) {
     reset({
       name: classData?.name ?? '',
+      term: (classData as { term?: string })?.term ?? '',
       subjectId: classData?.subjectId ?? undefined,
       teacherId: classData?.teacherId ?? undefined,
       capacity: classData?.capacity ?? undefined,
@@ -331,6 +333,25 @@ export const ClassesEdit = () => {
                           placeholder='Introduction to Biology - Section A'
                           {...field}
                           className='bg-gray-0 border-2 border-gray-200 transition-all duration-300 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 h-11'
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={control}
+                  name='term'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='text-gray-900 font-semibold'>Term / Semester</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder='e.g. Semester 1, Trimester 2'
+                          {...field}
+                          value={field.value ?? ''}
+                          className='bg-gray-0 border-2 border-gray-200 h-11'
                         />
                       </FormControl>
                       <FormMessage />
@@ -571,7 +592,7 @@ export const ClassesEdit = () => {
                   <Button
                     type='submit'
                     size='lg'
-                    className='max-sm:w-full h-12 font-semibold text-white shadow-lg transition-all duration-300 cursor-pointer bg-purple-500'
+                    className='max-sm:w-full h-12 font-semibold text-white shadow-lg transition-all duration-300 cursor-pointer bg-blue-500 hover:bg-blue-600'
                     disabled={isSubmitting || isPending}
                   >
                     {isSubmitting ? (
