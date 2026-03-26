@@ -22,7 +22,7 @@ const pathWeight = 4;
 const SEGMENT_COLORS = [
   '#22c55e', // green (départ)
   '#2563eb', // blue
-  '#f97316', // orange
+  '#3b82f6', // blue
   '#a855f7', // purple
   '#ec4899', // pink
   '#ef4444', // red (arrivée)
@@ -36,7 +36,7 @@ const DEFAULT_ZOOM = 6;
 const MARKER_COLORS = {
   start: '#22c55e',
   end: '#ef4444',
-  stop: '#f97316',
+  stop: '#3b82f6',
   default: '#94a3b8',
 } as const;
 
@@ -89,7 +89,7 @@ type RouteMapProps = {
   startStopId?: string;
   /** Id of the arrival stop (red marker). */
   endStopId?: string;
-  /** Ids of intermediate stops (orange markers). */
+  /** Ids of intermediate stops (blue markers). */
   stopIds?: string[];
   center?: [number, number];
   zoom?: number;
