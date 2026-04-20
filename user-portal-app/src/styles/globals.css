@@ -1,0 +1,182 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-gray-0: #ffffff;
+}
+
+/* Portail familles : thème chaud / vert d’eau — distinct de l’app établissement (bleu outil). */
+:root {
+  --radius: 0.75rem;
+  --background: #faf7f2;
+  --foreground: #1c1917;
+  --card: #ffffff;
+  --card-foreground: #1c1917;
+  --popover: #ffffff;
+  --popover-foreground: #1c1917;
+  --primary: #0f766e;
+  --primary-foreground: #f0fdfa;
+  --secondary: #ccfbf1;
+  --secondary-foreground: #134e4a;
+  --muted: #f5f0e8;
+  --muted-foreground: #57534e;
+  --accent: #e0f2f1;
+  --accent-foreground: #115e59;
+  --destructive: #dc2626;
+  --border: #e7e5e4;
+  --input: #d6d3d1;
+  --ring: #0d9488;
+  --chart-1: #0d9488;
+  --chart-2: #d97706;
+  --chart-3: #059669;
+  --chart-4: #ea580c;
+  --chart-5: #7c3aed;
+  --sidebar: #f5f0e8;
+  --sidebar-foreground: #1c1917;
+  --sidebar-primary: #0f766e;
+  --sidebar-primary-foreground: #f0fdfa;
+  --sidebar-accent: #ccfbf1;
+  --sidebar-accent-foreground: #134e4a;
+  --sidebar-border: #e7e5e4;
+  --sidebar-ring: #0d9488;
+}
+
+.dark {
+  --background: #020617;
+  --foreground: #e5e7eb;
+  --card: #020617;
+  --card-foreground: #e5e7eb;
+  --popover: #020617;
+  --popover-foreground: #e5e7eb;
+  --primary: #1d4ed8;
+  --primary-foreground: #e5e7eb;
+  --secondary: #0b1220;
+  --secondary-foreground: #e5e7eb;
+  --muted: #020617;
+  --muted-foreground: #64748b;
+  --accent: #1e293b;
+  --accent-foreground: #e5e7eb;
+  --destructive: #ef4444;
+  --border: rgba(148, 163, 184, 0.6);
+  --input: rgba(148, 163, 184, 0.4);
+  --ring: #1d4ed8;
+  --chart-1: #38bdf8;
+  --chart-2: #4ade80;
+  --chart-3: #3b82f6;
+  --chart-4: #facc15;
+  --chart-5: #a855f7;
+  --sidebar: #020617;
+  --sidebar-foreground: #e5e7eb;
+  --sidebar-primary: #1d4ed8;
+  --sidebar-primary-foreground: #e5e7eb;
+  --sidebar-accent: #020617;
+  --sidebar-accent-foreground: #e5e7eb;
+  --sidebar-border: rgba(148, 163, 184, 0.6);
+  --sidebar-ring: #1d4ed8;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family:
+      'Plus Jakarta Sans',
+      ui-sans-serif,
+      system-ui,
+      sans-serif;
+  }
+}
+
+@layer utilities {
+  .portal-shell {
+    @apply min-h-svh bg-background text-foreground;
+  }
+}
+
+@layer base {
+  .portal-login-form {
+    animation: portalFormReveal 0.5s ease-out both;
+  }
+
+  .portal-field {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: portalFieldReveal 0.4s ease-out forwards;
+  }
+
+  .portal-field-1 {
+    animation-delay: 0.04s;
+  }
+  .portal-field-2 {
+    animation-delay: 0.1s;
+  }
+  .portal-field-3 {
+    animation-delay: 0.16s;
+  }
+  .portal-field-4 {
+    animation-delay: 0.22s;
+  }
+
+  @keyframes portalFormReveal {
+    0% {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes portalFieldReveal {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

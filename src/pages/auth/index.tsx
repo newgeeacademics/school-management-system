@@ -66,7 +66,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
             {t('common.goBack')}
           </Button>
         </div>
-        <div className='mx-auto w-full max-w-xl px-2 pt-64 pb-6'>
+        <div className='mx-auto w-full max-w-6xl px-3 sm:px-4 pt-20 sm:pt-24 pb-8'>
           <SchoolRegisterWizard />
         </div>
       </div>

@@ -32,6 +32,11 @@ function scrollToSection(hash: string) {
   el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+/** Separate user-portal app (see `user-portal-app/`). */
+function userPortalConnexionHref() {
+  return `${(import.meta.env.VITE_USER_PORTAL_URL ?? 'http://localhost:5174').replace(/\/$/, '')}/connexion`;
+}
+
 function NavAnchor({
   href,
   children,
@@ -106,6 +111,9 @@ export const LandingPage = () => {
             <div className='hidden md:block'>
               <LanguageSwitcher showLabel className='text-gray-700' />
             </div>
+            <Button asChild variant='outline' size='sm' className='hidden md:inline-flex text-gray-700 border-gray-200'>
+              <a href={userPortalConnexionHref()}>{t('landing.navUserPortal')}</a>
+            </Button>
             <Button asChild variant='ghost' size='sm' className='hidden md:inline-flex text-gray-700'>
               <Link to='/login'>{t('landing.signIn')}</Link>
             </Button>
@@ -380,6 +388,11 @@ function MobileNav() {
             <LanguageSwitcher showLabel className='text-gray-700' />
           </div>
           <Button asChild variant='outline' size='lg' className='w-full justify-center'>
+            <a href={userPortalConnexionHref()} onClick={() => setOpen(false)}>
+              {t('landing.navUserPortal')}
+            </a>
+          </Button>
+          <Button asChild variant='ghost' size='lg' className='w-full justify-center'>
             <Link to='/login' onClick={() => setOpen(false)}>
               {t('landing.signIn')}
             </Link>

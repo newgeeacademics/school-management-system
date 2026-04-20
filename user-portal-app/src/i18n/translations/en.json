@@ -1,0 +1,51 @@
+{
+  "common": {
+    "goBack": "Back to website",
+    "loading": "Loading…"
+  },
+  "landing": {
+    "brandName": "NewGee"
+  },
+  "auth": {
+    "username": "Username",
+    "email": "Login email",
+    "enterUsername": "Username or email",
+    "password": "Password",
+    "enterPassword": "Enter your password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in..."
+  },
+  "userPortal": {
+    "welcomeTitle": "Your family space",
+    "loginSubtitle": "The app for students, parents, and teachers — simple and separate from the school’s admin console.",
+    "chooseProfile": "I'm signing in as",
+    "student": "Student",
+    "parent": "Parent",
+    "teacher": "Teacher",
+    "illustrationTitle": "Follow school life day to day",
+    "illustrationCaption": "A portal designed for you: less technical, more human. It’s not the same screen school administrators use.",
+    "linkAdminLogin": "Admin sign-in",
+    "staffHint": "Are you school management or office staff?",
+    "welcomeToast": "Welcome!"
+  },
+  "portalHome": {
+    "productName": "NewGee Families",
+    "homeTitle": "My space",
+    "signedInAs": "Profile",
+    "intro": "Your dashboard: soon your schedules, messages, and practical info in one place.",
+    "logout": "Log out",
+    "cardSchedule": "Timetable",
+    "cardScheduleHint": "Classes and time slots",
+    "cardGrades": "Grades & reports",
+    "cardGradesHint": "Assessment tracking",
+    "cardCanteen": "Canteen",
+    "cardCanteenHint": "Menus and sign-ups",
+    "cardTransport": "Transport",
+    "cardTransportHint": "Routes and times",
+    "cardMessages": "Messages",
+    "cardMessagesHint": "Communication with school",
+    "comingSoon": "Content will connect to your school once the service goes live.",
+    "footerDistinct": "This portal is for families and teaching staff. It is separate from the school management console.",
+    "schoolWebsiteLink": "Visit the school’s public website"
+  }
+}

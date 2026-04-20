@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { SetRoleFromQuery } from '@/components/SetRoleFromQuery';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -13,6 +14,7 @@ export const App: React.FC = () => {
     <TooltipProvider>
       <Toaster richColors position='top-center' />
       <BrowserRouter>
+        <SetRoleFromQuery />
         <Routes>
           <Route path='/' element={<LandingPage />} />
           <Route path='/login' element={<LoginPage />} />

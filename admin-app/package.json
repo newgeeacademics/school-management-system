@@ -1,0 +1,11 @@
+{
+  "name": "newgee-admin-app",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Raccourci npm : l’app admin (tableau de bord établissement) est le projet Vite à la racine du dépôt Newgee.",
+  "scripts": {
+    "dev": "npm run dev --prefix ..",
+    "build": "npm run build --prefix ..",
+    "preview": "npm run preview --prefix .."
+  }
+}

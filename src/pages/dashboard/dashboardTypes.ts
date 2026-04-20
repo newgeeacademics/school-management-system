@@ -2,6 +2,7 @@ import type React from 'react';
 
 export type SectionId =
   | 'overview'
+  | 'system_registry'
   | 'classes'
   | 'teachers'
   | 'students'
@@ -17,7 +18,22 @@ export type SectionId =
   | 'payments'
   | 'canteen'
   | 'transport'
-  | 'reports';
+  | 'reports'
+  | 'sis'
+  | 'curriculum'
+  | 'exams'
+  | 'permissions'
+  | 'settings_profile'
+  | 'settings_branding'
+  | 'settings_academics'
+  | 'settings_attendance'
+  | 'settings_examinations'
+  | 'settings_finance'
+  | 'settings_communication'
+  | 'settings_security'
+  | 'settings_compliance'
+  | 'settings_automation'
+  | 'billing';
 
 export type Teacher = {
   id: string;

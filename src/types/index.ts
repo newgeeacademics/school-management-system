@@ -32,6 +32,20 @@ export type School = {
   studentCount: number | null;
   teacherCount: number | null;
   series: string[];
+  /** Optional extended profile captured at registration */
+  legalName?: string;
+  registrationNumber?: string;
+  accreditationRef?: string;
+  academicYearLabel?: string;
+  languagesOffered?: string[];
+  openingHours?: string;
+  socialLinks?: string;
+  billingContactName?: string;
+  billingEmail?: string;
+  billingPhone?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  internalNotes?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -60,6 +74,19 @@ export type SchoolRegistrationPayload = {
   studentCount?: number | string;
   teacherCount?: number | string;
   series?: string[];
+  legalName?: string;
+  registrationNumber?: string;
+  accreditationRef?: string;
+  academicYearLabel?: string;
+  languagesOffered?: string[];
+  openingHours?: string;
+  socialLinks?: string;
+  billingContactName?: string;
+  billingEmail?: string;
+  billingPhone?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  internalNotes?: string;
 };
 
 export const UserRole = {

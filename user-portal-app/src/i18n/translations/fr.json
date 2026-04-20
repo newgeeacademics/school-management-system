@@ -1,0 +1,51 @@
+{
+  "common": {
+    "goBack": "Retour au site",
+    "loading": "Chargement…"
+  },
+  "landing": {
+    "brandName": "NewGee"
+  },
+  "auth": {
+    "username": "Nom d'utilisateur",
+    "email": "E-mail de connexion",
+    "enterUsername": "Nom d'utilisateur ou e-mail",
+    "password": "Mot de passe",
+    "enterPassword": "Entrez votre mot de passe",
+    "signIn": "Se connecter",
+    "signingIn": "Connexion..."
+  },
+  "userPortal": {
+    "welcomeTitle": "Votre espace famille",
+    "loginSubtitle": "L’application à laquelle se connectent élèves, parents et enseignants — simple et séparée de l’outil d’administration de l’établissement.",
+    "chooseProfile": "Je me connecte en tant que",
+    "student": "Élève",
+    "parent": "Parent",
+    "teacher": "Enseignant",
+    "illustrationTitle": "Suivez la scolarité au quotidien",
+    "illustrationCaption": "Un portail pensé pour vous : moins technique, plus humain. Ce n’est pas le même écran que celui du personnel administratif.",
+    "linkAdminLogin": "Connexion administration",
+    "staffHint": "Vous êtes personnel de direction ou secrétariat ?",
+    "welcomeToast": "Bienvenue !"
+  },
+  "portalHome": {
+    "productName": "NewGee Familles",
+    "homeTitle": "Mon espace",
+    "signedInAs": "Profil",
+    "intro": "Voici votre tableau de bord : bientôt vos emplois du temps, messages et infos pratiques au même endroit.",
+    "logout": "Déconnexion",
+    "cardSchedule": "Emploi du temps",
+    "cardScheduleHint": "Cours et créneaux de la semaine",
+    "cardGrades": "Notes & bulletins",
+    "cardGradesHint": "Suivi des évaluations",
+    "cardCanteen": "Cantine",
+    "cardCanteenHint": "Menus et inscriptions",
+    "cardTransport": "Transport",
+    "cardTransportHint": "Trajets et horaires",
+    "cardMessages": "Messages",
+    "cardMessagesHint": "Échanges avec l’école",
+    "comingSoon": "Les contenus seront reliés à votre établissement dès la mise en service.",
+    "footerDistinct": "Ce portail est réservé aux familles et au personnel pédagogique. Il est distinct de l’espace de gestion de l’école.",
+    "schoolWebsiteLink": "Voir le site public de l’établissement"
+  }
+}

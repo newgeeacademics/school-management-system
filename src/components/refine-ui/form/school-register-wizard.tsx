@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { FileUploader } from '@/components/refine-ui/form/file-uploader';
 import { MapLocationPicker } from '@/components/refine-ui/form/map-location-picker';
@@ -18,7 +20,8 @@ import {
 import { CLOUDINARY_UPLOAD_PRESET, CLOUDINARY_UPLOAD_URL } from '@/constants';
 import { useTranslation } from '@/i18n';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { Check, Circle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const LOCAL_SCHOOLS_KEY = 'newgee_local_schools';
 const LOCAL_USERS_KEY = 'newgee_local_users';
@@ -43,8 +46,23 @@ const SYSTEMS = [
   { value: 'autre', labelKey: 'school.systemOther' },
 ] as const;
 
+const SECTION_KEYS = [
+  'school.sectionAdminAccount',
+  'school.sectionConfirmName',
+  'school.sectionProfile',
+  'school.sectionRegion',
+  'school.sectionAddress',
+  'school.sectionGps',
+  'school.sectionSchoolContact',
+  'school.sectionLeadership',
+  'school.sectionBranding',
+  'school.sectionHeadcount',
+  'school.sectionPrograms',
+  'school.sectionExtended',
+] as const;
+
 type CredentialsState = {
-  username: string; // optional, derived from email if left empty
+  username: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -68,28 +86,35 @@ type SchoolState = {
   studentCount: string;
   teacherCount: string;
   series: string;
+  legalName: string;
+  registrationNumber: string;
+  accreditationRef: string;
+  academicYearLabel: string;
+  languagesOffered: string;
+  openingHours: string;
+  socialLinks: string;
+  billingContactName: string;
+  billingEmail: string;
+  billingPhone: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  internalNotes: string;
 };
 
-type SlideIndex =
-  | 0
-  | 1
-  | 2
-  | 3
-  | 4
-  | 5
-  | 6
-  | 7
-  | 8
-  | 9
-  | 10;
+function splitList(raw: string) {
+  return raw
+    ? raw
+        .split(/[,;]/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
+}
 
 export function SchoolRegisterWizard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const slidesCount = 11;
-
-  const [slide, setSlide] = useState<SlideIndex>(0);
+  const [activeSection, setActiveSection] = useState(0);
 
   const [logoFiles, setLogoFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -119,42 +144,66 @@ export function SchoolRegisterWizard() {
     studentCount: '',
     teacherCount: '',
     series: '',
+    legalName: '',
+    registrationNumber: '',
+    accreditationRef: '',
+    academicYearLabel: '',
+    languagesOffered: '',
+    openingHours: '',
+    socialLinks: '',
+    billingContactName: '',
+    billingEmail: '',
+    billingPhone: '',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
+    internalNotes: '',
   });
 
-  const isSlideReady = useMemo(() => {
-    switch (slide) {
-      case 0:
-        return Boolean(credentials.email.trim()) && Boolean(credentials.password.trim());
-      case 1:
-        return (
-          Boolean(credentials.confirmPassword.trim()) &&
-          credentials.confirmPassword === credentials.password &&
-          Boolean(school.schoolName.trim())
-        );
-      case 2:
-        return Boolean(school.schoolType.trim()) && Boolean(school.system.trim());
-      case 3:
-        return Boolean(school.country.trim()) && Boolean(school.city.trim());
-      case 4:
-        return Boolean(school.commune.trim()) && Boolean(school.address.trim());
-      case 5:
-        return Boolean(school.gpsLat.trim()) && Boolean(school.gpsLng.trim());
-      case 6:
-        return Boolean(school.phone.trim()) && Boolean(school.officialEmail.trim());
-      case 7:
-        return Boolean(school.directorName.trim()) && Boolean(school.directorPhone.trim());
-      case 8:
-        return Boolean(school.website.trim()) && logoFiles.length > 0;
-      case 9:
-        return Boolean(school.studentCount.trim()) && Boolean(school.teacherCount.trim());
-      case 10:
-        return true; // series is optional; user can submit even if empty
-      default:
-        return false;
-    }
-  }, [credentials.confirmPassword, credentials.email, credentials.password, logoFiles.length, slide, school]);
+  const sectionComplete = useCallback(
+    (index: number): boolean => {
+      switch (index) {
+        case 0:
+          return Boolean(credentials.email.trim()) && Boolean(credentials.password.trim());
+        case 1:
+          return (
+            Boolean(credentials.confirmPassword.trim()) &&
+            credentials.confirmPassword === credentials.password &&
+            Boolean(school.schoolName.trim())
+          );
+        case 2:
+          return Boolean(school.schoolType.trim()) && Boolean(school.system.trim());
+        case 3:
+          return Boolean(school.country.trim()) && Boolean(school.city.trim());
+        case 4:
+          return Boolean(school.commune.trim()) && Boolean(school.address.trim());
+        case 5:
+          return Boolean(school.gpsLat.trim()) && Boolean(school.gpsLng.trim());
+        case 6:
+          return Boolean(school.phone.trim()) && Boolean(school.officialEmail.trim());
+        case 7:
+          return Boolean(school.directorName.trim()) && Boolean(school.directorPhone.trim());
+        case 8:
+          return Boolean(school.website.trim()) && logoFiles.length > 0;
+        case 9:
+          return Boolean(school.studentCount.trim()) && Boolean(school.teacherCount.trim());
+        case 10:
+        case 11:
+          return true;
+        default:
+          return false;
+      }
+    },
+    [credentials, logoFiles.length, school]
+  );
 
-  const handleSchoolInput = (key: keyof SchoolState) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const allRequiredComplete = useMemo(() => {
+    for (let i = 0; i <= 9; i++) {
+      if (!sectionComplete(i)) return false;
+    }
+    return true;
+  }, [sectionComplete]);
+
+  const handleSchoolInput = (key: keyof SchoolState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setSchool((prev) => ({ ...prev, [key]: e.target.value }));
   };
 
@@ -176,12 +225,11 @@ export function SchoolRegisterWizard() {
       setCredentials((prev) => ({ ...prev, [key]: e.target.value }));
     };
 
-  const handleBack = () => {
-    setSlide((prev) => (prev > 0 ? ((prev - 1) as SlideIndex) : prev));
-  };
-
   const uploadAndSubmit = async () => {
-    if (!isSlideReady) return;
+    if (!allRequiredComplete) {
+      toast.error(t('auth.registrationFailed'), { richColors: true });
+      return;
+    }
 
     if (credentials.password !== credentials.confirmPassword) {
       toast.error(t('auth.enterConfirmPassword') + ' — Les mots de passe ne correspondent pas.', {
@@ -240,12 +288,20 @@ export function SchoolRegisterWizard() {
       logoCldPubId: logoCldPubId || '',
       studentCount: school.studentCount ? Number(school.studentCount) : null,
       teacherCount: school.teacherCount ? Number(school.teacherCount) : null,
-      series: school.series
-        ? school.series
-            .split(/[,;]/)
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [],
+      series: splitList(school.series),
+      languagesOffered: splitList(school.languagesOffered),
+      legalName: school.legalName || '',
+      registrationNumber: school.registrationNumber || '',
+      accreditationRef: school.accreditationRef || '',
+      academicYearLabel: school.academicYearLabel || '',
+      openingHours: school.openingHours || '',
+      socialLinks: school.socialLinks || '',
+      billingContactName: school.billingContactName || '',
+      billingEmail: school.billingEmail || '',
+      billingPhone: school.billingPhone || '',
+      emergencyContactName: school.emergencyContactName || '',
+      emergencyContactPhone: school.emergencyContactPhone || '',
+      internalNotes: school.internalNotes || '',
       createdAt: now,
       updatedAt: now,
     };
@@ -269,7 +325,7 @@ export function SchoolRegisterWizard() {
       );
 
       if (existingUsers.some((u) => u.email === credentials.email || u.username === username)) {
-        toast.error('Un compte avec cet email ou ce nom d\'utilisateur existe déjà.', { richColors: true });
+        toast.error("Un compte avec cet email ou ce nom d'utilisateur existe déjà.", { richColors: true });
         setIsLoading(false);
         return;
       }
@@ -293,380 +349,506 @@ export function SchoolRegisterWizard() {
     }
   };
 
-  const slides = useMemo(() => {
-    return [
-      // 0: email + password
-      <section key={0} className='w-full px-0'>
-        <section className='space-y-3'>
-          <div className='grid gap-4 sm:grid-cols-2'>
+  const renderSectionBody = () => {
+    switch (activeSection) {
+      case 0:
+        return (
+          <section className='space-y-4'>
+            <div className='grid gap-4 sm:grid-cols-2'>
+              <div>
+                <Label className='text-gray-900 font-semibold'>
+                  {t('auth.email')} <span className='text-blue-600'>*</span>
+                </Label>
+                <Input
+                  type='email'
+                  placeholder={t('auth.enterEmail')}
+                  value={credentials.email}
+                  onChange={handleCredentialsInput('email')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>
+                  {t('auth.password')} <span className='text-blue-600'>*</span>
+                </Label>
+                <InputPassword
+                  value={credentials.password}
+                  onChange={handleCredentialsInput('password')}
+                  placeholder={t('auth.enterPassword')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+            </div>
             <div>
-              <Label className='text-gray-900 font-semibold'>
-                {t('auth.email')} <span className='text-blue-600'>*</span>
-              </Label>
+              <Label className='text-gray-900 font-semibold'>{t('auth.username')}</Label>
               <Input
-                type='email'
-                placeholder={t('auth.enterEmail')}
-                value={credentials.email}
-                onChange={handleCredentialsInput('email')}
+                value={credentials.username}
+                onChange={handleCredentialsInput('username')}
+                placeholder={t('auth.enterUsername')}
                 className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
               />
+              <p className='text-xs text-muted-foreground mt-1.5'>{t('auth.createAccountDesc')}</p>
             </div>
-
-            <div>
-              <Label className='text-gray-900 font-semibold'>
-                {t('auth.password')} <span className='text-blue-600'>*</span>
-              </Label>
-              <InputPassword
-                value={credentials.password}
-                onChange={handleCredentialsInput('password')}
-                placeholder={t('auth.enterPassword')}
-                className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-              />
+          </section>
+        );
+      case 1:
+        return (
+          <section className='space-y-4'>
+            <div className='grid gap-4 sm:grid-cols-2'>
+              <div>
+                <Label className='text-gray-900 font-semibold'>
+                  {t('auth.confirmPassword')} <span className='text-blue-600'>*</span>
+                </Label>
+                <InputPassword
+                  value={credentials.confirmPassword}
+                  onChange={handleCredentialsInput('confirmPassword')}
+                  placeholder={t('auth.enterConfirmPassword')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>
+                  {t('school.schoolName')} <span className='text-blue-600'>*</span>
+                </Label>
+                <Input
+                  value={school.schoolName}
+                  onChange={handleSchoolInput('schoolName')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                  placeholder='Ex. Lycée Moderne'
+                />
+              </div>
             </div>
-          </div>
-        </section>
-      </section>,
-
-      // 1: confirmPassword + schoolName
-      <section key={1} className='w-full px-0'>
-        <section className='space-y-3'>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <div>
-              <Label className='text-gray-900 font-semibold'>
-                {t('auth.confirmPassword')} <span className='text-blue-600'>*</span>
-              </Label>
-              <InputPassword
-                value={credentials.confirmPassword}
-                onChange={handleCredentialsInput('confirmPassword')}
-                placeholder={t('auth.enterConfirmPassword')}
-                className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-              />
+          </section>
+        );
+      case 2:
+        return (
+          <section className='space-y-4'>
+            <div className='grid gap-4 sm:grid-cols-2'>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.schoolType')}</Label>
+                <Select value={school.schoolType || '_'} onValueChange={handleSchoolSelect('schoolType')}>
+                  <SelectTrigger className='mt-2 h-11 border-2 border-gray-200'>
+                    <SelectValue placeholder='—' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SCHOOL_TYPES.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {t(opt.labelKey)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.system')}</Label>
+                <Select value={school.system || '_'} onValueChange={handleSchoolSelect('system')}>
+                  <SelectTrigger className='mt-2 h-11 border-2 border-gray-200'>
+                    <SelectValue placeholder='—' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SYSTEMS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {t(opt.labelKey)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-
+          </section>
+        );
+      case 3:
+        return (
+          <section className='space-y-4'>
+            <div className='grid gap-4 sm:grid-cols-2'>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.country')}</Label>
+                <Input
+                  value={school.country}
+                  onChange={handleSchoolInput('country')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                  placeholder="Ex. Côte d'Ivoire"
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.city')}</Label>
+                <Input
+                  value={school.city}
+                  onChange={handleSchoolInput('city')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                  placeholder='Ex. Abidjan'
+                />
+              </div>
+            </div>
+          </section>
+        );
+      case 4:
+        return (
+          <section className='space-y-4'>
+            <div className='grid gap-4 sm:grid-cols-2'>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.commune')}</Label>
+                <Input
+                  value={school.commune}
+                  onChange={handleSchoolInput('commune')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                  placeholder='Commune ou quartier'
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.address')}</Label>
+                <Input
+                  value={school.address}
+                  onChange={handleSchoolInput('address')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                  placeholder='Adresse précise'
+                />
+              </div>
+            </div>
+          </section>
+        );
+      case 5:
+        return (
+          <section className='space-y-4'>
             <div>
-              <Label className='text-gray-900 font-semibold'>
-                {t('school.schoolName')} <span className='text-blue-600'>*</span>
-              </Label>
+              <Label className='text-gray-900 font-semibold'>{t('school.gpsLocation')}</Label>
+              <div className='mt-2'>
+                <MapLocationPicker
+                  lat={school.gpsLat ? Number(school.gpsLat) : undefined}
+                  lng={school.gpsLng ? Number(school.gpsLng) : undefined}
+                  onChange={handleLocationPick}
+                />
+              </div>
+            </div>
+            <div className='grid gap-4 sm:grid-cols-2'>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.gpsLat')}</Label>
+                <Input value={school.gpsLat} readOnly className='bg-gray-50 border-2 border-gray-200 h-11 mt-2' />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.gpsLng')}</Label>
+                <Input value={school.gpsLng} readOnly className='bg-gray-50 border-2 border-gray-200 h-11 mt-2' />
+              </div>
+            </div>
+          </section>
+        );
+      case 6:
+        return (
+          <section className='space-y-4'>
+            <div className='grid gap-4 sm:grid-cols-2'>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.phone')}</Label>
+                <Input
+                  type='tel'
+                  value={school.phone}
+                  onChange={handleSchoolInput('phone')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.officialEmail')}</Label>
+                <Input
+                  type='email'
+                  value={school.officialEmail}
+                  onChange={handleSchoolInput('officialEmail')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+            </div>
+          </section>
+        );
+      case 7:
+        return (
+          <section className='space-y-4'>
+            <div className='grid gap-4 sm:grid-cols-2'>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.directorName')}</Label>
+                <Input
+                  value={school.directorName}
+                  onChange={handleSchoolInput('directorName')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.directorPhone')}</Label>
+                <Input
+                  type='tel'
+                  value={school.directorPhone}
+                  onChange={handleSchoolInput('directorPhone')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+            </div>
+          </section>
+        );
+      case 8:
+        return (
+          <section className='space-y-4'>
+            <div className='grid gap-4 lg:grid-cols-2'>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.website')}</Label>
+                <Input
+                  type='url'
+                  value={school.website}
+                  onChange={handleSchoolInput('website')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                  placeholder='https://...'
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.logo')}</Label>
+                <FileUploader
+                  files={logoFiles}
+                  onChange={setLogoFiles}
+                  type='profile'
+                  maxSizeText={t('fileUploader.maxSizeText')}
+                />
+              </div>
+            </div>
+          </section>
+        );
+      case 9:
+        return (
+          <section className='space-y-4'>
+            <div className='grid gap-4 sm:grid-cols-2'>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.studentCount')}</Label>
+                <Input
+                  type='number'
+                  min={0}
+                  value={school.studentCount}
+                  onChange={handleSchoolInput('studentCount')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.teacherCount')}</Label>
+                <Input
+                  type='number'
+                  min={0}
+                  value={school.teacherCount}
+                  onChange={handleSchoolInput('teacherCount')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+            </div>
+          </section>
+        );
+      case 10:
+        return (
+          <section className='space-y-4'>
+            <div>
+              <Label className='text-gray-900 font-semibold'>{t('school.series')}</Label>
               <Input
-                value={school.schoolName}
-                onChange={handleSchoolInput('schoolName')}
+                value={school.series}
+                onChange={handleSchoolInput('series')}
                 className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-                placeholder='Ex. Lycée Moderne'
+                placeholder={t('school.seriesPlaceholder')}
               />
+              <p className='text-xs text-muted-foreground mt-2'>{t('school.registerDesc')}</p>
             </div>
-          </div>
-        </section>
-      </section>,
-
-      // 2: schoolType + system
-      <section key={2} className='w-full px-0'>
-        <section className='space-y-3'>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.schoolType')}</Label>
-              <Select value={school.schoolType || '_'} onValueChange={handleSchoolSelect('schoolType')}>
-                <SelectTrigger className='mt-2 h-11 border-2 border-gray-200'>
-                  <SelectValue placeholder='—' />
-                </SelectTrigger>
-                <SelectContent>
-                  {SCHOOL_TYPES.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {t(opt.labelKey)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.system')}</Label>
-              <Select value={school.system || '_'} onValueChange={handleSchoolSelect('system')}>
-                <SelectTrigger className='mt-2 h-11 border-2 border-gray-200'>
-                  <SelectValue placeholder='—' />
-                </SelectTrigger>
-                <SelectContent>
-                  {SYSTEMS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {t(opt.labelKey)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </section>
-      </section>,
-
-      // 3: country + city
-      <section key={3} className='w-full px-0'>
-        <section className='space-y-3'>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.country')}</Label>
-              <Input
-                value={school.country}
-                onChange={handleSchoolInput('country')}
-                className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-                placeholder="Ex. Côte d'Ivoire"
-              />
+          </section>
+        );
+      case 11:
+        return (
+          <section className='space-y-5'>
+            <div className='grid gap-4 sm:grid-cols-2'>
+              <div className='sm:col-span-2'>
+                <Label className='text-gray-900 font-semibold'>{t('school.legalName')}</Label>
+                <Input
+                  value={school.legalName}
+                  onChange={handleSchoolInput('legalName')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.registrationNumber')}</Label>
+                <Input
+                  value={school.registrationNumber}
+                  onChange={handleSchoolInput('registrationNumber')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.accreditationRef')}</Label>
+                <Input
+                  value={school.accreditationRef}
+                  onChange={handleSchoolInput('accreditationRef')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.academicYearLabel')}</Label>
+                <Input
+                  value={school.academicYearLabel}
+                  onChange={handleSchoolInput('academicYearLabel')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.languagesOffered')}</Label>
+                <Input
+                  value={school.languagesOffered}
+                  onChange={handleSchoolInput('languagesOffered')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                  placeholder={t('school.languagesPlaceholder')}
+                />
+              </div>
             </div>
             <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.city')}</Label>
-              <Input
-                value={school.city}
-                onChange={handleSchoolInput('city')}
-                className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-                placeholder='Ex. Abidjan'
-              />
-            </div>
-          </div>
-        </section>
-      </section>,
-
-      // 4: commune + address
-      <section key={4} className='w-full px-0'>
-        <section className='space-y-3'>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.commune')}</Label>
-              <Input
-                value={school.commune}
-                onChange={handleSchoolInput('commune')}
-                className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-                placeholder='Commune ou quartier'
+              <Label className='text-gray-900 font-semibold'>{t('school.openingHours')}</Label>
+              <Textarea
+                value={school.openingHours}
+                onChange={handleSchoolInput('openingHours')}
+                className='bg-gray-0 border-2 border-gray-200 mt-2 min-h-[88px]'
               />
             </div>
             <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.address')}</Label>
-              <Input
-                value={school.address}
-                onChange={handleSchoolInput('address')}
-                className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-                placeholder='Adresse précise'
+              <Label className='text-gray-900 font-semibold'>{t('school.socialLinks')}</Label>
+              <Textarea
+                value={school.socialLinks}
+                onChange={handleSchoolInput('socialLinks')}
+                className='bg-gray-0 border-2 border-gray-200 mt-2 min-h-[72px]'
+                placeholder={t('school.socialPlaceholder')}
               />
             </div>
-          </div>
-        </section>
-      </section>,
-
-      // 5: map location picker
-      <section key={5} className='w-full px-0'>
-        <section className='space-y-3'>
-          <div>
-            <Label className='text-gray-900 font-semibold'>Position de l&apos;ecole (cliquez sur la carte)</Label>
-            <div className='mt-2'>
-              <MapLocationPicker
-                lat={school.gpsLat ? Number(school.gpsLat) : undefined}
-                lng={school.gpsLng ? Number(school.gpsLng) : undefined}
-                onChange={handleLocationPick}
+            <Separator />
+            <div className='grid gap-4 sm:grid-cols-3'>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.billingContactName')}</Label>
+                <Input
+                  value={school.billingContactName}
+                  onChange={handleSchoolInput('billingContactName')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.billingEmail')}</Label>
+                <Input
+                  type='email'
+                  value={school.billingEmail}
+                  onChange={handleSchoolInput('billingEmail')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.billingPhone')}</Label>
+                <Input
+                  type='tel'
+                  value={school.billingPhone}
+                  onChange={handleSchoolInput('billingPhone')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+            </div>
+            <div className='grid gap-4 sm:grid-cols-2'>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.emergencyContactName')}</Label>
+                <Input
+                  value={school.emergencyContactName}
+                  onChange={handleSchoolInput('emergencyContactName')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+              <div>
+                <Label className='text-gray-900 font-semibold'>{t('school.emergencyContactPhone')}</Label>
+                <Input
+                  type='tel'
+                  value={school.emergencyContactPhone}
+                  onChange={handleSchoolInput('emergencyContactPhone')}
+                  className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
+                />
+              </div>
+            </div>
+            <div>
+              <Label className='text-gray-900 font-semibold'>{t('school.internalNotes')}</Label>
+              <Textarea
+                value={school.internalNotes}
+                onChange={handleSchoolInput('internalNotes')}
+                className='bg-gray-0 border-2 border-gray-200 mt-2 min-h-[100px]'
+                placeholder={t('school.internalNotesPlaceholder')}
               />
             </div>
-          </div>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.gpsLat')}</Label>
-              <Input value={school.gpsLat} readOnly className='bg-gray-50 border-2 border-gray-200 h-11 mt-2' />
-            </div>
-            <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.gpsLng')}</Label>
-              <Input value={school.gpsLng} readOnly className='bg-gray-50 border-2 border-gray-200 h-11 mt-2' />
-            </div>
-          </div>
-        </section>
-      </section>,
-
-      // 6: phone + officialEmail
-      <section key={6} className='w-full px-0'>
-        <section className='space-y-3'>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.phone')}</Label>
-              <Input
-                type='tel'
-                value={school.phone}
-                onChange={handleSchoolInput('phone')}
-                className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-              />
-            </div>
-            <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.officialEmail')}</Label>
-              <Input
-                type='email'
-                value={school.officialEmail}
-                onChange={handleSchoolInput('officialEmail')}
-                className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-              />
-            </div>
-          </div>
-        </section>
-      </section>,
-
-      // 7: directorName + directorPhone
-      <section key={7} className='w-full px-0'>
-        <section className='space-y-3'>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.directorName')}</Label>
-              <Input
-                value={school.directorName}
-                onChange={handleSchoolInput('directorName')}
-                className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-              />
-            </div>
-            <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.directorPhone')}</Label>
-              <Input
-                type='tel'
-                value={school.directorPhone}
-                onChange={handleSchoolInput('directorPhone')}
-                className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-              />
-            </div>
-          </div>
-        </section>
-      </section>,
-
-      // 8: website + logo
-      <section key={8} className='w-full px-0'>
-        <section className='space-y-3'>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.website')}</Label>
-              <Input
-                type='url'
-                value={school.website}
-                onChange={handleSchoolInput('website')}
-                className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-                placeholder='https://...'
-              />
-            </div>
-            <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.logo')}</Label>
-              <FileUploader
-                files={logoFiles}
-                onChange={setLogoFiles}
-                type='profile'
-                maxSizeText={t('fileUploader.maxSizeText')}
-              />
-            </div>
-          </div>
-        </section>
-      </section>,
-
-      // 9: studentCount + teacherCount
-      <section key={9} className='w-full px-0'>
-        <section className='space-y-3'>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.studentCount')}</Label>
-              <Input
-                type='number'
-                min={0}
-                value={school.studentCount}
-                onChange={handleSchoolInput('studentCount')}
-                className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-              />
-            </div>
-            <div>
-              <Label className='text-gray-900 font-semibold'>{t('school.teacherCount')}</Label>
-              <Input
-                type='number'
-                min={0}
-                value={school.teacherCount}
-                onChange={handleSchoolInput('teacherCount')}
-                className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-              />
-            </div>
-          </div>
-        </section>
-      </section>,
-
-      // 10: series (optional)
-      <section key={10} className='w-full px-0'>
-        <section className='space-y-3'>
-          <div>
-            <Label className='text-gray-900 font-semibold'>{t('school.series')}</Label>
-            <Input
-              value={school.series}
-              onChange={handleSchoolInput('series')}
-              className='bg-gray-0 border-2 border-gray-200 h-11 mt-2'
-              placeholder={t('school.seriesPlaceholder')}
-            />
-          </div>
-        </section>
-      </section>,
-    ];
-  }, [credentials.confirmPassword, credentials.email, credentials.password, handleCredentialsInput, handleLocationPick, handleSchoolInput, logoFiles, school]);
-
-  const handleNextOrSubmit = () => {
-    if (slide < slidesCount - 1) {
-      if (!isSlideReady) return;
-      setSlide((prev) => (Math.min(prev + 1, slidesCount - 1) as SlideIndex));
-      return;
+          </section>
+        );
+      default:
+        return null;
     }
-    void uploadAndSubmit();
   };
 
   return (
-    <div className='relative flex flex-col p-0 w-full'>
-      <div className='w-full'>
-        <div className='text-lg sm:text-xl font-bold mb-0 text-gradient-blue'>
-          {t('school.registerTitle')}
-        </div>
+    <div className='relative flex w-full flex-col gap-0'>
+      <div className='mb-4'>
+        <div className='text-xl sm:text-2xl font-bold text-gradient-blue'>{t('school.registerTitle')}</div>
+        <p className='mt-2 text-sm text-muted-foreground max-w-3xl'>{t('school.panelSubtitle')}</p>
+      </div>
 
-        <div className='mt-2 mb-4 text-xs text-gray-600'>
-          Étape {slide + 1}/{slidesCount}
-        </div>
-
-        <div className='overflow-hidden'>
-          <div
-            className='flex transition-transform duration-500 ease-in-out'
-            style={{ transform: `translateX(-${slide * 100}%)` }}
-          >
-            {slides.map((content, idx) => (
-              <div key={idx} className='w-full flex-shrink-0 px-0'>
-                {content}
-              </div>
-            ))}
+      <div className='flex flex-col gap-6 rounded-2xl border border-gray-200 bg-white shadow-sm lg:flex-row lg:items-stretch lg:gap-0'>
+        <aside className='lg:w-[min(280px,32%)] shrink-0 border-b lg:border-b-0 lg:border-r border-gray-200 bg-slate-50/80'>
+          <div className='sticky top-0 z-10 border-b border-gray-200/80 bg-slate-50/95 px-4 py-3 backdrop-blur-sm lg:border-b-0'>
+            <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>{t('school.sectionProgress')}</p>
           </div>
-        </div>
-
-        <div className='flex items-center justify-between gap-2 pt-3'>
-          <Button
-            type='button'
-            variant='outline'
-            className='h-10'
-            onClick={handleBack}
-            disabled={slide === 0 || isLoading}
+          <nav
+            className='flex gap-2 overflow-x-auto px-3 py-3 lg:flex-col lg:overflow-x-visible lg:px-2 lg:py-4 lg:max-h-[min(70vh,640px)] lg:overflow-y-auto'
+            aria-label={t('school.sectionProgress')}
           >
-            <ArrowLeft className='h-4 w-4' />
-            Retour
-          </Button>
+            {SECTION_KEYS.map((key, idx) => {
+              const done = sectionComplete(idx);
+              const active = activeSection === idx;
+              return (
+                <button
+                  key={key}
+                  type='button'
+                  onClick={() => setActiveSection(idx)}
+                  className={cn(
+                    'flex min-w-[200px] shrink-0 items-start gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition-colors lg:min-w-0',
+                    active
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-white text-gray-800 hover:bg-gray-100 border border-transparent hover:border-gray-200'
+                  )}
+                >
+                  <span className='mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center'>
+                    {done ? (
+                      <Check className={cn('h-4 w-4', active ? 'text-white' : 'text-emerald-600')} aria-hidden />
+                    ) : (
+                      <Circle className={cn('h-4 w-4', active ? 'text-white/80' : 'text-gray-400')} aria-hidden />
+                    )}
+                  </span>
+                  <span className='leading-snug font-medium'>{t(key)}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
 
-          {slide < slidesCount - 1 ? (
-            <Button
-              type='button'
-              className='h-10'
-              onClick={handleNextOrSubmit}
-              disabled={!isSlideReady || isLoading}
-            >
-              Continuer
-              <ArrowRight className='ml-2 h-4 w-4' />
-            </Button>
-          ) : (
+        <div className='flex min-w-0 flex-1 flex-col'>
+          <div className='border-b border-gray-100 px-4 py-3 sm:px-6'>
+            <h2 className='text-base font-semibold text-gray-900'>{t(SECTION_KEYS[activeSection])}</h2>
+            {!sectionComplete(activeSection) && activeSection <= 9 ? (
+              <p className='mt-1 text-xs text-amber-700'>{t('school.registerDesc')}</p>
+            ) : null}
+          </div>
+          <div className='flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6'>{renderSectionBody()}</div>
+          <div className='flex flex-col gap-3 border-t border-gray-100 bg-slate-50/50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6'>
+            <p className='text-xs text-muted-foreground'>
+              {allRequiredComplete ? (
+                <span className='text-emerald-700 font-medium'>✓ {t('school.submit')}</span>
+              ) : (
+                <span>{t('school.registerDesc')}</span>
+              )}
+            </p>
             <Button
               type='button'
               size='default'
-              className='h-10 font-semibold text-white shadow-lg cursor-pointer bg-blue-500 hover:bg-blue-600'
+              className='h-11 w-full font-semibold text-white shadow-lg sm:w-auto sm:min-w-[200px] bg-blue-500 hover:bg-blue-600'
               onClick={() => void uploadAndSubmit()}
-              disabled={isLoading}
+              disabled={isLoading || !allRequiredComplete}
             >
               {isLoading ? t('school.submitting') : t('school.submit')}
             </Button>
-          )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
