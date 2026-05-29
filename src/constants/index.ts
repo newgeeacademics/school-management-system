@@ -53,12 +53,11 @@ export const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB in bytes
 export const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
 
 
-// Development-only configuration - all URLs point to localhost
-// Production URLs have been removed - only dev environment is supported
-
-// Backend API URLs (dev only - localhost)
-export const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:3000';
-export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Backend API — set VITE_API_URL / VITE_BACKEND_BASE_URL in .env
+// Local Spring Boot default: http://localhost:8080
+// Production (Render): https://classroom-backend.onrender.com
+export const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:8080';
+export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 // Authentication Token Keys (dev only)
 export const ACCESS_TOKEN_KEY = import.meta.env.VITE_ACCESS_TOKEN_KEY || 'dev_access_token';

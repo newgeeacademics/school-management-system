@@ -11,6 +11,18 @@ Backend API for the Classroom Management System built with Spring Boot 3.3.
 - **Lombok** for boilerplate reduction
 - **Bean Validation** (Jakarta)
 
+## Production (Render + Neon)
+
+See **[DEPLOYMENT.md](../DEPLOYMENT.md)** in the repo root for full setup.
+
+Quick summary:
+- **Database:** Neon PostgreSQL (`DATABASE_URL` env var)
+- **Hosting:** Render Docker web service (`render.yaml` blueprint)
+- **Health check:** `GET /health`
+- **Profile:** `SPRING_PROFILES_ACTIVE=production`
+
+---
+
 ## Getting Started
 
 ### Prerequisites
