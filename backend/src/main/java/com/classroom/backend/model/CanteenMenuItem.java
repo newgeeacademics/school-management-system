@@ -13,7 +13,7 @@ public class CanteenMenuItem {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
+    @Column(name = "menu_day", nullable = false)
     private String day;
 
     @Enumerated(EnumType.STRING)

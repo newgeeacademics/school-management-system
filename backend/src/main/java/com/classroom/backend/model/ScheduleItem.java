@@ -20,7 +20,7 @@ public class ScheduleItem {
     @JoinColumn(name = "course_id")
     private Course course;
 
-    @Column(nullable = false)
+    @Column(name = "schedule_day", nullable = false)
     private String day;
 
     @Column(nullable = false)

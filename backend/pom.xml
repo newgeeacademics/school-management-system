@@ -72,6 +72,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Jackson Hibernate (lazy-loading safe JSON) -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-hibernate6</artifactId>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
