@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_USER_PORTAL_URL: string | undefined;
+  readonly VITE_SCHOOL_APP_URL: string | undefined;
 }
 
 interface ImportMeta {

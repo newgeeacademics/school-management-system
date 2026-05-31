@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import fr from './translations/fr.json';
 import en from './translations/en.json';
 
@@ -15,7 +9,7 @@ const translations: Record<Locale, Record<string, unknown>> = {
   en: en as Record<string, unknown>,
 };
 
-const LOCALE_STORAGE_KEY = 'newgee-locale';
+const LOCALE_STORAGE_KEY = 'newgee-user-portal-locale';
 
 function getStoredLocale(): Locale {
   try {
@@ -73,12 +67,8 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const t = useCallback(
     (key: string, params?: Record<string, string | number>) => {
-      const value = getNested(
-        translations[locale] as Record<string, unknown>,
-        key
-      );
-      const fallback =
-        getNested(translations.fr as Record<string, unknown>, key);
+      const value = getNested(translations[locale] as Record<string, unknown>, key);
+      const fallback = getNested(translations.fr as Record<string, unknown>, key);
       const str =
         (typeof value === 'string' ? value : null) ??
         (typeof fallback === 'string' ? fallback : key);
@@ -92,9 +82,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     [locale, setLocale, t]
   );
 
-  return (
-    <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
-  );
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
 export function useTranslation() {

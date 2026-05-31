@@ -1,39 +1,32 @@
-/**
- * Test-mode auth: role is chosen on login and stored in localStorage.
- * Later this will be replaced by backend-managed roles.
- */
+const SESSION_KEY = 'newgee_portal_session_v1';
 
-const STORAGE_KEY = 'classroom_test_role';
+export type PortalRole = 'student' | 'parent' | 'teacher';
 
-export type UserRole = 'admin' | 'teacher' | 'parent' | 'student';
+export type PortalSession = {
+  role: PortalRole;
+  /** Set after real auth; optional in démo. */
+  emailHint?: string;
+};
 
-export function getStoredRole(): UserRole | null {
+export function getPortalSession(): PortalSession | null {
   if (typeof window === 'undefined') return null;
-  const v = localStorage.getItem(STORAGE_KEY);
-  if (v === 'admin' || v === 'teacher' || v === 'parent' || v === 'student') return v;
-  return null;
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as Partial<PortalSession>;
+    if (data.role === 'student' || data.role === 'parent' || data.role === 'teacher') {
+      return { role: data.role, emailHint: data.emailHint };
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
-export function setStoredRole(role: UserRole): void {
-  localStorage.setItem(STORAGE_KEY, role);
+export function setPortalSession(session: PortalSession): void {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
 }
 
-export function clearStoredRole(): void {
-  localStorage.removeItem(STORAGE_KEY);
-}
-
-const STUDENT_ID_KEY = 'classroom_test_student_id';
-
-/** When role is student, which student record represents the current user. */
-export function getStoredStudentId(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(STUDENT_ID_KEY);
-}
-
-export function setStoredStudentId(id: string): void {
-  localStorage.setItem(STUDENT_ID_KEY, id);
-}
-
-export function clearStoredStudentId(): void {
-  localStorage.removeItem(STUDENT_ID_KEY);
+export function clearPortalSession(): void {
+  sessionStorage.removeItem(SESSION_KEY);
 }

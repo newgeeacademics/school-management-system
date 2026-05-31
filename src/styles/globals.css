@@ -44,40 +44,40 @@
   --color-gray-0: #ffffff;
 }
 
+/* Portail familles : thème chaud / vert d’eau — distinct de l’app établissement (bleu outil). */
 :root {
-  --radius: 0.625rem;
-  --background: #ffffff;
-  --foreground: #020617;
+  --radius: 0.75rem;
+  --background: #faf7f2;
+  --foreground: #1c1917;
   --card: #ffffff;
-  --card-foreground: #020617;
+  --card-foreground: #1c1917;
   --popover: #ffffff;
-  --popover-foreground: #020617;
-  /* Primary brand: Tailwind blue-600 from the landing page */
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
-  --secondary: #eff6ff;
-  --secondary-foreground: #1e293b;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #eff6ff;
-  --accent-foreground: #1d4ed8;
-  --destructive: #ef4444;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #2563eb;
-  --chart-1: #2563eb;
-  --chart-2: #16a34a;
-  --chart-3: #3b82f6;
-  --chart-4: #eab308;
-  --chart-5: #8b5cf6;
-  --sidebar: #f8fafc;
-  --sidebar-foreground: #020617;
-  --sidebar-primary: #2563eb;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e0edff;
-  --sidebar-accent-foreground: #1e293b;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #2563eb;
+  --popover-foreground: #1c1917;
+  --primary: #0f766e;
+  --primary-foreground: #f0fdfa;
+  --secondary: #ccfbf1;
+  --secondary-foreground: #134e4a;
+  --muted: #f5f0e8;
+  --muted-foreground: #57534e;
+  --accent: #e0f2f1;
+  --accent-foreground: #115e59;
+  --destructive: #dc2626;
+  --border: #e7e5e4;
+  --input: #d6d3d1;
+  --ring: #0d9488;
+  --chart-1: #0d9488;
+  --chart-2: #d97706;
+  --chart-3: #059669;
+  --chart-4: #ea580c;
+  --chart-5: #7c3aed;
+  --sidebar: #f5f0e8;
+  --sidebar-foreground: #1c1917;
+  --sidebar-primary: #0f766e;
+  --sidebar-primary-foreground: #f0fdfa;
+  --sidebar-accent: #ccfbf1;
+  --sidebar-accent-foreground: #134e4a;
+  --sidebar-border: #e7e5e4;
+  --sidebar-ring: #0d9488;
 }
 
 .dark {
@@ -87,7 +87,6 @@
   --card-foreground: #e5e7eb;
   --popover: #020617;
   --popover-foreground: #e5e7eb;
-  /* Primary brand: darker blue for dark mode */
   --primary: #1d4ed8;
   --primary-foreground: #e5e7eb;
   --secondary: #0b1220;
@@ -120,107 +119,60 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family:
+      'Plus Jakarta Sans',
+      ui-sans-serif,
+      system-ui,
+      sans-serif;
   }
 }
 
 @layer utilities {
-  .grain-texture {
-    position: relative;
-    background-color: #f6f4f0;
-  }
-
-  .grain-texture::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1300 1300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    opacity: 0.4;
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .grain-texture > * {
-    position: relative;
-    z-index: 2;
-  }
-
-  .grain-texture-light {
-    position: relative;
-    background-color: #fffefb;
-  }
-
-  .grain-texture-light::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1300 1300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    opacity: 0.4;
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .grain-texture-light > * {
-    position: relative;
-    z-index: 2;
-  }
-
-  .text-gradient-blue {
-    @apply bg-gradient-to-br from-blue-600 to-blue-500 bg-clip-text text-transparent;
-  }
-
-  .bg-gradient-blue {
-    background: linear-gradient(90deg, #2563eb, #3b82f6);
+  .portal-shell {
+    @apply min-h-svh bg-background text-foreground;
   }
 }
 
 @layer base {
-  .rental-login-form {
-    animation: rentalFormReveal 0.55s ease-out both;
+  .portal-login-form {
+    animation: portalFormReveal 0.5s ease-out both;
   }
 
-  .rental-field {
+  .portal-field {
     opacity: 0;
-    transform: translateY(14px);
-    animation: rentalFieldReveal 0.45s ease-out forwards;
+    transform: translateY(10px);
+    animation: portalFieldReveal 0.4s ease-out forwards;
   }
 
-  .rental-field-1 {
-    animation-delay: 0.08s;
+  .portal-field-1 {
+    animation-delay: 0.04s;
   }
-  .rental-field-2 {
+  .portal-field-2 {
+    animation-delay: 0.1s;
+  }
+  .portal-field-3 {
     animation-delay: 0.16s;
   }
-  .rental-field-3 {
-    animation-delay: 0.24s;
-  }
-  .rental-field-4 {
-    animation-delay: 0.32s;
+  .portal-field-4 {
+    animation-delay: 0.22s;
   }
 
-  @keyframes rentalFormReveal {
+  @keyframes portalFormReveal {
     0% {
       opacity: 0;
-      transform: translateY(24px) scale(0.97);
+      transform: translateY(16px);
     }
     100% {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateY(0);
     }
   }
 
-  @keyframes rentalFieldReveal {
+  @keyframes portalFieldReveal {
     0% {
       opacity: 0;
-      transform: translateY(14px);
+      transform: translateY(10px);
     }
     100% {
       opacity: 1;

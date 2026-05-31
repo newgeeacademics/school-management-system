@@ -1,29 +1,28 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { SetRoleFromQuery } from '@/components/SetRoleFromQuery';
-import { LandingPage } from './pages/LandingPage';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { DashboardPage } from './pages/DashboardPage';
+import { UserPortalLoginPage } from '@/pages/UserPortalLoginPage';
+import { PortalHomePage } from '@/pages/PortalHomePage';
+import { PortalSessionGate } from '@/components/PortalSessionGate';
 
-export const App: React.FC = () => {
+export function App() {
   return (
-    <TooltipProvider>
+    <>
       <Toaster richColors position='top-center' />
       <BrowserRouter>
-        <SetRoleFromQuery />
         <Routes>
-          <Route path='/' element={<LandingPage />} />
-          <Route path='/login' element={<LoginPage />} />
-          <Route path='/register' element={<RegisterPage />} />
-          <Route path='/dashboard' element={<DashboardPage />} />
-          <Route path='*' element={<Navigate to='/' replace />} />
+          <Route path='/' element={<Navigate to='/connexion' replace />} />
+          <Route path='/connexion' element={<UserPortalLoginPage />} />
+          <Route
+            path='/accueil'
+            element={
+              <PortalSessionGate>
+                <PortalHomePage />
+              </PortalSessionGate>
+            }
+          />
+          <Route path='*' element={<Navigate to='/connexion' replace />} />
         </Routes>
       </BrowserRouter>
-    </TooltipProvider>
+    </>
   );
-};
-
+}
