@@ -92,29 +92,19 @@ Default seeded users (created on first boot):
 
 ---
 
-## 4. Connect frontends
+## 4. Connect frontends (Vercel)
 
-Set in each app's `.env` (or Render env vars for static sites):
+Deploy each app as its own Vercel project from branch **`it`**. Full step-by-step: **[VERCEL.md](./VERCEL.md)**.
 
-```env
-# Main app (.env)
-VITE_ADMIN_APP_URL=https://classroom-backend-admin.onrender.com
-VITE_USER_PORTAL_URL=https://classroom-backend-portal.onrender.com
+| Vercel project | Root directory | Key env vars |
+|----------------|----------------|--------------|
+| Main site | `.` | `VITE_ADMIN_APP_URL`, `VITE_USER_PORTAL_URL` |
+| Admin | `admin-app/` | `VITE_API_URL`, `VITE_MAIN_APP_URL` |
+| User portal | `user-portal-app/` | `VITE_API_URL`, `VITE_ADMIN_APP_URL` |
 
-# Admin app (admin-app/.env)
-VITE_API_URL=https://classroom-backend.onrender.com
-VITE_MAIN_APP_URL=https://your-main-site.onrender.com
+Set `VITE_API_URL=https://classroom-backend.onrender.com` on admin and portal.
 
-# User portal (user-portal-app/.env)
-VITE_API_URL=https://classroom-backend.onrender.com
-VITE_ADMIN_APP_URL=https://classroom-backend-admin.onrender.com
-```
-
-| App | Env file |
-|-----|----------|
-| Main (marketing) | `.env` |
-| Admin console | `admin-app/.env` |
-| User portal | `user-portal-app/.env` |
+After deploy, add all Vercel URLs to Render `APP_CORS_ALLOWED_ORIGINS`.
 
 ---
 
