@@ -1,13 +1,12 @@
 {
-  "name": "classroom-app",
+  "name": "newgee-admin-app",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "NewGee school administration console (dashboard, classes, grades, etc.)",
   "scripts": {
     "dev": "vite",
-    "dev:portal": "npm --prefix user-portal-app run dev",
     "build": "tsc && vite build",
-    "build:portal": "npm --prefix user-portal-app run build",
     "preview": "vite preview"
   },
   "devDependencies": {

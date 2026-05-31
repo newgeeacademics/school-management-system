@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
@@ -11,6 +11,7 @@ import { useTranslation } from '@/i18n';
 import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { setStoredRole } from '@/lib/auth';
+import { getMainAppOrigin } from '@/lib/main-app-url';
 
 export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded' }) => {
   const navigate = useNavigate();
@@ -40,12 +41,12 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
         isEmbedded ? 'w-full min-h-0 p-0' : 'flex flex-col items-center justify-center p-4 md:px-6 md:py-8 min-h-svh'
       )}
     >
-      <div className='fixed top-4 left-4 md:top-6 md:left-6 z-50'>
-        <Button asChild variant='ghost' size='sm' className='text-gray-700 gap-2'>
-          <Link to='/'>
+      <div className='fixed top-4 left-4 z-50 md:top-6 md:left-6'>
+        <Button asChild variant='ghost' size='sm' className='gap-2 text-gray-700'>
+          <a href={getMainAppOrigin()}>
             <ChevronLeft className='h-4 w-4' />
             {t('common.goBack')}
-          </Link>
+          </a>
         </Button>
       </div>
 
