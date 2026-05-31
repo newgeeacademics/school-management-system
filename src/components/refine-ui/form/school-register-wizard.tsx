@@ -22,6 +22,8 @@ import { toast } from 'sonner';
 import { Check, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getAdminDashboardUrl } from '@/lib/app-urls';
+import { buildAdminHandoffUrl, storeAccessToken } from '@/lib/auth-handoff';
+import { isBackendApiConfigured, registerSchoolWithAdmin } from '@/lib/school-registration-api';
 
 const LOCAL_SCHOOLS_KEY = 'newgee_local_schools';
 const LOCAL_USERS_KEY = 'newgee_local_users';
@@ -264,6 +266,66 @@ export function SchoolRegisterWizard() {
 
     const username = credentials.username || credentials.email.split('@')[0];
     const now = new Date().toISOString();
+
+    const schoolPayload = {
+      schoolName: school.schoolName,
+      schoolType: school.schoolType || '',
+      system: school.system || '',
+      country: school.country || '',
+      city: school.city || '',
+      commune: school.commune || '',
+      address: school.address || '',
+      gpsLat: school.gpsLat,
+      gpsLng: school.gpsLng,
+      phone: school.phone || '',
+      officialEmail: school.officialEmail || credentials.email,
+      directorName: school.directorName || '',
+      directorPhone: school.directorPhone || '',
+      website: school.website || '',
+      studentCount: school.studentCount,
+      teacherCount: school.teacherCount,
+      series: splitList(school.series),
+      logoUrl: logoUrl || '',
+    };
+
+    if (isBackendApiConfigured()) {
+      try {
+        const result = await registerSchoolWithAdmin({
+          credentials: {
+            email: credentials.email,
+            password: credentials.password,
+            username,
+            directorName: school.directorName,
+            schoolName: school.schoolName,
+          },
+          school: schoolPayload,
+        });
+
+        storeAccessToken(result.token);
+        localStorage.setItem(
+          'user',
+          JSON.stringify({
+            id: result.userId,
+            email: credentials.email,
+            name: school.directorName || school.schoolName,
+            role: 'admin',
+            schoolId: result.schoolId,
+          })
+        );
+
+        toast.success(t('auth.schoolRegistered'), { richColors: true });
+        window.location.assign(buildAdminHandoffUrl(result.token));
+        return;
+      } catch (err) {
+        console.error('School registration API error', err);
+        toast.error(err instanceof Error ? err.message : t('auth.registrationFailed'), {
+          richColors: true,
+        });
+        setIsLoading(false);
+        return;
+      }
+    }
+
     const schoolId = generateId();
     const userId = generateId();
 
