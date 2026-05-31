@@ -5,6 +5,7 @@ services:
   - type: web
     name: classroom-backend
     runtime: docker
+    branch: it
     rootDir: backend
     dockerfilePath: ./Dockerfile
     plan: free
