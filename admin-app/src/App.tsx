@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { SetRoleFromQuery } from '@/components/SetRoleFromQuery';
+import { RegistrationHandoff } from '@/components/RegistrationHandoff';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 
@@ -12,6 +13,7 @@ export const App: React.FC = () => {
     <TooltipProvider>
       <Toaster richColors position='top-center' />
       <BrowserRouter>
+        <RegistrationHandoff />
         <SetRoleFromQuery />
         <Routes>
           <Route path='/login' element={<LoginPage />} />

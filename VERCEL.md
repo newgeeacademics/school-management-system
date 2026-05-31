@@ -63,8 +63,11 @@ After the first deploy, note each Vercel URL. Redeploy after setting env vars (V
 
 | Key | Example |
 |-----|---------|
+| `VITE_API_URL` | `https://classroom-backend.onrender.com` |
 | `VITE_ADMIN_APP_URL` | `https://newgee-admin.vercel.app` |
 | `VITE_USER_PORTAL_URL` | `https://newgee-portal.vercel.app` |
+
+School registration calls `POST /api/auth/register` then `POST /api/schools` on the same Render backend, then redirects to the admin app with a JWT.
 
 ### Admin — branch `admin`
 
