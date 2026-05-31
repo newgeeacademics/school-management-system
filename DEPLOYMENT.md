@@ -94,15 +94,16 @@ Default seeded users (created on first boot):
 
 ## 4. Connect frontends (Vercel)
 
-Deploy each app as its own Vercel project from branch **`it`**. Full step-by-step: **[VERCEL.md](./VERCEL.md)**.
+Each frontend lives on **its own Git branch**; only the backend uses **`it`**. Full guide: **[VERCEL.md](./VERCEL.md)**.
 
-| Vercel project | Root directory | Key env vars |
-|----------------|----------------|--------------|
-| Main site | `.` | `VITE_ADMIN_APP_URL`, `VITE_USER_PORTAL_URL` |
-| Admin | `admin-app/` | `VITE_API_URL`, `VITE_MAIN_APP_URL` |
-| User portal | `user-portal-app/` | `VITE_API_URL`, `VITE_ADMIN_APP_URL` |
+| App | Host | Git branch | Vercel root |
+|-----|------|------------|-------------|
+| Main site | Vercel | `main` | `.` |
+| Admin | Vercel | `admin` | `.` |
+| User portal | Vercel | `user-portal` | `.` |
+| Backend API | Render | `it` | `backend/` |
 
-Set `VITE_API_URL=https://classroom-backend.onrender.com` on admin and portal.
+Set `VITE_API_URL=https://classroom-backend.onrender.com` on **admin** and **user-portal** Vercel projects.
 
 After deploy, add all Vercel URLs to Render `APP_CORS_ALLOWED_ORIGINS`.
 
