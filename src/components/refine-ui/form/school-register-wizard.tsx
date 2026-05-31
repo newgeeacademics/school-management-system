@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +21,7 @@ import { useTranslation } from '@/i18n';
 import { toast } from 'sonner';
 import { Check, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getAdminDashboardUrl } from '@/lib/app-urls';
 
 const LOCAL_SCHOOLS_KEY = 'newgee_local_schools';
 const LOCAL_USERS_KEY = 'newgee_local_users';
@@ -112,7 +112,6 @@ function splitList(raw: string) {
 
 export function SchoolRegisterWizard() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   const [activeSection, setActiveSection] = useState(0);
 
@@ -340,7 +339,7 @@ export function SchoolRegisterWizard() {
       localStorage.setItem('user', JSON.stringify(userForSession));
 
       toast.success(t('auth.schoolRegistered'), { richColors: true });
-      navigate('/dashboard', { replace: true });
+      window.location.assign(getAdminDashboardUrl());
     } catch (err) {
       console.error('School registration error', err);
       toast.error(t('auth.registrationFailed'), { richColors: true });

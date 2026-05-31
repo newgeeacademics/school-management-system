@@ -5,9 +5,18 @@ This project uses **Neon** (PostgreSQL) for the database and **Render** for host
 ## Architecture
 
 ```
-Frontend (Vite)  →  Render Web Service (classroom-backend)  →  Neon PostgreSQL
-     :5173              classroom-backend.onrender.com              neondb
+Main app (5173)     →  public site + school registration
+Admin app (5175)    →  school management dashboard
+User portal (5174)  →  students, parents, teachers
+Backend (8080)      →  Spring Boot API  →  Neon PostgreSQL
 ```
+
+| App | Folder | Dev command | Default URL |
+|-----|--------|-------------|-------------|
+| **Main** (marketing) | repo root | `npm run dev` | http://localhost:5173 |
+| **Admin** | `admin-app/` | `npm run dev:admin` | http://localhost:5175 |
+| **User portal** | `user-portal-app/` | `npm run dev:portal` | http://localhost:5174 |
+| **Backend** | `backend/` | `mvnw spring-boot:run` | http://localhost:8080 |
 
 ---
 
@@ -88,15 +97,24 @@ Default seeded users (created on first boot):
 Set in each app's `.env` (or Render env vars for static sites):
 
 ```env
+# Main app (.env)
+VITE_ADMIN_APP_URL=https://classroom-backend-admin.onrender.com
+VITE_USER_PORTAL_URL=https://classroom-backend-portal.onrender.com
+
+# Admin app (admin-app/.env)
 VITE_API_URL=https://classroom-backend.onrender.com
-VITE_BACKEND_BASE_URL=https://classroom-backend.onrender.com
+VITE_MAIN_APP_URL=https://your-main-site.onrender.com
+
+# User portal (user-portal-app/.env)
+VITE_API_URL=https://classroom-backend.onrender.com
+VITE_ADMIN_APP_URL=https://classroom-backend-admin.onrender.com
 ```
 
 | App | Env file |
 |-----|----------|
-| Root / classroom-app | `.env` |
-| admin-app | `admin-app/.env` |
-| user-portal-app | `user-portal-app/.env` |
+| Main (marketing) | `.env` |
+| Admin console | `admin-app/.env` |
+| User portal | `user-portal-app/.env` |
 
 ---
 

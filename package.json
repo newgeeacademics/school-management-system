@@ -1,12 +1,15 @@
 {
-  "name": "classroom-app",
+  "name": "newgee-main-app",
   "private": true,
   "version": "0.0.0",
+  "description": "NewGee public website and school registration",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:admin": "npm --prefix admin-app run dev",
     "dev:portal": "npm --prefix user-portal-app run dev",
     "build": "tsc && vite build",
+    "build:admin": "npm --prefix admin-app run build",
     "build:portal": "npm --prefix user-portal-app run build",
     "preview": "vite preview"
   },

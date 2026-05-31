@@ -1120,11 +1120,11 @@ export const DashboardPage: React.FC = () => {
         <SidebarHeader>
           <div className='flex items-center gap-2 px-2'>
             <div className='size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-semibold'>
-              CL
+              NG
             </div>
             <div className='flex flex-col'>
               <span className='text-sm font-semibold leading-tight'>
-                Classroom
+                NewGee Admin
               </span>
               <span className='text-[11px] text-muted-foreground'>
                 {roleTitles[role]}

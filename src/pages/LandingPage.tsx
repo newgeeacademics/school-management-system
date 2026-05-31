@@ -17,6 +17,7 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
+import { getAdminLoginUrl, getUserPortalLoginUrl } from '@/lib/app-urls';
 import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 import {
   Sheet,
@@ -32,9 +33,9 @@ function scrollToSection(hash: string) {
   el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-/** Separate user-portal app (see `user-portal-app/`). */
+/** @deprecated use getUserPortalLoginUrl from app-urls */
 function userPortalConnexionHref() {
-  return `${(import.meta.env.VITE_USER_PORTAL_URL ?? 'http://localhost:5174').replace(/\/$/, '')}/connexion`;
+  return getUserPortalLoginUrl();
 }
 
 function NavAnchor({
@@ -115,7 +116,7 @@ export const LandingPage = () => {
               <a href={userPortalConnexionHref()}>{t('landing.navUserPortal')}</a>
             </Button>
             <Button asChild variant='ghost' size='sm' className='hidden md:inline-flex text-gray-700'>
-              <Link to='/login'>{t('landing.signIn')}</Link>
+              <a href={getAdminLoginUrl()}>{t('landing.signIn')}</a>
             </Button>
 
             <div className='flex lg:hidden'>
@@ -393,9 +394,9 @@ function MobileNav() {
             </a>
           </Button>
           <Button asChild variant='ghost' size='lg' className='w-full justify-center'>
-            <Link to='/login' onClick={() => setOpen(false)}>
+            <a href={getAdminLoginUrl()} onClick={() => setOpen(false)}>
               {t('landing.signIn')}
-            </Link>
+            </a>
           </Button>
         </nav>
       </SheetContent>
