@@ -78,6 +78,13 @@
             <artifactId>jackson-datatype-hibernate6</artifactId>
         </dependency>
 
+        <!-- Dev: load backend/.env (DATABASE_URL, etc.) -->
+        <dependency>
+            <groupId>io.github.cdimascio</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
