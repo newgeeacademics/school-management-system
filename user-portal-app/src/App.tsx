@@ -22,6 +22,8 @@ export function App() {
             }
           >
             <Route index element={<PortalHomePage section='overview' />} />
+            <Route path='classes' element={<PortalHomePage section='classes' />} />
+            <Route path='students' element={<PortalHomePage section='students' />} />
             <Route path='schools' element={<PortalHomePage section='schools' />} />
             <Route path='schedule' element={<PortalHomePage section='schedule' />} />
             <Route path='grades' element={<PortalHomePage section='grades' />} />

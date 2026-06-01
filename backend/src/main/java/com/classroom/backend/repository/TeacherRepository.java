@@ -6,7 +6,13 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+import java.util.Optional;
+
 @Repository
 public interface TeacherRepository extends JpaRepository<Teacher, String> {
     List<Teacher> findBySubject(String subject);
+
+    Optional<Teacher> findByAppUser_Id(String appUserId);
+
+    Optional<Teacher> findByEmailIgnoreCase(String email);
 }

@@ -4,10 +4,12 @@ import {
   CalendarDays,
   GraduationCap,
   LayoutGrid,
+  Layers,
   LogOut,
   MessageCircle,
   RefreshCw,
   School,
+  Users,
   Utensils,
   Wifi,
   WifiOff,
@@ -17,11 +19,13 @@ import { clearPortalSession, getPortalSession, type PortalRole } from '@/lib/aut
 import { getSchoolAppOrigin } from '@/lib/school-app-url';
 import { useTranslation } from '@/i18n';
 import { PortalFeedProvider, usePortalFeedContext } from '@/context/PortalFeedContext';
-import { PORTAL_SECTIONS, sectionFromPath, type PortalSectionId } from '@/lib/portal-sections';
+import { PORTAL_SECTIONS, sectionFromPath, sectionsForRole, type PortalSectionId } from '@/lib/portal-sections';
 import { cn } from '@/lib/utils';
 
 const SECTION_ICONS: Record<PortalSectionId, React.ComponentType<{ className?: string }>> = {
   overview: LayoutGrid,
+  classes: Layers,
+  students: Users,
   schools: School,
   schedule: CalendarDays,
   grades: GraduationCap,
@@ -51,6 +55,8 @@ function PortalLayoutInner() {
     clearPortalSession();
     navigate('/connexion', { replace: true });
   };
+
+  const visibleSections = sectionsForRole(session.role);
 
   return (
     <div className='min-h-svh portal-shell flex flex-col'>
@@ -98,7 +104,7 @@ function PortalLayoutInner() {
           </div>
 
           <nav className='mt-4 flex gap-2 overflow-x-auto pb-1' aria-label={t('portalHome.navLabel')}>
-            {PORTAL_SECTIONS.map(({ id, labelKey }) => {
+            {PORTAL_SECTIONS.filter(({ id }) => visibleSections.includes(id)).map(({ id, labelKey }) => {
               const Icon = SECTION_ICONS[id];
               const active = activeSection === id;
               return (
