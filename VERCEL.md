@@ -67,7 +67,9 @@ After the first deploy, note each Vercel URL. Redeploy after setting env vars (V
 | `VITE_ADMIN_APP_URL` | `https://newgee-admin.vercel.app` |
 | `VITE_USER_PORTAL_URL` | `https://newgee-portal.vercel.app` |
 
-School registration calls `POST /api/auth/register-school` on the Render backend (one request), then redirects to the admin app with a JWT.
+School registration calls `POST /api/auth/register-school` on the Render backend (one request), then redirects to the **separate admin app** (`VITE_ADMIN_APP_URL/login?token=…`).
+
+**Admin login** lives only on the admin Vercel project (`/login`), not on the main site. The main site’s `/login` route only redirects to `VITE_ADMIN_APP_URL/login`. Header **Sign in** must use `VITE_ADMIN_APP_URL` on the main project.
 
 If registration returns **403**, on **Render** set `APP_CORS_ALLOWED_ORIGINS` to your **main site Vercel URL** (no trailing slash), e.g. `https://school-management-system-ivory-seven.vercel.app` — comma-separate all three frontend URLs.
 
@@ -88,7 +90,23 @@ If registration returns **403**, on **Render** set `APP_CORS_ALLOWED_ORIGINS` to
 
 ---
 
-## 3. Render backend (branch `it` only)
+## 3. Vérifier que l’API répond (obligatoire)
+
+Dans un navigateur ou avec curl, ouvrez **votre** URL Render + `/health` :
+
+```text
+https://VOTRE-SERVICE.onrender.com/health
+```
+
+Réponse attendue (JSON) : `"status":"UP"`, `"database":"UP"`.
+
+Si vous voyez **404 Not Found**, le backend n’est pas déployé à cette adresse — corrigez l’URL dans `VITE_API_URL` sur **main**, **admin** et **user-portal**, puis redéployez les 3 projets Vercel.
+
+L’exemple `https://classroom-backend.onrender.com` ne fonctionne que si vous avez créé un service Render avec ce nom exact.
+
+---
+
+## 4. Render backend (branch `it` only)
 
 Render service settings:
 
