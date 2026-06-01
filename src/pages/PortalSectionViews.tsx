@@ -42,12 +42,12 @@ export function PortalOverviewView() {
       </p>
       <div className='grid gap-3 sm:grid-cols-2'>
         {[
-          { label: t('portalHome.cardSchools'), count: feed.schools.length },
+          { label: t('portalHome.cardClasses'), count: feed.classes.length },
+          { label: t('portalHome.cardStudents'), count: feed.students.length },
           { label: t('portalHome.cardSchedule'), count: feed.schedule.length },
           { label: t('portalHome.cardGrades'), count: feed.grades.length },
           { label: t('portalHome.cardCanteen'), count: feed.canteen.length },
           { label: t('portalHome.cardTransport'), count: feed.transport.length },
-          { label: t('portalHome.cardMessages'), count: feed.events.length },
         ].map((item) => (
           <div key={item.label} className='rounded-xl border border-border bg-muted/30 px-4 py-3'>
             <p className='text-xs text-muted-foreground'>{item.label}</p>
@@ -65,6 +65,37 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
 
   if (section === 'overview') {
     return <PortalOverviewView />;
+  }
+
+  if (section === 'classes') {
+    return (
+      <FeedSection title={t('portalHome.cardClasses')} empty={t('portalHome.emptyClasses')} count={feed.classes.length}>
+        {feed.classes.map((classe) => (
+          <div key={classe.id} className='rounded-lg bg-muted/40 px-3 py-2'>
+            <p className='font-medium text-foreground'>{classe.name}</p>
+            <p className='text-xs text-muted-foreground'>
+              {classe.level ?? '—'}
+              {classe.studentsCount != null ? ` · ${classe.studentsCount} élève(s)` : ''}
+            </p>
+          </div>
+        ))}
+      </FeedSection>
+    );
+  }
+
+  if (section === 'students') {
+    return (
+      <FeedSection title={t('portalHome.cardStudents')} empty={t('portalHome.emptyStudents')} count={feed.students.length}>
+        {feed.students.map((student) => (
+          <div key={student.id} className='rounded-lg bg-muted/40 px-3 py-2'>
+            <p className='font-medium text-foreground'>{student.name}</p>
+            <p className='text-xs text-muted-foreground'>
+              {student.className ? `${t('portalHome.classLabel')}: ${student.className}` : t('portalHome.noClass')}
+            </p>
+          </div>
+        ))}
+      </FeedSection>
+    );
   }
 
   if (section === 'schools') {
@@ -93,6 +124,8 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
             <CalendarDays className='mt-0.5 size-4 shrink-0 text-primary' aria-hidden />
             <p>
               <span className='font-medium text-foreground'>{item.day}</span> · {item.time}
+              {item.className ? ` · ${item.className}` : ''}
+              {item.courseName ? ` · ${item.courseName}` : ''}
               {item.room ? ` · ${item.room}` : ''}
             </p>
           </div>
@@ -109,6 +142,8 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
             <GraduationCap className='mt-0.5 size-4 shrink-0 text-primary' aria-hidden />
             <p>
               <span className='font-medium text-foreground'>{grade.score}/20</span>
+              {grade.evaluationLabel ? ` · ${grade.evaluationLabel}` : ''}
+              {grade.studentName ? ` · ${grade.studentName}` : ''}
             </p>
           </div>
         ))}

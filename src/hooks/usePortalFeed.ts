@@ -11,13 +11,27 @@ export type PortalSchool = {
   officialEmail?: string;
 };
 
+export type PortalClass = {
+  id: string;
+  name: string;
+  level?: string;
+  studentsCount?: number;
+};
+
+export type PortalStudent = {
+  id: string;
+  name: string;
+  classId?: string;
+  className?: string;
+};
+
 export type PortalScheduleItem = {
   id: string;
   day: string;
   time: string;
   room?: string;
-  classItem?: string;
-  course?: string;
+  className?: string;
+  courseName?: string;
 };
 
 export type PortalCanteenItem = {
@@ -31,8 +45,8 @@ export type PortalCanteenItem = {
 export type PortalGrade = {
   id: string;
   score: number;
-  student?: string;
-  evaluation?: string;
+  studentName?: string;
+  evaluationLabel?: string;
 };
 
 export type PortalTransportRoute = {
@@ -52,6 +66,10 @@ export type PortalCalendarEvent = {
 };
 
 export type PortalFeed = {
+  role?: string;
+  profileName?: string;
+  classes: PortalClass[];
+  students: PortalStudent[];
   schools: PortalSchool[];
   schedule: PortalScheduleItem[];
   canteen: PortalCanteenItem[];
@@ -61,6 +79,8 @@ export type PortalFeed = {
 };
 
 const EMPTY: PortalFeed = {
+  classes: [],
+  students: [],
   schools: [],
   schedule: [],
   canteen: [],
@@ -75,54 +95,98 @@ const MEAL_LABELS: Record<string, string> = {
   GOUTER: 'Goûter',
 };
 
-function mapSchedule(rows: Record<string, unknown>[]): PortalScheduleItem[] {
-  return rows.map((row) => ({
-    id: String(row.id),
-    day: String(row.day ?? ''),
-    time: String(row.time ?? ''),
-    room: row.room ? String(row.room) : undefined,
-    classItem: row.classItem ? String(row.classItem) : undefined,
-    course: row.course ? String(row.course) : undefined,
-  }));
-}
+function mapFeed(data: Record<string, unknown>): PortalFeed {
+  const classes = Array.isArray(data.classes) ? data.classes : [];
+  const students = Array.isArray(data.students) ? data.students : [];
+  const schools = Array.isArray(data.schools) ? data.schools : [];
+  const schedule = Array.isArray(data.schedule) ? data.schedule : [];
+  const canteen = Array.isArray(data.canteen) ? data.canteen : [];
+  const grades = Array.isArray(data.grades) ? data.grades : [];
+  const transport = Array.isArray(data.transport) ? data.transport : [];
+  const events = Array.isArray(data.events) ? data.events : [];
 
-function mapCanteen(rows: Record<string, unknown>[]): PortalCanteenItem[] {
-  return rows.map((row) => ({
-    id: String(row.id),
-    day: String(row.day ?? ''),
-    mealType: MEAL_LABELS[String(row.mealType)] ?? String(row.mealType ?? ''),
-    dish: String(row.dish ?? ''),
-    note: row.note ? String(row.note) : undefined,
-  }));
-}
-
-function mapGrades(rows: Record<string, unknown>[]): PortalGrade[] {
-  return rows.map((row) => ({
-    id: String(row.id),
-    score: Number(row.score ?? 0),
-    student: row.student ? String(row.student) : undefined,
-    evaluation: row.evaluation ? String(row.evaluation) : undefined,
-  }));
-}
-
-function mapTransport(rows: Record<string, unknown>[]): PortalTransportRoute[] {
-  return rows.map((row) => ({
-    id: String(row.id),
-    name: String(row.name ?? ''),
-    driverName: row.driverName ? String(row.driverName) : undefined,
-    departureTime: row.departureTime ? String(row.departureTime) : undefined,
-    returnTime: row.returnTime ? String(row.returnTime) : undefined,
-  }));
-}
-
-function mapEvents(rows: Record<string, unknown>[]): PortalCalendarEvent[] {
-  return rows.map((row) => ({
-    id: String(row.id),
-    label: String(row.label ?? row.title ?? ''),
-    date: String(row.date ?? ''),
-    time: row.time ? String(row.time) : undefined,
-    location: row.location ? String(row.location) : undefined,
-  }));
+  return {
+    role: data.role ? String(data.role) : undefined,
+    profileName: data.profileName ? String(data.profileName) : undefined,
+    classes: classes.map((row) => {
+      const c = row as Record<string, unknown>;
+      return {
+        id: String(c.id),
+        name: String(c.name ?? ''),
+        level: c.level ? String(c.level) : undefined,
+        studentsCount: c.studentsCount != null ? Number(c.studentsCount) : undefined,
+      };
+    }),
+    students: students.map((row) => {
+      const s = row as Record<string, unknown>;
+      return {
+        id: String(s.id),
+        name: String(s.name ?? ''),
+        classId: s.classId ? String(s.classId) : undefined,
+        className: s.className ? String(s.className) : undefined,
+      };
+    }),
+    schools: schools.map((row) => {
+      const s = row as Record<string, unknown>;
+      return {
+        id: String(s.id),
+        name: String(s.name ?? ''),
+        city: s.city ? String(s.city) : undefined,
+        country: s.country ? String(s.country) : undefined,
+        officialEmail: s.officialEmail ? String(s.officialEmail) : undefined,
+      };
+    }),
+    schedule: schedule.map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        id: String(r.id),
+        day: String(r.day ?? ''),
+        time: String(r.time ?? ''),
+        room: r.room ? String(r.room) : undefined,
+        className: r.className ? String(r.className) : undefined,
+        courseName: r.courseName ? String(r.courseName) : undefined,
+      };
+    }),
+    canteen: canteen.map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        id: String(r.id),
+        day: String(r.day ?? ''),
+        mealType: MEAL_LABELS[String(r.mealType)] ?? String(r.mealType ?? ''),
+        dish: String(r.dish ?? ''),
+        note: r.note ? String(r.note) : undefined,
+      };
+    }),
+    grades: grades.map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        id: String(r.id),
+        score: Number(r.score ?? 0),
+        studentName: r.studentName ? String(r.studentName) : undefined,
+        evaluationLabel: r.evaluationLabel ? String(r.evaluationLabel) : undefined,
+      };
+    }),
+    transport: transport.map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        id: String(r.id),
+        name: String(r.name ?? ''),
+        driverName: r.driverName ? String(r.driverName) : undefined,
+        departureTime: r.departureTime ? String(r.departureTime) : undefined,
+        returnTime: r.returnTime ? String(r.returnTime) : undefined,
+      };
+    }),
+    events: events.map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        id: String(r.id),
+        label: String(r.label ?? ''),
+        date: String(r.date ?? ''),
+        time: r.time ? String(r.time) : undefined,
+        location: r.location ? String(r.location) : undefined,
+      };
+    }),
+  };
 }
 
 export function usePortalFeed() {
@@ -140,23 +204,8 @@ export function usePortalFeed() {
     setLoading(true);
     setError(null);
     try {
-      const [schools, schedule, canteen, grades, transport, events] = await Promise.all([
-        apiFetch<PortalSchool[]>('/api/schools'),
-        apiFetch<Record<string, unknown>[]>('/api/schedule'),
-        apiFetch<Record<string, unknown>[]>('/api/canteen'),
-        apiFetch<Record<string, unknown>[]>('/api/grades'),
-        apiFetch<Record<string, unknown>[]>('/api/transport'),
-        apiFetch<Record<string, unknown>[]>('/api/calendar'),
-      ]);
-
-      setFeed({
-        schools,
-        schedule: mapSchedule(schedule),
-        canteen: mapCanteen(canteen),
-        grades: mapGrades(grades),
-        transport: mapTransport(transport),
-        events: mapEvents(events),
-      });
+      const data = await apiFetch<Record<string, unknown>>('/api/portal/feed');
+      setFeed(mapFeed(data));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
       setFeed(EMPTY);
@@ -166,51 +215,10 @@ export function usePortalFeed() {
   }, [session?.token]);
 
   const reloadSection = useCallback(
-    async (section: PortalSectionId) => {
-      if (!session?.token || !isBackendApiConfigured()) return;
-
-      setError(null);
-      try {
-        switch (section) {
-          case 'schools': {
-            const schools = await apiFetch<PortalSchool[]>('/api/schools');
-            setFeed((prev) => ({ ...prev, schools }));
-            break;
-          }
-          case 'schedule': {
-            const schedule = await apiFetch<Record<string, unknown>[]>('/api/schedule');
-            setFeed((prev) => ({ ...prev, schedule: mapSchedule(schedule) }));
-            break;
-          }
-          case 'grades': {
-            const grades = await apiFetch<Record<string, unknown>[]>('/api/grades');
-            setFeed((prev) => ({ ...prev, grades: mapGrades(grades) }));
-            break;
-          }
-          case 'canteen': {
-            const canteen = await apiFetch<Record<string, unknown>[]>('/api/canteen');
-            setFeed((prev) => ({ ...prev, canteen: mapCanteen(canteen) }));
-            break;
-          }
-          case 'transport': {
-            const transport = await apiFetch<Record<string, unknown>[]>('/api/transport');
-            setFeed((prev) => ({ ...prev, transport: mapTransport(transport) }));
-            break;
-          }
-          case 'messages': {
-            const events = await apiFetch<Record<string, unknown>[]>('/api/calendar');
-            setFeed((prev) => ({ ...prev, events: mapEvents(events) }));
-            break;
-          }
-          case 'overview':
-            await reload();
-            break;
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data');
-      }
+    async (_section: PortalSectionId) => {
+      await reload();
     },
-    [session?.token, reload]
+    [reload]
   );
 
   useEffect(() => {
