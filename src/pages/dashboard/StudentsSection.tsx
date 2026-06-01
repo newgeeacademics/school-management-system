@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { EntityCrudActions, NONE_SELECT_VALUE } from '@/components/dashboard/EntityCrudActions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,8 @@ type StudentsSectionProps = {
   newStudent: NewStudentFormState;
   setNewStudent: SetStateAction<NewStudentFormState>;
   onCreateStudent: (e: React.FormEvent) => void;
+  onUpdateStudent: (id: string, data: { name: string; classId?: string }) => void | Promise<void>;
+  onDeleteStudent: (id: string) => void | Promise<void>;
   getClassName: (id: string) => string;
   readOnly?: boolean;
 };
@@ -35,92 +38,154 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
   newStudent,
   setNewStudent,
   onCreateStudent,
+  onUpdateStudent,
+  onDeleteStudent,
   getClassName,
   readOnly = false,
 }) => {
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [draft, setDraft] = React.useState<NewStudentFormState>({ name: '', classId: '' });
+
+  const startEdit = (student: Student) => {
+    setEditingId(student.id);
+    setDraft({ name: student.name, classId: student.classId ?? '' });
+  };
+
+  const saveEdit = () => {
+    if (!editingId || !draft.name.trim()) return;
+    void Promise.resolve(
+      onUpdateStudent(editingId, {
+        name: draft.name.trim(),
+        classId: draft.classId && draft.classId !== NONE_SELECT_VALUE ? draft.classId : undefined,
+      })
+    ).then(() => setEditingId(null));
+  };
+
   return (
     <section className='space-y-5'>
       {!readOnly && (
         <Card>
           <CardHeader>
-            <CardTitle className='text-sm font-medium'>
-              Ajouter un élève
-            </CardTitle>
+            <CardTitle className='text-sm font-medium'>Ajouter un élève</CardTitle>
           </CardHeader>
           <CardContent>
             <form
               className='grid gap-3 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_auto] items-end text-xs'
               onSubmit={onCreateStudent}
             >
-            <div className='grid gap-2'>
-              <Label htmlFor='student-name'>Nom complet</Label>
-              <Input
-                id='student-name'
-                value={newStudent.name}
-                onChange={(e) =>
-                  setNewStudent((s) => ({ ...s, name: e.target.value }))
-                }
-                placeholder='Ex : Aïcha Konaté'
-                required
-              />
-            </div>
-            <div className='grid gap-2'>
-              <Label>Classe</Label>
-              <Select
-                value={newStudent.classId}
-                onValueChange={(value) =>
-                  setNewStudent((s) => ({ ...s, classId: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Associer à une classe (optionnel)' />
-                </SelectTrigger>
-                <SelectContent>
-                  {classes.map((classe) => (
-                    <SelectItem key={classe.id} value={classe.id}>
-                      {classe.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button type='submit' size='sm'>
-              Ajouter
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <div className='grid gap-2'>
+                <Label htmlFor='student-name'>Nom complet</Label>
+                <Input
+                  id='student-name'
+                  value={newStudent.name}
+                  onChange={(e) => setNewStudent((s) => ({ ...s, name: e.target.value }))}
+                  placeholder='Ex : Aïcha Konaté'
+                  required
+                />
+              </div>
+              <div className='grid gap-2'>
+                <Label>Classe</Label>
+                <Select
+                  value={newStudent.classId || NONE_SELECT_VALUE}
+                  onValueChange={(value) =>
+                    setNewStudent((s) => ({
+                      ...s,
+                      classId: value === NONE_SELECT_VALUE ? '' : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder='Associer à une classe' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE_SELECT_VALUE}>Aucune classe</SelectItem>
+                    {classes.map((classe) => (
+                      <SelectItem key={classe.id} value={classe.id}>
+                        {classe.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type='submit' size='sm'>
+                Ajouter
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
       <Card>
         <CardHeader>
-          <CardTitle className='text-sm font-medium'>
-            Liste des élèves (simplifiée)
-          </CardTitle>
+          <CardTitle className='text-sm font-medium'>Élèves ({students.length})</CardTitle>
         </CardHeader>
         <CardContent className='space-y-2 text-xs'>
           {students.length === 0 ? (
-            <p className='text-muted-foreground'>
-              Aucun élève ajouté pour le moment.
-            </p>
+            <p className='text-muted-foreground'>Aucun élève. Ajoutez-en un puis associez-le à une classe.</p>
           ) : (
             <div className='grid gap-2 md:grid-cols-2 lg:grid-cols-3'>
-              {students.map((student) => (
-                <div
-                  key={student.id}
-                  className='rounded-md border border-border/80 px-3 py-2'
-                >
-                  <p className='text-sm font-medium text-foreground'>
-                    {student.name}
-                  </p>
-                  <p className='text-[11px] text-muted-foreground'>
-                    Classe :{' '}
-                    {student.classId
-                      ? getClassName(student.classId)
-                      : 'Non renseignée'}
-                  </p>
-                </div>
-              ))}
+              {students.map((student) => {
+                const isEditing = editingId === student.id;
+                return (
+                  <div key={student.id} className='rounded-md border border-border/80 px-3 py-2'>
+                    {isEditing ? (
+                      <div className='space-y-2'>
+                        <Input
+                          value={draft.name}
+                          onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                          placeholder='Nom'
+                        />
+                        <Select
+                          value={draft.classId || NONE_SELECT_VALUE}
+                          onValueChange={(value) =>
+                            setDraft((d) => ({
+                              ...d,
+                              classId: value === NONE_SELECT_VALUE ? '' : value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder='Classe' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NONE_SELECT_VALUE}>Aucune classe</SelectItem>
+                            {classes.map((classe) => (
+                              <SelectItem key={classe.id} value={classe.id}>
+                                {classe.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <EntityCrudActions
+                          editing
+                          onEdit={() => {}}
+                          onDelete={() => {}}
+                          onSave={saveEdit}
+                          onCancel={() => setEditingId(null)}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <p className='text-sm font-medium text-foreground'>{student.name}</p>
+                        <p className='text-[11px] text-muted-foreground'>
+                          Classe :{' '}
+                          {student.classId ? getClassName(student.classId) : 'Non renseignée'}
+                        </p>
+                        {!readOnly && (
+                          <EntityCrudActions
+                            onEdit={() => startEdit(student)}
+                            onDelete={() => {
+                              if (confirm(`Supprimer l'élève « ${student.name} » ?`)) {
+                                void Promise.resolve(onDeleteStudent(student.id));
+                              }
+                            }}
+                          />
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -128,4 +193,3 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
     </section>
   );
 };
-
