@@ -19,4 +19,10 @@ public class Teacher {
 
     @Column(nullable = false)
     private String subject;
+
+    private String email;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "app_user_id")
+    private AppUser appUser;
 }

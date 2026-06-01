@@ -1,5 +1,6 @@
 package com.classroom.backend.dto.request;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -10,4 +11,9 @@ public class StudentRequest {
     private String name;
 
     private String classId;
+
+    @Email(message = "Invalid email format")
+    private String email;
+
+    private String password;
 }

@@ -48,6 +48,7 @@ import {
   deleteUserOnBackend,
   isBackendApiConfigured,
   loadDashboardFromBackend,
+  refreshUsersFromBackend,
   updateAttendanceOnBackend,
   updateClassOnBackend,
   updateParentOnBackend,
@@ -629,6 +630,8 @@ export const DashboardPage: React.FC = () => {
     React.useState<NewTeacherFormState>({
     name: '',
     subject: '',
+    email: '',
+    password: '',
   });
   const [teacherSubjectPreset, setTeacherSubjectPreset] = React.useState('');
 
@@ -636,12 +639,15 @@ export const DashboardPage: React.FC = () => {
     React.useState<NewStudentFormState>({
       name: '',
       classId: '',
+      email: '',
+      password: '',
     });
 
   const [newParent, setNewParent] = React.useState<NewParentFormState>({
     name: '',
     phone: '',
     email: '',
+    password: '',
     studentId: '',
   });
 
@@ -780,24 +786,35 @@ export const DashboardPage: React.FC = () => {
   const getMatiereName = (id?: string) =>
     id ? matieres.find((m) => m.id === id)?.name ?? '—' : '—';
 
+  const syncPortalUsers = async () => {
+    if (!backendSync) return;
+    try {
+      setUsers(await refreshUsersFromBackend());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleCreateParent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newParent.name.trim()) return;
+    if (!newParent.name.trim() || !newParent.email.trim()) return;
     const payload = {
       name: newParent.name.trim(),
       phone: newParent.phone.trim() || undefined,
-      email: newParent.email.trim() || undefined,
+      email: newParent.email.trim(),
+      password: newParent.password.trim() || undefined,
       studentId: newParent.studentId || undefined,
     };
     try {
       if (backendSync) {
         const created = await createParentOnBackend(payload);
         setParents((prev) => [...prev, created]);
+        await syncPortalUsers();
       } else {
         setParents((prev) => [...prev, { id: `p-${Date.now()}`, ...payload }]);
       }
-      toast.success('Parent ajouté');
-      setNewParent({ name: '', phone: '', email: '', studentId: '' });
+      toast.success('Parent et compte portail créés');
+      setNewParent({ name: '', phone: '', email: '', password: '', studentId: '' });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -805,12 +822,13 @@ export const DashboardPage: React.FC = () => {
 
   const handleUpdateParent = async (
     id: string,
-    data: { name: string; phone?: string; email?: string; studentId?: string }
+    data: { name: string; phone?: string; email?: string; studentId?: string; password?: string }
   ) => {
     try {
       if (backendSync) {
         const updated = await updateParentOnBackend(id, data);
         setParents((prev) => prev.map((p) => (p.id === id ? updated : p)));
+        await syncPortalUsers();
       } else {
         setParents((prev) => prev.map((p) => (p.id === id ? { ...p, ...data } : p)));
       }
@@ -822,7 +840,10 @@ export const DashboardPage: React.FC = () => {
 
   const handleDeleteParent = async (id: string) => {
     try {
-      if (backendSync) await deleteParentOnBackend(id);
+      if (backendSync) {
+        await deleteParentOnBackend(id);
+        await syncPortalUsers();
+      }
       setParents((prev) => prev.filter((p) => p.id !== id));
       toast.success('Parent supprimé');
     } catch (err) {
@@ -1083,15 +1104,18 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTeacher.name.trim()) return;
+    if (!newTeacher.name.trim() || !newTeacher.email.trim()) return;
     const payload = {
       name: newTeacher.name.trim(),
       subject: newTeacher.subject.trim() || 'Matière à définir',
+      email: newTeacher.email.trim(),
+      password: newTeacher.password.trim() || undefined,
     };
     try {
       if (backendSync) {
         const created = await createTeacherOnBackend(payload);
         setTeachers((prev) => [...prev, created]);
+        await syncPortalUsers();
       } else {
         const initials = payload.name
           .split(' ')
@@ -1104,18 +1128,22 @@ export const DashboardPage: React.FC = () => {
           { id: `t-${Date.now()}`, initials: initials || 'ED', ...payload },
         ]);
       }
-      toast.success('Enseignant ajouté');
-      setNewTeacher({ name: '', subject: '' });
+      toast.success('Enseignant et compte portail créés');
+      setNewTeacher({ name: '', subject: '', email: '', password: '' });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
   };
 
-  const handleUpdateTeacher = async (id: string, data: { name: string; subject: string }) => {
+  const handleUpdateTeacher = async (
+    id: string,
+    data: { name: string; subject: string; email?: string; password?: string }
+  ) => {
     try {
       if (backendSync) {
         const updated = await updateTeacherOnBackend(id, data);
         setTeachers((prev) => prev.map((t) => (t.id === id ? updated : t)));
+        await syncPortalUsers();
       } else {
         setTeachers((prev) => prev.map((t) => (t.id === id ? { ...t, ...data } : t)));
       }
@@ -1127,7 +1155,10 @@ export const DashboardPage: React.FC = () => {
 
   const handleDeleteTeacher = async (id: string) => {
     try {
-      if (backendSync) await deleteTeacherOnBackend(id);
+      if (backendSync) {
+        await deleteTeacherOnBackend(id);
+        await syncPortalUsers();
+      }
       setTeachers((prev) => prev.filter((t) => t.id !== id));
       setClasses((prev) =>
         prev.map((c) =>
@@ -1142,20 +1173,23 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStudent.name.trim()) return;
+    if (!newStudent.name.trim() || !newStudent.email.trim()) return;
     const payload = {
       name: newStudent.name.trim(),
       classId: newStudent.classId || undefined,
+      email: newStudent.email.trim(),
+      password: newStudent.password.trim() || undefined,
     };
     try {
       if (backendSync) {
         const created = await createStudentOnBackend(payload);
         setStudents((prev) => [...prev, created]);
+        await syncPortalUsers();
       } else {
         setStudents((prev) => [...prev, { id: `st-${Date.now()}`, ...payload }]);
       }
-      toast.success('Élève ajouté');
-      setNewStudent({ name: '', classId: '' });
+      toast.success('Élève et compte portail créés');
+      setNewStudent({ name: '', classId: '', email: '', password: '' });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -1163,12 +1197,13 @@ export const DashboardPage: React.FC = () => {
 
   const handleUpdateStudent = async (
     id: string,
-    data: { name: string; classId?: string }
+    data: { name: string; classId?: string; email?: string; password?: string }
   ) => {
     try {
       if (backendSync) {
         const updated = await updateStudentOnBackend(id, data);
         setStudents((prev) => prev.map((s) => (s.id === id ? updated : s)));
+        await syncPortalUsers();
       } else {
         setStudents((prev) => prev.map((s) => (s.id === id ? { ...s, ...data } : s)));
       }
@@ -1180,7 +1215,10 @@ export const DashboardPage: React.FC = () => {
 
   const handleDeleteStudent = async (id: string) => {
     try {
-      if (backendSync) await deleteStudentOnBackend(id);
+      if (backendSync) {
+        await deleteStudentOnBackend(id);
+        await syncPortalUsers();
+      }
       setStudents((prev) => prev.filter((s) => s.id !== id));
       setParents((prev) =>
         prev.map((p) => (p.studentId === id ? { ...p, studentId: undefined } : p))

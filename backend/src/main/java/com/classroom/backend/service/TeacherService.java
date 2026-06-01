@@ -1,7 +1,9 @@
 package com.classroom.backend.service;
 
 import com.classroom.backend.dto.request.TeacherRequest;
+import com.classroom.backend.model.AppUser;
 import com.classroom.backend.model.Teacher;
+import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.TeacherRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
 public class TeacherService {
 
     private final TeacherRepository teacherRepository;
+    private final PortalAccountService portalAccountService;
 
     public List<Teacher> findAll() {
         return teacherRepository.findAll();
@@ -28,12 +31,15 @@ public class TeacherService {
 
     @Transactional
     public Teacher create(TeacherRequest request) {
-        String initials = generateInitials(request.getName());
+        AppUser appUser = portalAccountService.createLinkedAccount(
+                request.getName(), request.getEmail(), request.getPassword(), UserRole.TEACHER);
 
         Teacher teacher = Teacher.builder()
                 .name(request.getName())
-                .initials(initials)
+                .initials(generateInitials(request.getName()))
                 .subject(request.getSubject())
+                .email(request.getEmail() != null ? request.getEmail().trim() : null)
+                .appUser(appUser)
                 .build();
 
         return teacherRepository.save(teacher);
@@ -45,12 +51,26 @@ public class TeacherService {
         teacher.setName(request.getName());
         teacher.setInitials(generateInitials(request.getName()));
         teacher.setSubject(request.getSubject());
+        teacher.setEmail(request.getEmail() != null ? request.getEmail().trim() : null);
+
+        if (teacher.getAppUser() != null) {
+            portalAccountService.syncLinkedAccount(
+                    teacher.getAppUser(), request.getName(), request.getEmail(), request.getPassword());
+        } else if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            AppUser appUser = portalAccountService.createLinkedAccount(
+                    request.getName(), request.getEmail(), request.getPassword(), UserRole.TEACHER);
+            teacher.setAppUser(appUser);
+        }
+
         return teacherRepository.save(teacher);
     }
 
     @Transactional
     public void delete(String id) {
-        teacherRepository.deleteById(id);
+        Teacher teacher = findById(id);
+        AppUser linked = teacher.getAppUser();
+        teacherRepository.delete(teacher);
+        portalAccountService.deleteLinkedAccount(linked);
     }
 
     private String generateInitials(String name) {
