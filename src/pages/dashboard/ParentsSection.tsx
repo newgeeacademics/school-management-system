@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { EntityCrudActions, NONE_SELECT_VALUE } from '@/components/dashboard/EntityCrudActions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +29,7 @@ type ParentsSectionProps = {
   onCreateParent: (e: React.FormEvent) => void;
   onUpdateParent: (
     id: string,
-    data: { name: string; phone?: string; email?: string; studentId?: string }
+    data: { name: string; phone?: string; email?: string; studentId?: string; password?: string }
   ) => void | Promise<void>;
   onDeleteParent: (id: string) => void | Promise<void>;
 };
@@ -47,6 +48,7 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
     name: '',
     phone: '',
     email: '',
+    password: '',
     studentId: '',
   });
 
@@ -59,6 +61,7 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
       name: parent.name,
       phone: parent.phone ?? '',
       email: parent.email ?? '',
+      password: '',
       studentId: parent.studentId ?? '',
     });
   };
@@ -72,6 +75,7 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
         email: draft.email.trim() || undefined,
         studentId:
           draft.studentId && draft.studentId !== NONE_SELECT_VALUE ? draft.studentId : undefined,
+        password: draft.password.trim() || undefined,
       })
     ).then(() => setEditingId(null));
   };
@@ -80,11 +84,14 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
     <section className='space-y-5'>
       <Card>
         <CardHeader>
-          <CardTitle className='text-sm font-medium'>Ajouter un parent</CardTitle>
+          <CardTitle className='text-sm font-medium'>Ajouter un parent + compte portail</CardTitle>
         </CardHeader>
         <CardContent>
+          <p className='mb-3 text-[11px] text-muted-foreground'>
+            Email et mot de passe = connexion portail (rôle parent).
+          </p>
           <form
-            className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_auto] items-end text-xs'
+            className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
             onSubmit={onCreateParent}
           >
             <div className='grid gap-2'>
@@ -105,12 +112,22 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
               />
             </div>
             <div className='grid gap-2'>
-              <Label htmlFor='parent-email'>Email</Label>
+              <Label htmlFor='parent-email'>Email (connexion)</Label>
               <Input
                 id='parent-email'
                 type='email'
                 value={newParent.email}
                 onChange={(e) => setNewParent((p) => ({ ...p, email: e.target.value }))}
+                required
+              />
+            </div>
+            <div className='grid gap-2'>
+              <Label htmlFor='parent-password'>Mot de passe</Label>
+              <InputPassword
+                id='parent-password'
+                value={newParent.password}
+                onChange={(e) => setNewParent((p) => ({ ...p, password: e.target.value }))}
+                placeholder='changeme si vide'
               />
             </div>
             <div className='grid gap-2'>
@@ -172,7 +189,12 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
                           type='email'
                           value={draft.email}
                           onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
-                          placeholder='Email'
+                          placeholder='Email portail'
+                        />
+                        <InputPassword
+                          value={draft.password}
+                          onChange={(e) => setDraft((d) => ({ ...d, password: e.target.value }))}
+                          placeholder='Nouveau mot de passe (opt.)'
                         />
                         <Select
                           value={draft.studentId || NONE_SELECT_VALUE}

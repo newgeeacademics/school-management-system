@@ -40,6 +40,7 @@ export type Teacher = {
   initials: string;
   name: string;
   subject: string;
+  email?: string;
 };
 
 export type ClassItem = {
@@ -54,6 +55,7 @@ export type Student = {
   id: string;
   name: string;
   classId?: string;
+  email?: string;
 };
 
 export type ParentContact = {
@@ -193,17 +195,22 @@ export type NewClassFormState = {
 export type NewTeacherFormState = {
   name: string;
   subject: string;
+  email: string;
+  password: string;
 };
 
 export type NewStudentFormState = {
   name: string;
   classId: string;
+  email: string;
+  password: string;
 };
 
 export type NewParentFormState = {
   name: string;
   phone: string;
   email: string;
+  password: string;
   studentId: string;
 };
 
