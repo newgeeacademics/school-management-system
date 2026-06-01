@@ -2,7 +2,7 @@
   "name": "newgee-main-app",
   "private": true,
   "version": "0.0.0",
-  "description": "NewGee public website and school registration",
+  "description": "NewGee main site: marketing, school registration, /login and /dashboard (separate from admin-app and user-portal-app)",
   "type": "module",
   "scripts": {
     "dev": "vite",

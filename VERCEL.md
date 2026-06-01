@@ -3,11 +3,18 @@
 Backend API runs on **Render** (branch **`it`**, folder `backend/`).  
 Each frontend is a **separate Vercel project** from the same GitHub repo, on **its own branch**, with the app at the **repo root**.
 
-| App | Vercel branch | Root directory | Render / backend branch |
-|-----|---------------|----------------|-------------------------|
-| **Main** (marketing + registration) | `main` | `.` | — |
-| **Admin** (login + dashboard) | `admin` | `.` | — |
-| **User portal** (students / parents / teachers) | `user-portal` | `.` | — |
+| App | Vercel branch | Login | Dashboard / home |
+|-----|---------------|-------|-------------------|
+| **Main** — marketing, registration, **school console** | `main` | `/login` | `/dashboard` |
+| **Admin** — separate admin console (optional 2nd deploy) | `admin` | `/login` | `/dashboard` |
+| **User portal** — students / parents / teachers | `user-portal` | `/connexion` | `/accueil` … |
+
+Each app is an **independent** Vite project and Vercel deployment. They share only the Render API (`VITE_API_URL`).
+
+| App | Root directory | Backend branch |
+|-----|----------------|----------------|
+| Main, Admin, Portal frontends | `.` (per branch) | — |
+| **Backend API** (Render) | `backend/` | `it` |
 | **Backend API** | — (Render, not Vercel) | `backend/` on branch **`it`** | `it` |
 
 > **Important:** Remove or disable the old Vercel project on branch `sync-from-classroom` (Refine monolith).
@@ -63,13 +70,19 @@ After the first deploy, note each Vercel URL. Redeploy after setting env vars (V
 
 | Key | Example |
 |-----|---------|
-| `VITE_API_URL` | `https://classroom-backend.onrender.com` |
-| `VITE_ADMIN_APP_URL` | `https://newgee-admin.vercel.app` |
+| `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` |
 | `VITE_USER_PORTAL_URL` | `https://newgee-portal.vercel.app` |
 
-School registration calls `POST /api/auth/register-school` on the Render backend (one request), then redirects to the **separate admin app** (`VITE_ADMIN_APP_URL/login?token=…`).
+School registration → `POST /api/auth/register-school` → redirect to **`/dashboard?token=…`** on **this** main site.
 
-**Admin login** lives only on the admin Vercel project (`/login`), not on the main site. The main site’s `/login` route only redirects to `VITE_ADMIN_APP_URL/login`. Header **Sign in** must use `VITE_ADMIN_APP_URL` on the main project.
+**Do not** set `VITE_ADMIN_APP_URL` on the main project. Main uses its own `/login` and `/dashboard` (not the admin-app URLs).
+
+### Fix: still sent to admin / `your-admin.vercel.app` on Vercel
+
+1. **Main** project → Settings → Environment Variables → **delete** `VITE_ADMIN_APP_URL` (and any value like `https://your-admin.vercel.app`).
+2. Ensure **main** branch on GitHub has the latest sync (login/dashboard on main, not redirect to admin). Run `scripts/sync-branches.ps1` from `it` if needed.
+3. **Redeploy** the main project (Deployments → … → Redeploy, *without* reusing old env).
+4. **User portal** project → set `VITE_MAIN_APP_URL` = your **main** site URL (not the admin URL).
 
 If registration returns **403**, on **Render** set `APP_CORS_ALLOWED_ORIGINS` to your **main site Vercel URL** (no trailing slash), e.g. `https://school-management-system-ivory-seven.vercel.app` — comma-separate all three frontend URLs.
 
@@ -77,7 +90,7 @@ If registration returns **403**, on **Render** set `APP_CORS_ALLOWED_ORIGINS` to
 
 | Key | Example |
 |-----|---------|
-| `VITE_API_URL` | `https://classroom-backend.onrender.com` |
+| `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` |
 | `VITE_MAIN_APP_URL` | `https://newgee-main.vercel.app` |
 | `VITE_USER_PORTAL_URL` | `https://newgee-portal.vercel.app` |
 
@@ -85,8 +98,8 @@ If registration returns **403**, on **Render** set `APP_CORS_ALLOWED_ORIGINS` to
 
 | Key | Example |
 |-----|---------|
-| `VITE_API_URL` | `https://classroom-backend.onrender.com` |
-| `VITE_ADMIN_APP_URL` or `VITE_SCHOOL_APP_URL` | `https://newgee-admin.vercel.app` |
+| `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` |
+| `VITE_MAIN_APP_URL` | `https://newgee-main.vercel.app` (links to school `/login` on main, not admin-app) |
 
 ---
 
@@ -102,7 +115,7 @@ Réponse attendue (JSON) : `"status":"UP"`, `"database":"UP"`.
 
 Si vous voyez **404 Not Found**, le backend n’est pas déployé à cette adresse — corrigez l’URL dans `VITE_API_URL` sur **main**, **admin** et **user-portal**, puis redéployez les 3 projets Vercel.
 
-L’exemple `https://classroom-backend.onrender.com` ne fonctionne que si vous avez créé un service Render avec ce nom exact.
+Utilisez l’URL exacte de **votre** service Render (ex. `https://school-management-system-gw9s.onrender.com`), pas une URL d’exemple d’un autre déploiement.
 
 ---
 
@@ -135,13 +148,14 @@ https://newgee-main.vercel.app,https://newgee-admin.vercel.app,https://newgee-po
 ## 4. Verify
 
 ```bash
-curl https://classroom-backend.onrender.com/health
+curl https://school-management-system-gw9s.onrender.com/health
 curl -I https://newgee-main.vercel.app
 curl -I https://newgee-admin.vercel.app
 curl -I https://newgee-portal.vercel.app
 ```
 
-Admin login: `https://newgee-admin.vercel.app/login` → `admin@classroom.com` / `admin123`
+Main school console: `https://newgee-main.vercel.app/login` → account created at registration  
+Admin app (if deployed): `https://newgee-admin.vercel.app/login` → `admin@classroom.com` / `admin123`
 
 ---
 

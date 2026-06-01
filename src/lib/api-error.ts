@@ -31,3 +31,7 @@ export function wrapFetchError(err: unknown, fallback: string): Error {
   if (err instanceof Error) return err;
   return new Error(fallback);
 }
+
+export function isAdminRole(role: unknown): boolean {
+  return String(role ?? '').toUpperCase() === 'ADMIN';
+}
