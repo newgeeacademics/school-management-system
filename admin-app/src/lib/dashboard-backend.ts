@@ -1,5 +1,6 @@
 import type React from 'react';
 import { BASE_URL, ACCESS_TOKEN_KEY } from '@/constants';
+import { parseApiErrorResponse, wrapFetchError } from '@/lib/api-error';
 import type { School } from '@/types';
 import type {
   AppUser,
@@ -40,25 +41,22 @@ export async function adminApiFetch<T>(path: string, init: RequestInit = {}): Pr
   }
   if (token) headers.set('Authorization', `Bearer ${token}`);
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
-  if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    const message =
-      body && typeof body === 'object' && 'error' in body
-        ? String(body.error)
-        : body && typeof body === 'object' && 'message' in body
-          ? String(body.message)
-          : `API error ${res.status}`;
-    throw new Error(message);
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
+    if (!res.ok) {
+      throw new Error(await parseApiErrorResponse(res, `Erreur API ${res.status}`));
+    }
+    if (res.status === 204) return undefined as T;
+    return res.json() as Promise<T>;
+  } catch (err) {
+    throw wrapFetchError(err, 'Erreur de communication avec le serveur');
   }
-  if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
 }
 
 export async function loginAdmin(email: string, password: string) {
   return adminApiFetch<{ token: string; role: string }>('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email: email.trim(), password }),
   });
 }
 

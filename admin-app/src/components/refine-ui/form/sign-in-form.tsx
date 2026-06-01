@@ -12,6 +12,7 @@ import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { setStoredRole } from '@/lib/auth';
 import { getMainAppOrigin } from '@/lib/main-app-url';
+import { isAdminRole } from '@/lib/api-error';
 import { isBackendApiConfigured, loginAdmin } from '@/lib/dashboard-backend';
 import { ACCESS_TOKEN_KEY } from '@/constants';
 
@@ -28,15 +29,26 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
     setIsPending(true);
     const email = usernameOrEmail.trim();
     try {
-      if (isBackendApiConfigured() && email && password) {
-        const auth = await loginAdmin(email, password);
-        if (auth.role !== 'ADMIN') {
-          toast.error('Ce compte n’a pas accès à la console admin.', { richColors: true });
-          setIsPending(false);
-          return;
-        }
-        localStorage.setItem(ACCESS_TOKEN_KEY, auth.token);
+      if (!isBackendApiConfigured()) {
+        toast.error('VITE_API_URL n’est pas configuré sur ce déploiement Vercel (admin).', {
+          richColors: true,
+        });
+        setIsPending(false);
+        return;
       }
+      if (!email || !password) {
+        toast.error(t('auth.enterPassword'), { richColors: true });
+        setIsPending(false);
+        return;
+      }
+
+      const auth = await loginAdmin(email, password);
+      if (!isAdminRole(auth.role)) {
+        toast.error('Ce compte n’a pas accès à la console admin.', { richColors: true });
+        setIsPending(false);
+        return;
+      }
+      localStorage.setItem(ACCESS_TOKEN_KEY, auth.token);
       setStoredRole('admin');
       toast.success(t('auth.welcomeBackToast'), { richColors: true });
       setUsernameOrEmail('');

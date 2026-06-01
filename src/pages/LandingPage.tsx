@@ -17,6 +17,7 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
+import { getAdminLoginUrl, getUserPortalLoginUrl } from '@/lib/app-urls';
 import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 import {
   Sheet,
@@ -107,10 +108,10 @@ export const LandingPage = () => {
               <LanguageSwitcher showLabel className='text-gray-700' />
             </div>
             <Button asChild variant='outline' size='sm' className='hidden md:inline-flex text-gray-700 border-gray-200'>
-              <Link to='/connexion'>{t('landing.navUserPortal')}</Link>
+              <a href={getUserPortalLoginUrl()}>{t('landing.navUserPortal')}</a>
             </Button>
             <Button asChild variant='ghost' size='sm' className='hidden md:inline-flex text-gray-700'>
-              <Link to='/login'>{t('landing.signIn')}</Link>
+              <a href={getAdminLoginUrl()}>{t('landing.signIn')}</a>
             </Button>
 
             <div className='flex lg:hidden'>
@@ -388,14 +389,14 @@ function MobileNav() {
             </Link>
           </Button>
           <Button asChild variant='outline' size='lg' className='w-full justify-center'>
-            <Link to='/connexion' onClick={() => setOpen(false)}>
+            <a href={getUserPortalLoginUrl()} onClick={() => setOpen(false)}>
               {t('landing.navUserPortal')}
-            </Link>
+            </a>
           </Button>
           <Button asChild variant='ghost' size='lg' className='w-full justify-center'>
-            <Link to='/login' onClick={() => setOpen(false)}>
+            <a href={getAdminLoginUrl()} onClick={() => setOpen(false)}>
               {t('landing.signIn')}
-            </Link>
+            </a>
           </Button>
         </nav>
       </SheetContent>

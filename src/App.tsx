@@ -5,7 +5,7 @@ import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { LandingPage } from './pages/LandingPage';
 import { RegisterPage } from './pages/RegisterPage';
-import { LoginPage } from './pages/LoginPage';
+import { AdminLoginRedirectPage } from './pages/AdminLoginRedirectPage';
 import { UserPortalRedirectPage } from './pages/UserPortalRedirectPage';
 import { EnvConfigBanner } from '@/components/EnvConfigBanner';
 
@@ -17,7 +17,7 @@ export const App: React.FC = () => {
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<LandingPage />} />
-          <Route path='/login' element={<LoginPage />} />
+          <Route path='/login' element={<AdminLoginRedirectPage />} />
           <Route path='/register' element={<RegisterPage />} />
           <Route path='/connexion' element={<UserPortalRedirectPage />} />
           <Route path='*' element={<Navigate to='/' replace />} />
