@@ -19,6 +19,7 @@ type AttendanceSectionProps = {
   students: Student[];
   records: AttendanceRecord[];
   setRecords: SetStateAction<AttendanceRecord[]>;
+  onStatusChange?: (record: AttendanceRecord, isUpdate: boolean) => void;
 };
 
 const STATUS_OPTIONS: { value: AttendanceStatus; label: string; color: string }[] = [
@@ -32,6 +33,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
   students,
   records,
   setRecords,
+  onStatusChange,
 }) => {
   const [selectedClassId, setSelectedClassId] = React.useState<string>('');
   const [date, setDate] = React.useState<string>(() =>
@@ -54,17 +56,17 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
   };
 
   const updateStatus = (studentId: string, status: AttendanceStatus) => {
+    const existingIndex = records.findIndex(
+      (r) => r.studentId === studentId && r.date === date && r.classId === selectedClassId,
+    );
+    const next: AttendanceRecord = {
+      id: existingIndex >= 0 ? records[existingIndex].id : `att-${Date.now()}-${studentId}`,
+      studentId,
+      classId: selectedClassId || undefined,
+      date,
+      status,
+    };
     setRecords((prev) => {
-      const existingIndex = prev.findIndex(
-        (r) => r.studentId === studentId && r.date === date && r.classId === selectedClassId,
-      );
-      const next: AttendanceRecord = {
-        id: existingIndex >= 0 ? prev[existingIndex].id : `att-${Date.now()}-${studentId}`,
-        studentId,
-        classId: selectedClassId || undefined,
-        date,
-        status,
-      };
       if (existingIndex >= 0) {
         const clone = [...prev];
         clone[existingIndex] = next;
@@ -72,6 +74,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
       }
       return [...prev, next];
     });
+    onStatusChange?.(next, existingIndex >= 0);
   };
 
   const presentCount = records.filter(
@@ -198,8 +201,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                 élèves marqués présents.
               </li>
               <li>
-                Basé sur les marquages effectués pour la date sélectionnée. Le
-                backend gérera plus tard les statistiques détaillées.
+                Basé sur les marquages effectués pour la date sélectionnée.
               </li>
             </ul>
           </CardContent>

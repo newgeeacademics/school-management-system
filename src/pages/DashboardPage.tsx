@@ -23,6 +23,29 @@ import {
 } from 'lucide-react';
 
 import { getStoredRole, clearStoredRole, getStoredStudentId, setStoredStudentId, type UserRole } from '@/lib/auth';
+import {
+  createAttendanceOnBackend,
+  createCourseOnBackend,
+  createCanteenOnBackend,
+  createClassOnBackend,
+  createEvaluationOnBackend,
+  createEventOnBackend,
+  createMatiereOnBackend,
+  createOrUpdateGradeOnBackend,
+  createParentOnBackend,
+  createPaymentReceiptOnBackend,
+  createPaymentReminderOnBackend,
+  createRoomOnBackend,
+  createScheduleOnBackend,
+  createStudentOnBackend,
+  createTeacherOnBackend,
+  createTransportOnBackend,
+  createUserOnBackend,
+  isBackendApiConfigured,
+  loadDashboardFromBackend,
+  updateAttendanceOnBackend,
+  updateTransportStudentsOnBackend,
+} from '@/lib/dashboard-backend';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -554,16 +577,18 @@ export const DashboardPage: React.FC = () => {
     }
   }, [role, currentNavItems, activeSection]);
 
-  const [teachers, setTeachers] = React.useState<Teacher[]>(initialTeachers);
-  const [classes, setClasses] = React.useState<ClassItem[]>(initialClasses);
+  const backendSync = isBackendApiConfigured();
+
+  const [teachers, setTeachers] = React.useState<Teacher[]>(backendSync ? [] : initialTeachers);
+  const [classes, setClasses] = React.useState<ClassItem[]>(backendSync ? [] : initialClasses);
   const [students, setStudents] = React.useState<Student[]>([]);
   const [parents, setParents] = React.useState<ParentContact[]>([]);
-  const [courses, setCourses] = React.useState<Course[]>(initialCourses);
+  const [courses, setCourses] = React.useState<Course[]>(backendSync ? [] : initialCourses);
   const [matieres, setMatieres] = React.useState<Matiere[]>([]);
-  const [rooms, setRooms] = React.useState<Room[]>(initialRooms);
-  const [events, setEvents] = React.useState<CalendarEvent[]>(initialEvents);
+  const [rooms, setRooms] = React.useState<Room[]>(backendSync ? [] : initialRooms);
+  const [events, setEvents] = React.useState<CalendarEvent[]>(backendSync ? [] : initialEvents);
   const [schedule, setSchedule] =
-    React.useState<ScheduleItem[]>(initialSchedule);
+    React.useState<ScheduleItem[]>(backendSync ? [] : initialSchedule);
 
   const [schoolTypes] = React.useState<SchoolType[]>(() => {
     // En réel: viendra du backend. Ici, on relit le type choisi à l'inscription.
@@ -707,6 +732,29 @@ export const DashboardPage: React.FC = () => {
     maxScore: '20',
   });
 
+  React.useEffect(() => {
+    if (!backendSync || role !== 'admin') return;
+    void loadDashboardFromBackend({
+      setTeachers,
+      setClasses,
+      setStudents,
+      setCourses,
+      setMatieres,
+      setRooms,
+      setEvents,
+      setSchedule,
+      setCanteenMenuItems,
+      setTransportRoutes,
+      setParents,
+      setUsers,
+      setAttendanceRecords,
+      setEvaluations,
+      setGrades,
+      setPaymentReminders,
+      setPaymentReceipts,
+    }).catch((err) => console.error('Failed to load dashboard from API', err));
+  }, [backendSync, role]);
+
   const getTeacherName = (id?: string) =>
     id ? teachers.find((t) => t.id === id)?.name ?? '—' : '—';
 
@@ -723,16 +771,17 @@ export const DashboardPage: React.FC = () => {
     e.preventDefault();
     if (!newParent.name.trim()) return;
     const id = `p-${Date.now()}`;
-    setParents((prev) => [
-      ...prev,
-      {
-        id,
-        name: newParent.name.trim(),
-        phone: newParent.phone.trim() || undefined,
-        email: newParent.email.trim() || undefined,
-        studentId: newParent.studentId || undefined,
-      },
-    ]);
+    const parent = {
+      id,
+      name: newParent.name.trim(),
+      phone: newParent.phone.trim() || undefined,
+      email: newParent.email.trim() || undefined,
+      studentId: newParent.studentId || undefined,
+    };
+    setParents((prev) => [...prev, parent]);
+    if (backendSync) {
+      void createParentOnBackend(parent).catch((err) => console.error(err));
+    }
     setNewParent({
       name: '',
       phone: '',
@@ -745,15 +794,16 @@ export const DashboardPage: React.FC = () => {
     e.preventDefault();
     if (!newUser.name.trim() || !newUser.email.trim()) return;
     const id = `u-${Date.now()}`;
-    setUsers((prev) => [
-      ...prev,
-      {
-        id,
-        name: newUser.name.trim(),
-        email: newUser.email.trim(),
-        role: newUser.role,
-      },
-    ]);
+    const user = {
+      id,
+      name: newUser.name.trim(),
+      email: newUser.email.trim(),
+      role: newUser.role,
+    };
+    setUsers((prev) => [...prev, user]);
+    if (backendSync) {
+      void createUserOnBackend(user).catch((err) => console.error(err));
+    }
     setNewUser({ name: '', email: '', role: 'teacher' });
   };
 
@@ -761,17 +811,23 @@ export const DashboardPage: React.FC = () => {
     e.preventDefault();
     if (!newReminder.parentName.trim() || !newReminder.amount.trim()) return;
     const id = `rem-${Date.now()}`;
-    setPaymentReminders((prev) => [
-      ...prev,
-      {
-        id,
-        parentName: newReminder.parentName.trim(),
-        studentName: newReminder.studentName.trim() || undefined,
-        amount: Number(newReminder.amount || 0),
-        dueDate: newReminder.dueDate,
-        status: 'Envoyé',
-      },
-    ]);
+    const reminder = {
+      id,
+      parentName: newReminder.parentName.trim(),
+      studentName: newReminder.studentName.trim() || undefined,
+      amount: Number(newReminder.amount || 0),
+      dueDate: newReminder.dueDate,
+      status: 'Envoyé' as const,
+    };
+    setPaymentReminders((prev) => [...prev, reminder]);
+    if (backendSync) {
+      void createPaymentReminderOnBackend({
+        parentName: reminder.parentName,
+        studentName: reminder.studentName,
+        amount: reminder.amount,
+        dueDate: reminder.dueDate || new Date().toISOString().slice(0, 10),
+      }).catch((err) => console.error(err));
+    }
     setNewReminder({
       parentName: '',
       studentName: '',
@@ -787,17 +843,18 @@ export const DashboardPage: React.FC = () => {
     const id = `rec-${Date.now()}`;
     const reference =
       newReceipt.reference.trim() || `RECU-${new Date().getFullYear()}-${Date.now()}`;
-    setPaymentReceipts((prev) => [
-      ...prev,
-      {
-        id,
-        parentName: newReceipt.parentName.trim(),
-        studentName: newReceipt.studentName.trim() || undefined,
-        amount: Number(newReceipt.amount || 0),
-        date: newReceipt.date || new Date().toISOString().slice(0, 10),
-        reference,
-      },
-    ]);
+    const receipt = {
+      id,
+      parentName: newReceipt.parentName.trim(),
+      studentName: newReceipt.studentName.trim() || undefined,
+      amount: Number(newReceipt.amount || 0),
+      date: newReceipt.date || new Date().toISOString().slice(0, 10),
+      reference,
+    };
+    setPaymentReceipts((prev) => [...prev, receipt]);
+    if (backendSync) {
+      void createPaymentReceiptOnBackend(receipt).catch((err) => console.error(err));
+    }
     setNewReceipt({
       parentName: '',
       studentName: '',
@@ -811,16 +868,17 @@ export const DashboardPage: React.FC = () => {
     e.preventDefault();
     if (!newCanteenItem.dish.trim() || !newCanteenItem.day) return;
     const id = `cant-${Date.now()}`;
-    setCanteenMenuItems((prev) => [
-      ...prev,
-      {
-        id,
-        day: newCanteenItem.day,
-        mealType: newCanteenItem.mealType,
-        dish: newCanteenItem.dish.trim(),
-        note: newCanteenItem.note.trim() || undefined,
-      },
-    ]);
+    const item = {
+      id,
+      day: newCanteenItem.day,
+      mealType: newCanteenItem.mealType,
+      dish: newCanteenItem.dish.trim(),
+      note: newCanteenItem.note.trim() || undefined,
+    };
+    setCanteenMenuItems((prev) => [...prev, item]);
+    if (backendSync) {
+      void createCanteenOnBackend(item).catch((err) => console.error(err));
+    }
     setNewCanteenItem({
       day: '',
       mealType: 'Déjeuner',
@@ -850,6 +908,15 @@ export const DashboardPage: React.FC = () => {
         studentIds: [],
       },
     ]);
+    if (backendSync) {
+      void createTransportOnBackend({
+        name: newTransportRoute.name.trim(),
+        driverName: newTransportRoute.driverName.trim(),
+        departureTime: newTransportRoute.departureTime.trim(),
+        returnTime: newTransportRoute.returnTime.trim() || undefined,
+        note: newTransportRoute.note.trim() || undefined,
+      }).catch((err) => console.error(err));
+    }
     setNewTransportRoute({
       name: '',
       driverName: '',
@@ -863,6 +930,9 @@ export const DashboardPage: React.FC = () => {
     setTransportRoutes((prev) =>
       prev.map((r) => (r.id === routeId ? { ...r, studentIds } : r)),
     );
+    if (backendSync && routeId && !routeId.startsWith('tr-')) {
+      void updateTransportStudentsOnBackend(routeId, studentIds).catch((err) => console.error(err));
+    }
   };
 
   const handleStudentIdChange = (id: string) => {
@@ -899,6 +969,14 @@ export const DashboardPage: React.FC = () => {
         homeroomTeacherId: newClass.homeroomTeacherId || undefined,
       },
     ]);
+    if (backendSync) {
+      void createClassOnBackend({
+        name: newClass.name.trim(),
+        level: levelLabel,
+        studentsCount: Number(newClass.studentsCount || 0),
+        homeroomTeacherId: newClass.homeroomTeacherId || undefined,
+      }).catch((err) => console.error(err));
+    }
     setNewClass({
       name: '',
       schoolType: '',
@@ -927,6 +1005,13 @@ export const DashboardPage: React.FC = () => {
         subject: newTeacher.subject.trim() || 'Matière à définir',
       },
     ]);
+    if (backendSync) {
+      void createTeacherOnBackend({
+        name: newTeacher.name.trim(),
+        subject: newTeacher.subject.trim() || 'Matière à définir',
+        initials: initials || 'ED',
+      }).catch((err) => console.error(err));
+    }
     setNewTeacher({ name: '', subject: '' });
   };
 
@@ -942,6 +1027,12 @@ export const DashboardPage: React.FC = () => {
         classId: newStudent.classId || undefined,
       },
     ]);
+    if (backendSync) {
+      void createStudentOnBackend({
+        name: newStudent.name.trim(),
+        classId: newStudent.classId || undefined,
+      }).catch((err) => console.error(err));
+    }
     setNewStudent({ name: '', classId: '' });
   };
 
@@ -961,6 +1052,13 @@ export const DashboardPage: React.FC = () => {
         level: newCourse.level.trim() || 'Niveau non défini',
       },
     ]);
+    if (backendSync) {
+      void createCourseOnBackend({
+        name,
+        matiereId: newCourse.matiereId,
+        level: newCourse.level.trim() || 'Niveau non défini',
+      }).catch((err) => console.error(err));
+    }
     setNewCourse({ name: '', matiereId: '', level: '' });
   };
 
@@ -972,6 +1070,9 @@ export const DashboardPage: React.FC = () => {
       ...prev,
       { id, name: newMatiere.name.trim() },
     ]);
+    if (backendSync) {
+      void createMatiereOnBackend(newMatiere.name.trim()).catch((err) => console.error(err));
+    }
     setNewMatiere({ name: '' });
   };
 
@@ -990,6 +1091,15 @@ export const DashboardPage: React.FC = () => {
         type: newEvent.type,
       },
     ]);
+    if (backendSync) {
+      void createEventOnBackend({
+        label: newEvent.label.trim(),
+        date: newEvent.date.trim() || 'Date à définir',
+        time: newEvent.time.trim() || undefined,
+        location: newEvent.location.trim() || undefined,
+        type: newEvent.type,
+      }).catch((err) => console.error(err));
+    }
     setNewEvent({
       label: '',
       date: '',
@@ -1014,6 +1124,15 @@ export const DashboardPage: React.FC = () => {
         room: newSlot.room || undefined,
       },
     ]);
+    if (backendSync) {
+      void createScheduleOnBackend({
+        classId: newSlot.classId,
+        courseId: newSlot.courseId || undefined,
+        day: newSlot.day,
+        time: newSlot.time,
+        room: newSlot.room || undefined,
+      }).catch((err) => console.error(err));
+    }
     setNewSlot({
       classId: '',
       courseId: '',
@@ -1036,6 +1155,13 @@ export const DashboardPage: React.FC = () => {
         capacity: newRoom.capacity ? Number(newRoom.capacity) : undefined,
       },
     ]);
+    if (backendSync) {
+      void createRoomOnBackend({
+        name: newRoom.name.trim(),
+        type: newRoom.type || 'Salle de classe',
+        capacity: newRoom.capacity ? Number(newRoom.capacity) : undefined,
+      }).catch((err) => console.error(err));
+    }
     setNewRoom({
       name: '',
       type: '',
@@ -1049,20 +1175,21 @@ export const DashboardPage: React.FC = () => {
     const coef = Number(newEvaluation.coefficient || '1') || 1;
     const maxScore = Number(newEvaluation.maxScore || '20') || 20;
     const id = `ev-${Date.now()}`;
-    setEvaluations((prev) => [
-      ...prev,
-      {
-        id,
-        classId: newEvaluation.classId,
-        courseId: newEvaluation.courseId,
-        label: newEvaluation.label.trim(),
-        date: newEvaluation.date || new Date().toISOString().slice(0, 10),
-        period: newEvaluation.period,
-        type: newEvaluation.type,
-        coefficient: coef,
-        maxScore,
-      },
-    ]);
+    const evaluation = {
+      id,
+      classId: newEvaluation.classId,
+      courseId: newEvaluation.courseId,
+      label: newEvaluation.label.trim(),
+      date: newEvaluation.date || new Date().toISOString().slice(0, 10),
+      period: newEvaluation.period,
+      type: newEvaluation.type,
+      coefficient: coef,
+      maxScore,
+    };
+    setEvaluations((prev) => [...prev, evaluation]);
+    if (backendSync) {
+      void createEvaluationOnBackend(evaluation).catch((err) => console.error(err));
+    }
     setNewEvaluation({
       classId: '',
       courseId: '',
@@ -1105,6 +1232,42 @@ export const DashboardPage: React.FC = () => {
       };
       return clone;
     });
+    if (backendSync && score !== '' && !Number.isNaN(score) && evaluationId && !evaluationId.startsWith('ev-')) {
+      void createOrUpdateGradeOnBackend({
+        evaluationId,
+        studentId,
+        score: Number(score),
+      }).catch((err) => console.error(err));
+    }
+  };
+
+  const handleAttendanceStatusChange = (record: AttendanceRecord, isUpdate: boolean) => {
+    if (!backendSync) return;
+    const payload = {
+      date: record.date,
+      classId: record.classId,
+      studentId: record.studentId,
+      status: record.status,
+    };
+    const isBackendId = record.id && !record.id.startsWith('att-');
+    if (isUpdate && isBackendId) {
+      void updateAttendanceOnBackend(record.id, payload).catch((err) => console.error(err));
+      return;
+    }
+    void createAttendanceOnBackend(payload)
+      .then((created) => {
+        const savedId = String((created as { id: unknown }).id);
+        setAttendanceRecords((prev) =>
+          prev.map((r) =>
+            r.studentId === record.studentId &&
+            r.date === record.date &&
+            r.classId === record.classId
+              ? { ...r, id: savedId }
+              : r,
+          ),
+        );
+      })
+      .catch((err) => console.error(err));
   };
 
   const handleChangeRole = () => {
@@ -1993,6 +2156,7 @@ export const DashboardPage: React.FC = () => {
               students={students}
               records={attendanceRecords}
               setRecords={setAttendanceRecords}
+              onStatusChange={handleAttendanceStatusChange}
             />
           )}
 

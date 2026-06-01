@@ -12,6 +12,8 @@ import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { setStoredRole } from '@/lib/auth';
 import { getMainAppOrigin } from '@/lib/main-app-url';
+import { isBackendApiConfigured, loginAdmin } from '@/lib/dashboard-backend';
+import { ACCESS_TOKEN_KEY } from '@/constants';
 
 export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded' }) => {
   const navigate = useNavigate();
@@ -21,17 +23,30 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
   const [isPending, setIsPending] = useState(false);
   const isEmbedded = variant === 'embedded';
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsPending(true);
-    window.setTimeout(() => {
+    const email = usernameOrEmail.trim();
+    try {
+      if (isBackendApiConfigured() && email && password) {
+        const auth = await loginAdmin(email, password);
+        if (auth.role !== 'ADMIN') {
+          toast.error('Ce compte n’a pas accès à la console admin.', { richColors: true });
+          setIsPending(false);
+          return;
+        }
+        localStorage.setItem(ACCESS_TOKEN_KEY, auth.token);
+      }
       setStoredRole('admin');
       toast.success(t('auth.welcomeBackToast'), { richColors: true });
       setUsernameOrEmail('');
       setPassword('');
-      setIsPending(false);
       navigate('/dashboard');
-    }, 400);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('auth.signIn'), { richColors: true });
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
