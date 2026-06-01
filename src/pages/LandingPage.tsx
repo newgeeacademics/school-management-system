@@ -17,7 +17,7 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
-import { getAdminLoginUrl, getUserPortalLoginUrl } from '@/lib/app-urls';
+import { getUserPortalLoginUrl } from '@/lib/app-urls';
 import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 import {
   Sheet,
@@ -111,7 +111,7 @@ export const LandingPage = () => {
               <a href={getUserPortalLoginUrl()}>{t('landing.navUserPortal')}</a>
             </Button>
             <Button asChild variant='ghost' size='sm' className='hidden md:inline-flex text-gray-700'>
-              <a href={getAdminLoginUrl()}>{t('landing.signIn')}</a>
+              <Link to='/login'>{t('landing.signIn')}</Link>
             </Button>
 
             <div className='flex lg:hidden'>
@@ -394,9 +394,9 @@ function MobileNav() {
             </a>
           </Button>
           <Button asChild variant='ghost' size='lg' className='w-full justify-center'>
-            <a href={getAdminLoginUrl()} onClick={() => setOpen(false)}>
+            <Link to='/login' onClick={() => setOpen(false)}>
               {t('landing.signIn')}
-            </a>
+            </Link>
           </Button>
         </nav>
       </SheetContent>

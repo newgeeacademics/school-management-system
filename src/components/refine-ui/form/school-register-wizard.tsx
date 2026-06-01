@@ -21,8 +21,8 @@ import { useTranslation } from '@/i18n';
 import { toast } from 'sonner';
 import { Check, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getAdminDashboardUrl } from '@/lib/app-urls';
-import { buildAdminHandoffUrl, storeAccessToken } from '@/lib/auth-handoff';
+import { getDashboardUrl } from '@/lib/app-urls';
+import { buildDashboardHandoffUrl, storeAccessToken } from '@/lib/auth-handoff';
 import { isBackendApiConfigured, registerSchoolWithAdmin } from '@/lib/school-registration-api';
 
 const LOCAL_SCHOOLS_KEY = 'newgee_local_schools';
@@ -314,7 +314,7 @@ export function SchoolRegisterWizard() {
         );
 
         toast.success(t('auth.schoolRegistered'), { richColors: true });
-        window.location.assign(buildAdminHandoffUrl(result.token));
+        window.location.assign(buildDashboardHandoffUrl(result.token));
         return;
       } catch (err) {
         console.error('School registration API error', err);
@@ -401,7 +401,7 @@ export function SchoolRegisterWizard() {
       localStorage.setItem('user', JSON.stringify(userForSession));
 
       toast.success(t('auth.schoolRegistered'), { richColors: true });
-      window.location.assign(getAdminDashboardUrl());
+      window.location.assign(getDashboardUrl());
     } catch (err) {
       console.error('School registration error', err);
       toast.error(t('auth.registrationFailed'), { richColors: true });
