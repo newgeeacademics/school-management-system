@@ -9,7 +9,9 @@ import { useTranslation } from '@/i18n';
 import { ChevronLeft, GraduationCap, Users, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getSchoolAppOrigin } from '@/lib/school-app-url';
-import { setPortalSession, type PortalRole } from '@/lib/auth';
+import { setPortalSession } from '@/lib/auth';
+import { loginWithEmail, isBackendApiConfigured } from '@/lib/api';
+import { backendRoleToPortal, portalRoleMatchesBackend } from '@/lib/portal-role';
 
 const PORTAL_ROLES = ['student', 'parent', 'teacher'] as const;
 type PortalRoleState = (typeof PORTAL_ROLES)[number];
@@ -51,21 +53,60 @@ export function UserPortalSignInForm() {
     [t]
   );
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsPending(true);
-    window.setTimeout(() => {
-      const r = role as PortalRole;
-      setPortalSession({
-        role: r,
-        emailHint: usernameOrEmail.trim() || undefined,
-      });
+
+    const email = usernameOrEmail.trim();
+    if (!email || !password) {
+      toast.error(t('auth.enterPassword'), { richColors: true });
+      setIsPending(false);
+      return;
+    }
+
+    try {
+      if (isBackendApiConfigured()) {
+        const auth = await loginWithEmail(email, password);
+        const portalRole = backendRoleToPortal(auth.role);
+        if (!portalRole) {
+          toast.error('Ce compte est réservé à la console admin.', { richColors: true });
+          setIsPending(false);
+          return;
+        }
+        if (!portalRoleMatchesBackend(role, auth.role)) {
+          toast.error(`Ce compte est un profil « ${portalRole} », pas « ${role} ».`, { richColors: true });
+          setIsPending(false);
+          return;
+        }
+        setPortalSession({
+          role,
+          email: auth.email,
+          name: auth.name,
+          userId: auth.id,
+          token: auth.token,
+          emailHint: auth.email,
+        });
+      } else {
+        setPortalSession({
+          role,
+          emailHint: email || undefined,
+          email: email || '',
+        });
+      }
+
       toast.success(t('userPortal.welcomeToast'), { richColors: true });
       setUsernameOrEmail('');
       setPassword('');
-      setIsPending(false);
       navigate('/accueil', { replace: true });
-    }, 400);
+    } catch (err) {
+      const message =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message: string }).message)
+          : t('auth.signIn');
+      toast.error(message, { richColors: true });
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
