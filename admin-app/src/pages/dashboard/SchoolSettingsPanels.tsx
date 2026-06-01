@@ -15,6 +15,11 @@ import {
 } from '@/components/ui/select';
 import { FileUploader } from '@/components/refine-ui/form/file-uploader';
 import { useTranslation } from '@/i18n';
+import {
+  fetchLatestSchoolFromBackend,
+  isBackendApiConfigured,
+  persistSchoolPatchOnBackend,
+} from '@/lib/dashboard-backend';
 import type { School } from '@/types';
 import type { SectionId } from './dashboardTypes';
 
@@ -148,7 +153,17 @@ function Field({
 export function SchoolSettingsContent({ section, onNavigate }: Props) {
   const { t } = useTranslation();
   const [cacheTick, setCacheTick] = React.useState(0);
-  const school = React.useMemo(() => readLatestSchool(), [cacheTick]);
+  const [school, setSchool] = React.useState<Partial<School> | null>(null);
+
+  React.useEffect(() => {
+    if (isBackendApiConfigured()) {
+      void fetchLatestSchoolFromBackend()
+        .then((loaded) => setSchool(loaded ?? readLatestSchool()))
+        .catch(() => setSchool(readLatestSchool()));
+    } else {
+      setSchool(readLatestSchool());
+    }
+  }, [cacheTick]);
 
   const linkRow = (label: string, target: SectionId, text: string) => (
     <div className='flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/30 px-3 py-2'>
@@ -167,7 +182,12 @@ export function SchoolSettingsContent({ section, onNavigate }: Props) {
           school={school}
           onSaved={() => {
             setCacheTick((n) => n + 1);
-            toast.success('Profil enregistré (mémoire locale).', { richColors: true });
+            toast.success(
+              isBackendApiConfigured()
+                ? 'Profil enregistré sur le serveur.'
+                : 'Profil enregistré (mémoire locale).',
+              { richColors: true },
+            );
           }}
           linkRow={linkRow}
         />
@@ -261,8 +281,8 @@ function SchoolProfilePanel({
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
   };
 
-  const handleSave = () => {
-    persistSchoolPatch({
+  const handleSave = async () => {
+    const patch: Partial<School> = {
       name: form.name,
       legalName: form.legalName || undefined,
       type: form.type,
@@ -303,8 +323,17 @@ function SchoolProfilePanel({
       emergencyContactName: form.emergencyContactName || undefined,
       emergencyContactPhone: form.emergencyContactPhone || undefined,
       internalNotes: form.internalNotes || undefined,
-    });
-    onSaved();
+    };
+    try {
+      if (isBackendApiConfigured()) {
+        await persistSchoolPatchOnBackend(patch);
+      } else {
+        persistSchoolPatch(patch);
+      }
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Enregistrement impossible', { richColors: true });
+    }
   };
 
   return (
