@@ -60,73 +60,70 @@ function parseApiError(body: unknown, fallback: string): string {
   return fallback;
 }
 
+function buildSchoolBody(school: SchoolRegistrationPayload['school'], email: string) {
+  const gps =
+    school.gpsLat && school.gpsLng ? `${school.gpsLat},${school.gpsLng}` : undefined;
+
+  return {
+    name: school.schoolName,
+    type: mapSchoolType(school.schoolType),
+    system: school.system || undefined,
+    country: school.country || undefined,
+    city: school.city || undefined,
+    district: school.commune || undefined,
+    address: school.address || undefined,
+    gps,
+    mainPhone: school.phone || undefined,
+    officialEmail: school.officialEmail || email,
+    headName: school.directorName || undefined,
+    headPhone: school.directorPhone || undefined,
+    website: school.website || undefined,
+    studentCount: school.studentCount ? Number(school.studentCount) : undefined,
+    teacherCount: school.teacherCount ? Number(school.teacherCount) : undefined,
+    series: school.series.length ? school.series.join(', ') : undefined,
+    logoFileName: school.logoUrl || undefined,
+  };
+}
+
 export async function registerSchoolWithAdmin(
   payload: SchoolRegistrationPayload
 ): Promise<{ token: string; schoolId: string; userId: string }> {
   const { credentials, school } = payload;
   const displayName = credentials.directorName || credentials.schoolName || credentials.email;
 
-  const registerRes = await fetch(`${BASE_URL}/api/auth/register`, {
+  const registerRes = await fetch(`${BASE_URL}/api/auth/register-school`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name: displayName,
       email: credentials.email,
       password: credentials.password,
-      role: 'ADMIN',
+      school: buildSchoolBody(school, credentials.email),
     }),
   });
 
   if (!registerRes.ok) {
     const errBody = await registerRes.json().catch(() => null);
-    throw new Error(parseApiError(errBody, "Impossible de créer le compte administrateur."));
+    const statusHint =
+      registerRes.status === 403
+        ? ' Accès refusé — vérifiez APP_CORS_ALLOWED_ORIGINS sur Render (URL Vercel du site principal).'
+        : '';
+    throw new Error(parseApiError(errBody, "Impossible d'enregistrer l'établissement.") + statusHint);
   }
 
   const auth = (await registerRes.json()) as {
     token: string;
     id: string;
+    schoolId?: string;
   };
 
-  const gps =
-    school.gpsLat && school.gpsLng ? `${school.gpsLat},${school.gpsLng}` : undefined;
-
-  const schoolRes = await fetch(`${BASE_URL}/api/schools`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${auth.token}`,
-    },
-    body: JSON.stringify({
-      name: school.schoolName,
-      type: mapSchoolType(school.schoolType),
-      system: school.system || undefined,
-      country: school.country || undefined,
-      city: school.city || undefined,
-      district: school.commune || undefined,
-      address: school.address || undefined,
-      gps,
-      mainPhone: school.phone || undefined,
-      officialEmail: school.officialEmail || credentials.email,
-      headName: school.directorName || undefined,
-      headPhone: school.directorPhone || undefined,
-      website: school.website || undefined,
-      studentCount: school.studentCount ? Number(school.studentCount) : undefined,
-      teacherCount: school.teacherCount ? Number(school.teacherCount) : undefined,
-      series: school.series.length ? school.series.join(', ') : undefined,
-      logoFileName: school.logoUrl || undefined,
-    }),
-  });
-
-  if (!schoolRes.ok) {
-    const errBody = await schoolRes.json().catch(() => null);
-    throw new Error(parseApiError(errBody, "Compte créé, mais l'enregistrement de l'établissement a échoué."));
+  if (!auth.schoolId) {
+    throw new Error("Compte créé, mais l'identifiant de l'établissement est manquant.");
   }
-
-  const created = (await schoolRes.json()) as { id: string };
 
   return {
     token: auth.token,
-    schoolId: created.id,
+    schoolId: auth.schoolId,
     userId: auth.id,
   };
 }
