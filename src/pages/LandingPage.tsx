@@ -17,7 +17,6 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
-import { getAdminLoginUrl, getUserPortalLoginUrl } from '@/lib/app-urls';
 import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 import {
   Sheet,
@@ -31,11 +30,6 @@ function scrollToSection(hash: string) {
   const id = hash.replace(/^#/, '');
   const el = document.getElementById(id);
   el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-/** @deprecated use getUserPortalLoginUrl from app-urls */
-function userPortalConnexionHref() {
-  return getUserPortalLoginUrl();
 }
 
 function NavAnchor({
@@ -113,14 +107,10 @@ export const LandingPage = () => {
               <LanguageSwitcher showLabel className='text-gray-700' />
             </div>
             <Button asChild variant='outline' size='sm' className='hidden md:inline-flex text-gray-700 border-gray-200'>
-              <a href={userPortalConnexionHref()} target='_blank' rel='noopener noreferrer'>
-                {t('landing.navUserPortal')}
-              </a>
+              <Link to='/connexion'>{t('landing.navUserPortal')}</Link>
             </Button>
             <Button asChild variant='ghost' size='sm' className='hidden md:inline-flex text-gray-700'>
-              <a href={getAdminLoginUrl()} target='_blank' rel='noopener noreferrer'>
-                {t('landing.signIn')}
-              </a>
+              <Link to='/login'>{t('landing.signIn')}</Link>
             </Button>
 
             <div className='flex lg:hidden'>
@@ -398,24 +388,14 @@ function MobileNav() {
             </Link>
           </Button>
           <Button asChild variant='outline' size='lg' className='w-full justify-center'>
-            <a
-              href={userPortalConnexionHref()}
-              target='_blank'
-              rel='noopener noreferrer'
-              onClick={() => setOpen(false)}
-            >
+            <Link to='/connexion' onClick={() => setOpen(false)}>
               {t('landing.navUserPortal')}
-            </a>
+            </Link>
           </Button>
           <Button asChild variant='ghost' size='lg' className='w-full justify-center'>
-            <a
-              href={getAdminLoginUrl()}
-              target='_blank'
-              rel='noopener noreferrer'
-              onClick={() => setOpen(false)}
-            >
+            <Link to='/login' onClick={() => setOpen(false)}>
               {t('landing.signIn')}
-            </a>
+            </Link>
           </Button>
         </nav>
       </SheetContent>
