@@ -14,4 +14,6 @@ public class AuthResponse {
     private String name;
     private String email;
     private UserRole role;
+    /** Set when registering a school in one step. */
+    private String schoolId;
 }

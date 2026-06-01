@@ -3,6 +3,7 @@ package com.classroom.backend.controller;
 import com.classroom.backend.dto.auth.AuthResponse;
 import com.classroom.backend.dto.auth.LoginRequest;
 import com.classroom.backend.dto.auth.RegisterRequest;
+import com.classroom.backend.dto.auth.RegisterSchoolRequest;
 import com.classroom.backend.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,13 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         AuthResponse response = authService.register(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /** Creates admin account + school in one transaction (used by main site registration). */
+    @PostMapping("/register-school")
+    public ResponseEntity<AuthResponse> registerSchool(@Valid @RequestBody RegisterSchoolRequest request) {
+        AuthResponse response = authService.registerSchool(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

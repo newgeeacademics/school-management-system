@@ -113,10 +113,14 @@ export const LandingPage = () => {
               <LanguageSwitcher showLabel className='text-gray-700' />
             </div>
             <Button asChild variant='outline' size='sm' className='hidden md:inline-flex text-gray-700 border-gray-200'>
-              <a href={userPortalConnexionHref()}>{t('landing.navUserPortal')}</a>
+              <a href={userPortalConnexionHref()} target='_blank' rel='noopener noreferrer'>
+                {t('landing.navUserPortal')}
+              </a>
             </Button>
             <Button asChild variant='ghost' size='sm' className='hidden md:inline-flex text-gray-700'>
-              <a href={getAdminLoginUrl()}>{t('landing.signIn')}</a>
+              <a href={getAdminLoginUrl()} target='_blank' rel='noopener noreferrer'>
+                {t('landing.signIn')}
+              </a>
             </Button>
 
             <div className='flex lg:hidden'>
@@ -389,12 +393,27 @@ function MobileNav() {
             <LanguageSwitcher showLabel className='text-gray-700' />
           </div>
           <Button asChild variant='outline' size='lg' className='w-full justify-center'>
-            <a href={userPortalConnexionHref()} onClick={() => setOpen(false)}>
+            <Link to='/register' onClick={() => setOpen(false)}>
+              {t('landing.heroCta')}
+            </Link>
+          </Button>
+          <Button asChild variant='outline' size='lg' className='w-full justify-center'>
+            <a
+              href={userPortalConnexionHref()}
+              target='_blank'
+              rel='noopener noreferrer'
+              onClick={() => setOpen(false)}
+            >
               {t('landing.navUserPortal')}
             </a>
           </Button>
           <Button asChild variant='ghost' size='lg' className='w-full justify-center'>
-            <a href={getAdminLoginUrl()} onClick={() => setOpen(false)}>
+            <a
+              href={getAdminLoginUrl()}
+              target='_blank'
+              rel='noopener noreferrer'
+              onClick={() => setOpen(false)}
+            >
               {t('landing.signIn')}
             </a>
           </Button>

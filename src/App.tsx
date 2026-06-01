@@ -5,11 +5,13 @@ import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { LandingPage } from './pages/LandingPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { EnvConfigBanner } from '@/components/EnvConfigBanner';
 
 export const App: React.FC = () => {
   return (
     <TooltipProvider>
       <Toaster richColors position='top-center' />
+      <EnvConfigBanner />
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<LandingPage />} />

@@ -67,7 +67,9 @@ After the first deploy, note each Vercel URL. Redeploy after setting env vars (V
 | `VITE_ADMIN_APP_URL` | `https://newgee-admin.vercel.app` |
 | `VITE_USER_PORTAL_URL` | `https://newgee-portal.vercel.app` |
 
-School registration calls `POST /api/auth/register` then `POST /api/schools` on the same Render backend, then redirects to the admin app with a JWT.
+School registration calls `POST /api/auth/register-school` on the Render backend (one request), then redirects to the admin app with a JWT.
+
+If registration returns **403**, on **Render** set `APP_CORS_ALLOWED_ORIGINS` to your **main site Vercel URL** (no trailing slash), e.g. `https://school-management-system-ivory-seven.vercel.app` — comma-separate all three frontend URLs.
 
 ### Admin — branch `admin`
 
