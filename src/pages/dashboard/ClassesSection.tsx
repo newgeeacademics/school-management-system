@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { EntityCrudActions, NONE_SELECT_VALUE } from '@/components/dashboard/EntityCrudActions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,12 +15,7 @@ import {
 } from '@/components/ui/select';
 
 import { LEVELS_BY_SCHOOL_TYPE, type SchoolType } from './dashboardConstants';
-import type {
-  ClassItem,
-  NewClassFormState,
-  SetStateAction,
-  Teacher,
-} from './dashboardTypes';
+import type { ClassItem, NewClassFormState, SetStateAction, Teacher } from './dashboardTypes';
 
 type ClassesSectionProps = {
   classes: ClassItem[];
@@ -27,8 +23,12 @@ type ClassesSectionProps = {
   newClass: NewClassFormState;
   setNewClass: SetStateAction<NewClassFormState>;
   onCreateClass: (e: React.FormEvent) => void;
+  onUpdateClass: (
+    id: string,
+    data: { name: string; level: string; studentsCount: number; homeroomTeacherId?: string }
+  ) => void | Promise<void>;
+  onDeleteClass: (id: string) => void | Promise<void>;
   getTeacherName: (id?: string) => string;
-  /** Types d’établissement proposés (ex. uniquement Primaire, ou tous). Définit les options du niveau. */
   schoolTypes: SchoolType[];
 };
 
@@ -38,51 +38,69 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
   newClass,
   setNewClass,
   onCreateClass,
+  onUpdateClass,
+  onDeleteClass,
   getTeacherName,
   schoolTypes,
 }) => {
-  const effectiveType: SchoolType | '' =
-    schoolTypes.length > 0 ? schoolTypes[0] : '';
-  const levelOptions = effectiveType
-    ? LEVELS_BY_SCHOOL_TYPE[effectiveType]
-    : [];
+  const effectiveType: SchoolType | '' = schoolTypes.length > 0 ? schoolTypes[0] : '';
+  const levelOptions = effectiveType ? LEVELS_BY_SCHOOL_TYPE[effectiveType] : [];
 
   const classNameOptions = React.useMemo(() => {
     if (!newClass.level.trim()) return [];
-    const divisionLetters = ['A', 'B', 'C', 'D', 'E'];
-    return divisionLetters.map((letter) => `${newClass.level} ${letter}`);
+    return ['A', 'B', 'C', 'D', 'E'].map((letter) => `${newClass.level} ${letter}`);
   }, [newClass.level]);
+
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [draft, setDraft] = React.useState({
+    name: '',
+    level: '',
+    studentsCount: '0',
+    homeroomTeacherId: '',
+  });
+
+  const startEdit = (classe: ClassItem) => {
+    setEditingId(classe.id);
+    setDraft({
+      name: classe.name,
+      level: classe.level,
+      studentsCount: String(classe.studentsCount),
+      homeroomTeacherId: classe.homeroomTeacherId ?? '',
+    });
+  };
+
+  const saveEdit = () => {
+    if (!editingId || !draft.name.trim()) return;
+    void Promise.resolve(
+      onUpdateClass(editingId, {
+        name: draft.name.trim(),
+        level: draft.level.trim() || 'Niveau non défini',
+        studentsCount: Number(draft.studentsCount || 0),
+        homeroomTeacherId:
+          draft.homeroomTeacherId && draft.homeroomTeacherId !== NONE_SELECT_VALUE
+            ? draft.homeroomTeacherId
+            : undefined,
+      })
+    ).then(() => setEditingId(null));
+  };
 
   return (
     <section className='space-y-5'>
       <div className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)]'>
         <Card>
           <CardHeader>
-            <CardTitle className='text-sm font-medium'>
-              Créer une classe
-            </CardTitle>
+            <CardTitle className='text-sm font-medium'>Créer une classe</CardTitle>
           </CardHeader>
           <CardContent>
-            <form
-              className='space-y-3 text-xs'
-              onSubmit={onCreateClass}
-            >
+            <form className='space-y-3 text-xs' onSubmit={onCreateClass}>
               <div className='grid gap-2'>
-                <Label htmlFor='class-level'>Niveau</Label>
+                <Label>Niveau</Label>
                 <Select
                   value={newClass.level}
-                  onValueChange={(value) =>
-                    setNewClass((c) => ({ ...c, level: value, name: '' }))
-                  }
+                  onValueChange={(value) => setNewClass((c) => ({ ...c, level: value, name: '' }))}
                 >
-                  <SelectTrigger id='class-level'>
-                    <SelectValue
-                      placeholder={
-                        effectiveType
-                          ? `Choisir un niveau (${effectiveType})`
-                          : 'Choisir un niveau'
-                      }
-                    />
+                  <SelectTrigger>
+                    <SelectValue placeholder='Niveau' />
                   </SelectTrigger>
                   <SelectContent>
                     {levelOptions.map((option) => (
@@ -94,17 +112,14 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
                 </Select>
               </div>
               <div className='grid gap-2'>
-                <Label htmlFor='class-name'>Nom de la classe</Label>
+                <Label>Nom de la classe</Label>
                 <Select
                   value={newClass.name}
-                  onValueChange={(value) =>
-                    setNewClass((c) => ({ ...c, name: value }))
-                  }
+                  onValueChange={(value) => setNewClass((c) => ({ ...c, name: value }))}
                   disabled={!newClass.level}
-                  required
                 >
-                  <SelectTrigger id='class-name'>
-                    <SelectValue placeholder={newClass.level ? 'Choisir une classe (ex. 6ème A)' : 'Choisir d\'abord un niveau'} />
+                  <SelectTrigger>
+                    <SelectValue placeholder='Ex. 6ème A' />
                   </SelectTrigger>
                   <SelectContent>
                     {classNameOptions.map((option) => (
@@ -116,45 +131,39 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
                 </Select>
               </div>
               <div className='grid gap-2'>
-                <Label htmlFor='class-students'>Nombre d’élèves</Label>
+                <Label>Nombre d&apos;élèves (indicatif)</Label>
                 <Input
-                  id='class-students'
                   type='number'
                   min={0}
                   value={newClass.studentsCount}
-                  onChange={(e) =>
-                    setNewClass((c) => ({
-                      ...c,
-                      studentsCount: e.target.value,
-                    }))
-                  }
-                  placeholder='Ex : 24'
+                  onChange={(e) => setNewClass((c) => ({ ...c, studentsCount: e.target.value }))}
                 />
               </div>
               <div className='grid gap-2'>
                 <Label>Professeur principal</Label>
                 <Select
-                  value={newClass.homeroomTeacherId}
+                  value={newClass.homeroomTeacherId || NONE_SELECT_VALUE}
                   onValueChange={(value) =>
                     setNewClass((c) => ({
                       ...c,
-                      homeroomTeacherId: value,
+                      homeroomTeacherId: value === NONE_SELECT_VALUE ? '' : value,
                     }))
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder='Sélectionner un enseignant (optionnel)' />
+                    <SelectValue placeholder='Enseignant' />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={NONE_SELECT_VALUE}>Aucun</SelectItem>
                     {teachers.map((teacher) => (
                       <SelectItem key={teacher.id} value={teacher.id}>
-                        {teacher.name} • {teacher.subject}
+                        {teacher.name} · {teacher.subject}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <Button type='submit' size='sm' className='mt-1'>
+              <Button type='submit' size='sm'>
                 Enregistrer la classe
               </Button>
             </form>
@@ -163,31 +172,16 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
 
         <Card>
           <CardHeader>
-            <CardTitle className='text-sm font-medium'>
-              Résumé des classes
-            </CardTitle>
+            <CardTitle className='text-sm font-medium'>Résumé</CardTitle>
           </CardHeader>
-          <CardContent className='space-y-2 text-xs text-muted-foreground'>
+          <CardContent className='text-xs text-muted-foreground space-y-1'>
             <p>
-              Total classes :{' '}
-              <span className='font-medium text-foreground'>
-                {classes.length}
-              </span>
+              Classes : <span className='font-medium text-foreground'>{classes.length}</span>
             </p>
             <p>
-              Niveaux couverts :{' '}
+              Avec prof. principal :{' '}
               <span className='font-medium text-foreground'>
-                {Array.from(new Set(classes.map((c) => c.level))).join(', ') ||
-                  'Non défini'}
-              </span>
-            </p>
-            <p>
-              Professeurs principaux renseignés :{' '}
-              <span className='font-medium text-foreground'>
-                {
-                  classes.filter((c) => c.homeroomTeacherId !== undefined)
-                    .length
-                }
+                {classes.filter((c) => c.homeroomTeacherId).length}
               </span>
             </p>
           </CardContent>
@@ -195,36 +189,93 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
       </div>
 
       <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
-        {classes.map((classe) => (
-          <Card key={classe.id}>
-            <CardHeader className='pb-2'>
-              <div className='flex items-center justify-between gap-2'>
-                <CardTitle className='text-sm font-semibold'>
-                  {classe.name}
-                </CardTitle>
-                <Badge variant='outline' className='text-[10px]'>
-                  {classe.level}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className='space-y-1 text-xs text-muted-foreground'>
-              <p>
-                <span className='font-medium text-foreground'>
-                  {classe.studentsCount}
-                </span>{' '}
-                élèves inscrits
-              </p>
-              <p>
-                Professeur principal :{' '}
-                <span className='text-foreground'>
-                  {getTeacherName(classe.homeroomTeacherId)}
-                </span>
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+        {classes.map((classe) => {
+          const isEditing = editingId === classe.id;
+          return (
+            <Card key={classe.id}>
+              <CardHeader className='pb-2'>
+                {isEditing ? (
+                  <div className='space-y-2 text-xs'>
+                    <Input
+                      value={draft.name}
+                      onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                      placeholder='Nom'
+                    />
+                    <Input
+                      value={draft.level}
+                      onChange={(e) => setDraft((d) => ({ ...d, level: e.target.value }))}
+                      placeholder='Niveau'
+                    />
+                    <Input
+                      type='number'
+                      min={0}
+                      value={draft.studentsCount}
+                      onChange={(e) => setDraft((d) => ({ ...d, studentsCount: e.target.value }))}
+                    />
+                    <Select
+                      value={draft.homeroomTeacherId || NONE_SELECT_VALUE}
+                      onValueChange={(value) =>
+                        setDraft((d) => ({
+                          ...d,
+                          homeroomTeacherId: value === NONE_SELECT_VALUE ? '' : value,
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NONE_SELECT_VALUE}>Aucun prof.</SelectItem>
+                        {teachers.map((teacher) => (
+                          <SelectItem key={teacher.id} value={teacher.id}>
+                            {teacher.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <EntityCrudActions
+                      editing
+                      onEdit={() => {}}
+                      onDelete={() => {}}
+                      onSave={saveEdit}
+                      onCancel={() => setEditingId(null)}
+                    />
+                  </div>
+                ) : (
+                  <div className='flex items-center justify-between gap-2'>
+                    <CardTitle className='text-sm font-semibold'>{classe.name}</CardTitle>
+                    <Badge variant='outline' className='text-[10px]'>
+                      {classe.level}
+                    </Badge>
+                  </div>
+                )}
+              </CardHeader>
+              {!isEditing && (
+                <CardContent className='space-y-1 text-xs text-muted-foreground'>
+                  <p>
+                    <span className='font-medium text-foreground'>{classe.studentsCount}</span> élèves
+                    (indicatif)
+                  </p>
+                  <p>
+                    Prof. principal :{' '}
+                    <span className='text-foreground'>
+                      {getTeacherName(classe.homeroomTeacherId)}
+                    </span>
+                  </p>
+                  <EntityCrudActions
+                    onEdit={() => startEdit(classe)}
+                    onDelete={() => {
+                      if (confirm(`Supprimer la classe « ${classe.name} » ?`)) {
+                        void Promise.resolve(onDeleteClass(classe.id));
+                      }
+                    }}
+                  />
+                </CardContent>
+              )}
+            </Card>
+          );
+        })}
       </div>
     </section>
   );
 };
-

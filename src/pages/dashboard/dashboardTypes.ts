@@ -294,6 +294,7 @@ export type NewUserFormState = {
   name: string;
   email: string;
   role: AppUserRole;
+  password?: string;
 };
 
 export type SetStateAction<T> = React.Dispatch<React.SetStateAction<T>>;
