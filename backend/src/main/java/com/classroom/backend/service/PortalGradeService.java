@@ -175,10 +175,10 @@ public class PortalGradeService {
                     .orElse(null);
         }
         if (scope.role() == UserRole.STUDENT && scope.classes().size() == 1) {
-            return scope.classes().getFirst().getId();
+            return scope.classes().get(0).getId();
         }
         if (scope.role() == UserRole.TEACHER && scope.classes().size() == 1) {
-            return scope.classes().getFirst().getId();
+            return scope.classes().get(0).getId();
         }
         return null;
     }
@@ -188,7 +188,7 @@ public class PortalGradeService {
             return studentId;
         }
         if (scope.role() == UserRole.STUDENT && scope.students().size() == 1) {
-            return scope.students().getFirst().getId();
+            return scope.students().get(0).getId();
         }
         return null;
     }
