@@ -11,20 +11,17 @@ import { usePortalFeedContext } from '@/context/PortalFeedContext';
 import type { PortalSectionId } from '@/lib/portal-sections';
 
 function FeedSection({
-  title,
   empty,
   count,
   children,
 }: {
-  title: string;
   empty: string;
   count: number;
   children: React.ReactNode;
 }) {
   return (
     <section className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
-      <h2 className='text-sm font-semibold text-foreground'>{title}</h2>
-      <div className='mt-3 space-y-2 text-sm text-muted-foreground'>
+      <div className='space-y-2 text-sm text-muted-foreground'>
         {count > 0 ? children : <p className='text-xs italic'>{empty}</p>}
       </div>
     </section>
@@ -69,7 +66,7 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
 
   if (section === 'classes') {
     return (
-      <FeedSection title={t('portalHome.cardClasses')} empty={t('portalHome.emptyClasses')} count={feed.classes.length}>
+      <FeedSection empty={t('portalHome.emptyClasses')} count={feed.classes.length}>
         {feed.classes.map((classe) => (
           <div key={classe.id} className='rounded-lg bg-muted/40 px-3 py-2'>
             <p className='font-medium text-foreground'>{classe.name}</p>
@@ -85,7 +82,7 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
 
   if (section === 'students') {
     return (
-      <FeedSection title={t('portalHome.cardStudents')} empty={t('portalHome.emptyStudents')} count={feed.students.length}>
+      <FeedSection empty={t('portalHome.emptyStudents')} count={feed.students.length}>
         {feed.students.map((student) => (
           <div key={student.id} className='rounded-lg bg-muted/40 px-3 py-2'>
             <p className='font-medium text-foreground'>{student.name}</p>
@@ -100,7 +97,7 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
 
   if (section === 'schools') {
     return (
-      <FeedSection title={t('portalHome.cardSchools')} empty={t('portalHome.emptySchools')} count={feed.schools.length}>
+      <FeedSection empty={t('portalHome.emptySchools')} count={feed.schools.length}>
         {feed.schools.map((school) => (
           <div key={school.id} className='flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2'>
             <School className='mt-0.5 size-4 shrink-0 text-primary' aria-hidden />
@@ -118,7 +115,7 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
 
   if (section === 'schedule') {
     return (
-      <FeedSection title={t('portalHome.cardSchedule')} empty={t('portalHome.emptySchedule')} count={feed.schedule.length}>
+      <FeedSection empty={t('portalHome.emptySchedule')} count={feed.schedule.length}>
         {feed.schedule.map((item) => (
           <div key={item.id} className='flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2'>
             <CalendarDays className='mt-0.5 size-4 shrink-0 text-primary' aria-hidden />
@@ -135,17 +132,12 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
   }
 
   if (section === 'grades') {
-    return (
-      <section className='space-y-3'>
-        <h2 className='text-sm font-semibold text-foreground'>{t('portalHome.cardGrades')}</h2>
-        <PortalGradesView />
-      </section>
-    );
+    return <PortalGradesView />;
   }
 
   if (section === 'canteen') {
     return (
-      <FeedSection title={t('portalHome.cardCanteen')} empty={t('portalHome.emptyCanteen')} count={feed.canteen.length}>
+      <FeedSection empty={t('portalHome.emptyCanteen')} count={feed.canteen.length}>
         {feed.canteen.map((item) => (
           <div key={item.id} className='flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2'>
             <Utensils className='mt-0.5 size-4 shrink-0 text-primary' aria-hidden />
@@ -160,7 +152,7 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
 
   if (section === 'transport') {
     return (
-      <FeedSection title={t('portalHome.cardTransport')} empty={t('portalHome.emptyTransport')} count={feed.transport.length}>
+      <FeedSection empty={t('portalHome.emptyTransport')} count={feed.transport.length}>
         {feed.transport.map((route) => (
           <div key={route.id} className='flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2'>
             <Bus className='mt-0.5 size-4 shrink-0 text-primary' aria-hidden />
@@ -175,7 +167,7 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
   }
 
   return (
-    <FeedSection title={t('portalHome.cardMessages')} empty={t('portalHome.emptyEvents')} count={feed.events.length}>
+    <FeedSection empty={t('portalHome.emptyEvents')} count={feed.events.length}>
       {feed.events.map((event) => (
         <div key={event.id} className='flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2'>
           <MessageCircle className='mt-0.5 size-4 shrink-0 text-primary' aria-hidden />
