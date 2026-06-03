@@ -132,6 +132,10 @@
   .portal-shell {
     @apply min-h-svh bg-background text-foreground;
   }
+
+  .portal-dashboard {
+    @apply min-h-svh bg-background text-foreground;
+  }
 }
 
 @layer base {
