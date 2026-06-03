@@ -72,6 +72,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import { UserPortalSidebarLink } from '@/components/UserPortalSidebarLink';
 
 import {
   COURSE_LEVEL_OPTIONS,
@@ -1907,6 +1908,7 @@ export const DashboardPage: React.FC = () => {
                 </p>
               </div>
             </div>
+            <UserPortalSidebarLink />
             <Button variant='ghost' size='sm' className='w-full justify-start text-xs' onClick={handleChangeRole}>
               Changer de rôle
             </Button>
