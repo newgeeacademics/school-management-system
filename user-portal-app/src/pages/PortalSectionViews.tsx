@@ -1,11 +1,11 @@
 import {
   Bus,
   CalendarDays,
-  GraduationCap,
   MessageCircle,
   School,
   Utensils,
 } from 'lucide-react';
+import { PortalGradesView } from '@/pages/PortalGradesView';
 import { useTranslation } from '@/i18n';
 import { usePortalFeedContext } from '@/context/PortalFeedContext';
 import type { PortalSectionId } from '@/lib/portal-sections';
@@ -136,18 +136,10 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
 
   if (section === 'grades') {
     return (
-      <FeedSection title={t('portalHome.cardGrades')} empty={t('portalHome.emptyGrades')} count={feed.grades.length}>
-        {feed.grades.map((grade) => (
-          <div key={grade.id} className='flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2'>
-            <GraduationCap className='mt-0.5 size-4 shrink-0 text-primary' aria-hidden />
-            <p>
-              <span className='font-medium text-foreground'>{grade.score}/20</span>
-              {grade.evaluationLabel ? ` · ${grade.evaluationLabel}` : ''}
-              {grade.studentName ? ` · ${grade.studentName}` : ''}
-            </p>
-          </div>
-        ))}
-      </FeedSection>
+      <section className='space-y-3'>
+        <h2 className='text-sm font-semibold text-foreground'>{t('portalHome.cardGrades')}</h2>
+        <PortalGradesView />
+      </section>
     );
   }
 
