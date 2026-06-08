@@ -3,6 +3,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
+import { AppLogo } from '@/components/AppLogo';
+import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { FileUploader } from '@/components/refine-ui/form/file-uploader';
 import { MapLocationPicker } from '@/components/refine-ui/form/map-location-picker';
@@ -11,7 +13,18 @@ import { useTranslation } from '@/i18n';
 import { toast } from 'sonner';
 import { getDashboardUrl } from '@/lib/app-urls';
 import { buildDashboardHandoffUrl, storeAccessToken } from '@/lib/auth-handoff';
+import { persistSchoolProfileFromRegistration } from '@/lib/school-profile';
 import { isBackendApiConfigured, registerSchoolWithAdmin } from '@/lib/school-registration-api';
+import {
+  EmailWithAtSeparator,
+  isCompleteEmail,
+} from '@/components/refine-ui/form/email-with-at-separator';
+import { PhoneWithDialCode } from '@/components/refine-ui/form/phone-with-dial-code';
+import {
+  formatPhoneWithCountry,
+  getCitiesByCountryName,
+  getCountries,
+} from '@/lib/location-data';
 import './school-register-wizard.css';
 
 const LOCAL_SCHOOLS_KEY = 'newgee_local_schools';
@@ -43,12 +56,9 @@ function generateId() {
 }
 
 const SCHOOL_TYPES = [
-  { value: 'maternelle', labelKey: 'school.typeMaternelle' },
   { value: 'primaire', labelKey: 'school.typePrimaire' },
-  { value: 'secondaire', labelKey: 'school.typeSecondaire' },
-  { value: 'universite', labelKey: 'school.typeUniversite' },
-  { value: 'centre_formation', labelKey: 'school.typeCentreFormation' },
-  { value: 'autre', labelKey: 'school.typeOther' },
+  { value: 'college', labelKey: 'school.typeCollege' },
+  { value: 'lycee', labelKey: 'school.typeLycee' },
 ] as const;
 
 const SYSTEMS = [
@@ -168,7 +178,7 @@ export function SchoolRegisterWizard() {
         case 4:
           return Boolean(
             school.phone.trim() &&
-              school.officialEmail.trim() &&
+              isCompleteEmail(school.officialEmail) &&
               school.directorName.trim() &&
               school.directorPhone.trim()
           );
@@ -183,7 +193,7 @@ export function SchoolRegisterWizard() {
           return true;
         case 7:
           return Boolean(
-            credentials.email.trim() &&
+            isCompleteEmail(credentials.email) &&
               credentials.password.trim() &&
               credentials.confirmPassword.trim() &&
               credentials.password === credentials.confirmPassword
@@ -202,10 +212,21 @@ export function SchoolRegisterWizard() {
     return canContinue(7);
   }, [canContinue]);
 
+  const countries = useMemo(() => getCountries(), []);
+  const cityOptions = useMemo(
+    () => getCitiesByCountryName(school.country),
+    [school.country]
+  );
+
   const handleSchoolInput =
     (key: keyof SchoolState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setSchool((prev) => ({ ...prev, [key]: e.target.value }));
     };
+
+  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const country = e.target.value;
+    setSchool((prev) => ({ ...prev, country, city: '' }));
+  };
 
   const handleLocationPick = useCallback((lat: number, lng: number) => {
     setSchool((prev) => ({
@@ -272,7 +293,7 @@ export function SchoolRegisterWizard() {
       address: school.address || '',
       gpsLat: school.gpsLat,
       gpsLng: school.gpsLng,
-      phone: school.phone || '',
+      phone: formatPhoneWithCountry(school.country, school.phone) || '',
       officialEmail: school.officialEmail || credentials.email,
       directorName: school.directorName || '',
       directorPhone: school.directorPhone || '',
@@ -308,6 +329,15 @@ export function SchoolRegisterWizard() {
           })
         );
 
+        persistSchoolProfileFromRegistration({
+          schoolId: result.schoolId,
+          schoolName: school.schoolName,
+          schoolType: school.schoolType,
+          system: school.system,
+          country: school.country,
+          city: school.city,
+        });
+
         toast.success(t('auth.schoolRegistered'), { richColors: true });
         window.location.assign(buildDashboardHandoffUrl(result.token));
         return;
@@ -334,7 +364,7 @@ export function SchoolRegisterWizard() {
       address: school.address || '',
       gpsLat: school.gpsLat ? Number(school.gpsLat) : null,
       gpsLng: school.gpsLng ? Number(school.gpsLng) : null,
-      phone: school.phone || '',
+      phone: formatPhoneWithCountry(school.country, school.phone) || '',
       officialEmail: school.officialEmail || credentials.email,
       directorName: school.directorName || '',
       directorPhone: school.directorPhone || '',
@@ -392,6 +422,15 @@ export function SchoolRegisterWizard() {
 
       localStorage.setItem(LOCAL_SCHOOLS_KEY, JSON.stringify(existingSchools));
       localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(existingUsers));
+
+      persistSchoolProfileFromRegistration({
+        schoolId,
+        schoolName: school.schoolName,
+        schoolType: school.schoolType,
+        system: school.system,
+        country: school.country,
+        city: school.city,
+      });
 
       const { password: _p, ...userForSession } = userRecord;
       localStorage.setItem('user', JSON.stringify(userForSession));
@@ -452,15 +491,40 @@ export function SchoolRegisterWizard() {
             <div className='school-register__grid-2'>
               <label className='school-register__field'>
                 <span>{t('school.country')} *</span>
-                <input
-                  value={school.country}
-                  onChange={handleSchoolInput('country')}
-                  placeholder="Ex. Côte d'Ivoire"
-                />
+                <select value={school.country} onChange={handleCountryChange} required>
+                  <option value=''>{t('school.selectCountry')}</option>
+                  {countries.map((country) => (
+                    <option key={country.code} value={country.name}>
+                      {country.name}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className='school-register__field'>
                 <span>{t('school.city')} *</span>
-                <input value={school.city} onChange={handleSchoolInput('city')} placeholder='Ex. Abidjan' />
+                {cityOptions.length > 0 ? (
+                  <select
+                    value={school.city}
+                    onChange={handleSchoolInput('city')}
+                    required
+                    disabled={!school.country}
+                  >
+                    <option value=''>{t('school.selectCity')}</option>
+                    {cityOptions.map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    value={school.city}
+                    onChange={handleSchoolInput('city')}
+                    placeholder={t('school.cityPlaceholder')}
+                    required
+                    disabled={!school.country}
+                  />
+                )}
               </label>
             </div>
             <div className='school-register__grid-2'>
@@ -514,11 +578,23 @@ export function SchoolRegisterWizard() {
             <div className='school-register__grid-2'>
               <label className='school-register__field'>
                 <span>{t('school.phone')} *</span>
-                <input type='tel' value={school.phone} onChange={handleSchoolInput('phone')} />
+                <PhoneWithDialCode
+                  countryName={school.country}
+                  value={school.phone}
+                  onChange={(phone) => setSchool((prev) => ({ ...prev, phone }))}
+                  placeholder={t('school.phonePlaceholder')}
+                  required
+                />
               </label>
               <label className='school-register__field'>
                 <span>{t('school.officialEmail')} *</span>
-                <input type='email' value={school.officialEmail} onChange={handleSchoolInput('officialEmail')} />
+                <EmailWithAtSeparator
+                  value={school.officialEmail}
+                  onChange={(officialEmail) => setSchool((prev) => ({ ...prev, officialEmail }))}
+                  localPlaceholder={t('school.emailLocalPlaceholder')}
+                  domainPlaceholder={t('school.emailDomainPlaceholder')}
+                  required
+                />
               </label>
             </div>
             <div className='school-register__grid-2'>
@@ -635,7 +711,12 @@ export function SchoolRegisterWizard() {
               </label>
               <label className='school-register__field'>
                 <span>{t('school.billingEmail')}</span>
-                <input type='email' value={school.billingEmail} onChange={handleSchoolInput('billingEmail')} />
+                <EmailWithAtSeparator
+                  value={school.billingEmail}
+                  onChange={(billingEmail) => setSchool((prev) => ({ ...prev, billingEmail }))}
+                  localPlaceholder={t('school.emailLocalPlaceholder')}
+                  domainPlaceholder={t('school.emailDomainPlaceholder')}
+                />
               </label>
             </div>
             <label className='school-register__field'>
@@ -671,11 +752,12 @@ export function SchoolRegisterWizard() {
           <>
             <label className='school-register__field'>
               <span>{t('auth.email')} *</span>
-              <input
-                type='email'
+              <EmailWithAtSeparator
                 value={credentials.email}
-                onChange={handleCredentialsInput('email')}
-                placeholder={t('auth.enterEmail')}
+                onChange={(email) => setCredentials((prev) => ({ ...prev, email }))}
+                localPlaceholder={t('school.emailLocalPlaceholder')}
+                domainPlaceholder={t('school.emailDomainPlaceholder')}
+                required
               />
             </label>
             <label className='school-register__field'>
@@ -714,7 +796,7 @@ export function SchoolRegisterWizard() {
   const subtitle = t(STEP_SUBTITLE_KEYS[step - 1]);
 
   return (
-    <div className='school-register container'>
+    <div className='school-register'>
       <div className='school-register__shell'>
         <div className='school-register__header'>
           <div className='school-register__topbar'>
@@ -726,17 +808,11 @@ export function SchoolRegisterWizard() {
             >
               <ChevronLeft size={18} />
             </button>
-            <div className='school-register__brand' aria-label='NewGee'>
-              <span>New</span>
-              <span className='school-register__brand-accent'>Gee</span>
-            </div>
-            <div className='school-register__topbar-spacer' aria-hidden />
+            <AppLogo className='school-register__logo' />
+            <LanguageSwitcher compact showLabel className='school-register__topbar-lang' />
           </div>
 
-          <div className='school-register__brand school-register__brand--header' aria-label='NewGee'>
-            <span>New</span>
-            <span className='school-register__brand-accent'>Gee</span>
-          </div>
+          <AppLogo className='school-register__logo school-register__logo--header' />
           <h1 className='school-register__title'>{title}</h1>
           <p className='school-register__subtitle'>{subtitle}</p>
         </div>

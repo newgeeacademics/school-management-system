@@ -358,7 +358,7 @@ function SchoolProfilePanel({
               <Input value={form.legalName} onChange={update('legalName')} placeholder='Raison sociale officielle' />
             </Field>
             <Field label='Type d’établissement'>
-              <Input value={form.type} onChange={update('type')} placeholder='maternelle, primaire, secondaire…' />
+              <Input value={form.type} onChange={update('type')} placeholder='primaire, collège, lycée' />
             </Field>
             <Field label='Système éducatif'>
               <Input value={form.system} onChange={update('system')} placeholder='ivoirien, français, anglais…' />

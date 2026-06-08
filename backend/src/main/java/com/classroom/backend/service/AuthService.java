@@ -9,6 +9,7 @@ import com.classroom.backend.model.School;
 import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.AppUserRepository;
 import com.classroom.backend.security.JwtTokenProvider;
+import com.classroom.backend.service.email.EmailNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,6 +27,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final SchoolService schoolService;
+    private final EmailNotificationService emailNotificationService;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -69,6 +71,19 @@ public class AuthService {
 
         School school = schoolService.create(request.getSchool());
         String token = issueToken(user.getEmail(), request.getPassword());
+
+        emailNotificationService.sendSchoolWelcome(user.getName(), user.getEmail());
+
+        String officialEmail = request.getSchool().getOfficialEmail();
+        if (officialEmail != null
+                && !officialEmail.isBlank()
+                && !officialEmail.trim().equalsIgnoreCase(user.getEmail().trim())) {
+            String recipientName = request.getSchool().getHeadName();
+            if (recipientName == null || recipientName.isBlank()) {
+                recipientName = user.getName();
+            }
+            emailNotificationService.sendSchoolWelcome(recipientName, officialEmail.trim());
+        }
 
         return AuthResponse.builder()
                 .token(token)

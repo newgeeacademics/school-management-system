@@ -2,6 +2,7 @@ package com.classroom.backend.controller;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import com.classroom.backend.service.email.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +16,7 @@ import java.util.Map;
 public class HealthController {
 
     private final JdbcTemplate jdbcTemplate;
+    private final EmailService emailService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -23,6 +25,8 @@ public class HealthController {
     public Map<String, Object> health() {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("status", "UP");
+        body.put("emailEnabled", emailService.isEnabled());
+        body.put("emailConfigured", emailService.isConfigured());
         try {
             Integer ping = jdbcTemplate.queryForObject("SELECT 1", Integer.class);
             body.put("database", ping != null && ping == 1 ? "UP" : "DOWN");

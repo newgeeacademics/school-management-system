@@ -36,9 +36,30 @@ app:
     secret: classroom-secret-key-change-in-production-min-256-bits-long-key-here
     expiration-ms: 86400000  # 24 hours
 
-# CORS
   cors:
     allowed-origins: http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:3000
+
+  public:
+    main-url: ${APP_MAIN_URL:http://localhost:5173}
+    portal-url: ${APP_PORTAL_URL:http://localhost:5174}
+
+  email:
+    enabled: ${APP_EMAIL_ENABLED:true}
+    from: ${APP_EMAIL_FROM:NewGee <contact@newgeeacademy.com>}
+    subject-prefix: ${APP_EMAIL_SUBJECT_PREFIX:[NewGee]}
+    provider: ${APP_EMAIL_PROVIDER:brevo}
+    logo-url: ${APP_EMAIL_LOGO_URL:}
+
+  brevo:
+    api-key: ${BREVO_API_KEY:}
+
+spring.mail.host: ${MAIL_HOST:}
+spring.mail.port: ${MAIL_PORT:587}
+spring.mail.username: ${MAIL_USERNAME:}
+spring.mail.password: ${MAIL_PASSWORD:}
+spring.mail.properties.mail.smtp.auth: true
+spring.mail.properties.mail.smtp.starttls.enable: true
+spring.mail.properties.mail.smtp.starttls.required: true
 
 ---
 # PostgreSQL profile (activate with --spring.profiles.active=postgres)

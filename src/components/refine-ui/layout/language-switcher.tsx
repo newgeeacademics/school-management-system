@@ -14,12 +14,19 @@ const LOCALE_LABELS: Record<'fr' | 'en', string> = {
   en: 'English',
 };
 
+const LOCALE_SHORT: Record<'fr' | 'en', string> = {
+  fr: 'FR',
+  en: 'EN',
+};
+
 export function LanguageSwitcher({
   className,
   showLabel = false,
+  compact = false,
 }: {
   className?: string;
   showLabel?: boolean;
+  compact?: boolean;
 }) {
   const { locale, setLocale, t } = useTranslation();
 
@@ -28,13 +35,21 @@ export function LanguageSwitcher({
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size={showLabel ? 'default' : 'icon'}
-          className={cn('gap-2', className)}
+          size={showLabel && !compact ? 'default' : 'icon'}
+          className={cn(
+            'gap-2 border border-slate-200 rounded-[10px] bg-white',
+            compact && 'h-[42px] w-[42px] rounded-full p-0',
+            className
+          )}
           aria-label={t('common.language')}
         >
           <Languages className="h-4 w-4" />
-          {showLabel && (
-            <span className="font-medium">{LOCALE_LABELS[locale]}</span>
+          {showLabel ? (
+            <span className="font-medium">
+              {compact ? LOCALE_SHORT[locale] : LOCALE_LABELS[locale]}
+            </span>
+          ) : (
+            <span className="sr-only">{LOCALE_LABELS[locale]}</span>
           )}
         </Button>
       </DropdownMenuTrigger>

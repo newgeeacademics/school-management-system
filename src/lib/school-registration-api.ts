@@ -36,15 +36,13 @@ export function isBackendApiConfigured(): boolean {
 }
 
 const SCHOOL_TYPE_MAP: Record<string, string> = {
-  maternelle: 'MATERNELLE',
   primaire: 'PRIMAIRE',
-  secondaire: 'LYCEE',
-  universite: 'UNIVERSITE',
-  centre_formation: 'COLLEGE',
+  college: 'COLLEGE',
+  lycee: 'LYCEE',
 };
 
 function mapSchoolType(value: string): string | undefined {
-  if (!value || value === 'autre') return undefined;
+  if (!value) return undefined;
   return SCHOOL_TYPE_MAP[value];
 }
 
