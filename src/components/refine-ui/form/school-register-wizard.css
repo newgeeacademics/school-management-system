@@ -1,0 +1,295 @@
+/* School registration — linear step flow (webgas-style) */
+
+.school-register {
+  padding: 100px 16px 80px;
+  min-height: 100svh;
+  background: #fff;
+}
+
+.school-register__shell {
+  --register-track: 260px;
+  --register-col-gap: 14px;
+  width: min(980px, 100%);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: var(--register-col-gap);
+  row-gap: 28px;
+}
+
+.school-register__header {
+  text-align: center;
+  margin-bottom: 4px;
+  grid-column: 1 / -1;
+}
+
+.school-register__topbar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.school-register__brand--header {
+  display: flex;
+}
+
+.school-register__topbar-spacer {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+}
+
+.school-register__brand {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.15em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 1.75rem;
+  color: #111827;
+}
+
+.school-register__brand-accent {
+  color: #2563eb;
+}
+
+.school-register__title {
+  margin-top: 10px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.school-register__subtitle {
+  margin-top: 6px;
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 0.95rem;
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.school-register__fields-bare {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: 100%;
+  max-width: min(calc(var(--register-track) * 2 + var(--register-col-gap)), 100%);
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.school-register__field {
+  display: grid;
+  gap: 6px;
+}
+
+.school-register__field > span,
+.school-register__field label > span {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.school-register__field input,
+.school-register__field select,
+.school-register__field textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  outline: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.school-register__field input:focus,
+.school-register__field select:focus,
+.school-register__field textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.school-register__field textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.school-register__grid-2 {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.school-register__hint {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(37, 99, 235, 0.06);
+  border: 1px solid rgba(37, 99, 235, 0.15);
+  color: #4b5563;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.school-register__hint--error {
+  background: rgba(220, 38, 38, 0.06);
+  border-color: rgba(220, 38, 38, 0.2);
+  color: #b91c1c;
+}
+
+.school-register__btn {
+  height: 44px;
+  border-radius: 12px;
+  padding: 0 16px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.school-register__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.school-register__nav-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.school-register__footerbar {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  display: contents;
+}
+
+.school-register__footerbar > .school-register__nav-back--footer {
+  grid-column: 1;
+  justify-self: end;
+  width: 100%;
+  max-width: 260px;
+  justify-content: center;
+}
+
+.school-register__footerbar > .school-register__nav-next {
+  grid-column: 2;
+  justify-self: start;
+  width: 100%;
+  max-width: 260px;
+}
+
+.school-register__nav-back--footer svg {
+  display: none;
+}
+
+.school-register__nav-back--top {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.school-register__btn--ghost {
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+}
+
+.school-register__btn--ghost:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.school-register__btn--primary {
+  border: none;
+  background: #2563eb;
+  color: #fff;
+}
+
+.school-register__btn--primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.school-register__map-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1.5px solid #e5e7eb;
+}
+
+@media (max-width: 720px) {
+  .school-register {
+    padding: 0;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .school-register__shell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: none;
+    row-gap: 20px;
+    padding: 48px 16px calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .school-register__topbar {
+    display: flex;
+  }
+
+  .school-register__brand--header {
+    display: none;
+  }
+
+  .school-register__header {
+    text-align: left;
+    margin-bottom: 0;
+  }
+
+  .school-register__title {
+    font-size: 1.25rem;
+  }
+
+  .school-register__fields-bare {
+    max-width: none;
+    flex: 1;
+  }
+
+  .school-register__grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .school-register__footerbar {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 16px;
+  }
+
+  .school-register__footerbar > .school-register__nav-back--footer,
+  .school-register__footerbar > .school-register__nav-next {
+    grid-column: unset;
+    justify-self: stretch;
+    max-width: none;
+    flex: 1;
+  }
+
+  .school-register__nav-back--footer svg {
+    display: inline;
+  }
+}
