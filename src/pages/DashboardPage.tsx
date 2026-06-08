@@ -223,7 +223,7 @@ const sectionConfig: Record<
     title: 'Tableau de bord établissement',
     description:
       "Surveillez rapidement l’activité de votre établissement : classes, enseignants et élèves.",
-    cta: 'Ajouter une classe',
+    cta: '',
   },
   system_registry: {
     kicker: 'Supervision',
@@ -237,7 +237,7 @@ const sectionConfig: Record<
     title: 'Organisation des classes',
     description:
       'Visualisez vos niveaux, les effectifs et les professeurs principaux pour chaque classe.',
-    cta: 'Créer une classe',
+    cta: '',
   },
   teachers: {
     kicker: 'Équipe pédagogique',
