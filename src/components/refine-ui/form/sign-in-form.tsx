@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AppLogo } from '@/components/AppLogo';
 import { setStoredRole } from '@/lib/auth';
 import { Link } from 'react-router-dom';
 import { isAdminRole } from '@/lib/api-error';
@@ -68,36 +69,47 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
         isEmbedded ? 'w-full min-h-0 p-0' : 'flex flex-col items-center justify-center p-4 md:px-6 md:py-8 min-h-svh'
       )}
     >
-      <div className='fixed top-4 left-4 z-50 md:top-6 md:left-6'>
-        <Button asChild variant='ghost' size='sm' className='gap-2 text-gray-700'>
-          <Link to='/'>
-            <ChevronLeft className='h-4 w-4' />
-            {t('common.goBack')}
-          </Link>
-        </Button>
-      </div>
+      {!isEmbedded ? (
+        <div className='fixed top-4 left-4 z-50 md:top-6 md:left-6'>
+          <Button asChild variant='ghost' size='sm' className='gap-2 text-slate-700'>
+            <Link to='/'>
+              <ChevronLeft className='h-4 w-4' />
+              {t('common.goBack')}
+            </Link>
+          </Button>
+        </div>
+      ) : null}
 
       <div
         className={cn(
-          'sm:w-full w-full relative rental-login-form',
-          isEmbedded ? 'max-w-none mt-0 p-0' : 'max-w-[456px] mt-4 md:mt-6 p-8 bg-gray-0 border-0 overflow-hidden'
+          'sm:w-full w-full relative',
+          isEmbedded ? 'max-w-none mt-0 p-0' : 'max-w-[456px] mt-4 md:mt-6 p-8 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden'
         )}
       >
-        {!isEmbedded && <div className='absolute top-0 left-0 right-0 h-2 bg-gradient-blue' />}
-
-        <div className='px-0 relative z-10 rental-field rental-field-1'>
-          <h1 className='text-4xl font-bold mb-2 text-gradient-blue'>
+        <div className={cn('relative z-10', isEmbedded ? '' : 'px-0')}>
+          {!isEmbedded ? <AppLogo className='mb-6' /> : null}
+          <h1
+            className={cn(
+              'font-bold tracking-tight text-slate-900',
+              isEmbedded ? 'auth-page__title mt-0' : 'text-3xl mb-2'
+            )}
+          >
             {t('auth.welcomeBack')}
           </h1>
-          <p className='text-gray-700 font-medium text-base'>
+          <p
+            className={cn(
+              'text-slate-600 font-medium',
+              isEmbedded ? 'auth-page__subtitle' : 'text-base'
+            )}
+          >
             {t('auth.loginToClassroom')}
           </p>
         </div>
 
-        <div className='px-0 relative z-10 mt-6'>
-          <form onSubmit={onSubmit} className='space-y-6'>
-            <div className='rental-field rental-field-2 space-y-2'>
-              <Label className='text-sm font-medium text-gray-700'>
+        <div className={cn('relative z-10', isEmbedded ? 'auth-page__form' : 'mt-6')}>
+          <form onSubmit={onSubmit} className={isEmbedded ? 'contents' : 'space-y-5'}>
+            <div className={isEmbedded ? 'auth-page__field' : 'space-y-2'}>
+              <Label className='text-sm font-semibold text-slate-700'>
                 {t('auth.username')} / {t('auth.email')}
               </Label>
               <Input
@@ -105,29 +117,35 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
                 placeholder={t('auth.enterUsername')}
                 value={usernameOrEmail}
                 onChange={(e) => setUsernameOrEmail(e.target.value)}
-                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136734] focus:border-transparent transition-all duration-200 h-11'
+                className='h-11 rounded-xl border-slate-200 focus-visible:ring-blue-500'
               />
             </div>
-            <div className='rental-field rental-field-3 space-y-2'>
-              <Label className='text-sm font-medium text-gray-700'>
+            <div className={isEmbedded ? 'auth-page__field' : 'space-y-2'}>
+              <Label className='text-sm font-semibold text-slate-700'>
                 {t('auth.password')}
               </Label>
               <InputPassword
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t('auth.enterPassword')}
-                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136734] focus:border-transparent transition-all duration-200 h-11'
+                className='h-11 rounded-xl border-slate-200 focus-visible:ring-blue-500'
               />
             </div>
 
-            <Button
-              type='submit'
-              size='lg'
-              className='rental-field rental-field-4 w-full mt-2 h-11 text-white text-center py-2 px-6 rounded-full font-semibold text-base transition-all duration-200 hover:shadow-lg hover:scale-[1.02] cursor-pointer bg-[#2563eb] hover:bg-[#1d4ed8]'
-              disabled={isPending}
-            >
-              {isPending ? t('auth.signingIn') : t('auth.signIn')}
-            </Button>
+            {isEmbedded ? (
+              <button type='submit' className='auth-page__submit' disabled={isPending}>
+                {isPending ? t('auth.signingIn') : t('auth.signIn')}
+              </button>
+            ) : (
+              <Button
+                type='submit'
+                size='lg'
+                className='w-full h-11 rounded-xl font-semibold bg-[#2563eb] hover:bg-[#1d4ed8]'
+                disabled={isPending}
+              >
+                {isPending ? t('auth.signingIn') : t('auth.signIn')}
+              </Button>
+            )}
           </form>
         </div>
       </div>

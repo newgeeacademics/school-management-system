@@ -14,7 +14,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import { LEVELS_BY_SCHOOL_TYPE, type SchoolType } from './dashboardConstants';
+import { getSystemLabel, type SchoolProfile } from '@/lib/school-profile';
+
+import { type SchoolType } from './dashboardConstants';
 import type { ClassItem, NewClassFormState, SetStateAction, Teacher } from './dashboardTypes';
 
 type ClassesSectionProps = {
@@ -30,6 +32,8 @@ type ClassesSectionProps = {
   onDeleteClass: (id: string) => void | Promise<void>;
   getTeacherName: (id?: string) => string;
   schoolTypes: SchoolType[];
+  schoolProfile: SchoolProfile | null;
+  levelOptions: string[];
 };
 
 export const ClassesSection: React.FC<ClassesSectionProps> = ({
@@ -42,9 +46,10 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
   onDeleteClass,
   getTeacherName,
   schoolTypes,
+  schoolProfile,
+  levelOptions,
 }) => {
   const effectiveType: SchoolType | '' = schoolTypes.length > 0 ? schoolTypes[0] : '';
-  const levelOptions = effectiveType ? LEVELS_BY_SCHOOL_TYPE[effectiveType] : [];
 
   const classNameOptions = React.useMemo(() => {
     if (!newClass.level.trim()) return [];
@@ -86,6 +91,23 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
 
   return (
     <section className='space-y-5'>
+      {schoolProfile ? (
+        <div className='dashboard-school-context flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600'>
+          <Badge variant='outline' className='dashboard-header__school-type text-[10px] px-2 py-0.5'>
+            {schoolProfile.type}
+          </Badge>
+          <Badge
+            variant='outline'
+            className={`dashboard-header__school-system dashboard-header__school-system--${schoolProfile.system} text-[10px] px-2 py-0.5`}
+          >
+            {getSystemLabel(schoolProfile.system)}
+          </Badge>
+          <span>
+            Niveaux proposés pour votre établissement ({schoolProfile.name}
+            {schoolProfile.city ? ` · ${schoolProfile.city}` : ''}).
+          </span>
+        </div>
+      ) : null}
       <div className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)]'>
         <Card>
           <CardHeader>
@@ -100,7 +122,13 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
                   onValueChange={(value) => setNewClass((c) => ({ ...c, level: value, name: '' }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder='Niveau' />
+                    <SelectValue
+                      placeholder={
+                        effectiveType
+                          ? `Choisir un niveau (${effectiveType})`
+                          : 'Choisir un niveau'
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {levelOptions.map((option) => (
