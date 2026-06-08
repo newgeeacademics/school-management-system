@@ -39,13 +39,21 @@ import {
 } from '@/components/ui/sidebar';
 
 import {
-  COURSE_LEVEL_OPTIONS,
+  fetchAndCacheSchoolProfile,
+  getSchoolProfile,
+  getSystemBadgeClass,
+  getSystemLabel,
+  schoolTypesFromProfile,
+  type SchoolProfile,
+} from '@/lib/school-profile';
+
+import {
+  courseLevelOptionsForProfile,
   DAY_OPTIONS,
   EVENT_LOCATION_PRESETS,
   EVENT_TIME_PRESETS,
-  LEVELS_BY_SCHOOL_TYPE,
+  levelOptionsForProfile,
   ROOM_TYPE_OPTIONS,
-  SCHOOL_TYPES,
   SUBJECT_OPTIONS,
   TIME_SLOT_OPTIONS,
   type SchoolType,
@@ -102,6 +110,10 @@ import { TransportSection } from './dashboard/TransportSection';
 import { ReportsSection } from './dashboard/ReportsSection';
 import { UsersSection } from './dashboard/UsersSection';
 import { GradesSection } from './dashboard/GradesSection';
+import { AppLogo } from '@/components/AppLogo';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+
+import './dashboard-shell.css';
 
 const navItems: { id: SectionId; label: string; icon: React.ComponentType<any> }[] =
   [
@@ -170,14 +182,14 @@ const sectionConfig: Record<
     title: 'Tableau de bord établissement',
     description:
       "Surveillez rapidement l’activité de votre établissement : classes, enseignants et élèves.",
-    cta: 'Ajouter une classe',
+    cta: '',
   },
   classes: {
     kicker: 'Pilotage des classes',
     title: 'Organisation des classes',
     description:
       'Visualisez vos niveaux, les effectifs et les professeurs principaux pour chaque classe.',
-    cta: 'Créer une classe',
+    cta: '',
   },
   teachers: {
     kicker: 'Équipe pédagogique',
@@ -416,21 +428,49 @@ export const DashboardPage: React.FC = () => {
   const [schedule, setSchedule] =
     React.useState<ScheduleItem[]>(initialSchedule);
 
-  const [schoolTypes] = React.useState<SchoolType[]>(() => {
-    // En réel: viendra du backend. Ici, on relit le type choisi à l'inscription.
-    try {
-      const raw = window.localStorage.getItem('classroom_school_profile');
-      if (raw) {
-        const data = JSON.parse(raw) as { type?: string } | null;
-        if (data?.type && SCHOOL_TYPES.includes(data.type as SchoolType)) {
-          return [data.type as SchoolType];
-        }
+  const [schoolProfile, setSchoolProfile] = React.useState<SchoolProfile | null>(() =>
+    getSchoolProfile()
+  );
+  const schoolTypes = React.useMemo(
+    () => schoolTypesFromProfile(schoolProfile) as SchoolType[],
+    [schoolProfile]
+  );
+  const levelOptions = React.useMemo(
+    () => levelOptionsForProfile(schoolProfile),
+    [schoolProfile]
+  );
+  const courseLevelOptions = React.useMemo(
+    () => courseLevelOptionsForProfile(schoolProfile),
+    [schoolProfile]
+  );
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const hydrateProfile = async () => {
+      const existing = getSchoolProfile();
+      if (existing) {
+        if (!cancelled) setSchoolProfile(existing);
+        return;
       }
-    } catch {
-      // ignore parse errors
-    }
-    return [...SCHOOL_TYPES];
-  });
+
+      try {
+        const userRaw = localStorage.getItem('user');
+        const user = userRaw ? (JSON.parse(userRaw) as { schoolId?: string }) : null;
+        if (user?.schoolId) {
+          const fetched = await fetchAndCacheSchoolProfile(user.schoolId);
+          if (!cancelled && fetched) setSchoolProfile(fetched);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    void hydrateProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [newClass, setNewClass] = React.useState<NewClassFormState>({
     name: '',
     schoolType: '',
@@ -737,8 +777,8 @@ export const DashboardPage: React.FC = () => {
     let levelLabel = newClass.level.trim() || 'Niveau non défini';
     if (typeForLevel && newClass.level.trim()) {
       levelLabel = `${typeForLevel} - ${newClass.level.trim()}`;
-    } else if (typeForLevel && LEVELS_BY_SCHOOL_TYPE[typeForLevel as SchoolType]?.length) {
-      levelLabel = `${typeForLevel} - ${LEVELS_BY_SCHOOL_TYPE[typeForLevel as SchoolType][0]}`;
+    } else if (typeForLevel && levelOptions.length) {
+      levelLabel = `${typeForLevel} - ${levelOptions[0]}`;
     }
     setClasses((prev) => [
       ...prev,
@@ -966,21 +1006,14 @@ export const DashboardPage: React.FC = () => {
   if (!role) return null;
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className='dashboard-shell min-h-svh w-full max-w-full'>
       <Sidebar collapsible='icon' variant='inset'>
         <SidebarHeader>
-          <div className='flex items-center gap-2 px-2'>
-            <div className='size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-semibold'>
-              CL
-            </div>
-            <div className='flex flex-col'>
-              <span className='text-sm font-semibold leading-tight'>
-                Classroom
-              </span>
-              <span className='text-[11px] text-muted-foreground'>
-                {roleTitles[role]}
-              </span>
-            </div>
+          <div className='dashboard-sidebar-brand flex flex-col gap-1 px-2'>
+            <AppLogo />
+            <span className='text-[11px] font-medium text-muted-foreground'>
+              {roleTitles[role]}
+            </span>
           </div>
         </SidebarHeader>
 
@@ -1009,7 +1042,7 @@ export const DashboardPage: React.FC = () => {
         <SidebarSeparator />
 
         <SidebarFooter>
-          <div className='flex flex-col gap-2 px-2 py-1.5'>
+          <div className='dashboard-user-pill flex flex-col gap-2'>
             <div className='flex items-center gap-2'>
               <Avatar className='h-8 w-8'>
                 <AvatarFallback>
@@ -1035,27 +1068,34 @@ export const DashboardPage: React.FC = () => {
       </Sidebar>
 
       <SidebarInset>
-        <header className='border-b px-4 md:px-6 py-3 md:py-4'>
-          {/* Ligne 1 : bouton d’extension du menu, toujours en haut à gauche */}
-          <div className='flex items-center justify-between md:justify-start mb-3'>
+        <header className='dashboard-header'>
+          <div className='dashboard-header__row'>
             <SidebarTrigger />
-          </div>
-
-          {/* Ligne 2 : titre + actions, avec layout colonne sur mobile et rangée sur desktop */}
-          <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
-            <div className='space-y-1'>
-              <p className='text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground'>
-                {current.kicker}
-              </p>
-              <h1 className='text-xl font-semibold leading-tight'>
-                {current.title}
-              </h1>
-              <p className='text-xs text-muted-foreground'>
-                {current.description}
-              </p>
+            <div className='dashboard-header__lead'>
+              <p className='dashboard-header__eyebrow'>{current.kicker}</p>
+              <h1 className='dashboard-header__title'>{current.title}</h1>
+              <p className='dashboard-header__desc'>{current.description}</p>
             </div>
-            <div className='flex items-center gap-2'>
-              <Badge variant='outline' className='text-xs px-3 py-1'>
+            <div className='dashboard-header__actions'>
+              <LanguageSwitcher compact showLabel />
+              {schoolProfile ? (
+                <>
+                  <Badge
+                    variant='outline'
+                    className='dashboard-header__school-type text-xs px-3 py-1'
+                    title={schoolProfile.name}
+                  >
+                    {schoolProfile.type}
+                  </Badge>
+                  <Badge
+                    variant='outline'
+                    className={`${getSystemBadgeClass(schoolProfile.system)} text-xs px-3 py-1`}
+                  >
+                    {getSystemLabel(schoolProfile.system)}
+                  </Badge>
+                </>
+              ) : null}
+              <Badge variant='outline' className='dashboard-header__year text-xs px-3 py-1'>
                 Année scolaire 2024–2025
               </Badge>
               {current.cta ? <Button size='sm'>{current.cta}</Button> : null}
@@ -1063,7 +1103,7 @@ export const DashboardPage: React.FC = () => {
           </div>
         </header>
 
-        <main className='flex-1 px-6 py-6 space-y-6'>
+        <main className='dashboard-content flex-1 space-y-6'>
           {activeSection === 'overview' && (
             <OverviewSection
               classes={classes}
@@ -1088,6 +1128,8 @@ export const DashboardPage: React.FC = () => {
               onCreateClass={handleCreateClass}
               getTeacherName={getTeacherName}
               schoolTypes={schoolTypes}
+              schoolProfile={schoolProfile}
+              levelOptions={levelOptions}
             />
           )}
 
@@ -1131,7 +1173,7 @@ export const DashboardPage: React.FC = () => {
               newCourse={newCourse}
               setNewCourse={setNewCourse}
               onCreateCourse={handleCreateCourse}
-              courseLevelOptions={COURSE_LEVEL_OPTIONS}
+              courseLevelOptions={courseLevelOptions}
               matieres={matieres}
               readOnly={role === 'student'}
             />

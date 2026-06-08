@@ -114,12 +114,45 @@
   --sidebar-ring: #1d4ed8;
 }
 
+.app-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-logo__mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.app-logo__name {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #111827;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
   }
 }
 

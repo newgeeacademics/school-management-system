@@ -1,0 +1,17 @@
+.lang-switcher {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+}
+
+.lang-switcher--compact {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.lang-switcher:hover {
+  background: #f8fafc;
+}
