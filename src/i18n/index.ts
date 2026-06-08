@@ -1,2 +1,1 @@
-export { I18nProvider, useTranslation } from './context';
-export type { Locale } from './context';
+export { I18nProvider, useTranslation, type Locale } from './context';
