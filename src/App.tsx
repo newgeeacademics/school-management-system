@@ -6,6 +6,7 @@ import { I18nProvider } from '@/i18n';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { RegistrationHandoff } from './components/RegistrationHandoff';
 import { DashboardPage } from './pages/DashboardPage';
 
 export const App: React.FC = () => {
@@ -13,6 +14,7 @@ export const App: React.FC = () => {
     <I18nProvider>
       <TooltipProvider>
         <BrowserRouter>
+          <RegistrationHandoff />
           <Routes>
             <Route path='/' element={<LandingPage />} />
             <Route path='/login' element={<LoginPage />} />

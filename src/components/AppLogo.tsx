@@ -6,7 +6,7 @@ type AppLogoProps = {
   name?: string;
 };
 
-export function AppLogo({ className, name = 'Classroom' }: AppLogoProps) {
+export function AppLogo({ className, name = 'NewGee' }: AppLogoProps) {
   return (
     <div className={cn('app-logo', className)} aria-label={name}>
       <span className='app-logo__mark' aria-hidden='true'>

@@ -15,7 +15,7 @@ const translations: Record<Locale, Record<string, unknown>> = {
   en: en as Record<string, unknown>,
 };
 
-const LOCALE_STORAGE_KEY = 'classroom-locale';
+const LOCALE_STORAGE_KEY = 'newgee-locale';
 
 function getStoredLocale(): Locale {
   try {

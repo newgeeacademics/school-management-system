@@ -2,18 +2,17 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { AppLogo } from '@/components/AppLogo';
+import { InputPassword } from '@/components/form/input-password';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useTranslation } from '@/i18n';
-import { setStoredRole, type UserRole } from '@/lib/auth';
+import {
+  clearAuthSession,
+  isBackendApiConfigured,
+  loginWithCredentials,
+  persistAuthSession,
+} from '@/lib/api-auth';
 
 import './auth-page.css';
 
@@ -25,19 +24,38 @@ export const LoginPage: React.FC = () => {
   const { t } = useTranslation();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
-  const [role, setRole] = React.useState<UserRole>('admin');
+  const [isPending, setIsPending] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const roleOptions: { value: UserRole; label: string }[] = [
-    { value: 'admin', label: t('login.roleAdmin') },
-    { value: 'teacher', label: t('login.roleTeacher') },
-    { value: 'parent', label: t('login.roleParent') },
-    { value: 'student', label: t('login.roleStudent') },
-  ];
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStoredRole(role);
-    navigate('/dashboard');
+    setError(null);
+
+    if (!email.trim() || !password) {
+      setError(t('auth.enterPassword'));
+      return;
+    }
+
+    if (!isBackendApiConfigured()) {
+      setError(t('login.apiNotConfigured'));
+      return;
+    }
+
+    setIsPending(true);
+    try {
+      const auth = await loginWithCredentials(email, password);
+      const user = persistAuthSession(auth);
+      if (!user) {
+        setError(t('login.unsupportedRole'));
+        clearAuthSession();
+        return;
+      }
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('login.failed'));
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
@@ -65,15 +83,15 @@ export const LoginPage: React.FC = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t('login.emailPlaceholder')}
                   autoComplete='email'
+                  required
                   className='h-11 rounded-xl border-slate-200 focus-visible:ring-blue-500'
                 />
               </div>
 
               <div className='auth-page__field'>
                 <Label htmlFor='login-password'>{t('login.password')}</Label>
-                <Input
+                <InputPassword
                   id='login-password'
-                  type='password'
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder='••••••••'
@@ -82,25 +100,10 @@ export const LoginPage: React.FC = () => {
                 />
               </div>
 
-              <div className='auth-page__field'>
-                <Label htmlFor='login-role'>{t('login.role')}</Label>
-                <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
-                  <SelectTrigger id='login-role' className='h-11 rounded-xl'>
-                    <SelectValue placeholder={t('login.role')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roleOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className='auth-page__hint'>{t('login.roleHint')}</p>
-              </div>
+              {error ? <p className='auth-page__error text-sm text-red-600'>{error}</p> : null}
 
-              <button type='submit' className='auth-page__submit'>
-                {t('login.submit')}
+              <button type='submit' className='auth-page__submit' disabled={isPending}>
+                {isPending ? t('login.submitting') : t('login.submit')}
               </button>
             </form>
 

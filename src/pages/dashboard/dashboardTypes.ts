@@ -24,6 +24,7 @@ export type Teacher = {
   initials: string;
   name: string;
   subject: string;
+  email?: string;
 };
 
 export type ClassItem = {
@@ -38,6 +39,7 @@ export type Student = {
   id: string;
   name: string;
   classId?: string;
+  email?: string;
 };
 
 export type ParentContact = {

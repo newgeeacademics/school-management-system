@@ -268,6 +268,162 @@
   color: #b91c1c;
 }
 
+.school-register__hint--inline {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-weight: 500;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.school-register__series-add {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.school-register__series-add select {
+  flex: 1;
+  min-width: 0;
+}
+
+.school-register__series-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1.5px solid #2563eb;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.school-register__series-add-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.school-register__series-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.school-register__series-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.school-register__series-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 6px 12px;
+  border-radius: 999px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #1e40af;
+}
+
+.school-register__series-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.school-register__series-remove:hover {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
+.school-register__reg-number {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.school-register__reg-number input {
+  padding-right: 40px;
+}
+
+.school-register__reg-number-status {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  pointer-events: none;
+}
+
+.school-register__opening-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.school-register__opening-grid--lunch {
+  margin-top: 8px;
+}
+
+.school-register__opening-item {
+  display: grid;
+  gap: 6px;
+}
+
+.school-register__opening-item > span {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.school-register__opening-lunch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.school-register__opening-lunch input {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+}
+
+.school-register__opening-preview {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.45;
+}
+
 .school-register__btn {
   height: 44px;
   border-radius: 12px;
