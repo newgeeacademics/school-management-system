@@ -340,7 +340,7 @@ function SchoolProfilePanel({
     <div className='max-w-4xl space-y-8'>
       <div className='space-y-1'>
         <p className='text-sm text-muted-foreground'>
-          Toutes les informations issues de l’inscription sont éditables ici (sauvegarde locale pour la démo).
+          Toutes les informations issues de l’inscription sont éditables ici.
         </p>
       </div>
 
@@ -512,7 +512,7 @@ function SchoolProfilePanel({
 
       <div className='flex flex-wrap gap-2'>
         <Button type='button' onClick={handleSave}>
-          Enregistrer le profil école (démo locale)
+          Enregistrer le profil école
         </Button>
       </div>
 
@@ -607,7 +607,7 @@ function BrandingPanel({
       <Card>
         <CardHeader>
           <CardTitle className='text-base'>Supports de marque</CardTitle>
-          <CardDescription>Charte graphique PDF, modèles PowerPoint, kit média (démo).</CardDescription>
+          <CardDescription>Charte graphique PDF, modèles PowerPoint, kit média.</CardDescription>
         </CardHeader>
         <CardContent className='space-y-4'>
           <div className='rounded-xl border border-dashed border-muted-foreground/30 bg-muted/20 p-6'>
@@ -626,7 +626,7 @@ function BrandingPanel({
             />
             {brochureName ? (
               <p className='mt-2 text-xs text-muted-foreground'>
-                Fichier sélectionné : {brochureName} (démo — non stocké)
+                Fichier sélectionné : {brochureName}
               </p>
             ) : (
               <p className='mt-2 text-xs text-muted-foreground'>
@@ -742,7 +742,7 @@ function BrandingPanel({
       </Card>
 
       <Button type='button' onClick={handleSave}>
-        Enregistrer la charte (démo locale)
+        Enregistrer la charte
       </Button>
     </div>
   );
@@ -958,7 +958,7 @@ function FinancePanel({ linkRow }: { linkRow: (a: string, b: SectionId, c: strin
       <Card>
         <CardHeader>
           <CardTitle className='text-base'>Structure des frais</CardTitle>
-          <CardDescription>Barèmes et devises (démo).</CardDescription>
+          <CardDescription>Barèmes et devises.</CardDescription>
         </CardHeader>
         <CardContent className='space-y-4'>
           <FieldGrid>
@@ -1036,7 +1036,7 @@ function CommunicationPanel({ linkRow }: { linkRow: (a: string, b: SectionId, c:
       <Card>
         <CardHeader>
           <CardTitle className='text-base'>Modèles</CardTitle>
-          <CardDescription>Modèles d’e-mails (démo).</CardDescription>
+          <CardDescription>Modèles d’e-mails.</CardDescription>
         </CardHeader>
         <CardContent className='space-y-3'>
           <Field label='E-mail de bienvenue (parents)'>
@@ -1092,7 +1092,7 @@ function SecurityPanel({ linkRow }: { linkRow: (a: string, b: SectionId, c: stri
       <Card>
         <CardHeader>
           <CardTitle className='text-base'>Confidentialité</CardTitle>
-          <CardDescription>RGPD — traitements et durées de conservation (démo).</CardDescription>
+          <CardDescription>RGPD — traitements et durées de conservation.</CardDescription>
         </CardHeader>
         <CardContent>
           <Field label='Conservation des données (années après départ élève)'>
@@ -1168,7 +1168,7 @@ function AutomationPanel() {
       <Card>
         <CardHeader>
           <CardTitle className='text-base'>API & intégrations</CardTitle>
-          <CardDescription>Clés API et connecteurs (démo).</CardDescription>
+          <CardDescription>Clés API et connecteurs.</CardDescription>
         </CardHeader>
         <CardContent className='space-y-3'>
           <Field label='Notes d’intégration'>

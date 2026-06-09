@@ -22,7 +22,15 @@ import {
   Wallet,
 } from 'lucide-react';
 
-import { getStoredRole, clearStoredRole, getStoredStudentId, setStoredStudentId, type UserRole } from '@/lib/auth';
+import { ACCESS_TOKEN_KEY } from '@/constants';
+import {
+  clearAuthSession,
+  getStoredRole,
+  getStoredUser,
+  getStoredStudentId,
+  setStoredStudentId,
+  type UserRole,
+} from '@/lib/auth';
 import {
   createAttendanceOnBackend,
   createCourseOnBackend,
@@ -48,7 +56,6 @@ import {
 } from '@/lib/dashboard-backend';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -318,7 +325,7 @@ const sectionConfig: Record<
   },
   grades: {
     kicker: 'Gestion des notes',
-    title: 'Notes & bulletins (démo)',
+    title: 'Notes & bulletins',
     description:
       'Créez des évaluations, saisissez les notes et préparez le conseil de classe.',
     cta: '',
@@ -341,7 +348,7 @@ const sectionConfig: Record<
     kicker: 'Rapports et synthèses',
     title: 'Rapports & statistiques',
     description:
-      'Obtenez une vue globale sur les présences et les paiements (mode démo, sans backend).',
+      'Obtenez une vue globale sur les présences et les paiements.',
     cta: '',
   },
   sis: {
@@ -465,7 +472,7 @@ const roleSectionOverrides: Partial<Record<UserRole, Partial<Record<SectionId, {
     canteen: { kicker: 'Cantine', title: 'Menus de la cantine', description: 'Plats prévus pour vos enfants cette semaine.', cta: '' },
     transport: { kicker: 'Transport', title: 'Ramassage scolaire', description: 'Horaires et trajets de ramassage scolaire.', cta: '' },
     payments: { kicker: 'Frais scolaires', title: 'Paiements', description: 'Total à payer, montant réglé et restant dû.', cta: '' },
-    reports: { kicker: 'Rapports', title: 'Rapports famille', description: 'Vue simplifiée des présences et paiements (démo).', cta: '' },
+    reports: { kicker: 'Rapports', title: 'Rapports famille', description: 'Vue simplifiée des présences et paiements.', cta: '' },
     schedule: { kicker: 'Emplois du temps', title: 'Emplois du temps des enfants', description: 'Consultez les emplois du temps par enfant.', cta: '' },
     calendar: { kicker: 'Événements', title: 'Événements à venir', description: 'Sorties, réunions, conseils de classe.', cta: '' },
   },
@@ -479,85 +486,19 @@ const roleSectionOverrides: Partial<Record<UserRole, Partial<Record<SectionId, {
   },
 };
 
-const initialTeachers: Teacher[] = [
-  { id: 't1', initials: 'JD', name: 'Jean Dupont', subject: 'Mathématiques' },
-  { id: 't2', initials: 'ML', name: 'Marie Leroy', subject: 'Français' },
-  { id: 't3', initials: 'SB', name: 'Sophie Bernard', subject: 'Histoire-Géographie' },
-];
-
-const initialClasses: ClassItem[] = [
-  {
-    id: 'c1',
-    name: '6ème A',
-    level: 'Collège - 6ème',
-    studentsCount: 24,
-    homeroomTeacherId: 't1',
-  },
-  {
-    id: 'c2',
-    name: '3ème C',
-    level: 'Collège - 3ème',
-    studentsCount: 22,
-    homeroomTeacherId: 't2',
-  },
-];
-
-const initialCourses: Course[] = [
-  { id: 'co1', name: 'Mathématiques', level: 'Collège' },
-  { id: 'co2', name: 'Français', level: 'Collège' },
-  { id: 'co3', name: 'Histoire-Géographie', level: 'Collège / Lycée' },
-];
-
-const initialRooms: Room[] = [
-  { id: 'r1', name: 'Salle 101', type: 'Salle de classe', capacity: 30 },
-  { id: 'r2', name: 'Salle 102', type: 'Salle de classe', capacity: 28 },
-  { id: 'r3', name: 'Salle polyvalente', type: 'Salle de réunion', capacity: 80 },
-  { id: 'r4', name: 'Salle des professeurs', type: 'Salle de réunion', capacity: 20 },
-];
-
-const initialEvents: CalendarEvent[] = [
-  {
-    id: 'e1',
-    label: 'Promotion des 3ème vers le lycée',
-    date: '15 juin 2025',
-    time: '18h00',
-    location: 'Salle polyvalente',
-    type: 'Promotion',
-  },
-  {
-    id: 'e2',
-    label: 'Conseils de classe du 2ème trimestre',
-    date: 'Du 2 au 6 avril',
-    location: 'Salle des professeurs',
-    type: 'Réunion',
-  },
-];
-
-const initialSchedule: ScheduleItem[] = [
-  {
-    id: 's1',
-    classId: 'c1',
-    courseId: 'co1',
-    day: 'Lundi',
-    time: '8h00 – 9h00',
-    room: 'Salle 101',
-  },
-  {
-    id: 's2',
-    classId: 'c1',
-    courseId: 'co2',
-    day: 'Lundi',
-    time: '9h00 – 10h00',
-    room: 'Salle 101',
-  },
-];
-
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const role = getStoredRole();
+  const sessionUser = getStoredUser();
 
   React.useEffect(() => {
-    if (!role) navigate('/login', { replace: true });
+    if (!role) {
+      navigate('/login', { replace: true });
+      return;
+    }
+    if (isBackendApiConfigured() && !localStorage.getItem(ACCESS_TOKEN_KEY)) {
+      navigate('/login', { replace: true });
+    }
   }, [role, navigate]);
 
   const currentNavItems = role ? roleNavItems[role] : [];
@@ -580,16 +521,15 @@ export const DashboardPage: React.FC = () => {
 
   const backendSync = isBackendApiConfigured();
 
-  const [teachers, setTeachers] = React.useState<Teacher[]>(backendSync ? [] : initialTeachers);
-  const [classes, setClasses] = React.useState<ClassItem[]>(backendSync ? [] : initialClasses);
+  const [teachers, setTeachers] = React.useState<Teacher[]>([]);
+  const [classes, setClasses] = React.useState<ClassItem[]>([]);
   const [students, setStudents] = React.useState<Student[]>([]);
   const [parents, setParents] = React.useState<ParentContact[]>([]);
-  const [courses, setCourses] = React.useState<Course[]>(backendSync ? [] : initialCourses);
+  const [courses, setCourses] = React.useState<Course[]>([]);
   const [matieres, setMatieres] = React.useState<Matiere[]>([]);
-  const [rooms, setRooms] = React.useState<Room[]>(backendSync ? [] : initialRooms);
-  const [events, setEvents] = React.useState<CalendarEvent[]>(backendSync ? [] : initialEvents);
-  const [schedule, setSchedule] =
-    React.useState<ScheduleItem[]>(backendSync ? [] : initialSchedule);
+  const [rooms, setRooms] = React.useState<Room[]>([]);
+  const [events, setEvents] = React.useState<CalendarEvent[]>([]);
+  const [schedule, setSchedule] = React.useState<ScheduleItem[]>([]);
 
   const [schoolTypes] = React.useState<SchoolType[]>(() => {
     // En réel: viendra du backend. Ici, on relit le type choisi à l'inscription.
@@ -676,11 +616,17 @@ export const DashboardPage: React.FC = () => {
     role: 'teacher',
   });
 
-  const [parentFeesTotal] = React.useState(350000);
-  const [parentFeesPaid] = React.useState(150000);
-
   const [paymentReminders, setPaymentReminders] = React.useState<PaymentReminder[]>([]);
   const [paymentReceipts, setPaymentReceipts] = React.useState<PaymentReceipt[]>([]);
+
+  const parentFeesTotal = React.useMemo(
+    () => paymentReminders.reduce((sum, r) => sum + (r.amount || 0), 0),
+    [paymentReminders],
+  );
+  const parentFeesPaid = React.useMemo(
+    () => paymentReceipts.reduce((sum, r) => sum + (r.amount || 0), 0),
+    [paymentReceipts],
+  );
   const [newReminder, setNewReminder] = React.useState<NewPaymentReminderFormState>({
     parentName: '',
     studentName: '',
@@ -1271,8 +1217,8 @@ export const DashboardPage: React.FC = () => {
       .catch((err) => console.error(err));
   };
 
-  const handleChangeRole = () => {
-    clearStoredRole();
+  const handleLogout = () => {
+    clearAuthSession();
     navigate('/login');
   };
 
@@ -1901,16 +1847,16 @@ export const DashboardPage: React.FC = () => {
               </Avatar>
               <div className='min-w-0'>
                 <p className='truncate text-sm font-medium leading-tight'>
-                  {role === 'admin' ? 'Admin établissement' : role === 'teacher' ? 'Enseignant' : role === 'parent' ? 'Parent' : 'Élève'}
+                  {sessionUser?.name ?? (role === 'admin' ? 'Admin établissement' : role === 'teacher' ? 'Enseignant' : role === 'parent' ? 'Parent' : 'Élève')}
                 </p>
                 <p className='truncate text-xs text-muted-foreground'>
-                  Mode test
+                  {sessionUser?.email ?? roleTitles[role]}
                 </p>
               </div>
             </div>
             <UserPortalSidebarLink />
-            <Button variant='ghost' size='sm' className='w-full justify-start text-xs' onClick={handleChangeRole}>
-              Changer de rôle
+            <Button variant='ghost' size='sm' className='w-full justify-start text-xs' onClick={handleLogout}>
+              Se déconnecter
             </Button>
           </div>
         </SidebarFooter>
@@ -1939,9 +1885,6 @@ export const DashboardPage: React.FC = () => {
               </p>
             </div>
             <div className='flex items-center gap-2'>
-              <Badge variant='outline' className='text-xs px-3 py-1'>
-                Année scolaire 2024–2025
-              </Badge>
               {current.cta ? <Button size='sm'>{current.cta}</Button> : null}
             </div>
           </div>
@@ -2202,7 +2145,7 @@ export const DashboardPage: React.FC = () => {
           {activeSection === 'curriculum' && (
             <div className='space-y-4 max-w-2xl'>
               <p className='text-sm text-muted-foreground'>
-                Reliez vos référentiels pédagogiques aux matières et cours de l’établissement. En mode démo, utilisez les
+                Reliez vos référentiels pédagogiques aux matières et cours de l’établissement. Utilisez les
                 modules Matières et Cours pour structurer votre offre.
               </p>
               <div className='flex flex-wrap gap-2'>

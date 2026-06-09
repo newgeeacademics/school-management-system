@@ -10,11 +10,10 @@ import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { setStoredRole } from '@/lib/auth';
+import { clearAuthSession, persistAuthSession } from '@/lib/auth';
 import { getMainAppOrigin } from '@/lib/main-app-url';
 import { isAdminRole } from '@/lib/api-error';
 import { isBackendApiConfigured, loginAdmin } from '@/lib/dashboard-backend';
-import { ACCESS_TOKEN_KEY } from '@/constants';
 
 export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded' }) => {
   const navigate = useNavigate();
@@ -48,8 +47,13 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
         setIsPending(false);
         return;
       }
-      localStorage.setItem(ACCESS_TOKEN_KEY, auth.token);
-      setStoredRole('admin');
+      const user = persistAuthSession(auth);
+      if (!user) {
+        toast.error('Rôle de compte non reconnu.', { richColors: true });
+        clearAuthSession();
+        setIsPending(false);
+        return;
+      }
       toast.success(t('auth.welcomeBackToast'), { richColors: true });
       setUsernameOrEmail('');
       setPassword('');

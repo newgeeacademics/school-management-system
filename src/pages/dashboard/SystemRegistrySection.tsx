@@ -65,7 +65,7 @@ export function SystemRegistrySection({ sectionConfig, counts, onOpenSection }: 
           <CardTitle className='text-base'>Vue d’ensemble administrative</CardTitle>
           <CardDescription>
             Chaque ligne ouvre le module correspondant : vous pouvez consulter, créer, modifier ou supprimer les
-            enregistrements selon les écrans (mode démo sans API).
+            enregistrements selon les écrans.
           </CardDescription>
         </CardHeader>
         <CardContent className='flex flex-wrap gap-3 text-sm text-muted-foreground'>
