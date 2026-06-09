@@ -27,6 +27,8 @@ export type SchoolRegistrationPayload = {
     studentCount: string;
     teacherCount: string;
     series: string[];
+    registrationNumber?: string;
+    languagesOffered?: string[];
     logoUrl: string;
   };
 };
@@ -67,6 +69,10 @@ function buildSchoolBody(school: SchoolRegistrationPayload['school'], email: str
     studentCount: school.studentCount ? Number(school.studentCount) : undefined,
     teacherCount: school.teacherCount ? Number(school.teacherCount) : undefined,
     series: school.series.length ? school.series.join(', ') : undefined,
+    registrationNumber: school.registrationNumber?.trim() || undefined,
+    languagesOffered: school.languagesOffered?.length
+      ? school.languagesOffered.join(', ')
+      : undefined,
     logoFileName: school.logoUrl || undefined,
   };
 }

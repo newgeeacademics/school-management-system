@@ -8,6 +8,7 @@ Each frontend is a **separate Vercel project** from the same GitHub repo, on **i
 | **Main** — marketing, registration, **school console** | `main` | `/login` | `/dashboard` |
 | **Admin** — separate admin console (optional 2nd deploy) | `admin` | `/login` | `/dashboard` |
 | **User portal** — students / parents / teachers | `user-portal` | `/connexion` | `/accueil` … |
+| **Finance** — trésorerie, paie enseignants & personnel | `finance` | `/login` | `/` |
 
 Each app is an **independent** Vite project and Vercel deployment. They share only the Render API (`VITE_API_URL`).
 
@@ -58,6 +59,19 @@ Each app is an **independent** Vite project and Vercel deployment. They share on
 | **Build Command** | `npm run build` |
 | **Output Directory** | `dist` |
 
+### Project D — Finance office
+
+| Setting | Value |
+|---------|--------|
+| **Project name** | `school-management-system-finance` (or similar) |
+| **Production branch** | `finance` |
+| **Root Directory** | `.` |
+| **Framework** | Vite |
+| **Build Command** | `npm run build` |
+| **Output Directory** | `dist` |
+
+Sync the `finance` branch from the monorepo: `powershell -File scripts/sync-branches.ps1` (on branch `it`).
+
 Each branch should include a root `vercel.json` with SPA rewrites for React Router.
 
 ---
@@ -101,6 +115,17 @@ If registration returns **403**, on **Render** set `APP_CORS_ALLOWED_ORIGINS` to
 | `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` |
 | `VITE_MAIN_APP_URL` | `https://newgee-main.vercel.app` (links to school `/login` on main, not admin-app) |
 
+### Finance — branch `finance`
+
+| Key | Example |
+|-----|---------|
+| `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` |
+| `VITE_MAIN_APP_URL` | `https://school-management-system-ivory-seven.vercel.app` |
+
+**Required.** Without `VITE_API_URL`, login shows: *« VITE_API_URL n’est pas configuré sur ce déploiement Vercel (finance) »*.
+
+After adding or changing env vars, **Redeploy** (Deployments → … → Redeploy). Vite embeds `VITE_*` at **build** time — a env change alone does not update a live deployment.
+
 ---
 
 ## 3. Vérifier que l’API répond (obligatoire)
@@ -140,7 +165,7 @@ Env vars on Render:
 | `APP_CORS_ALLOWED_ORIGINS` | all 3 Vercel URLs + localhost (see below) |
 
 ```
-https://newgee-main.vercel.app,https://newgee-admin.vercel.app,https://newgee-portal.vercel.app,http://localhost:5173,http://localhost:5174,http://localhost:5175
+https://newgee-main.vercel.app,https://newgee-admin.vercel.app,https://newgee-portal.vercel.app,https://YOUR-FINANCE.vercel.app,http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176
 ```
 
 ---
@@ -165,6 +190,7 @@ Admin app (if deployed): `https://newgee-admin.vercel.app/login` → `admin@clas
 - [ ] Vercel main on branch **`main`**
 - [ ] Vercel admin on branch **`admin`**
 - [ ] Vercel portal on branch **`user-portal`**
-- [ ] Env vars on all 3 Vercel projects
+- [ ] Vercel finance on branch **`finance`**
+- [ ] Env vars on all 4 Vercel projects (including `VITE_API_URL` on finance)
 - [ ] `APP_CORS_ALLOWED_ORIGINS` updated on Render
 - [ ] Redeploy after any env change

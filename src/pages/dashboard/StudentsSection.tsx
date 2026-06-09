@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { CreditCard } from 'lucide-react';
+
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { EntityCrudActions, NONE_SELECT_VALUE } from '@/components/dashboard/EntityCrudActions';
 import { Button } from '@/components/ui/button';
@@ -29,9 +31,10 @@ type StudentsSectionProps = {
   onCreateStudent: (e: React.FormEvent) => void;
   onUpdateStudent: (
     id: string,
-    data: { name: string; classId?: string; email?: string; password?: string }
+    data: { name: string; classId?: string; email?: string; phone?: string; password?: string }
   ) => void | Promise<void>;
   onDeleteStudent: (id: string) => void | Promise<void>;
+  onPrintIdCard?: (studentId: string) => void | Promise<void>;
   getClassName: (id: string) => string;
   readOnly?: boolean;
 };
@@ -44,6 +47,7 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
   onCreateStudent,
   onUpdateStudent,
   onDeleteStudent,
+  onPrintIdCard,
   getClassName,
   readOnly = false,
 }) => {
@@ -52,6 +56,7 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
     name: '',
     classId: '',
     email: '',
+    phone: '',
     password: '',
   });
 
@@ -61,6 +66,7 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
       name: student.name,
       classId: student.classId ?? '',
       email: student.email ?? '',
+      phone: student.phone ?? '',
       password: '',
     });
   };
@@ -72,6 +78,7 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
         name: draft.name.trim(),
         classId: draft.classId && draft.classId !== NONE_SELECT_VALUE ? draft.classId : undefined,
         email: draft.email.trim() || undefined,
+        phone: draft.phone.trim() || undefined,
         password: draft.password.trim() || undefined,
       })
     ).then(() => setEditingId(null));
@@ -86,10 +93,11 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
           </CardHeader>
           <CardContent>
             <p className='mb-3 text-[11px] text-muted-foreground'>
-              L&apos;email sert à la connexion sur le portail (rôle élève).
+              Email ou téléphone pour la connexion portail (rôle élève). Le matricule est généré
+              automatiquement.
             </p>
             <form
-              className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_auto] items-end text-xs'
+              className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
               onSubmit={onCreateStudent}
             >
               <div className='grid gap-2'>
@@ -133,7 +141,15 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
                   type='email'
                   value={newStudent.email}
                   onChange={(e) => setNewStudent((s) => ({ ...s, email: e.target.value }))}
-                  required
+                />
+              </div>
+              <div className='grid gap-2'>
+                <Label htmlFor='student-phone'>Téléphone (connexion)</Label>
+                <Input
+                  id='student-phone'
+                  value={newStudent.phone}
+                  onChange={(e) => setNewStudent((s) => ({ ...s, phone: e.target.value }))}
+                  placeholder='+225…'
                 />
               </div>
               <div className='grid gap-2'>
@@ -199,6 +215,11 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
                           onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
                           placeholder='Email portail'
                         />
+                        <Input
+                          value={draft.phone}
+                          onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))}
+                          placeholder='Téléphone portail'
+                        />
                         <InputPassword
                           value={draft.password}
                           onChange={(e) => setDraft((d) => ({ ...d, password: e.target.value }))}
@@ -219,8 +240,27 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
                           Classe :{' '}
                           {student.classId ? getClassName(student.classId) : 'Non renseignée'}
                         </p>
-                        {student.email && (
-                          <p className='text-[11px] text-muted-foreground'>{student.email}</p>
+                        {student.matricule && (
+                          <p className='text-[11px] font-mono text-muted-foreground'>
+                            Matricule : {student.matricule}
+                          </p>
+                        )}
+                        {(student.email || student.phone) && (
+                          <p className='text-[11px] text-muted-foreground'>
+                            {student.email ?? student.phone}
+                          </p>
+                        )}
+                        {!readOnly && onPrintIdCard && (
+                          <Button
+                            type='button'
+                            variant='outline'
+                            size='sm'
+                            className='mt-2 h-7 gap-1 text-[11px]'
+                            onClick={() => void Promise.resolve(onPrintIdCard(student.id))}
+                          >
+                            <CreditCard className='size-3' />
+                            Carte scolaire
+                          </Button>
                         )}
                         {!readOnly && (
                           <EntityCrudActions

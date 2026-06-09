@@ -26,7 +26,7 @@ type TeachersSectionProps = {
   onCreateTeacher: (e: React.FormEvent) => void;
   onUpdateTeacher: (
     id: string,
-    data: { name: string; subject: string; email?: string; password?: string }
+    data: { name: string; subject: string; email?: string; password?: string; phone?: string }
   ) => void | Promise<void>;
   onDeleteTeacher: (id: string) => void | Promise<void>;
   subjectOptions: string[];
@@ -49,6 +49,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
     subject: '',
     email: '',
     password: '',
+    phone: '',
   });
 
   const startEdit = (teacher: Teacher) => {
@@ -58,6 +59,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
       subject: teacher.subject,
       email: teacher.email ?? '',
       password: '',
+      phone: teacher.phone ?? '',
     });
   };
 
@@ -69,6 +71,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
         subject: draft.subject.trim(),
         email: draft.email.trim() || undefined,
         password: draft.password.trim() || undefined,
+        phone: draft.phone.trim() || undefined,
       })
     ).then(() => setEditingId(null));
   };
@@ -139,6 +142,16 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                 />
               </div>
               <div className='grid gap-2'>
+                <Label htmlFor='teacher-phone'>Téléphone (annuaire parents)</Label>
+                <Input
+                  id='teacher-phone'
+                  type='tel'
+                  value={newTeacher.phone}
+                  onChange={(e) => setNewTeacher((t) => ({ ...t, phone: e.target.value }))}
+                  placeholder='+225 07 00 00 00 00'
+                />
+              </div>
+              <div className='grid gap-2'>
                 <Label htmlFor='teacher-password'>Mot de passe</Label>
                 <InputPassword
                   id='teacher-password'
@@ -177,6 +190,12 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                         onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
                         placeholder='Email portail'
                       />
+                      <Input
+                        type='tel'
+                        value={draft.phone}
+                        onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))}
+                        placeholder='Téléphone'
+                      />
                       <InputPassword
                         value={draft.password}
                         onChange={(e) => setDraft((d) => ({ ...d, password: e.target.value }))}
@@ -199,9 +218,12 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                         <div>
                           <p className='text-sm font-medium'>{teacher.name}</p>
                           <p className='text-xs text-muted-foreground'>{teacher.subject}</p>
-                          {teacher.email && (
+                          {teacher.email ? (
                             <p className='text-[11px] text-muted-foreground'>{teacher.email}</p>
-                          )}
+                          ) : null}
+                          {teacher.phone ? (
+                            <p className='text-[11px] text-muted-foreground'>{teacher.phone}</p>
+                          ) : null}
                         </div>
                       </div>
                       <EntityCrudActions

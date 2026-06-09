@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -6,6 +6,7 @@ import {
   Bus,
   CalendarDays,
   Check,
+  ChevronDown,
   ClipboardList,
   Facebook,
   GraduationCap,
@@ -30,6 +31,7 @@ import {
 } from '@/components/ui/sheet';
 import { useTranslation } from '@/i18n';
 import { getUserPortalLoginUrl } from '@/lib/app-urls';
+import { useLandingReveal } from './use-landing-reveal';
 import './landing-page.css';
 
 const FEATURE_ICONS = [GraduationCap, Users, ClipboardList, CalendarDays, MapPin, ShieldCheck] as const;
@@ -38,6 +40,8 @@ const MODULE_ICONS = [BarChart3, Users, ClipboardList, CalendarDays, Check, Wall
 export const LandingPage = () => {
   const { t } = useTranslation();
   const year = new Date().getFullYear();
+  const mainRef = React.useRef<HTMLElement>(null);
+  useLandingReveal(mainRef);
 
   const features = FEATURE_ICONS.map((icon, i) => ({
     icon,
@@ -82,6 +86,9 @@ export const LandingPage = () => {
             <a className='landing__nav-link' href='#modules'>
               {t('landing.navModules')}
             </a>
+            <a className='landing__nav-link' href='#faq'>
+              {t('landing.navFaq')}
+            </a>
             <LanguageSwitcher showLabel className='landing__nav-link !inline-flex' />
             <a className='landing__btn landing__btn--ghost' href={getUserPortalLoginUrl()}>
               {t('landing.navUserPortal')}
@@ -98,8 +105,8 @@ export const LandingPage = () => {
         </div>
       </header>
 
-      <main>
-        <section className='landing__hero'>
+      <main ref={mainRef}>
+        <section className='landing__hero landing__reveal landing__reveal--in'>
           <div className='landing__hero-inner'>
             <div>
               <span className='landing__badge'>{t('landing.heroBadge')}</span>
@@ -167,7 +174,7 @@ export const LandingPage = () => {
           </div>
         </section>
 
-        <section className='landing__section landing__section--soft'>
+        <section className='landing__section landing__section--soft landing__reveal'>
           <div className='landing__section-inner'>
             <div className='landing__stats'>
               {stats.map((stat) => (
@@ -180,7 +187,7 @@ export const LandingPage = () => {
           </div>
         </section>
 
-        <section className='landing__section' id='fonctionnalites'>
+        <section className='landing__section landing__reveal' id='fonctionnalites'>
           <div className='landing__section-inner'>
             <div className='landing__section-head'>
               <p className='landing__eyebrow'>{t('landing.featuresEyebrow')}</p>
@@ -201,7 +208,7 @@ export const LandingPage = () => {
           </div>
         </section>
 
-        <section className='landing__section landing__section--soft' id='comment-ca-marche'>
+        <section className='landing__section landing__section--soft landing__reveal' id='comment-ca-marche'>
           <div className='landing__section-inner'>
             <div className='landing__section-head'>
               <p className='landing__eyebrow'>{t('landing.stepsEyebrow')}</p>
@@ -222,7 +229,7 @@ export const LandingPage = () => {
           </div>
         </section>
 
-        <section className='landing__section' id='modules'>
+        <section className='landing__section landing__reveal' id='modules'>
           <div className='landing__section-inner'>
             <div className='landing__section-head'>
               <p className='landing__eyebrow'>{t('landing.modulesEyebrow')}</p>
@@ -240,7 +247,9 @@ export const LandingPage = () => {
           </div>
         </section>
 
-        <section className='landing__cta'>
+        <LandingFaqSection />
+
+        <section className='landing__cta landing__reveal'>
           <h2 className='landing__cta-title'>{t('landing.ctaBandTitle')}</h2>
           <p className='landing__cta-desc'>{t('landing.ctaBandSubtitle')}</p>
           <div className='landing__cta-actions'>
@@ -277,6 +286,9 @@ export const LandingPage = () => {
           <div>
             <p className='landing__footer-heading'>{t('landing.footerUsefulLinks')}</p>
             <ul className='landing__footer-list'>
+              <li>
+                <a href='#faq'>{t('landing.navFaq')}</a>
+              </li>
               <li>
                 <a href='#cgu'>{t('landing.footerCgu')}</a>
               </li>
@@ -318,6 +330,55 @@ export const LandingPage = () => {
   );
 };
 
+const FAQ_COUNT = 6;
+
+function LandingFaqSection() {
+  const { t } = useTranslation();
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+
+  const items = Array.from({ length: FAQ_COUNT }, (_, index) => ({
+    id: index + 1,
+    question: t(`landing.faq${index + 1}Q`),
+    answer: t(`landing.faq${index + 1}A`),
+  }));
+
+  return (
+    <section className='landing__section landing__section--soft landing__reveal' id='faq'>
+      <div className='landing__section-inner'>
+        <div className='landing__section-head'>
+          <p className='landing__eyebrow'>{t('landing.faqEyebrow')}</p>
+          <h2 className='landing__section-title'>{t('landing.faqTitle')}</h2>
+          <p className='landing__section-desc'>{t('landing.faqDesc')}</p>
+        </div>
+        <div className='landing__faq'>
+          {items.map((item, index) => {
+            const isOpen = openIndex === index;
+            return (
+              <article
+                key={item.id}
+                className={`landing__faq-item${isOpen ? ' landing__faq-item--open' : ''}`}
+              >
+                <button
+                  type='button'
+                  className='landing__faq-trigger'
+                  aria-expanded={isOpen}
+                  onClick={() => setOpenIndex(isOpen ? null : index)}
+                >
+                  <span>{item.question}</span>
+                  <ChevronDown size={18} className='landing__faq-chevron' aria-hidden='true' />
+                </button>
+                <div className='landing__faq-panel' aria-hidden={!isOpen}>
+                  <p className='landing__faq-answer'>{item.answer}</p>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function MobileNav() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -344,6 +405,9 @@ function MobileNav() {
           </a>
           <a className='landing__btn landing__btn--ghost' href='#modules' onClick={close}>
             {t('landing.navModules')}
+          </a>
+          <a className='landing__btn landing__btn--ghost' href='#faq' onClick={close}>
+            {t('landing.navFaq')}
           </a>
           <LanguageSwitcher showLabel />
           <a className='landing__btn landing__btn--ghost' href={getUserPortalLoginUrl()} onClick={close}>

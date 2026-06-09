@@ -47,7 +47,7 @@ export const SYSTEM_REGISTRY_SECTIONS: {
   {
     category: 'Finances & services',
     categoryHint: 'Frais, cantine, transport',
-    sections: ['payments', 'canteen', 'transport'],
+    sections: ['payments', 'fee_schedules', 'announcements', 'canteen', 'transport'],
   },
   {
     category: 'Données & rapports',
