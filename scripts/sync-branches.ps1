@@ -81,11 +81,7 @@ if ($LASTEXITCODE -ne 0) {
 Pop-Location
 
 # --- finance ---
-git worktree add (Join-Path $WtRoot "finance") finance 2>$null
-if (-not (Test-Path (Join-Path $WtRoot "finance"))) {
-    git branch finance 2>$null
-    git worktree add (Join-Path $WtRoot "finance") finance
-}
+git worktree add (Join-Path $WtRoot "finance") finance
 Copy-AppFiles -Source (Join-Path $RepoRoot "finance-app") -Dest (Join-Path $WtRoot "finance") -Files $AppFiles
 Copy-Item (Join-Path $RepoRoot ".gitignore") (Join-Path $WtRoot "finance\.gitignore") -Force
 Remove-Clutter (Join-Path $WtRoot "finance")
