@@ -16,7 +16,7 @@ function Copy-AppFiles {
 
 function Remove-Clutter {
     param([string]$Dir)
-    @("admin-app", "user-portal-app", "backend", "classroom-app", "render.yaml", "DEPLOYMENT.md", "scripts", "dist", "node_modules") | ForEach-Object {
+    @("admin-app", "user-portal-app", "finance-app", "backend", "classroom-app", "render.yaml", "DEPLOYMENT.md", "scripts", "dist", "node_modules") | ForEach-Object {
         $p = Join-Path $Dir $_
         if (Test-Path $p) { Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -80,10 +80,29 @@ if ($LASTEXITCODE -ne 0) {
 } else { Write-Host "user-portal: no changes" }
 Pop-Location
 
+# --- finance ---
+git worktree add (Join-Path $WtRoot "finance") finance 2>$null
+if (-not (Test-Path (Join-Path $WtRoot "finance"))) {
+    git branch finance 2>$null
+    git worktree add (Join-Path $WtRoot "finance") finance
+}
+Copy-AppFiles -Source (Join-Path $RepoRoot "finance-app") -Dest (Join-Path $WtRoot "finance") -Files $AppFiles
+Copy-Item (Join-Path $RepoRoot ".gitignore") (Join-Path $WtRoot "finance\.gitignore") -Force
+Remove-Clutter (Join-Path $WtRoot "finance")
+Push-Location (Join-Path $WtRoot "finance")
+git add -A
+git diff --cached --quiet
+if ($LASTEXITCODE -ne 0) {
+    git commit -m "Sync finance app from monorepo (it branch)"
+    git push origin finance
+} else { Write-Host "finance: no changes" }
+Pop-Location
+
 # cleanup worktrees
 git worktree remove (Join-Path $WtRoot "main") --force
 git worktree remove (Join-Path $WtRoot "admin") --force
 git worktree remove (Join-Path $WtRoot "user-portal") --force
+git worktree remove (Join-Path $WtRoot "finance") --force
 Remove-Item $WtRoot -Recurse -Force -ErrorAction SilentlyContinue
 
 Pop-Location

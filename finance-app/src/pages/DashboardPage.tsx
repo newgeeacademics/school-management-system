@@ -41,8 +41,6 @@ import {
   createMatiereOnBackend,
   createOrUpdateGradeOnBackend,
   createParentOnBackend,
-  createAnnouncementOnBackend,
-  createFeeInstallmentOnBackend,
   createPaymentReceiptOnBackend,
   createPaymentReminderOnBackend,
   createRoomOnBackend,
@@ -51,33 +49,15 @@ import {
   createTeacherOnBackend,
   createTransportOnBackend,
   createUserOnBackend,
-  deleteAnnouncementOnBackend,
-  deleteClassOnBackend,
-  deleteFeeInstallmentOnBackend,
-  deleteParentOnBackend,
-  deleteStudentOnBackend,
-  deleteTeacherOnBackend,
-  deleteUserOnBackend,
-  fetchStudentIdCardOnBackend,
   isBackendApiConfigured,
   loadDashboardFromBackend,
-  refreshUsersFromBackend,
-  updateAnnouncementOnBackend,
-  updateFeeInstallmentOnBackend,
   updateAttendanceOnBackend,
-  updateClassOnBackend,
-  updateParentOnBackend,
-  updateStudentOnBackend,
-  updateTeacherOnBackend,
   updateTransportStudentsOnBackend,
-  updateUserOnBackend,
 } from '@/lib/dashboard-backend';
-import { toast } from 'sonner';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Sidebar,
   SidebarContent,
@@ -102,21 +82,13 @@ import { cn } from '@/lib/utils';
 import { UserPortalSidebarLink } from '@/components/UserPortalSidebarLink';
 
 import {
-  fetchAndCacheSchoolProfile,
-  getSchoolProfile,
-  getSystemBadgeClass,
-  getSystemLabel,
-  schoolTypesFromProfile,
-  type SchoolProfile,
-} from '@/lib/school-profile';
-
-import {
-  courseLevelOptionsForProfile,
+  COURSE_LEVEL_OPTIONS,
   DAY_OPTIONS,
   EVENT_LOCATION_PRESETS,
   EVENT_TIME_PRESETS,
-  levelOptionsForProfile,
+  LEVELS_BY_SCHOOL_TYPE,
   ROOM_TYPE_OPTIONS,
+  SCHOOL_TYPES,
   SUBJECT_OPTIONS,
   TIME_SLOT_OPTIONS,
   type SchoolType,
@@ -130,13 +102,8 @@ import {
   type Course,
   type Matiere,
   type Evaluation,
-  type Announcement,
-  type FeeInstallment,
-  type NewAnnouncementFormState,
   type NewEvaluationFormState,
-  type NewFeeInstallmentFormState,
   type NewCanteenItemFormState,
-  type StudentIdCardData,
   type NewClassFormState,
   type NewCourseFormState,
   type NewMatiereFormState,
@@ -150,7 +117,6 @@ import {
   type NewTeacherFormState,
   type NewTransportRouteFormState,
   type NewUserFormState,
-  type AppUserRole,
   type ParentContact,
   type PaymentReceipt,
   type PaymentReminder,
@@ -162,10 +128,7 @@ import {
   type Teacher,
   type TransportRoute,
 } from './dashboard/dashboardTypes';
-import { AnnouncementsSection } from './dashboard/AnnouncementsSection';
 import { CalendarSection } from './dashboard/CalendarSection';
-import { FeeSchedulesSection } from './dashboard/FeeSchedulesSection';
-import { StudentIdCardModal } from './dashboard/StudentIdCardModal';
 import { CanteenSection } from './dashboard/CanteenSection';
 import { ClassesSection } from './dashboard/ClassesSection';
 import { CoursesSection } from './dashboard/CoursesSection';
@@ -180,15 +143,10 @@ import { StudentsSection } from './dashboard/StudentsSection';
 import { TeachersSection } from './dashboard/TeachersSection';
 import { TransportSection } from './dashboard/TransportSection';
 import { ReportsSection } from './dashboard/ReportsSection';
-import { PermissionsSection } from './dashboard/PermissionsSection';
 import { UsersSection } from './dashboard/UsersSection';
 import { GradesSection } from './dashboard/GradesSection';
 import { isSchoolSettingsSection, SchoolSettingsContent } from './dashboard/SchoolSettingsPanels';
 import { SystemRegistrySection } from './dashboard/SystemRegistrySection';
-import { AppLogo } from '@/components/AppLogo';
-import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
-
-import './dashboard-shell.css';
 
 /** Every section an admin account can open (used for active-tab validation). */
 const ADMIN_SECTION_IDS: SectionId[] = [
@@ -216,8 +174,6 @@ const ADMIN_SECTION_IDS: SectionId[] = [
   'attendance',
   'exams',
   'payments',
-  'fee_schedules',
-  'announcements',
   'users',
   'permissions',
   'billing',
@@ -259,7 +215,6 @@ const roleNavItems: Record<UserRole, { id: SectionId; label: string; icon: React
   staff: [
     { id: 'overview', label: 'Vue d’ensemble', icon: GraduationCap },
     { id: 'payments', label: 'Paiements', icon: Wallet },
-    { id: 'fee_schedules', label: 'Échéanciers', icon: Calendar },
     { id: 'reports', label: 'Rapports', icon: BarChart2 },
   ],
 };
@@ -374,20 +329,6 @@ const sectionConfig: Record<
       'Consultez le montant total à payer, ce qui a été réglé et le restant dû.',
     cta: '',
   },
-  fee_schedules: {
-    kicker: 'Échéanciers',
-    title: 'Tarifs et tranches',
-    description:
-      'Configurez les montants de scolarité, cantine et transport avec des dates d’échéance précises.',
-    cta: 'Ajouter une tranche',
-  },
-  announcements: {
-    kicker: 'Communication',
-    title: 'Annonces officielles',
-    description:
-      'Publiez les réunions de parents, événements et informations institutionnelles pour les familles.',
-    cta: 'Publier une annonce',
-  },
   grades: {
     kicker: 'Gestion des notes',
     title: 'Notes & bulletins',
@@ -441,7 +382,7 @@ const sectionConfig: Record<
     kicker: 'Sécurité',
     title: 'Rôles & permissions',
     description:
-      'Définissez les accès par rôle : console admin, portail familles et finance (direction, enseignants, personnel).',
+      'Contrôlez qui peut voir ou modifier chaque module (bientôt relié à votre annuaire).',
     cta: '',
   },
   settings_profile: {
@@ -596,49 +537,21 @@ export const DashboardPage: React.FC = () => {
   const [events, setEvents] = React.useState<CalendarEvent[]>([]);
   const [schedule, setSchedule] = React.useState<ScheduleItem[]>([]);
 
-  const [schoolProfile, setSchoolProfile] = React.useState<SchoolProfile | null>(() =>
-    getSchoolProfile()
-  );
-  const schoolTypes = React.useMemo(
-    () => schoolTypesFromProfile(schoolProfile) as SchoolType[],
-    [schoolProfile]
-  );
-  const levelOptions = React.useMemo(
-    () => levelOptionsForProfile(schoolProfile),
-    [schoolProfile]
-  );
-  const courseLevelOptions = React.useMemo(
-    () => courseLevelOptionsForProfile(schoolProfile),
-    [schoolProfile]
-  );
-
-  React.useEffect(() => {
-    let cancelled = false;
-
-    const hydrateProfile = async () => {
-      const existing = getSchoolProfile();
-      if (existing) {
-        if (!cancelled) setSchoolProfile(existing);
-        return;
-      }
-
-      try {
-        const userRaw = localStorage.getItem('user');
-        const user = userRaw ? (JSON.parse(userRaw) as { schoolId?: string }) : null;
-        if (user?.schoolId) {
-          const fetched = await fetchAndCacheSchoolProfile(user.schoolId);
-          if (!cancelled && fetched) setSchoolProfile(fetched);
+  const [schoolTypes] = React.useState<SchoolType[]>(() => {
+    // En réel: viendra du backend. Ici, on relit le type choisi à l'inscription.
+    try {
+      const raw = window.localStorage.getItem('classroom_school_profile');
+      if (raw) {
+        const data = JSON.parse(raw) as { type?: string } | null;
+        if (data?.type && SCHOOL_TYPES.includes(data.type as SchoolType)) {
+          return [data.type as SchoolType];
         }
-      } catch {
-        // ignore
       }
-    };
-
-    void hydrateProfile();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    } catch {
+      // ignore parse errors
+    }
+    return [...SCHOOL_TYPES];
+  });
   const [newClass, setNewClass] = React.useState<NewClassFormState>({
     name: '',
     schoolType: '',
@@ -651,9 +564,6 @@ export const DashboardPage: React.FC = () => {
     React.useState<NewTeacherFormState>({
     name: '',
     subject: '',
-    email: '',
-    password: '',
-    phone: '',
   });
   const [teacherSubjectPreset, setTeacherSubjectPreset] = React.useState('');
 
@@ -661,16 +571,12 @@ export const DashboardPage: React.FC = () => {
     React.useState<NewStudentFormState>({
       name: '',
       classId: '',
-      email: '',
-      phone: '',
-      password: '',
     });
 
   const [newParent, setNewParent] = React.useState<NewParentFormState>({
     name: '',
     phone: '',
     email: '',
-    password: '',
     studentId: '',
   });
 
@@ -713,40 +619,8 @@ export const DashboardPage: React.FC = () => {
   const [newUser, setNewUser] = React.useState<NewUserFormState>({
     name: '',
     email: '',
-    phone: '',
     role: 'teacher',
-    password: '',
   });
-
-  const defaultAcademicYear = React.useMemo(() => {
-    const y = new Date().getFullYear();
-    return `${y}-${y + 1}`;
-  }, []);
-
-  const [feeInstallments, setFeeInstallments] = React.useState<FeeInstallment[]>([]);
-  const [newFeeInstallment, setNewFeeInstallment] = React.useState<NewFeeInstallmentFormState>({
-    category: 'Scolarité',
-    academicYear: defaultAcademicYear,
-    label: '',
-    amount: '',
-    periodStart: '',
-    periodEnd: '',
-    description: '',
-    sortOrder: '1',
-  });
-
-  const [announcements, setAnnouncements] = React.useState<Announcement[]>([]);
-  const [newAnnouncement, setNewAnnouncement] = React.useState<NewAnnouncementFormState>({
-    title: '',
-    body: '',
-    eventDate: '',
-    location: '',
-    published: true,
-  });
-
-  const [idCardOpen, setIdCardOpen] = React.useState(false);
-  const [idCardLoading, setIdCardLoading] = React.useState(false);
-  const [idCardData, setIdCardData] = React.useState<StudentIdCardData | null>(null);
 
   const [paymentReminders, setPaymentReminders] = React.useState<PaymentReminder[]>([]);
   const [paymentReceipts, setPaymentReceipts] = React.useState<PaymentReceipt[]>([]);
@@ -831,8 +705,6 @@ export const DashboardPage: React.FC = () => {
       setGrades,
       setPaymentReminders,
       setPaymentReceipts,
-      setFeeInstallments,
-      setAnnouncements,
     }).catch((err) => console.error('Failed to load dashboard from API', err));
   }, [backendSync, role]);
 
@@ -848,129 +720,44 @@ export const DashboardPage: React.FC = () => {
   const getMatiereName = (id?: string) =>
     id ? matieres.find((m) => m.id === id)?.name ?? '—' : '—';
 
-  const syncPortalUsers = async () => {
-    if (!backendSync) return;
-    try {
-      setUsers(await refreshUsersFromBackend());
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleCreateParent = async (e: React.FormEvent) => {
+  const handleCreateParent = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newParent.name.trim() || (!newParent.email.trim() && !newParent.phone.trim())) return;
-    const payload = {
+    if (!newParent.name.trim()) return;
+    const id = `p-${Date.now()}`;
+    const parent = {
+      id,
       name: newParent.name.trim(),
       phone: newParent.phone.trim() || undefined,
       email: newParent.email.trim() || undefined,
-      password: newParent.password.trim() || undefined,
       studentId: newParent.studentId || undefined,
     };
-    try {
-      if (backendSync) {
-        const created = await createParentOnBackend(payload);
-        setParents((prev) => [...prev, created]);
-        await syncPortalUsers();
-      } else {
-        setParents((prev) => [...prev, { id: `p-${Date.now()}`, ...payload }]);
-      }
-      toast.success('Parent et compte portail créés');
-      setNewParent({ name: '', phone: '', email: '', password: '', studentId: '' });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
+    setParents((prev) => [...prev, parent]);
+    if (backendSync) {
+      void createParentOnBackend(parent).catch((err) => console.error(err));
     }
+    setNewParent({
+      name: '',
+      phone: '',
+      email: '',
+      studentId: '',
+    });
   };
 
-  const handleUpdateParent = async (
-    id: string,
-    data: { name: string; phone?: string; email?: string; studentId?: string; password?: string }
-  ) => {
-    try {
-      if (backendSync) {
-        const updated = await updateParentOnBackend(id, data);
-        setParents((prev) => prev.map((p) => (p.id === id ? updated : p)));
-        await syncPortalUsers();
-      } else {
-        setParents((prev) => prev.map((p) => (p.id === id ? { ...p, ...data } : p)));
-      }
-      toast.success('Parent mis à jour');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
-  };
-
-  const handleDeleteParent = async (id: string) => {
-    try {
-      if (backendSync) {
-        await deleteParentOnBackend(id);
-        await syncPortalUsers();
-      }
-      setParents((prev) => prev.filter((p) => p.id !== id));
-      toast.success('Parent supprimé');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
-  };
-
-  const handleCreateUser = async (e: React.FormEvent) => {
+  const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUser.name.trim() || (!newUser.email.trim() && !newUser.phone.trim())) return;
-    const payload = {
+    if (!newUser.name.trim() || !newUser.email.trim()) return;
+    const id = `u-${Date.now()}`;
+    const user = {
+      id,
       name: newUser.name.trim(),
-      email: newUser.email.trim() || undefined,
-      phone: newUser.phone.trim() || undefined,
+      email: newUser.email.trim(),
       role: newUser.role,
-      password: newUser.password?.trim() || undefined,
     };
-    try {
-      if (backendSync) {
-        const created = await createUserOnBackend(payload);
-        setUsers((prev) => [...prev, created]);
-      } else {
-        setUsers((prev) => [
-          ...prev,
-          {
-            id: `u-${Date.now()}`,
-            name: payload.name,
-            email: payload.email ?? '',
-            phone: payload.phone,
-            role: payload.role,
-          },
-        ]);
-      }
-      toast.success('Utilisateur créé');
-      setNewUser({ name: '', email: '', phone: '', role: 'teacher', password: '' });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
+    setUsers((prev) => [...prev, user]);
+    if (backendSync) {
+      void createUserOnBackend(user).catch((err) => console.error(err));
     }
-  };
-
-  const handleUpdateUser = async (
-    id: string,
-    data: { name: string; email?: string; phone?: string; role: AppUserRole; password?: string }
-  ) => {
-    try {
-      if (backendSync) {
-        const updated = await updateUserOnBackend(id, data);
-        setUsers((prev) => prev.map((u) => (u.id === id ? updated : u)));
-      } else {
-        setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...data } : u)));
-      }
-      toast.success('Utilisateur mis à jour');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
-  };
-
-  const handleDeleteUser = async (id: string) => {
-    try {
-      if (backendSync) await deleteUserOnBackend(id);
-      setUsers((prev) => prev.filter((u) => u.id !== id));
-      toast.success('Utilisateur supprimé');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
+    setNewUser({ name: '', email: '', role: 'teacher' });
   };
 
   const handleCreateReminder = (e: React.FormEvent) => {
@@ -1113,345 +900,93 @@ export const DashboardPage: React.FC = () => {
         )
       : transportRoutes;
 
-  const handleCreateClass = async (e: React.FormEvent) => {
+  const handleCreateClass = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClass.name.trim()) return;
+    const id = `c-${Date.now()}`;
     const typeForLevel =
       newClass.schoolType || (schoolTypes.length === 1 ? schoolTypes[0] : '');
     let levelLabel = newClass.level.trim() || 'Niveau non défini';
     if (typeForLevel && newClass.level.trim()) {
       levelLabel = `${typeForLevel} - ${newClass.level.trim()}`;
-    } else if (typeForLevel && levelOptions.length) {
-      levelLabel = `${typeForLevel} - ${levelOptions[0]}`;
+    } else if (typeForLevel && LEVELS_BY_SCHOOL_TYPE[typeForLevel as SchoolType]?.length) {
+      levelLabel = `${typeForLevel} - ${LEVELS_BY_SCHOOL_TYPE[typeForLevel as SchoolType][0]}`;
     }
-    const payload = {
-      name: newClass.name.trim(),
-      level: levelLabel,
-      studentsCount: Number(newClass.studentsCount || 0),
-      homeroomTeacherId: newClass.homeroomTeacherId || undefined,
-    };
-    try {
-      if (backendSync) {
-        const created = await createClassOnBackend(payload);
-        setClasses((prev) => [...prev, created]);
-      } else {
-        setClasses((prev) => [...prev, { id: `c-${Date.now()}`, ...payload }]);
-      }
-      toast.success('Classe créée');
-      setNewClass({ name: '', schoolType: '', level: '', studentsCount: '', homeroomTeacherId: '' });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
+    setClasses((prev) => [
+      ...prev,
+      {
+        id,
+        name: newClass.name.trim(),
+        level: levelLabel,
+        studentsCount: Number(newClass.studentsCount || 0),
+        homeroomTeacherId: newClass.homeroomTeacherId || undefined,
+      },
+    ]);
+    if (backendSync) {
+      void createClassOnBackend({
+        name: newClass.name.trim(),
+        level: levelLabel,
+        studentsCount: Number(newClass.studentsCount || 0),
+        homeroomTeacherId: newClass.homeroomTeacherId || undefined,
+      }).catch((err) => console.error(err));
     }
+    setNewClass({
+      name: '',
+      schoolType: '',
+      level: '',
+      studentsCount: '',
+      homeroomTeacherId: '',
+    });
   };
 
-  const handleUpdateClass = async (
-    id: string,
-    data: { name: string; level: string; studentsCount: number; homeroomTeacherId?: string }
-  ) => {
-    try {
-      if (backendSync) {
-        const updated = await updateClassOnBackend(id, data);
-        setClasses((prev) => prev.map((c) => (c.id === id ? updated : c)));
-      } else {
-        setClasses((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c)));
-      }
-      toast.success('Classe mise à jour');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
-  };
-
-  const handleDeleteClass = async (id: string) => {
-    try {
-      if (backendSync) await deleteClassOnBackend(id);
-      setClasses((prev) => prev.filter((c) => c.id !== id));
-      setStudents((prev) =>
-        prev.map((s) => (s.classId === id ? { ...s, classId: undefined } : s))
-      );
-      toast.success('Classe supprimée');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
-  };
-
-  const handleCreateTeacher = async (e: React.FormEvent) => {
+  const handleCreateTeacher = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTeacher.name.trim() || !newTeacher.email.trim()) return;
-    const payload = {
-      name: newTeacher.name.trim(),
-      subject: newTeacher.subject.trim() || 'Matière à définir',
-      email: newTeacher.email.trim(),
-      password: newTeacher.password.trim() || undefined,
-      phone: newTeacher.phone.trim() || undefined,
-    };
-    try {
-      if (backendSync) {
-        const created = await createTeacherOnBackend(payload);
-        setTeachers((prev) => [...prev, created]);
-        await syncPortalUsers();
-      } else {
-        const initials = payload.name
-          .split(' ')
-          .filter(Boolean)
-          .slice(0, 2)
-          .map((p) => p[0]?.toUpperCase() ?? '')
-          .join('');
-        setTeachers((prev) => [
-          ...prev,
-          { id: `t-${Date.now()}`, initials: initials || 'ED', ...payload },
-        ]);
-      }
-      toast.success('Enseignant et compte portail créés');
-      setNewTeacher({ name: '', subject: '', email: '', password: '', phone: '' });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
+    if (!newTeacher.name.trim()) return;
+    const id = `t-${Date.now()}`;
+    const initials = newTeacher.name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase() ?? '')
+      .join('');
+    setTeachers((prev) => [
+      ...prev,
+      {
+        id,
+        initials: initials || 'ED',
+        name: newTeacher.name.trim(),
+        subject: newTeacher.subject.trim() || 'Matière à définir',
+      },
+    ]);
+    if (backendSync) {
+      void createTeacherOnBackend({
+        name: newTeacher.name.trim(),
+        subject: newTeacher.subject.trim() || 'Matière à définir',
+        initials: initials || 'ED',
+      }).catch((err) => console.error(err));
     }
+    setNewTeacher({ name: '', subject: '' });
   };
 
-  const handleUpdateTeacher = async (
-    id: string,
-    data: { name: string; subject: string; email?: string; password?: string; phone?: string }
-  ) => {
-    try {
-      if (backendSync) {
-        const updated = await updateTeacherOnBackend(id, data);
-        setTeachers((prev) => prev.map((t) => (t.id === id ? updated : t)));
-        await syncPortalUsers();
-      } else {
-        setTeachers((prev) => prev.map((t) => (t.id === id ? { ...t, ...data } : t)));
-      }
-      toast.success('Enseignant mis à jour');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
-  };
-
-  const handleDeleteTeacher = async (id: string) => {
-    try {
-      if (backendSync) {
-        await deleteTeacherOnBackend(id);
-        await syncPortalUsers();
-      }
-      setTeachers((prev) => prev.filter((t) => t.id !== id));
-      setClasses((prev) =>
-        prev.map((c) =>
-          c.homeroomTeacherId === id ? { ...c, homeroomTeacherId: undefined } : c
-        )
-      );
-      toast.success('Enseignant supprimé');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
-  };
-
-  const handleCreateStudent = async (e: React.FormEvent) => {
+  const handleCreateStudent = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStudent.name.trim() || (!newStudent.email.trim() && !newStudent.phone.trim())) return;
-    const payload = {
-      name: newStudent.name.trim(),
-      classId: newStudent.classId || undefined,
-      email: newStudent.email.trim() || undefined,
-      phone: newStudent.phone.trim() || undefined,
-      password: newStudent.password.trim() || undefined,
-    };
-    try {
-      if (backendSync) {
-        const created = await createStudentOnBackend(payload);
-        setStudents((prev) => [...prev, created]);
-        await syncPortalUsers();
-      } else {
-        setStudents((prev) => [...prev, { id: `st-${Date.now()}`, ...payload }]);
-      }
-      toast.success('Élève et compte portail créés');
-      setNewStudent({ name: '', classId: '', email: '', phone: '', password: '' });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
+    if (!newStudent.name.trim()) return;
+    const id = `st-${Date.now()}`;
+    setStudents((prev) => [
+      ...prev,
+      {
+        id,
+        name: newStudent.name.trim(),
+        classId: newStudent.classId || undefined,
+      },
+    ]);
+    if (backendSync) {
+      void createStudentOnBackend({
+        name: newStudent.name.trim(),
+        classId: newStudent.classId || undefined,
+      }).catch((err) => console.error(err));
     }
-  };
-
-  const handleUpdateStudent = async (
-    id: string,
-    data: { name: string; classId?: string; email?: string; phone?: string; password?: string }
-  ) => {
-    try {
-      if (backendSync) {
-        const updated = await updateStudentOnBackend(id, data);
-        setStudents((prev) => prev.map((s) => (s.id === id ? updated : s)));
-        await syncPortalUsers();
-      } else {
-        setStudents((prev) => prev.map((s) => (s.id === id ? { ...s, ...data } : s)));
-      }
-      toast.success('Élève mis à jour');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
-  };
-
-  const handleDeleteStudent = async (id: string) => {
-    try {
-      if (backendSync) {
-        await deleteStudentOnBackend(id);
-        await syncPortalUsers();
-      }
-      setStudents((prev) => prev.filter((s) => s.id !== id));
-      setParents((prev) =>
-        prev.map((p) => (p.studentId === id ? { ...p, studentId: undefined } : p))
-      );
-      toast.success('Élève supprimé');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
-  };
-
-  const handlePrintStudentIdCard = async (studentId: string) => {
-    setIdCardOpen(true);
-    setIdCardLoading(true);
-    setIdCardData(null);
-    try {
-      if (backendSync) {
-        const card = await fetchStudentIdCardOnBackend(studentId);
-        setIdCardData(card);
-        setStudents((prev) =>
-          prev.map((s) => (s.id === studentId ? { ...s, matricule: card.matricule } : s))
-        );
-      } else {
-        const student = students.find((s) => s.id === studentId);
-        setIdCardData({
-          studentId,
-          matricule: student?.matricule ?? `DEMO-${studentId.slice(-4)}`,
-          studentName: student?.name ?? 'Élève',
-          className: student?.classId ? getClassName(student.classId) : '',
-          schoolName: schoolProfile?.name ?? 'Établissement',
-          qrPayload: JSON.stringify({ studentId, name: student?.name }),
-        });
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur carte scolaire');
-      setIdCardOpen(false);
-    } finally {
-      setIdCardLoading(false);
-    }
-  };
-
-  const handleCreateFeeInstallment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newFeeInstallment.label.trim() || !newFeeInstallment.amount.trim()) return;
-    const payload = {
-      category: newFeeInstallment.category,
-      academicYear: newFeeInstallment.academicYear.trim() || defaultAcademicYear,
-      label: newFeeInstallment.label.trim(),
-      amount: Number(newFeeInstallment.amount),
-      periodStart: newFeeInstallment.periodStart,
-      periodEnd: newFeeInstallment.periodEnd,
-      description: newFeeInstallment.description.trim() || undefined,
-      sortOrder: Number(newFeeInstallment.sortOrder || 1),
-    };
-    try {
-      if (backendSync) {
-        const created = await createFeeInstallmentOnBackend(payload);
-        setFeeInstallments((prev) => [...prev, created]);
-      } else {
-        setFeeInstallments((prev) => [...prev, { id: `fee-${Date.now()}`, ...payload }]);
-      }
-      toast.success('Tranche ajoutée');
-      setNewFeeInstallment((f) => ({
-        ...f,
-        label: '',
-        amount: '',
-        periodStart: '',
-        periodEnd: '',
-        description: '',
-      }));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
-  };
-
-  const handleUpdateFeeInstallment = async (
-    id: string,
-    data: Omit<FeeInstallment, 'id'>
-  ) => {
-    try {
-      if (backendSync) {
-        const updated = await updateFeeInstallmentOnBackend(id, data);
-        setFeeInstallments((prev) => prev.map((f) => (f.id === id ? updated : f)));
-      } else {
-        setFeeInstallments((prev) => prev.map((f) => (f.id === id ? { ...f, ...data } : f)));
-      }
-      toast.success('Tranche mise à jour');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
-  };
-
-  const handleDeleteFeeInstallment = async (id: string) => {
-    try {
-      if (backendSync) await deleteFeeInstallmentOnBackend(id);
-      setFeeInstallments((prev) => prev.filter((f) => f.id !== id));
-      toast.success('Tranche supprimée');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
-  };
-
-  const handleCreateAnnouncement = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newAnnouncement.title.trim() || !newAnnouncement.body.trim()) return;
-    const payload = {
-      title: newAnnouncement.title.trim(),
-      body: newAnnouncement.body.trim(),
-      eventDate: newAnnouncement.eventDate.trim() || undefined,
-      location: newAnnouncement.location.trim() || undefined,
-      published: newAnnouncement.published,
-    };
-    try {
-      if (backendSync) {
-        const created = await createAnnouncementOnBackend(payload);
-        setAnnouncements((prev) => [...prev, created]);
-      } else {
-        setAnnouncements((prev) => [
-          ...prev,
-          {
-            id: `ann-${Date.now()}`,
-            ...payload,
-            publishedAt: new Date().toISOString(),
-          },
-        ]);
-      }
-      toast.success('Annonce publiée');
-      setNewAnnouncement({ title: '', body: '', eventDate: '', location: '', published: true });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
-  };
-
-  const handleUpdateAnnouncement = async (
-    id: string,
-    data: Omit<Announcement, 'id' | 'publishedAt'>
-  ) => {
-    try {
-      if (backendSync) {
-        const updated = await updateAnnouncementOnBackend(id, data);
-        setAnnouncements((prev) => prev.map((a) => (a.id === id ? updated : a)));
-      } else {
-        setAnnouncements((prev) =>
-          prev.map((a) => (a.id === id ? { ...a, ...data } : a))
-        );
-      }
-      toast.success('Annonce mise à jour');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
-  };
-
-  const handleDeleteAnnouncement = async (id: string) => {
-    try {
-      if (backendSync) await deleteAnnouncementOnBackend(id);
-      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
-      toast.success('Annonce supprimée');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
-    }
+    setNewStudent({ name: '', classId: '' });
   };
 
   const handleCreateCourse = (e: React.FormEvent) => {
@@ -1696,14 +1231,21 @@ export const DashboardPage: React.FC = () => {
   if (!role) return null;
 
   return (
-    <SidebarProvider className='dashboard-shell min-h-svh w-full max-w-full'>
+    <SidebarProvider>
       <Sidebar collapsible='icon' variant='inset'>
         <SidebarHeader>
-          <div className='dashboard-sidebar-brand flex flex-col gap-1 px-2'>
-            <AppLogo name='NewGee Admin' />
-            <span className='text-[11px] font-medium text-muted-foreground'>
-              {roleTitles[role]}
-            </span>
+          <div className='flex items-center gap-2 px-2'>
+            <div className='size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-semibold'>
+              NG
+            </div>
+            <div className='flex flex-col'>
+              <span className='text-sm font-semibold leading-tight'>
+                NewGee Admin
+              </span>
+              <span className='text-[11px] text-muted-foreground'>
+                {roleTitles[role]}
+              </span>
+            </div>
           </div>
         </SidebarHeader>
 
@@ -1944,26 +1486,6 @@ export const DashboardPage: React.FC = () => {
                       >
                         <Wallet className='mr-1.5' />
                         <span>Finances</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Échéanciers'
-                        isActive={activeSection === 'fee_schedules'}
-                        onClick={() => setActiveSection('fee_schedules')}
-                      >
-                        <Receipt className='mr-1.5' />
-                        <span>Échéanciers</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Annonces'
-                        isActive={activeSection === 'announcements'}
-                        onClick={() => setActiveSection('announcements')}
-                      >
-                        <BookMarked className='mr-1.5' />
-                        <span>Annonces</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   </SidebarMenu>
@@ -2322,7 +1844,7 @@ export const DashboardPage: React.FC = () => {
         <SidebarSeparator />
 
         <SidebarFooter>
-          <div className='dashboard-user-pill flex flex-col gap-2'>
+          <div className='flex flex-col gap-2 px-2 py-1.5'>
             <div className='flex items-center gap-2'>
               <Avatar className='h-8 w-8'>
                 <AvatarFallback>
@@ -2349,39 +1871,32 @@ export const DashboardPage: React.FC = () => {
       </Sidebar>
 
       <SidebarInset>
-        <header className='dashboard-header'>
-          <div className='dashboard-header__row'>
+        <header className='border-b px-4 md:px-6 py-3 md:py-4'>
+          {/* Ligne 1 : bouton d’extension du menu, toujours en haut à gauche */}
+          <div className='flex items-center justify-between md:justify-start mb-3'>
             <SidebarTrigger />
-            <div className='dashboard-header__lead'>
-              <p className='dashboard-header__eyebrow'>{current.kicker}</p>
-              <h1 className='dashboard-header__title'>{current.title}</h1>
-              <p className='dashboard-header__desc'>{current.description}</p>
+          </div>
+
+          {/* Ligne 2 : titre + actions, avec layout colonne sur mobile et rangée sur desktop */}
+          <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+            <div className='space-y-1'>
+              <p className='text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground'>
+                {current.kicker}
+              </p>
+              <h1 className='text-xl font-semibold leading-tight'>
+                {current.title}
+              </h1>
+              <p className='text-xs text-muted-foreground'>
+                {current.description}
+              </p>
             </div>
-            <div className='dashboard-header__actions'>
-              <LanguageSwitcher compact showLabel />
-              {schoolProfile ? (
-                <>
-                  <Badge
-                    variant='outline'
-                    className='dashboard-header__school-type text-xs px-3 py-1'
-                    title={schoolProfile.name}
-                  >
-                    {schoolProfile.type}
-                  </Badge>
-                  <Badge
-                    variant='outline'
-                    className={`${getSystemBadgeClass(schoolProfile.system)} text-xs px-3 py-1`}
-                  >
-                    {getSystemLabel(schoolProfile.system)}
-                  </Badge>
-                </>
-              ) : null}
+            <div className='flex items-center gap-2'>
               {current.cta ? <Button size='sm'>{current.cta}</Button> : null}
             </div>
           </div>
         </header>
 
-        <main className='dashboard-content flex-1 space-y-6'>
+        <main className='flex-1 px-6 py-6 space-y-6'>
           {activeSection === 'system_registry' && (
             <SystemRegistrySection
               sectionConfig={sectionConfig}
@@ -2433,12 +1948,8 @@ export const DashboardPage: React.FC = () => {
               newClass={newClass}
               setNewClass={setNewClass}
               onCreateClass={handleCreateClass}
-              onUpdateClass={handleUpdateClass}
-              onDeleteClass={handleDeleteClass}
               getTeacherName={getTeacherName}
               schoolTypes={schoolTypes}
-              schoolProfile={schoolProfile}
-              levelOptions={levelOptions}
             />
           )}
 
@@ -2450,8 +1961,6 @@ export const DashboardPage: React.FC = () => {
               teacherSubjectPreset={teacherSubjectPreset}
               setTeacherSubjectPreset={setTeacherSubjectPreset}
               onCreateTeacher={handleCreateTeacher}
-              onUpdateTeacher={handleUpdateTeacher}
-              onDeleteTeacher={handleDeleteTeacher}
               subjectOptions={SUBJECT_OPTIONS}
             />
           )}
@@ -2463,9 +1972,6 @@ export const DashboardPage: React.FC = () => {
               newStudent={newStudent}
               setNewStudent={setNewStudent}
               onCreateStudent={handleCreateStudent}
-              onUpdateStudent={handleUpdateStudent}
-              onDeleteStudent={handleDeleteStudent}
-              onPrintIdCard={role === 'admin' ? handlePrintStudentIdCard : undefined}
               getClassName={getClassName}
               readOnly={role === 'parent' || role === 'student'}
             />
@@ -2478,8 +1984,6 @@ export const DashboardPage: React.FC = () => {
               newParent={newParent}
               setNewParent={setNewParent}
               onCreateParent={handleCreateParent}
-              onUpdateParent={handleUpdateParent}
-              onDeleteParent={handleDeleteParent}
             />
           )}
 
@@ -2489,7 +1993,7 @@ export const DashboardPage: React.FC = () => {
               newCourse={newCourse}
               setNewCourse={setNewCourse}
               onCreateCourse={handleCreateCourse}
-              courseLevelOptions={courseLevelOptions}
+              courseLevelOptions={COURSE_LEVEL_OPTIONS}
               matieres={matieres}
               readOnly={role === 'student'}
             />
@@ -2537,30 +2041,6 @@ export const DashboardPage: React.FC = () => {
               newUser={newUser}
               setNewUser={setNewUser}
               onCreateUser={handleCreateUser}
-              onUpdateUser={handleUpdateUser}
-              onDeleteUser={handleDeleteUser}
-            />
-          )}
-
-          {activeSection === 'fee_schedules' && (
-            <FeeSchedulesSection
-              installments={feeInstallments}
-              newInstallment={newFeeInstallment}
-              setNewInstallment={setNewFeeInstallment}
-              onCreate={handleCreateFeeInstallment}
-              onUpdate={handleUpdateFeeInstallment}
-              onDelete={handleDeleteFeeInstallment}
-            />
-          )}
-
-          {activeSection === 'announcements' && (
-            <AnnouncementsSection
-              announcements={announcements}
-              newAnnouncement={newAnnouncement}
-              setNewAnnouncement={setNewAnnouncement}
-              onCreate={handleCreateAnnouncement}
-              onUpdate={handleUpdateAnnouncement}
-              onDelete={handleDeleteAnnouncement}
             />
           )}
 
@@ -2689,7 +2169,20 @@ export const DashboardPage: React.FC = () => {
           )}
 
           {activeSection === 'permissions' && (
-            <PermissionsSection onOpenUsers={() => setActiveSection('users')} />
+            <Card className='max-w-xl'>
+              <CardHeader>
+                <CardTitle className='text-base'>Matrice des permissions</CardTitle>
+                <CardDescription>
+                  Cette section accueillera la configuration fine des rôles (lecture / écriture par module). Pour
+                  l’instant, les comptes sont gérés dans Utilisateurs.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button type='button' variant='secondary' size='sm' onClick={() => setActiveSection('system_registry')}>
+                  Ouvrir la console système (tous les modules)
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
           {isSchoolSettingsSection(activeSection) && (
@@ -2719,13 +2212,6 @@ export const DashboardPage: React.FC = () => {
           )}
         </main>
       </SidebarInset>
-
-      <StudentIdCardModal
-        open={idCardOpen}
-        onClose={() => setIdCardOpen(false)}
-        card={idCardData}
-        loading={idCardLoading}
-      />
     </SidebarProvider>
   );
 };

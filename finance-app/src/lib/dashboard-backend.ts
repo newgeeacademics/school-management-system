@@ -18,12 +18,8 @@ import type {
   PaymentReminder,
   Room,
   ScheduleItem,
-  Announcement,
-  FeeCategory,
-  FeeInstallment,
   Student,
   StudentGrade,
-  StudentIdCardData,
   Teacher,
   TransportRoute,
 } from '@/pages/dashboard/dashboardTypes';
@@ -80,114 +76,6 @@ function relationId(value: unknown): string | undefined {
     return String((value as { id: unknown }).id);
   }
   return undefined;
-}
-
-export function mapTeacherFromApi(t: Record<string, unknown>): Teacher {
-  const appUser = t.appUser as Record<string, unknown> | undefined;
-  return {
-    id: String(t.id),
-    name: String(t.name ?? ''),
-    subject: String(t.subject ?? ''),
-    initials: String(t.initials ?? (String(t.name ?? '').slice(0, 2).toUpperCase() || 'ED')),
-    email: t.email ? String(t.email) : appUser?.email ? String(appUser.email) : undefined,
-    phone: t.phone ? String(t.phone) : undefined,
-  };
-}
-
-export function mapClassFromApi(c: Record<string, unknown>): ClassItem {
-  return {
-    id: String(c.id),
-    name: String(c.name ?? ''),
-    level: String(c.level ?? ''),
-    studentsCount: Number(c.studentsCount ?? 0),
-    homeroomTeacherId: relationId(c.homeroomTeacher),
-  };
-}
-
-export function mapStudentFromApi(s: Record<string, unknown>): Student {
-  const appUser = s.appUser as Record<string, unknown> | undefined;
-  return {
-    id: String(s.id),
-    name: String(s.name ?? ''),
-    classId: relationId(s.classItem),
-    email: s.email ? String(s.email) : appUser?.email ? String(appUser.email) : undefined,
-    phone: s.phone ? String(s.phone) : appUser?.phone ? String(appUser.phone) : undefined,
-    matricule: s.matricule ? String(s.matricule) : undefined,
-  };
-}
-
-export function mapParentFromApi(p: Record<string, unknown>): ParentContact {
-  return {
-    id: String(p.id),
-    name: String(p.name ?? ''),
-    phone: p.phone ? String(p.phone) : undefined,
-    email: p.email ? String(p.email) : undefined,
-    studentId: relationId(p.student),
-  };
-}
-
-const USER_ROLE_TO_API: Record<AppUserRole, string> = {
-  admin: 'ADMIN',
-  teacher: 'TEACHER',
-  parent: 'PARENT',
-  student: 'STUDENT',
-  staff: 'STAFF',
-};
-
-const USER_ROLE_FROM_API: Record<string, AppUserRole> = {
-  ADMIN: 'admin',
-  TEACHER: 'teacher',
-  PARENT: 'parent',
-  STUDENT: 'student',
-  STAFF: 'staff',
-};
-
-const FEE_CATEGORY_TO_API: Record<FeeCategory, string> = {
-  Scolarité: 'SCOLARITE',
-  Cantine: 'CANTINE',
-  Transport: 'TRANSPORT',
-};
-
-const FEE_CATEGORY_FROM_API: Record<string, FeeCategory> = {
-  SCOLARITE: 'Scolarité',
-  CANTINE: 'Cantine',
-  TRANSPORT: 'Transport',
-};
-
-export function mapUserFromApi(u: Record<string, unknown>): AppUser {
-  return {
-    id: String(u.id),
-    name: String(u.name ?? ''),
-    email: String(u.email ?? ''),
-    phone: u.phone ? String(u.phone) : undefined,
-    role: USER_ROLE_FROM_API[String(u.role)] ?? 'teacher',
-  };
-}
-
-export function mapFeeInstallmentFromApi(f: Record<string, unknown>): FeeInstallment {
-  return {
-    id: String(f.id),
-    category: FEE_CATEGORY_FROM_API[String(f.category)] ?? 'Scolarité',
-    academicYear: String(f.academicYear ?? ''),
-    label: String(f.label ?? ''),
-    amount: Number(f.amount ?? 0),
-    periodStart: String(f.periodStart ?? ''),
-    periodEnd: String(f.periodEnd ?? ''),
-    description: f.description ? String(f.description) : undefined,
-    sortOrder: Number(f.sortOrder ?? 0),
-  };
-}
-
-export function mapAnnouncementFromApi(a: Record<string, unknown>): Announcement {
-  return {
-    id: String(a.id),
-    title: String(a.title ?? ''),
-    body: String(a.body ?? ''),
-    eventDate: a.eventDate ? String(a.eventDate) : undefined,
-    location: a.location ? String(a.location) : undefined,
-    published: Boolean(a.published),
-    publishedAt: String(a.publishedAt ?? ''),
-  };
 }
 
 const MEAL_TO_API: Record<string, string> = {
@@ -262,6 +150,20 @@ const PAYMENT_STATUS_FROM_API: Record<string, PaymentReminder['status']> = {
   PAYE: 'Payé',
 };
 
+const USER_ROLE_TO_API: Record<AppUserRole, string> = {
+  admin: 'ADMIN',
+  teacher: 'TEACHER',
+  parent: 'PARENT',
+  student: 'STUDENT',
+};
+
+const USER_ROLE_FROM_API: Record<string, AppUserRole> = {
+  ADMIN: 'admin',
+  TEACHER: 'teacher',
+  PARENT: 'parent',
+  STUDENT: 'student',
+};
+
 let cachedSchoolId: string | null = null;
 
 export type DashboardBackendSetters = {
@@ -282,8 +184,6 @@ export type DashboardBackendSetters = {
   setGrades: React.Dispatch<React.SetStateAction<StudentGrade[]>>;
   setPaymentReminders: React.Dispatch<React.SetStateAction<PaymentReminder[]>>;
   setPaymentReceipts: React.Dispatch<React.SetStateAction<PaymentReceipt[]>>;
-  setFeeInstallments?: React.Dispatch<React.SetStateAction<FeeInstallment[]>>;
-  setAnnouncements?: React.Dispatch<React.SetStateAction<Announcement[]>>;
 };
 
 export async function loadDashboardFromBackend(setters: DashboardBackendSetters): Promise<void> {
@@ -305,8 +205,6 @@ export async function loadDashboardFromBackend(setters: DashboardBackendSetters)
     grades,
     reminders,
     receipts,
-    feeInstallments,
-    announcements,
   ] = await Promise.all([
     adminApiFetch<Record<string, unknown>[]>('/api/teachers'),
     adminApiFetch<Record<string, unknown>[]>('/api/classes'),
@@ -325,13 +223,32 @@ export async function loadDashboardFromBackend(setters: DashboardBackendSetters)
     adminApiFetch<Record<string, unknown>[]>('/api/grades'),
     adminApiFetch<Record<string, unknown>[]>('/api/payments/reminders'),
     adminApiFetch<Record<string, unknown>[]>('/api/payments/receipts'),
-    adminApiFetch<Record<string, unknown>[]>('/api/fees'),
-    adminApiFetch<Record<string, unknown>[]>('/api/announcements'),
   ]);
 
-  setters.setTeachers(teachers.map(mapTeacherFromApi));
-  setters.setClasses(classes.map(mapClassFromApi));
-  setters.setStudents(students.map(mapStudentFromApi));
+  setters.setTeachers(
+    teachers.map((t) => ({
+      id: String(t.id),
+      name: String(t.name ?? ''),
+      subject: String(t.subject ?? ''),
+      initials: String(t.initials ?? (String(t.name ?? '').slice(0, 2).toUpperCase() || 'ED')),
+    }))
+  );
+  setters.setClasses(
+    classes.map((c) => ({
+      id: String(c.id),
+      name: String(c.name ?? ''),
+      level: String(c.level ?? ''),
+      studentsCount: Number(c.studentsCount ?? 0),
+      homeroomTeacherId: relationId(c.homeroomTeacher),
+    }))
+  );
+  setters.setStudents(
+    students.map((s) => ({
+      id: String(s.id),
+      name: String(s.name ?? ''),
+      classId: relationId(s.classItem),
+    }))
+  );
   setters.setMatieres(matieres.map((m) => ({ id: String(m.id), name: String(m.name ?? '') })));
   setters.setCourses(
     courses.map((c) => ({
@@ -394,8 +311,23 @@ export async function loadDashboardFromBackend(setters: DashboardBackendSetters)
       };
     })
   );
-  setters.setParents(parents.map(mapParentFromApi));
-  setters.setUsers(users.map(mapUserFromApi));
+  setters.setParents(
+    parents.map((p) => ({
+      id: String(p.id),
+      name: String(p.name ?? ''),
+      phone: p.phone ? String(p.phone) : undefined,
+      email: p.email ? String(p.email) : undefined,
+      studentId: relationId(p.student),
+    }))
+  );
+  setters.setUsers(
+    users.map((u) => ({
+      id: String(u.id),
+      name: String(u.name ?? ''),
+      email: String(u.email ?? ''),
+      role: USER_ROLE_FROM_API[String(u.role)] ?? 'teacher',
+    }))
+  );
   setters.setAttendanceRecords(
     attendance.map((a) => ({
       id: String(a.id),
@@ -446,8 +378,6 @@ export async function loadDashboardFromBackend(setters: DashboardBackendSetters)
       reference: String(r.reference ?? ''),
     }))
   );
-  setters.setFeeInstallments?.(feeInstallments.map(mapFeeInstallmentFromApi));
-  setters.setAnnouncements?.(announcements.map(mapAnnouncementFromApi));
 }
 
 export function mapSchoolFromApi(row: Record<string, unknown>): Partial<School> {
@@ -602,135 +532,29 @@ export async function createClassOnBackend(item: {
   studentsCount?: number;
   homeroomTeacherId?: string;
 }) {
-  const data = await adminApiFetch<Record<string, unknown>>('/api/classes', {
+  return adminApiFetch('/api/classes', {
     method: 'POST',
     body: JSON.stringify({
       name: item.name,
       level: item.level,
       studentsCount: item.studentsCount ?? 0,
-      homeroomTeacherId: item.homeroomTeacherId || null,
+      homeroomTeacherId: item.homeroomTeacherId,
     }),
   });
-  return mapClassFromApi(data);
 }
 
-export async function updateClassOnBackend(
-  id: string,
-  item: { name: string; level: string; studentsCount: number; homeroomTeacherId?: string }
-) {
-  const data = await adminApiFetch<Record<string, unknown>>(`/api/classes/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      name: item.name,
-      level: item.level,
-      studentsCount: item.studentsCount,
-      homeroomTeacherId: item.homeroomTeacherId || null,
-    }),
-  });
-  return mapClassFromApi(data);
-}
-
-export async function deleteClassOnBackend(id: string) {
-  await adminApiFetch(`/api/classes/${id}`, { method: 'DELETE' });
-}
-
-export async function refreshUsersFromBackend(): Promise<AppUser[]> {
-  const users = await adminApiFetch<Record<string, unknown>[]>('/api/users');
-  return users.map(mapUserFromApi);
-}
-
-export async function createTeacherOnBackend(item: {
-  name: string;
-  subject: string;
-  email?: string;
-  password?: string;
-  phone?: string;
-}) {
-  const data = await adminApiFetch<Record<string, unknown>>('/api/teachers', {
+export async function createTeacherOnBackend(item: { name: string; subject: string; initials?: string }) {
+  return adminApiFetch('/api/teachers', {
     method: 'POST',
-    body: JSON.stringify({
-      name: item.name,
-      subject: item.subject,
-      email: item.email?.trim() || undefined,
-      password: item.password?.trim() || undefined,
-      phone: item.phone?.trim() || undefined,
-    }),
+    body: JSON.stringify(item),
   });
-  return mapTeacherFromApi(data);
 }
 
-export async function updateTeacherOnBackend(
-  id: string,
-  item: { name: string; subject: string; email?: string; password?: string; phone?: string }
-) {
-  const data = await adminApiFetch<Record<string, unknown>>(`/api/teachers/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      name: item.name,
-      subject: item.subject,
-      email: item.email?.trim() || undefined,
-      password: item.password?.trim() || undefined,
-      phone: item.phone?.trim() || undefined,
-    }),
-  });
-  return mapTeacherFromApi(data);
-}
-
-export async function deleteTeacherOnBackend(id: string) {
-  await adminApiFetch(`/api/teachers/${id}`, { method: 'DELETE' });
-}
-
-export async function createStudentOnBackend(item: {
-  name: string;
-  classId?: string;
-  email?: string;
-  phone?: string;
-  password?: string;
-}) {
-  const data = await adminApiFetch<Record<string, unknown>>('/api/students', {
+export async function createStudentOnBackend(item: { name: string; classId?: string }) {
+  return adminApiFetch('/api/students', {
     method: 'POST',
-    body: JSON.stringify({
-      name: item.name,
-      classId: item.classId || null,
-      email: item.email?.trim() || undefined,
-      phone: item.phone?.trim() || undefined,
-      password: item.password?.trim() || undefined,
-    }),
+    body: JSON.stringify({ name: item.name, classId: item.classId }),
   });
-  return mapStudentFromApi(data);
-}
-
-export async function updateStudentOnBackend(
-  id: string,
-  item: { name: string; classId?: string; email?: string; phone?: string; password?: string }
-) {
-  const data = await adminApiFetch<Record<string, unknown>>(`/api/students/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      name: item.name,
-      classId: item.classId || null,
-      email: item.email?.trim() || undefined,
-      phone: item.phone?.trim() || undefined,
-      password: item.password?.trim() || undefined,
-    }),
-  });
-  return mapStudentFromApi(data);
-}
-
-export async function fetchStudentIdCardOnBackend(studentId: string): Promise<StudentIdCardData> {
-  const data = await adminApiFetch<Record<string, unknown>>(`/api/students/${studentId}/id-card`);
-  return {
-    studentId: String(data.studentId ?? studentId),
-    matricule: String(data.matricule ?? ''),
-    studentName: String(data.studentName ?? ''),
-    className: String(data.className ?? ''),
-    schoolName: String(data.schoolName ?? ''),
-    qrPayload: String(data.qrPayload ?? ''),
-  };
-}
-
-export async function deleteStudentOnBackend(id: string) {
-  await adminApiFetch(`/api/students/${id}`, { method: 'DELETE' });
 }
 
 export async function createMatiereOnBackend(name: string) {
@@ -753,205 +577,19 @@ export async function createParentOnBackend(item: {
   phone?: string;
   email?: string;
   studentId?: string;
-  password?: string;
 }) {
-  const data = await adminApiFetch<Record<string, unknown>>('/api/parents', {
+  return adminApiFetch('/api/parents', { method: 'POST', body: JSON.stringify(item) });
+}
+
+export async function createUserOnBackend(item: { name: string; email: string; role: AppUserRole }) {
+  return adminApiFetch('/api/users', {
     method: 'POST',
     body: JSON.stringify({
       name: item.name,
-      phone: item.phone,
-      email: item.email?.trim() || undefined,
-      studentId: item.studentId || null,
-      password: item.password?.trim() || undefined,
-    }),
-  });
-  return mapParentFromApi(data);
-}
-
-export async function updateParentOnBackend(
-  id: string,
-  item: { name: string; phone?: string; email?: string; studentId?: string; password?: string }
-) {
-  const data = await adminApiFetch<Record<string, unknown>>(`/api/parents/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      name: item.name,
-      phone: item.phone,
-      email: item.email?.trim() || undefined,
-      studentId: item.studentId || null,
-      password: item.password?.trim() || undefined,
-    }),
-  });
-  return mapParentFromApi(data);
-}
-
-export async function deleteParentOnBackend(id: string) {
-  await adminApiFetch(`/api/parents/${id}`, { method: 'DELETE' });
-}
-
-export async function createUserOnBackend(item: {
-  name: string;
-  email?: string;
-  phone?: string;
-  role: AppUserRole;
-  password?: string;
-}) {
-  const data = await adminApiFetch<Record<string, unknown>>('/api/users', {
-    method: 'POST',
-    body: JSON.stringify({
-      name: item.name,
-      email: item.email?.trim() || undefined,
-      phone: item.phone?.trim() || undefined,
+      email: item.email,
       role: USER_ROLE_TO_API[item.role],
-      password: item.password,
     }),
   });
-  return mapUserFromApi(data);
-}
-
-export async function updateUserOnBackend(
-  id: string,
-  item: { name: string; email?: string; phone?: string; role: AppUserRole; password?: string }
-) {
-  const data = await adminApiFetch<Record<string, unknown>>(`/api/users/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      name: item.name,
-      email: item.email?.trim() || undefined,
-      phone: item.phone?.trim() || undefined,
-      role: USER_ROLE_TO_API[item.role],
-      password: item.password,
-    }),
-  });
-  return mapUserFromApi(data);
-}
-
-export async function createFeeInstallmentOnBackend(item: {
-  category: FeeCategory;
-  academicYear: string;
-  label: string;
-  amount: number;
-  periodStart: string;
-  periodEnd: string;
-  description?: string;
-  sortOrder?: number;
-}) {
-  const data = await adminApiFetch<Record<string, unknown>>('/api/fees', {
-    method: 'POST',
-    body: JSON.stringify({
-      category: FEE_CATEGORY_TO_API[item.category],
-      academicYear: item.academicYear,
-      label: item.label,
-      amount: item.amount,
-      periodStart: item.periodStart,
-      periodEnd: item.periodEnd,
-      description: item.description,
-      sortOrder: item.sortOrder,
-    }),
-  });
-  return mapFeeInstallmentFromApi(data);
-}
-
-export async function updateFeeInstallmentOnBackend(
-  id: string,
-  item: {
-    category: FeeCategory;
-    academicYear: string;
-    label: string;
-    amount: number;
-    periodStart: string;
-    periodEnd: string;
-    description?: string;
-    sortOrder?: number;
-  }
-) {
-  const data = await adminApiFetch<Record<string, unknown>>(`/api/fees/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      category: FEE_CATEGORY_TO_API[item.category],
-      academicYear: item.academicYear,
-      label: item.label,
-      amount: item.amount,
-      periodStart: item.periodStart,
-      periodEnd: item.periodEnd,
-      description: item.description,
-      sortOrder: item.sortOrder,
-    }),
-  });
-  return mapFeeInstallmentFromApi(data);
-}
-
-export async function deleteFeeInstallmentOnBackend(id: string) {
-  await adminApiFetch(`/api/fees/${id}`, { method: 'DELETE' });
-}
-
-export async function createAnnouncementOnBackend(item: {
-  title: string;
-  body: string;
-  eventDate?: string;
-  location?: string;
-  published?: boolean;
-}) {
-  const data = await adminApiFetch<Record<string, unknown>>('/api/announcements', {
-    method: 'POST',
-    body: JSON.stringify(item),
-  });
-  return mapAnnouncementFromApi(data);
-}
-
-export async function updateAnnouncementOnBackend(
-  id: string,
-  item: {
-    title: string;
-    body: string;
-    eventDate?: string;
-    location?: string;
-    published?: boolean;
-  }
-) {
-  const data = await adminApiFetch<Record<string, unknown>>(`/api/announcements/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(item),
-  });
-  return mapAnnouncementFromApi(data);
-}
-
-export async function deleteAnnouncementOnBackend(id: string) {
-  await adminApiFetch(`/api/announcements/${id}`, { method: 'DELETE' });
-}
-
-export type AppModule = 'ADMIN_CONSOLE' | 'FAMILY_PORTAL' | 'FINANCE_OFFICE';
-export type AccessLevel = 'NONE' | 'READ' | 'WRITE';
-
-export type RoleAccessEntry = {
-  role: string;
-  module: AppModule;
-  accessLevel: AccessLevel;
-};
-
-export async function fetchRoleAccessMatrix(): Promise<RoleAccessEntry[]> {
-  const rows = await adminApiFetch<Record<string, unknown>[]>('/api/role-access');
-  return rows.map((r) => ({
-    role: String(r.role),
-    module: String(r.module) as AppModule,
-    accessLevel: String(r.accessLevel) as AccessLevel,
-  }));
-}
-
-export async function updateRoleAccessMatrix(entries: RoleAccessEntry[]): Promise<RoleAccessEntry[]> {
-  const rows = await adminApiFetch<Record<string, unknown>[]>('/api/role-access', {
-    method: 'PUT',
-    body: JSON.stringify(entries),
-  });
-  return rows.map((r) => ({
-    role: String(r.role),
-    module: String(r.module) as AppModule,
-    accessLevel: String(r.accessLevel) as AccessLevel,
-  }));
-}
-
-export async function deleteUserOnBackend(id: string) {
-  await adminApiFetch(`/api/users/${id}`, { method: 'DELETE' });
 }
 
 export async function createPaymentReminderOnBackend(item: {
