@@ -10,11 +10,11 @@ import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { AppLogo } from '@/components/AppLogo';
 import { clearAuthSession, persistAuthSession } from '@/lib/auth';
-import { Link } from 'react-router-dom';
-import { isAdminRole } from '@/lib/api-error';
-import { isBackendApiConfigured, loginAdmin } from '@/lib/dashboard-backend';
+import { getMainAppOrigin } from '@/lib/main-app-url';
+import { isFinanceStaffRole } from '@/lib/api-error';
+import { fetchMyRoleAccess, isBackendApiConfigured, loginAdmin } from '@/lib/finance-api';
+import { canAccessFinanceModule } from '@/lib/finance-role';
 
 export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded' }) => {
   const navigate = useNavigate();
@@ -30,7 +30,7 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
     const email = usernameOrEmail.trim();
     try {
       if (!isBackendApiConfigured()) {
-        toast.error('VITE_API_URL n’est pas configuré sur ce déploiement Vercel.', {
+        toast.error('VITE_API_URL n’est pas configuré sur ce déploiement Vercel (finance).', {
           richColors: true,
         });
         setIsPending(false);
@@ -43,8 +43,8 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
       }
 
       const auth = await loginAdmin(email, password);
-      if (!isAdminRole(auth.role)) {
-        toast.error('Ce compte n’a pas accès à la console établissement.', { richColors: true });
+      if (!isFinanceStaffRole(auth.role)) {
+        toast.error('Accès réservé aux comptes admin, enseignant ou personnel.', { richColors: true });
         setIsPending(false);
         return;
       }
@@ -55,10 +55,19 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
         setIsPending(false);
         return;
       }
+      const access = await fetchMyRoleAccess();
+      if (!canAccessFinanceModule(access)) {
+        toast.error('Votre rôle n’a pas accès au module Finance. Contactez l’administration.', {
+          richColors: true,
+        });
+        clearAuthSession();
+        setIsPending(false);
+        return;
+      }
       toast.success(t('auth.welcomeBackToast'), { richColors: true });
       setUsernameOrEmail('');
       setPassword('');
-      navigate('/dashboard');
+      navigate('/');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('auth.signIn'), { richColors: true });
     } finally {
@@ -73,47 +82,36 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
         isEmbedded ? 'w-full min-h-0 p-0' : 'flex flex-col items-center justify-center p-4 md:px-6 md:py-8 min-h-svh'
       )}
     >
-      {!isEmbedded ? (
-        <div className='fixed top-4 left-4 z-50 md:top-6 md:left-6'>
-          <Button asChild variant='ghost' size='sm' className='gap-2 text-slate-700'>
-            <Link to='/'>
-              <ChevronLeft className='h-4 w-4' />
-              {t('common.goBack')}
-            </Link>
-          </Button>
-        </div>
-      ) : null}
+      <div className='fixed top-4 left-4 z-50 md:top-6 md:left-6'>
+        <Button asChild variant='ghost' size='sm' className='gap-2 text-gray-700'>
+          <a href={getMainAppOrigin()}>
+            <ChevronLeft className='h-4 w-4' />
+            {t('common.goBack')}
+          </a>
+        </Button>
+      </div>
 
       <div
         className={cn(
-          'sm:w-full w-full relative',
-          isEmbedded ? 'max-w-none mt-0 p-0' : 'max-w-[456px] mt-4 md:mt-6 p-8 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden'
+          'sm:w-full w-full relative rental-login-form',
+          isEmbedded ? 'max-w-none mt-0 p-0' : 'max-w-[456px] mt-4 md:mt-6 p-8 bg-gray-0 border-0 overflow-hidden'
         )}
       >
-        <div className={cn('relative z-10', isEmbedded ? '' : 'px-0')}>
-          {!isEmbedded ? <AppLogo className='mb-6' /> : null}
-          <h1
-            className={cn(
-              'font-bold tracking-tight text-slate-900',
-              isEmbedded ? 'auth-page__title mt-0' : 'text-3xl mb-2'
-            )}
-          >
+        {!isEmbedded && <div className='absolute top-0 left-0 right-0 h-2 bg-gradient-finance' />}
+
+        <div className='px-0 relative z-10 rental-field rental-field-1'>
+          <h1 className='text-4xl font-bold mb-2 text-gradient-finance'>
             {t('auth.welcomeBack')}
           </h1>
-          <p
-            className={cn(
-              'text-slate-600 font-medium',
-              isEmbedded ? 'auth-page__subtitle' : 'text-base'
-            )}
-          >
-            {t('auth.loginToClassroom')}
+          <p className='text-gray-700 font-medium text-base'>
+            Connexion réservée : direction, enseignants et personnel autorisés.
           </p>
         </div>
 
-        <div className={cn('relative z-10', isEmbedded ? 'auth-page__form' : 'mt-6')}>
-          <form onSubmit={onSubmit} className={isEmbedded ? 'contents' : 'space-y-5'}>
-            <div className={isEmbedded ? 'auth-page__field' : 'space-y-2'}>
-              <Label className='text-sm font-semibold text-slate-700'>
+        <div className='px-0 relative z-10 mt-6'>
+          <form onSubmit={onSubmit} className='space-y-6'>
+            <div className='rental-field rental-field-2 space-y-2'>
+              <Label className='text-sm font-medium text-gray-700'>
                 {t('auth.username')} / {t('auth.email')}
               </Label>
               <Input
@@ -121,35 +119,29 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
                 placeholder={t('auth.enterUsername')}
                 value={usernameOrEmail}
                 onChange={(e) => setUsernameOrEmail(e.target.value)}
-                className='h-11 rounded-xl border-slate-200 focus-visible:ring-blue-500'
+                className='h-11 w-full rounded-md border border-violet-200 px-3 py-2 transition-all duration-200 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-violet-500/40'
               />
             </div>
-            <div className={isEmbedded ? 'auth-page__field' : 'space-y-2'}>
-              <Label className='text-sm font-semibold text-slate-700'>
+            <div className='rental-field rental-field-3 space-y-2'>
+              <Label className='text-sm font-medium text-gray-700'>
                 {t('auth.password')}
               </Label>
               <InputPassword
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t('auth.enterPassword')}
-                className='h-11 rounded-xl border-slate-200 focus-visible:ring-blue-500'
+                className='h-11 w-full rounded-md border border-violet-200 px-3 py-2 transition-all duration-200 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-violet-500/40'
               />
             </div>
 
-            {isEmbedded ? (
-              <button type='submit' className='auth-page__submit' disabled={isPending}>
-                {isPending ? t('auth.signingIn') : t('auth.signIn')}
-              </button>
-            ) : (
-              <Button
-                type='submit'
-                size='lg'
-                className='w-full h-11 rounded-xl font-semibold bg-[#2563eb] hover:bg-[#1d4ed8]'
-                disabled={isPending}
-              >
-                {isPending ? t('auth.signingIn') : t('auth.signIn')}
-              </Button>
-            )}
+            <Button
+              type='submit'
+              size='lg'
+              className='rental-field rental-field-4 mt-2 h-11 w-full cursor-pointer rounded-full bg-violet-600 px-6 py-2 text-center text-base font-semibold text-white transition-all duration-200 hover:scale-[1.02] hover:bg-violet-700 hover:shadow-lg'
+              disabled={isPending}
+            >
+              {isPending ? t('auth.signingIn') : t('auth.signIn')}
+            </Button>
           </form>
         </div>
       </div>

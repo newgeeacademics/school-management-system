@@ -1,20 +1,8 @@
-/**
- * Main app — school establishment console (same Vercel deploy as landing + registration).
- * Not the admin-app or user-portal-app projects.
- */
-export function getLoginUrl(): string {
-  return '/login';
-}
-
-export function getDashboardUrl(): string {
-  return '/dashboard';
-}
-
 function readEnvUrl(key: string, devFallback: string): string {
   const value = import.meta.env[key as keyof ImportMetaEnv]?.trim();
   if (value) return value.replace(/\/$/, '');
   if (import.meta.env.PROD) {
-    console.warn(`[NewGee] Missing ${key} — set it in Vercel environment variables and redeploy.`);
+    console.warn(`[NewGee Admin] Missing ${key} — set it in Vercel environment variables and redeploy.`);
   }
   return devFallback.replace(/\/$/, '');
 }
@@ -28,8 +16,7 @@ export function getUserPortalLoginUrl(): string {
   return `${getUserPortalOrigin()}/connexion`;
 }
 
-/** True when production build is missing user portal URL. */
-export function isCrossAppConfigIncomplete(): boolean {
+export function isUserPortalConfigIncomplete(): boolean {
   if (!import.meta.env.PROD) return false;
   return !import.meta.env.VITE_USER_PORTAL_URL?.trim();
 }

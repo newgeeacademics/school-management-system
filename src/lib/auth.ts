@@ -6,7 +6,7 @@ import { ACCESS_TOKEN_KEY } from '@/constants';
 
 const STORAGE_KEY = 'classroom_test_role';
 
-export type UserRole = 'admin' | 'teacher' | 'parent' | 'student';
+export type UserRole = 'admin' | 'teacher' | 'parent' | 'student' | 'staff';
 
 export type StoredUser = {
   id: string;
@@ -22,6 +22,7 @@ export function mapApiRoleToUserRole(role: unknown): UserRole | null {
   if (value === 'TEACHER') return 'teacher';
   if (value === 'PARENT') return 'parent';
   if (value === 'STUDENT') return 'student';
+  if (value === 'STAFF') return 'staff';
   return null;
 }
 
@@ -62,7 +63,7 @@ export function getStoredRole(): UserRole | null {
   const fromUser = getStoredUser()?.role;
   if (fromUser) return fromUser;
   const v = localStorage.getItem(STORAGE_KEY);
-  if (v === 'admin' || v === 'teacher' || v === 'parent' || v === 'student') return v;
+  if (v === 'admin' || v === 'teacher' || v === 'parent' || v === 'student' || v === 'staff') return v;
   return null;
 }
 
@@ -85,7 +86,8 @@ export function getStoredUser(): StoredUser | null {
       data.role !== 'admin' &&
       data.role !== 'teacher' &&
       data.role !== 'parent' &&
-      data.role !== 'student'
+      data.role !== 'student' &&
+      data.role !== 'staff'
     ) {
       return null;
     }

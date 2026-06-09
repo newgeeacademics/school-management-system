@@ -11,10 +11,10 @@ export async function parseApiErrorResponse(res: Response, fallback: string): Pr
   }
 
   if (res.status === 404) {
-    return `API introuvable (${res.status}). Vérifiez VITE_API_URL sur Vercel et que le backend Render est déployé (GET /health doit répondre).`;
+    return `API introuvable (${res.status}). Vérifiez VITE_API_URL sur Vercel admin et le déploiement Render (/health).`;
   }
   if (res.status === 403) {
-    return `Accès refusé (${res.status}). Ajoutez l’URL Vercel du site dans APP_CORS_ALLOWED_ORIGINS sur Render.`;
+    return `Accès refusé (${res.status}). Ajoutez l’URL Vercel admin dans APP_CORS_ALLOWED_ORIGINS sur Render.`;
   }
   if (res.status === 401) {
     return 'Email ou mot de passe incorrect.';
@@ -25,7 +25,7 @@ export async function parseApiErrorResponse(res: Response, fallback: string): Pr
 export function wrapFetchError(err: unknown, fallback: string): Error {
   if (err instanceof TypeError && /fetch|network|failed/i.test(err.message)) {
     return new Error(
-      'Impossible de joindre le serveur API. Vérifiez VITE_API_URL et que le service Render est actif (pas en veille).'
+      'Impossible de joindre le serveur API. Vérifiez VITE_API_URL et que Render est actif.'
     );
   }
   if (err instanceof Error) return err;
@@ -34,4 +34,9 @@ export function wrapFetchError(err: unknown, fallback: string): Error {
 
 export function isAdminRole(role: unknown): boolean {
   return String(role ?? '').toUpperCase() === 'ADMIN';
+}
+
+export function isFinanceStaffRole(role: unknown): boolean {
+  const r = String(role ?? '').toUpperCase();
+  return r === 'ADMIN' || r === 'TEACHER' || r === 'STAFF';
 }

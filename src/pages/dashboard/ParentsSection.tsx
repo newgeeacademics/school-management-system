@@ -1,7 +1,5 @@
 import React from 'react';
 
-import { InputPassword } from '@/components/refine-ui/form/input-password';
-import { EntityCrudActions, NONE_SELECT_VALUE } from '@/components/dashboard/EntityCrudActions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,11 +25,6 @@ type ParentsSectionProps = {
   newParent: NewParentFormState;
   setNewParent: SetStateAction<NewParentFormState>;
   onCreateParent: (e: React.FormEvent) => void;
-  onUpdateParent: (
-    id: string,
-    data: { name: string; phone?: string; email?: string; studentId?: string; password?: string }
-  ) => void | Promise<void>;
-  onDeleteParent: (id: string) => void | Promise<void>;
 };
 
 export const ParentsSection: React.FC<ParentsSectionProps> = ({
@@ -40,58 +33,19 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
   newParent,
   setNewParent,
   onCreateParent,
-  onUpdateParent,
-  onDeleteParent,
 }) => {
-  const [editingId, setEditingId] = React.useState<string | null>(null);
-  const [draft, setDraft] = React.useState<NewParentFormState>({
-    name: '',
-    phone: '',
-    email: '',
-    password: '',
-    studentId: '',
-  });
-
   const getStudentName = (id: string | undefined) =>
-    id ? students.find((s) => s.id === id)?.name ?? '—' : '—';
-
-  const startEdit = (parent: ParentContact) => {
-    setEditingId(parent.id);
-    setDraft({
-      name: parent.name,
-      phone: parent.phone ?? '',
-      email: parent.email ?? '',
-      password: '',
-      studentId: parent.studentId ?? '',
-    });
-  };
-
-  const saveEdit = () => {
-    if (!editingId || !draft.name.trim()) return;
-    void Promise.resolve(
-      onUpdateParent(editingId, {
-        name: draft.name.trim(),
-        phone: draft.phone.trim() || undefined,
-        email: draft.email.trim() || undefined,
-        studentId:
-          draft.studentId && draft.studentId !== NONE_SELECT_VALUE ? draft.studentId : undefined,
-        password: draft.password.trim() || undefined,
-      })
-    ).then(() => setEditingId(null));
-  };
+    id ? students.find((s) => s.id === id)?.name ?? 'Non renseigné' : 'Non renseigné';
 
   return (
     <section className='space-y-5'>
       <Card>
         <CardHeader>
-          <CardTitle className='text-sm font-medium'>Ajouter un parent + compte portail</CardTitle>
+          <CardTitle className='text-sm font-medium'>Ajouter un parent</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className='mb-3 text-[11px] text-muted-foreground'>
-            Email ou téléphone + mot de passe = connexion portail (rôle parent).
-          </p>
           <form
-            className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
+            className='grid gap-3 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_auto] items-end text-xs'
             onSubmit={onCreateParent}
           >
             <div className='grid gap-2'>
@@ -99,7 +53,13 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
               <Input
                 id='parent-name'
                 value={newParent.name}
-                onChange={(e) => setNewParent((p) => ({ ...p, name: e.target.value }))}
+                onChange={(e) =>
+                  setNewParent((p) => ({
+                    ...p,
+                    name: e.target.value,
+                  }))
+                }
+                placeholder='Ex : Koffi Kouadio'
                 required
               />
             </div>
@@ -108,43 +68,45 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
               <Input
                 id='parent-phone'
                 value={newParent.phone}
-                onChange={(e) => setNewParent((p) => ({ ...p, phone: e.target.value }))}
+                onChange={(e) =>
+                  setNewParent((p) => ({
+                    ...p,
+                    phone: e.target.value,
+                  }))
+                }
+                placeholder='Ex : +225 07 00 00 00'
               />
             </div>
             <div className='grid gap-2'>
-              <Label htmlFor='parent-email'>Email (connexion)</Label>
+              <Label htmlFor='parent-email'>Email</Label>
               <Input
                 id='parent-email'
                 type='email'
                 value={newParent.email}
-                onChange={(e) => setNewParent((p) => ({ ...p, email: e.target.value }))}
+                onChange={(e) =>
+                  setNewParent((p) => ({
+                    ...p,
+                    email: e.target.value,
+                  }))
+                }
+                placeholder='Ex : parent@exemple.com'
               />
             </div>
             <div className='grid gap-2'>
-              <Label htmlFor='parent-password'>Mot de passe</Label>
-              <InputPassword
-                id='parent-password'
-                value={newParent.password}
-                onChange={(e) => setNewParent((p) => ({ ...p, password: e.target.value }))}
-                placeholder='changeme si vide'
-              />
-            </div>
-            <div className='grid gap-2'>
-              <Label>Enfant</Label>
+              <Label>Enfant (optionnel)</Label>
               <Select
-                value={newParent.studentId || NONE_SELECT_VALUE}
+                value={newParent.studentId}
                 onValueChange={(value) =>
                   setNewParent((p) => ({
                     ...p,
-                    studentId: value === NONE_SELECT_VALUE ? '' : value,
+                    studentId: value,
                   }))
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder='Élève' />
+                  <SelectValue placeholder='Associer à un élève (optionnel)' />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NONE_SELECT_VALUE}>Aucun élève</SelectItem>
                   {students.map((student) => (
                     <SelectItem key={student.id} value={student.id}>
                       {student.name}
@@ -162,90 +124,36 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
 
       <Card>
         <CardHeader>
-          <CardTitle className='text-sm font-medium'>Parents ({parents.length})</CardTitle>
+          <CardTitle className='text-sm font-medium'>
+            Parents référencés (simple aperçu)
+          </CardTitle>
         </CardHeader>
         <CardContent className='space-y-2 text-xs'>
           {parents.length === 0 ? (
-            <p className='text-muted-foreground'>Aucun parent. Créez d&apos;abord des élèves pour les associer.</p>
+            <p className='text-muted-foreground'>
+              Aucun parent ajouté pour le moment.
+            </p>
           ) : (
             <div className='grid gap-2 md:grid-cols-2 lg:grid-cols-3'>
-              {parents.map((parent) => {
-                const isEditing = editingId === parent.id;
-                return (
-                  <div key={parent.id} className='rounded-md border border-border/80 px-3 py-2'>
-                    {isEditing ? (
-                      <div className='space-y-2'>
-                        <Input
-                          value={draft.name}
-                          onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-                        />
-                        <Input
-                          value={draft.phone}
-                          onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))}
-                          placeholder='Téléphone'
-                        />
-                        <Input
-                          type='email'
-                          value={draft.email}
-                          onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
-                          placeholder='Email portail'
-                        />
-                        <InputPassword
-                          value={draft.password}
-                          onChange={(e) => setDraft((d) => ({ ...d, password: e.target.value }))}
-                          placeholder='Nouveau mot de passe (opt.)'
-                        />
-                        <Select
-                          value={draft.studentId || NONE_SELECT_VALUE}
-                          onValueChange={(value) =>
-                            setDraft((d) => ({
-                              ...d,
-                              studentId: value === NONE_SELECT_VALUE ? '' : value,
-                            }))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={NONE_SELECT_VALUE}>Aucun élève</SelectItem>
-                            {students.map((student) => (
-                              <SelectItem key={student.id} value={student.id}>
-                                {student.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <EntityCrudActions
-                          editing
-                          onEdit={() => {}}
-                          onDelete={() => {}}
-                          onSave={saveEdit}
-                          onCancel={() => setEditingId(null)}
-                        />
-                      </div>
-                    ) : (
-                      <>
-                        <p className='text-sm font-medium'>{parent.name}</p>
-                        <p className='text-[11px] text-muted-foreground'>
-                          Tél. : {parent.phone || '—'} · Email : {parent.email || '—'}
-                        </p>
-                        <p className='text-[11px] text-muted-foreground'>
-                          Enfant : {getStudentName(parent.studentId)}
-                        </p>
-                        <EntityCrudActions
-                          onEdit={() => startEdit(parent)}
-                          onDelete={() => {
-                            if (confirm(`Supprimer le parent « ${parent.name} » ?`)) {
-                              void Promise.resolve(onDeleteParent(parent.id));
-                            }
-                          }}
-                        />
-                      </>
-                    )}
-                  </div>
-                );
-              })}
+              {parents.map((parent) => (
+                <div
+                  key={parent.id}
+                  className='rounded-md border border-border/80 px-3 py-2'
+                >
+                  <p className='text-sm font-medium text-foreground'>
+                    {parent.name}
+                  </p>
+                  <p className='text-[11px] text-muted-foreground'>
+                    Tél. : {parent.phone || 'Non renseigné'}
+                  </p>
+                  <p className='text-[11px] text-muted-foreground'>
+                    Email : {parent.email || 'Non renseigné'}
+                  </p>
+                  <p className='text-[11px] text-muted-foreground'>
+                    Enfant : {getStudentName(parent.studentId)}
+                  </p>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
@@ -253,3 +161,4 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
     </section>
   );
 };
+

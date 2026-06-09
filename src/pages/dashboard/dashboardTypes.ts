@@ -16,8 +16,6 @@ export type SectionId =
   | 'grades'
   | 'users'
   | 'payments'
-  | 'fee_schedules'
-  | 'announcements'
   | 'canteen'
   | 'transport'
   | 'reports'
@@ -42,8 +40,6 @@ export type Teacher = {
   initials: string;
   name: string;
   subject: string;
-  email?: string;
-  phone?: string;
 };
 
 export type ClassItem = {
@@ -58,9 +54,6 @@ export type Student = {
   id: string;
   name: string;
   classId?: string;
-  email?: string;
-  phone?: string;
-  matricule?: string;
 };
 
 export type ParentContact = {
@@ -200,67 +193,17 @@ export type NewClassFormState = {
 export type NewTeacherFormState = {
   name: string;
   subject: string;
-  email: string;
-  password: string;
-  phone: string;
 };
 
 export type NewStudentFormState = {
   name: string;
   classId: string;
-  email: string;
-  phone: string;
-  password: string;
-};
-
-export type FeeCategory = 'Scolarité' | 'Cantine' | 'Transport';
-
-export type FeeInstallment = {
-  id: string;
-  category: FeeCategory;
-  academicYear: string;
-  label: string;
-  amount: number;
-  periodStart: string;
-  periodEnd: string;
-  description?: string;
-  sortOrder: number;
-};
-
-export type NewFeeInstallmentFormState = {
-  category: FeeCategory;
-  academicYear: string;
-  label: string;
-  amount: string;
-  periodStart: string;
-  periodEnd: string;
-  description: string;
-  sortOrder: string;
-};
-
-export type Announcement = {
-  id: string;
-  title: string;
-  body: string;
-  eventDate?: string;
-  location?: string;
-  published: boolean;
-  publishedAt: string;
-};
-
-export type NewAnnouncementFormState = {
-  title: string;
-  body: string;
-  eventDate: string;
-  location: string;
-  published: boolean;
 };
 
 export type NewParentFormState = {
   name: string;
   phone: string;
   email: string;
-  password: string;
   studentId: string;
 };
 
@@ -338,31 +281,19 @@ export type NewPaymentReceiptFormState = {
   reference: string;
 };
 
-export type AppUserRole = 'admin' | 'teacher' | 'parent' | 'student' | 'staff';
+export type AppUserRole = 'admin' | 'teacher' | 'parent' | 'student';
 
 export type AppUser = {
   id: string;
   name: string;
   email: string;
-  phone?: string;
   role: AppUserRole;
 };
 
 export type NewUserFormState = {
   name: string;
   email: string;
-  phone: string;
   role: AppUserRole;
-  password?: string;
-};
-
-export type StudentIdCardData = {
-  studentId: string;
-  matricule: string;
-  studentName: string;
-  className: string;
-  schoolName: string;
-  qrPayload: string;
 };
 
 export type SetStateAction<T> = React.Dispatch<React.SetStateAction<T>>;

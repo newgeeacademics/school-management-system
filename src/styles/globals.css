@@ -52,32 +52,32 @@
   --card-foreground: #020617;
   --popover: #ffffff;
   --popover-foreground: #020617;
-  /* Primary brand: Tailwind blue-600 from the landing page */
-  --primary: #2563eb;
+  /* Finance back-office: violet / indigo */
+  --primary: #6d28d9;
   --primary-foreground: #ffffff;
-  --secondary: #eff6ff;
-  --secondary-foreground: #1e293b;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #eff6ff;
-  --accent-foreground: #1d4ed8;
+  --secondary: #f5f3ff;
+  --secondary-foreground: #3b0764;
+  --muted: #f5f3ff;
+  --muted-foreground: #6b7280;
+  --accent: #ede9fe;
+  --accent-foreground: #5b21b6;
   --destructive: #ef4444;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #2563eb;
-  --chart-1: #2563eb;
-  --chart-2: #16a34a;
-  --chart-3: #3b82f6;
-  --chart-4: #eab308;
-  --chart-5: #8b5cf6;
-  --sidebar: #f8fafc;
-  --sidebar-foreground: #020617;
-  --sidebar-primary: #2563eb;
+  --border: #e9e5f5;
+  --input: #e9e5f5;
+  --ring: #7c3aed;
+  --chart-1: #7c3aed;
+  --chart-2: #4f46e5;
+  --chart-3: #a78bfa;
+  --chart-4: #c4b5fd;
+  --chart-5: #6366f1;
+  --sidebar: #2e1065;
+  --sidebar-foreground: #ede9fe;
+  --sidebar-primary: #8b5cf6;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e0edff;
-  --sidebar-accent-foreground: #1e293b;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #2563eb;
+  --sidebar-accent: #4c1d95;
+  --sidebar-accent-foreground: #f5f3ff;
+  --sidebar-border: #4c1d95;
+  --sidebar-ring: #a78bfa;
 }
 
 .dark {
@@ -115,45 +115,12 @@
   --sidebar-ring: #1d4ed8;
 }
 
-.app-logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.app-logo__mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: #2563eb;
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.app-logo__name {
-  font-size: 1.15rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: #111827;
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  html,
-  body,
-  #root {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: clip;
-  }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-sans);
   }
 }
 
@@ -212,6 +179,14 @@
 
   .bg-gradient-blue {
     background: linear-gradient(90deg, #2563eb, #3b82f6);
+  }
+
+  .text-gradient-finance {
+    @apply bg-gradient-to-br from-violet-700 to-indigo-600 bg-clip-text text-transparent;
+  }
+
+  .bg-gradient-finance {
+    background: linear-gradient(90deg, #6d28d9, #4f46e5);
   }
 }
 

@@ -17,20 +17,20 @@ export function UserPortalRedirectPage() {
 
   if (isLocalhost && import.meta.env.PROD) {
     return (
-      <div className='min-h-svh flex flex-col items-center justify-center gap-4 px-6 text-center'>
+      <div className='flex min-h-svh flex-col items-center justify-center gap-4 px-6 text-center'>
         <p className='text-lg font-semibold'>Portail familles non configuré</p>
-        <p className='text-sm text-muted-foreground max-w-md'>
-          Définissez <strong>VITE_USER_PORTAL_URL</strong> sur Vercel (URL du projet portail), puis redéployez.
+        <p className='max-w-md text-sm text-muted-foreground'>
+          Définissez <strong>VITE_USER_PORTAL_URL</strong> sur Vercel, puis redéployez.
         </p>
         <Button asChild variant='outline'>
-          <Link to='/'>{t('common.goBack')}</Link>
+          <Link to='/login'>Retour</Link>
         </Button>
       </div>
     );
   }
 
   return (
-    <div className='min-h-svh flex flex-col items-center justify-center gap-2 px-6'>
+    <div className='flex min-h-svh flex-col items-center justify-center gap-2 px-6'>
       <p className='text-muted-foreground'>{t('common.loading')}</p>
       <a href={portalUrl} className='text-sm text-primary underline'>
         {t('landing.navUserPortal')}

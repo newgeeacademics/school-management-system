@@ -1,44 +1,35 @@
-import {
-  DASHBOARD_SCHOOL_TYPES,
-  getCourseLevelOptions,
-  getLevelsForProfile,
-  type DashboardSchoolType,
-  type SchoolProfile,
-} from '@/lib/school-profile';
+/** Types d’établissement (école). Permet de filtrer les niveaux de classe. */
+export const SCHOOL_TYPES = [
+  'Maternelle',
+  'Primaire',
+  'Collège',
+  'Lycée',
+  'Université',
+] as const;
 
-/** Types d’établissement alignés sur l’inscription (Primaire, Collège, Lycée). */
-export const SCHOOL_TYPES = DASHBOARD_SCHOOL_TYPES;
+export type SchoolType = (typeof SCHOOL_TYPES)[number];
 
-export type SchoolType = DashboardSchoolType;
-
-/** Niveaux francophones par type (ivoirien / français / autre). */
+/** Niveaux de classe par type d’établissement (format école). */
 export const LEVELS_BY_SCHOOL_TYPE: Record<SchoolType, string[]> = {
+  Maternelle: ['PS', 'MS', 'GS'],
   Primaire: ['CP', 'CE1', 'CE2', 'CM1', 'CM2'],
   Collège: ['6ème', '5ème', '4ème', '3ème'],
   Lycée: ['2nde', '1ère', 'Terminale'],
+  Université: ['L1', 'L2', 'L3', 'M1', 'M2', 'Doctorat'],
 };
 
-/** Liste plate de tous les niveaux pour un profil donné. */
-export function buildClassLevelOptions(profile: SchoolProfile | null): string[] {
-  if (!profile) {
-    return SCHOOL_TYPES.flatMap((type) =>
-      LEVELS_BY_SCHOOL_TYPE[type].map((level) => `${type} - ${level}`)
-    );
-  }
-  return getLevelsForProfile(profile).map((level) => `${profile.type} - ${level}`);
-}
+/** Liste plate de tous les niveaux (legacy / établissement “tous types”). */
+export const CLASS_LEVEL_OPTIONS = [
+  'Maternelle',
+  'Primaire',
+  ...LEVELS_BY_SCHOOL_TYPE.Maternelle.map((l) => `Maternelle - ${l}`),
+  ...LEVELS_BY_SCHOOL_TYPE.Primaire.map((l) => `Primaire - ${l}`),
+  ...LEVELS_BY_SCHOOL_TYPE.Collège.map((l) => `Collège - ${l}`),
+  ...LEVELS_BY_SCHOOL_TYPE.Lycée.map((l) => `Lycée - ${l}`),
+  ...LEVELS_BY_SCHOOL_TYPE.Université.map((l) => `Université - ${l}`),
+];
 
-export const CLASS_LEVEL_OPTIONS = buildClassLevelOptions(null);
-
-export const COURSE_LEVEL_OPTIONS = getCourseLevelOptions(null);
-
-export function courseLevelOptionsForProfile(profile: SchoolProfile | null): string[] {
-  return getCourseLevelOptions(profile);
-}
-
-export function levelOptionsForProfile(profile: SchoolProfile | null): string[] {
-  return getLevelsForProfile(profile);
-}
+export const COURSE_LEVEL_OPTIONS = ['Primaire', 'Collège', 'Lycée', 'Supérieur'];
 
 export const DAY_OPTIONS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
@@ -88,3 +79,4 @@ export const ROOM_TYPE_OPTIONS = [
   'Salle spécialisée',
   'Autre',
 ];
+
