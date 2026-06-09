@@ -3,6 +3,7 @@ import { parseApiErrorResponse, wrapFetchError } from '@/lib/api-error';
 import type { FinanceOverview, PayrollEmployeeType, PayrollPayment, TeacherOption } from '@/types/finance';
 
 export function isBackendApiConfigured(): boolean {
+  if (import.meta.env.DEV) return true;
   return Boolean(import.meta.env.VITE_API_URL?.trim());
 }
 

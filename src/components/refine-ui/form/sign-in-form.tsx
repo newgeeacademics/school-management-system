@@ -30,9 +30,12 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
     const email = usernameOrEmail.trim();
     try {
       if (!isBackendApiConfigured()) {
-        toast.error('VITE_API_URL n’est pas configuré sur ce déploiement Vercel (finance).', {
-          richColors: true,
-        });
+        toast.error(
+          import.meta.env.DEV
+            ? 'Créez finance-app/.env avec VITE_API_URL=http://localhost:8080 puis relancez npm run dev:finance.'
+            : 'VITE_API_URL n’est pas configuré sur ce déploiement Vercel (finance).',
+          { richColors: true }
+        );
         setIsPending(false);
         return;
       }
