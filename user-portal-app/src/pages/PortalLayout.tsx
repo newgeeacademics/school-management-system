@@ -6,7 +6,7 @@ import { clearPortalSession, getPortalSession, type PortalRole } from '@/lib/aut
 import { getSchoolAppOrigin } from '@/lib/school-app-url';
 import { useTranslation } from '@/i18n';
 import { PortalFeedProvider, usePortalFeedContext } from '@/context/PortalFeedContext';
-import { sectionFromPath, sectionMeta, sectionsForRole } from '@/lib/portal-sections';
+import { sectionFromPath, sectionLabelKey, sectionMeta, sectionsForRole } from '@/lib/portal-sections';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -60,6 +60,7 @@ function PortalLayoutInner() {
             mobile
             activeSection={activeSection}
             visibleSections={visibleSections}
+            role={session.role}
             productName={t('portalHome.productName')}
             roleLabel={roleLabel(session.role, t)}
             userName={session.name ?? session.emailHint}
@@ -72,6 +73,7 @@ function PortalLayoutInner() {
         <PortalSidebar
           activeSection={activeSection}
           visibleSections={visibleSections}
+          role={session.role}
           productName={t('portalHome.productName')}
           roleLabel={roleLabel(session.role, t)}
           userName={session.name ?? session.emailHint}
@@ -100,7 +102,9 @@ function PortalLayoutInner() {
               <p className='text-[10px] font-semibold uppercase tracking-[0.18em] text-primary'>
                 {t('portalHome.homeTitle')}
               </p>
-              <h1 className='text-lg font-semibold leading-tight text-foreground md:text-xl'>{t(meta.labelKey)}</h1>
+              <h1 className='text-lg font-semibold leading-tight text-foreground md:text-xl'>
+                {t(sectionLabelKey(activeSection, session.role))}
+              </h1>
               <p className='text-xs text-muted-foreground'>{t(meta.descKey)}</p>
             </div>
 

@@ -11,6 +11,8 @@ import java.util.List;
 public interface AttendanceRecordRepository extends JpaRepository<AttendanceRecord, String> {
     List<AttendanceRecord> findByStudentId(String studentId);
     List<AttendanceRecord> findByClassItemId(String classId);
+    List<AttendanceRecord> findByClassItemIdAndDate(String classId, String date);
+    List<AttendanceRecord> findByStudentIdAndDateAndClassItemId(String studentId, String date, String classId);
     List<AttendanceRecord> findByDate(String date);
     List<AttendanceRecord> findByStudentIdAndStatus(String studentId, AttendanceStatus status);
     long countByStudentId(String studentId);

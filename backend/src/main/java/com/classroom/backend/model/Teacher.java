@@ -22,6 +22,8 @@ public class Teacher {
 
     private String email;
 
+    private String phone;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "app_user_id")
     private AppUser appUser;

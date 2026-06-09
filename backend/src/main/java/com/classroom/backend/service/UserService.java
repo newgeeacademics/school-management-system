@@ -5,7 +5,6 @@ import com.classroom.backend.model.AppUser;
 import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.AppUserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,7 +15,7 @@ import java.util.List;
 public class UserService {
 
     private final AppUserRepository appUserRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final PortalAccountService portalAccountService;
 
     public List<AppUser> findAll() {
         return appUserRepository.findAll();
@@ -33,33 +32,25 @@ public class UserService {
 
     @Transactional
     public AppUser create(UserRequest request) {
-        if (appUserRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already in use: " + request.getEmail());
+        AppUser created = portalAccountService.createLinkedAccount(
+                request.getName(),
+                request.getEmail(),
+                request.getPhone(),
+                request.getPassword(),
+                request.getRole()
+        );
+        if (created != null) {
+            return created;
         }
-
-        String password = request.getPassword() != null ? request.getPassword() : "changeme";
-
-        AppUser user = AppUser.builder()
-                .name(request.getName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(password))
-                .role(request.getRole())
-                .build();
-
-        return appUserRepository.save(user);
+        throw new RuntimeException("Email or phone is required to create an account");
     }
 
     @Transactional
     public AppUser update(String id, UserRequest request) {
         AppUser user = findById(id);
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
+        portalAccountService.syncLinkedAccount(
+                user, request.getName(), request.getEmail(), request.getPhone(), request.getPassword());
         user.setRole(request.getRole());
-
-        if (request.getPassword() != null && !request.getPassword().isBlank()) {
-            user.setPassword(passwordEncoder.encode(request.getPassword()));
-        }
-
         return appUserRepository.save(user);
     }
 

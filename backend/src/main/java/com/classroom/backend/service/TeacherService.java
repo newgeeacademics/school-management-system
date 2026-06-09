@@ -32,13 +32,15 @@ public class TeacherService {
     @Transactional
     public Teacher create(TeacherRequest request) {
         AppUser appUser = portalAccountService.createLinkedAccount(
-                request.getName(), request.getEmail(), request.getPassword(), UserRole.TEACHER);
+                request.getName(), request.getEmail(), request.getPhone(),
+                request.getPassword(), UserRole.TEACHER);
 
         Teacher teacher = Teacher.builder()
                 .name(request.getName())
                 .initials(generateInitials(request.getName()))
                 .subject(request.getSubject())
                 .email(request.getEmail() != null ? request.getEmail().trim() : null)
+                .phone(trimPhone(request.getPhone()))
                 .appUser(appUser)
                 .build();
 
@@ -52,13 +54,17 @@ public class TeacherService {
         teacher.setInitials(generateInitials(request.getName()));
         teacher.setSubject(request.getSubject());
         teacher.setEmail(request.getEmail() != null ? request.getEmail().trim() : null);
+        teacher.setPhone(trimPhone(request.getPhone()));
 
         if (teacher.getAppUser() != null) {
             portalAccountService.syncLinkedAccount(
-                    teacher.getAppUser(), request.getName(), request.getEmail(), request.getPassword());
-        } else if (request.getEmail() != null && !request.getEmail().isBlank()) {
+                    teacher.getAppUser(), request.getName(), request.getEmail(),
+                    request.getPhone(), request.getPassword());
+        } else if ((request.getEmail() != null && !request.getEmail().isBlank())
+                || (request.getPhone() != null && !request.getPhone().isBlank())) {
             AppUser appUser = portalAccountService.createLinkedAccount(
-                    request.getName(), request.getEmail(), request.getPassword(), UserRole.TEACHER);
+                    request.getName(), request.getEmail(), request.getPhone(),
+                    request.getPassword(), UserRole.TEACHER);
             teacher.setAppUser(appUser);
         }
 
@@ -71,6 +77,11 @@ public class TeacherService {
         AppUser linked = teacher.getAppUser();
         teacherRepository.delete(teacher);
         portalAccountService.deleteLinkedAccount(linked);
+    }
+
+    private String trimPhone(String phone) {
+        if (phone == null || phone.isBlank()) return null;
+        return phone.trim();
     }
 
     private String generateInitials(String name) {

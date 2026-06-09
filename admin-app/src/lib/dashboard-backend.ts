@@ -53,8 +53,17 @@ export async function adminApiFetch<T>(path: string, init: RequestInit = {}): Pr
   }
 }
 
+export type AuthLoginResponse = {
+  token: string;
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  schoolId?: string;
+};
+
 export async function loginAdmin(email: string, password: string) {
-  return adminApiFetch<{ token: string; role: string }>('/api/auth/login', {
+  return adminApiFetch<AuthLoginResponse>('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email: email.trim(), password }),
   });

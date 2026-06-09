@@ -22,6 +22,7 @@ const ROLE_LABELS: Record<AppUserRole, string> = {
   teacher: 'Enseignant',
   parent: 'Parent',
   student: 'Élève',
+  staff: 'Personnel (staff)',
 };
 
 type UsersSectionProps = {
@@ -31,7 +32,7 @@ type UsersSectionProps = {
   onCreateUser: (e: React.FormEvent) => void;
   onUpdateUser: (
     id: string,
-    data: { name: string; email: string; role: AppUserRole; password?: string }
+    data: { name: string; email?: string; phone?: string; role: AppUserRole; password?: string }
   ) => void | Promise<void>;
   onDeleteUser: (id: string) => void | Promise<void>;
 };
@@ -48,21 +49,29 @@ export const UsersSection: React.FC<UsersSectionProps> = ({
   const [draft, setDraft] = React.useState<NewUserFormState & { password: string }>({
     name: '',
     email: '',
+    phone: '',
     role: 'teacher',
     password: '',
   });
 
   const startEdit = (user: AppUser) => {
     setEditingId(user.id);
-    setDraft({ name: user.name, email: user.email, role: user.role, password: '' });
+    setDraft({
+      name: user.name,
+      email: user.email,
+      phone: user.phone ?? '',
+      role: user.role,
+      password: '',
+    });
   };
 
   const saveEdit = () => {
-    if (!editingId || !draft.name.trim() || !draft.email.trim()) return;
+    if (!editingId || !draft.name.trim() || (!draft.email.trim() && !draft.phone.trim())) return;
     void Promise.resolve(
       onUpdateUser(editingId, {
         name: draft.name.trim(),
-        email: draft.email.trim(),
+        email: draft.email.trim() || undefined,
+        phone: draft.phone.trim() || undefined,
         role: draft.role,
         password: draft.password.trim() || undefined,
       })
@@ -77,11 +86,11 @@ export const UsersSection: React.FC<UsersSectionProps> = ({
         </CardHeader>
         <CardContent>
           <p className='mb-3 text-[11px] text-muted-foreground'>
-            Comptes de connexion (portail / admin). Mot de passe par défaut : <strong>changeme</strong>{' '}
-            si vide.
+            Créez un compte avec email ou numéro de téléphone. Mot de passe par défaut :{' '}
+            <strong>changeme</strong> si vide.
           </p>
           <form
-            className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_auto] items-end text-xs'
+            className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
             onSubmit={onCreateUser}
           >
             <div className='grid gap-2'>
@@ -98,7 +107,14 @@ export const UsersSection: React.FC<UsersSectionProps> = ({
                 type='email'
                 value={newUser.email}
                 onChange={(e) => setNewUser((u) => ({ ...u, email: e.target.value }))}
-                required
+              />
+            </div>
+            <div className='grid gap-2'>
+              <Label>Téléphone</Label>
+              <Input
+                value={newUser.phone}
+                onChange={(e) => setNewUser((u) => ({ ...u, phone: e.target.value }))}
+                placeholder='+225…'
               />
             </div>
             <div className='grid gap-2'>
@@ -161,6 +177,12 @@ export const UsersSection: React.FC<UsersSectionProps> = ({
                           type='email'
                           value={draft.email}
                           onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
+                          placeholder='Email'
+                        />
+                        <Input
+                          value={draft.phone}
+                          onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))}
+                          placeholder='Téléphone'
                         />
                         <Select
                           value={draft.role}
@@ -208,7 +230,9 @@ export const UsersSection: React.FC<UsersSectionProps> = ({
                           </Avatar>
                           <div className='min-w-0'>
                             <p className='text-sm font-medium truncate'>{user.name}</p>
-                            <p className='text-[11px] text-muted-foreground truncate'>{user.email}</p>
+                            <p className='text-[11px] text-muted-foreground truncate'>
+                              {user.email || user.phone || '—'}
+                            </p>
                             <Badge variant='secondary' className='mt-0.5 text-[10px]'>
                               {ROLE_LABELS[user.role]}
                             </Badge>

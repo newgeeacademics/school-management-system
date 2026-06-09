@@ -20,11 +20,21 @@ import {
   isCompleteEmail,
 } from '@/components/refine-ui/form/email-with-at-separator';
 import { PhoneWithDialCode } from '@/components/refine-ui/form/phone-with-dial-code';
+import { RegistrationNumberField, type RegistrationNumberStatus } from '@/components/refine-ui/form/registration-number-field';
+import { SchoolLanguagesPicker } from '@/components/refine-ui/form/school-languages-picker';
+import { SchoolOpeningHoursPicker } from '@/components/refine-ui/form/school-opening-hours-picker';
+import { SchoolSeriesPicker } from '@/components/refine-ui/form/school-series-picker';
 import {
   formatPhoneWithCountry,
   getCitiesByCountryName,
   getCountries,
+  isValidLocalPhone,
+  isValidOptionalLocalPhone,
+  normalizeLocalPhoneInput,
 } from '@/lib/location-data';
+import { type InstructionLanguageId, instructionLanguageLabelKey } from '@/lib/school-languages';
+import { normalizeRegistrationNumber, validateRegistrationNumber } from '@/lib/school-registration-number';
+import { filterSeriesForSystem } from '@/lib/school-series';
 import './school-register-wizard.css';
 
 const LOCAL_SCHOOLS_KEY = 'newgee_local_schools';
@@ -92,12 +102,12 @@ type SchoolState = {
   website: string;
   studentCount: string;
   teacherCount: string;
-  series: string;
+  series: string[];
   legalName: string;
   registrationNumber: string;
   accreditationRef: string;
   academicYearLabel: string;
-  languagesOffered: string;
+  languagesOffered: InstructionLanguageId[];
   openingHours: string;
   socialLinks: string;
   billingContactName: string;
@@ -108,15 +118,6 @@ type SchoolState = {
   internalNotes: string;
 };
 
-function splitList(raw: string) {
-  return raw
-    ? raw
-        .split(/[,;]/)
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : [];
-}
-
 export function SchoolRegisterWizard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -125,6 +126,8 @@ export function SchoolRegisterWizard() {
   const [logoFiles, setLogoFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [registrationNumberStatus, setRegistrationNumberStatus] =
+    useState<RegistrationNumberStatus>('idle');
 
   const [credentials, setCredentials] = useState<CredentialsState>({
     username: '',
@@ -150,12 +153,12 @@ export function SchoolRegisterWizard() {
     website: '',
     studentCount: '',
     teacherCount: '',
-    series: '',
+    series: [],
     legalName: '',
     registrationNumber: '',
     accreditationRef: '',
     academicYearLabel: '',
-    languagesOffered: '',
+    languagesOffered: [],
     openingHours: '',
     socialLinks: '',
     billingContactName: '',
@@ -177,10 +180,10 @@ export function SchoolRegisterWizard() {
           return Boolean(school.gpsLat.trim() && school.gpsLng.trim());
         case 4:
           return Boolean(
-            school.phone.trim() &&
+            isValidLocalPhone(school.country, school.phone) &&
               isCompleteEmail(school.officialEmail) &&
               school.directorName.trim() &&
-              school.directorPhone.trim()
+              isValidLocalPhone(school.country, school.directorPhone)
           );
         case 5:
           return Boolean(
@@ -189,8 +192,21 @@ export function SchoolRegisterWizard() {
               school.studentCount.trim() &&
               school.teacherCount.trim()
           );
-        case 6:
-          return true;
+        case 6: {
+          const regFilled = Boolean(school.registrationNumber.trim());
+          const regValidation = validateRegistrationNumber(school.country, school.registrationNumber);
+          const regOk =
+            !regFilled ||
+            (regValidation.valid &&
+              registrationNumberStatus !== 'invalid' &&
+              registrationNumberStatus !== 'taken' &&
+              registrationNumberStatus !== 'checking');
+          return (
+            regOk &&
+            isValidOptionalLocalPhone(school.country, school.billingPhone) &&
+            isValidOptionalLocalPhone(school.country, school.emergencyContactPhone)
+          );
+        }
         case 7:
           return Boolean(
             isCompleteEmail(credentials.email) &&
@@ -202,11 +218,11 @@ export function SchoolRegisterWizard() {
           return false;
       }
     },
-    [credentials, logoFiles.length, school]
+    [credentials, logoFiles.length, registrationNumberStatus, school]
   );
 
   const canFinish = useMemo(() => {
-    for (let s = 1; s <= 5; s++) {
+    for (let s = 1; s <= 6; s++) {
       if (!canContinue(s)) return false;
     }
     return canContinue(7);
@@ -223,9 +239,35 @@ export function SchoolRegisterWizard() {
       setSchool((prev) => ({ ...prev, [key]: e.target.value }));
     };
 
+  const handleSchoolTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const schoolType = e.target.value;
+    setSchool((prev) => ({
+      ...prev,
+      schoolType,
+      series: schoolType === 'lycee' ? prev.series : [],
+    }));
+  };
+
+  const handleSystemChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const system = e.target.value;
+    setSchool((prev) => ({
+      ...prev,
+      system,
+      series: filterSeriesForSystem(system, prev.series),
+    }));
+  };
+
   const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const country = e.target.value;
-    setSchool((prev) => ({ ...prev, country, city: '' }));
+    setSchool((prev) => ({
+      ...prev,
+      country,
+      city: '',
+      phone: normalizeLocalPhoneInput(country, prev.phone),
+      directorPhone: normalizeLocalPhoneInput(country, prev.directorPhone),
+      billingPhone: normalizeLocalPhoneInput(country, prev.billingPhone),
+      emergencyContactPhone: normalizeLocalPhoneInput(country, prev.emergencyContactPhone),
+    }));
   };
 
   const handleLocationPick = useCallback((lat: number, lng: number) => {
@@ -296,11 +338,15 @@ export function SchoolRegisterWizard() {
       phone: formatPhoneWithCountry(school.country, school.phone) || '',
       officialEmail: school.officialEmail || credentials.email,
       directorName: school.directorName || '',
-      directorPhone: school.directorPhone || '',
+      directorPhone: formatPhoneWithCountry(school.country, school.directorPhone) || '',
       website: school.website || '',
       studentCount: school.studentCount,
       teacherCount: school.teacherCount,
-      series: splitList(school.series),
+      series: school.series,
+      registrationNumber: school.registrationNumber
+        ? normalizeRegistrationNumber(school.registrationNumber)
+        : '',
+      languagesOffered: school.languagesOffered.map((id) => t(instructionLanguageLabelKey(id))),
       logoUrl: logoUrl || '',
     };
 
@@ -367,25 +413,31 @@ export function SchoolRegisterWizard() {
       phone: formatPhoneWithCountry(school.country, school.phone) || '',
       officialEmail: school.officialEmail || credentials.email,
       directorName: school.directorName || '',
-      directorPhone: school.directorPhone || '',
+      directorPhone: formatPhoneWithCountry(school.country, school.directorPhone) || '',
       website: school.website || '',
       logoUrl: logoUrl || '',
       logoCldPubId: logoCldPubId || '',
       studentCount: school.studentCount ? Number(school.studentCount) : null,
       teacherCount: school.teacherCount ? Number(school.teacherCount) : null,
-      series: splitList(school.series),
-      languagesOffered: splitList(school.languagesOffered),
+      series: school.series,
+      languagesOffered: school.languagesOffered.map((id) => t(instructionLanguageLabelKey(id))),
       legalName: school.legalName || '',
-      registrationNumber: school.registrationNumber || '',
+      registrationNumber: school.registrationNumber
+        ? normalizeRegistrationNumber(school.registrationNumber)
+        : '',
       accreditationRef: school.accreditationRef || '',
       academicYearLabel: school.academicYearLabel || '',
       openingHours: school.openingHours || '',
       socialLinks: school.socialLinks || '',
       billingContactName: school.billingContactName || '',
       billingEmail: school.billingEmail || '',
-      billingPhone: school.billingPhone || '',
+      billingPhone: school.billingPhone
+        ? formatPhoneWithCountry(school.country, school.billingPhone)
+        : '',
       emergencyContactName: school.emergencyContactName || '',
-      emergencyContactPhone: school.emergencyContactPhone || '',
+      emergencyContactPhone: school.emergencyContactPhone
+        ? formatPhoneWithCountry(school.country, school.emergencyContactPhone)
+        : '',
       internalNotes: school.internalNotes || '',
       createdAt: now,
       updatedAt: now,
@@ -462,7 +514,7 @@ export function SchoolRegisterWizard() {
             <div className='school-register__grid-2'>
               <label className='school-register__field'>
                 <span>{t('school.schoolType')} *</span>
-                <select value={school.schoolType} onChange={handleSchoolInput('schoolType')} required>
+                <select value={school.schoolType} onChange={handleSchoolTypeChange} required>
                   <option value=''>—</option>
                   {SCHOOL_TYPES.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -473,7 +525,7 @@ export function SchoolRegisterWizard() {
               </label>
               <label className='school-register__field'>
                 <span>{t('school.system')} *</span>
-                <select value={school.system} onChange={handleSchoolInput('system')} required>
+                <select value={school.system} onChange={handleSystemChange} required>
                   <option value=''>—</option>
                   {SYSTEMS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -604,7 +656,13 @@ export function SchoolRegisterWizard() {
               </label>
               <label className='school-register__field'>
                 <span>{t('school.directorPhone')} *</span>
-                <input type='tel' value={school.directorPhone} onChange={handleSchoolInput('directorPhone')} />
+                <PhoneWithDialCode
+                  countryName={school.country}
+                  value={school.directorPhone}
+                  onChange={(directorPhone) => setSchool((prev) => ({ ...prev, directorPhone }))}
+                  placeholder={t('school.phonePlaceholder')}
+                  required
+                />
               </label>
             </div>
           </>
@@ -650,14 +708,12 @@ export function SchoolRegisterWizard() {
                 />
               </label>
             </div>
-            <label className='school-register__field'>
-              <span>{t('school.series')}</span>
-              <input
-                value={school.series}
-                onChange={handleSchoolInput('series')}
-                placeholder={t('school.seriesPlaceholder')}
-              />
-            </label>
+            <SchoolSeriesPicker
+              system={school.system}
+              schoolType={school.schoolType}
+              value={school.series}
+              onChange={(series) => setSchool((prev) => ({ ...prev, series }))}
+            />
           </>
         );
       case 6:
@@ -669,33 +725,31 @@ export function SchoolRegisterWizard() {
               <input value={school.legalName} onChange={handleSchoolInput('legalName')} />
             </label>
             <div className='school-register__grid-2'>
-              <label className='school-register__field'>
-                <span>{t('school.registrationNumber')}</span>
-                <input value={school.registrationNumber} onChange={handleSchoolInput('registrationNumber')} />
-              </label>
+              <RegistrationNumberField
+                countryName={school.country}
+                value={school.registrationNumber}
+                onChange={(registrationNumber) =>
+                  setSchool((prev) => ({ ...prev, registrationNumber }))
+                }
+                onStatusChange={setRegistrationNumberStatus}
+              />
               <label className='school-register__field'>
                 <span>{t('school.accreditationRef')}</span>
                 <input value={school.accreditationRef} onChange={handleSchoolInput('accreditationRef')} />
               </label>
             </div>
-            <div className='school-register__grid-2'>
-              <label className='school-register__field'>
-                <span>{t('school.academicYearLabel')}</span>
-                <input value={school.academicYearLabel} onChange={handleSchoolInput('academicYearLabel')} />
-              </label>
-              <label className='school-register__field'>
-                <span>{t('school.languagesOffered')}</span>
-                <input
-                  value={school.languagesOffered}
-                  onChange={handleSchoolInput('languagesOffered')}
-                  placeholder={t('school.languagesPlaceholder')}
-                />
-              </label>
-            </div>
             <label className='school-register__field'>
-              <span>{t('school.openingHours')}</span>
-              <textarea value={school.openingHours} onChange={handleSchoolInput('openingHours')} />
+              <span>{t('school.academicYearLabel')}</span>
+              <input value={school.academicYearLabel} onChange={handleSchoolInput('academicYearLabel')} />
             </label>
+            <SchoolLanguagesPicker
+              value={school.languagesOffered}
+              onChange={(languagesOffered) => setSchool((prev) => ({ ...prev, languagesOffered }))}
+            />
+            <SchoolOpeningHoursPicker
+              value={school.openingHours}
+              onChange={(openingHours) => setSchool((prev) => ({ ...prev, openingHours }))}
+            />
             <label className='school-register__field'>
               <span>{t('school.socialLinks')}</span>
               <textarea
@@ -721,7 +775,12 @@ export function SchoolRegisterWizard() {
             </div>
             <label className='school-register__field'>
               <span>{t('school.billingPhone')}</span>
-              <input type='tel' value={school.billingPhone} onChange={handleSchoolInput('billingPhone')} />
+              <PhoneWithDialCode
+                countryName={school.country}
+                value={school.billingPhone}
+                onChange={(billingPhone) => setSchool((prev) => ({ ...prev, billingPhone }))}
+                placeholder={t('school.phonePlaceholder')}
+              />
             </label>
             <div className='school-register__grid-2'>
               <label className='school-register__field'>
@@ -730,10 +789,13 @@ export function SchoolRegisterWizard() {
               </label>
               <label className='school-register__field'>
                 <span>{t('school.emergencyContactPhone')}</span>
-                <input
-                  type='tel'
+                <PhoneWithDialCode
+                  countryName={school.country}
                   value={school.emergencyContactPhone}
-                  onChange={handleSchoolInput('emergencyContactPhone')}
+                  onChange={(emergencyContactPhone) =>
+                    setSchool((prev) => ({ ...prev, emergencyContactPhone }))
+                  }
+                  placeholder={t('school.phonePlaceholder')}
                 />
               </label>
             </div>

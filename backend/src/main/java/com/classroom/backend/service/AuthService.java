@@ -28,6 +28,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final SchoolService schoolService;
     private final EmailNotificationService emailNotificationService;
+    private final PortalAccountService portalAccountService;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -103,13 +104,15 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
+        String loginEmail = portalAccountService.resolveLoginEmail(request.getEmail());
+
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(loginEmail, request.getPassword())
         );
 
         String token = jwtTokenProvider.generateToken(authentication);
 
-        AppUser user = appUserRepository.findByEmail(request.getEmail())
+        AppUser user = appUserRepository.findByEmail(loginEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         return AuthResponse.builder()

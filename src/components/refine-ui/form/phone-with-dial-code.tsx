@@ -1,5 +1,10 @@
 import { useMemo } from 'react';
-import { getCountryPhoneMeta } from '@/lib/location-data';
+import {
+  getCountryPhoneMeta,
+  getLocalPhoneRules,
+  getPhonePlaceholder,
+  normalizeLocalPhoneInput,
+} from '@/lib/location-data';
 
 type PhoneWithDialCodeProps = {
   countryName: string;
@@ -17,6 +22,8 @@ export function PhoneWithDialCode({
   required,
 }: PhoneWithDialCodeProps) {
   const meta = useMemo(() => getCountryPhoneMeta(countryName), [countryName]);
+  const rules = useMemo(() => getLocalPhoneRules(countryName), [countryName]);
+  const resolvedPlaceholder = getPhonePlaceholder(countryName, placeholder ?? '');
 
   return (
     <div className='school-register__phone'>
@@ -34,13 +41,15 @@ export function PhoneWithDialCode({
       </span>
       <input
         type='tel'
-        inputMode='tel'
+        inputMode='numeric'
         autoComplete='tel-national'
         value={value}
-        onChange={(e) => onChange(e.target.value.replace(/[^\d\s]/g, ''))}
-        placeholder={placeholder}
+        onChange={(e) => onChange(normalizeLocalPhoneInput(countryName, e.target.value))}
+        placeholder={resolvedPlaceholder || placeholder}
         required={required}
         disabled={!meta}
+        maxLength={rules?.localDigits === 10 ? 14 : undefined}
+        pattern={rules?.pattern?.source}
       />
     </div>
   );

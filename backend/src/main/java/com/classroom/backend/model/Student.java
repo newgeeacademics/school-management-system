@@ -15,6 +15,9 @@ public class Student {
     @Column(nullable = false)
     private String name;
 
+    @Column(unique = true)
+    private String matricule;
+
     private String email;
 
     @ManyToOne(fetch = FetchType.LAZY)

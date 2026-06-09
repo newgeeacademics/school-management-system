@@ -83,7 +83,7 @@ export const ReportsSection: React.FC<ReportsSectionProps> = ({
         <Card>
           <CardHeader className='pb-2'>
             <CardTitle className='text-xs font-medium text-muted-foreground'>
-              Taux de présence global (exemple)
+              Taux de présence global
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -91,7 +91,7 @@ export const ReportsSection: React.FC<ReportsSectionProps> = ({
               {overallAttendanceRate.toString().padStart(2, '0')}%
             </p>
             <p className='mt-1 text-xs text-muted-foreground'>
-              Calculé à partir des feuilles d&apos;appel simulées.
+              Calculé à partir des feuilles d&apos;appel enregistrées.
             </p>
           </CardContent>
         </Card>
@@ -99,7 +99,7 @@ export const ReportsSection: React.FC<ReportsSectionProps> = ({
         <Card>
           <CardHeader className='pb-2'>
             <CardTitle className='text-xs font-medium text-muted-foreground'>
-              Paiements (exemple)
+              Paiements
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -117,7 +117,7 @@ export const ReportsSection: React.FC<ReportsSectionProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className='text-sm font-medium'>
-            Présence par classe (démo)
+            Présence par classe
           </CardTitle>
         </CardHeader>
         <CardContent className='space-y-2 text-xs'>

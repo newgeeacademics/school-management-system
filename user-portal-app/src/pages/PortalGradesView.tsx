@@ -24,12 +24,17 @@ const selectClass =
 
 type TabId = 'marks' | 'bulletin';
 
-export function PortalGradesView() {
+type PortalGradesViewProps = {
+  fixedClassId?: string;
+  embedded?: boolean;
+};
+
+export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: PortalGradesViewProps = {}) {
   const { t } = useTranslation();
   const session = getPortalSession();
   const [tab, setTab] = useState<TabId>('marks');
   const [period, setPeriod] = useState<EvaluationPeriod>('Trimestre 1');
-  const [classId, setClassId] = useState('');
+  const [classId, setClassId] = useState(fixedClassId ?? '');
   const [studentId, setStudentId] = useState('');
   const [data, setData] = useState<PortalGradesDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,7 +60,7 @@ export function PortalGradesView() {
         studentId: studentId || undefined,
       });
       setData(detail);
-      if (!classId && detail.classId) setClassId(detail.classId);
+      if (!fixedClassId && !classId && detail.classId) setClassId(detail.classId);
       if (!studentId && detail.studentId) setStudentId(detail.studentId);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('portalGrades.loadError'));
@@ -63,7 +68,11 @@ export function PortalGradesView() {
     } finally {
       setLoading(false);
     }
-  }, [classId, period, studentId, t]);
+  }, [classId, fixedClassId, period, studentId, t]);
+
+  useEffect(() => {
+    if (fixedClassId) setClassId(fixedClassId);
+  }, [fixedClassId]);
 
   useEffect(() => {
     void reload();
@@ -72,7 +81,7 @@ export function PortalGradesView() {
   const canEdit = data?.canEdit ?? false;
   const isParent = session?.role === 'parent';
   const showStudentPicker = isParent && (data?.students.length ?? 0) > 1;
-  const showClassPicker = canEdit && (data?.classes.length ?? 0) > 1;
+  const showClassPicker = !fixedClassId && canEdit && (data?.classes.length ?? 0) > 1;
 
   const bulletinRows = useMemo(() => {
     if (!data) return [];

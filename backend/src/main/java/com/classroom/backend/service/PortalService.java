@@ -178,11 +178,17 @@ public class PortalService {
     }
 
     private PortalClassDto toClassDto(ClassItem c) {
+        Teacher teacher = c.getHomeroomTeacher();
         return PortalClassDto.builder()
                 .id(c.getId())
                 .name(c.getName())
                 .level(c.getLevel())
                 .studentsCount(c.getStudentsCount())
+                .homeroomTeacherId(teacher != null ? teacher.getId() : null)
+                .homeroomTeacherName(teacher != null ? teacher.getName() : null)
+                .homeroomTeacherSubject(teacher != null ? teacher.getSubject() : null)
+                .homeroomTeacherPhone(teacher != null ? teacher.getPhone() : null)
+                .homeroomTeacherEmail(teacher != null ? teacher.getEmail() : null)
                 .build();
     }
 

@@ -348,7 +348,7 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
         <CardHeader>
           <div className='flex items-center justify-between gap-2'>
             <CardTitle className='text-sm font-medium'>
-              Saisie des notes et conseil de classe (démo)
+              Saisie des notes et conseil de classe
             </CardTitle>
             {selectedClassId && (
               <Badge variant='outline' className='text-[11px]'>

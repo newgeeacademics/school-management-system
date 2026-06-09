@@ -35,6 +35,8 @@ public class School {
     private Integer studentCount;
     private Integer teacherCount;
     private String series;
+    private String registrationNumber;
+    private String languagesOffered;
     private String logoFileName;
 
     @Column(updatable = false)

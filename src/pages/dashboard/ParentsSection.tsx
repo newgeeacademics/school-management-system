@@ -88,7 +88,7 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
         </CardHeader>
         <CardContent>
           <p className='mb-3 text-[11px] text-muted-foreground'>
-            Email et mot de passe = connexion portail (rôle parent).
+            Email ou téléphone + mot de passe = connexion portail (rôle parent).
           </p>
           <form
             className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
@@ -118,7 +118,6 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
                 type='email'
                 value={newParent.email}
                 onChange={(e) => setNewParent((p) => ({ ...p, email: e.target.value }))}
-                required
               />
             </div>
             <div className='grid gap-2'>

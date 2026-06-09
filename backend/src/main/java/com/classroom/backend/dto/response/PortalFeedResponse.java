@@ -28,6 +28,11 @@ public class PortalFeedResponse {
         private String name;
         private String level;
         private Integer studentsCount;
+        private String homeroomTeacherId;
+        private String homeroomTeacherName;
+        private String homeroomTeacherSubject;
+        private String homeroomTeacherPhone;
+        private String homeroomTeacherEmail;
     }
 
     @Data

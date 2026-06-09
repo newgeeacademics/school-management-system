@@ -177,7 +177,7 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
                   type='submit'
                   className='inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90'
                 >
-                  Enregistrer le rappel (envoi simulé)
+                  Enregistrer le rappel
                 </button>
               </div>
             </form>
@@ -262,7 +262,7 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
                   type='submit'
                   className='inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90'
                 >
-                  Enregistrer le paiement (reçu simulé)
+                  Enregistrer le paiement
                 </button>
               </div>
             </form>

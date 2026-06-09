@@ -7,6 +7,7 @@ import com.classroom.backend.model.Student;
 import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.ClassItemRepository;
 import com.classroom.backend.repository.StudentRepository;
+import com.classroom.backend.util.MatriculeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,10 +43,12 @@ public class StudentService {
         }
 
         AppUser appUser = portalAccountService.createLinkedAccount(
-                request.getName(), request.getEmail(), request.getPassword(), UserRole.STUDENT);
+                request.getName(), request.getEmail(), request.getPhone(),
+                request.getPassword(), UserRole.STUDENT);
 
         Student student = Student.builder()
                 .name(request.getName())
+                .matricule(MatriculeGenerator.next(studentRepository, classItem))
                 .email(request.getEmail() != null ? request.getEmail().trim() : null)
                 .classItem(classItem)
                 .appUser(appUser)
@@ -69,11 +72,18 @@ public class StudentService {
 
         if (student.getAppUser() != null) {
             portalAccountService.syncLinkedAccount(
-                    student.getAppUser(), request.getName(), request.getEmail(), request.getPassword());
-        } else if (request.getEmail() != null && !request.getEmail().isBlank()) {
+                    student.getAppUser(), request.getName(), request.getEmail(),
+                    request.getPhone(), request.getPassword());
+        } else if ((request.getEmail() != null && !request.getEmail().isBlank())
+                || (request.getPhone() != null && !request.getPhone().isBlank())) {
             AppUser appUser = portalAccountService.createLinkedAccount(
-                    request.getName(), request.getEmail(), request.getPassword(), UserRole.STUDENT);
+                    request.getName(), request.getEmail(), request.getPhone(),
+                    request.getPassword(), UserRole.STUDENT);
             student.setAppUser(appUser);
+        }
+
+        if (student.getMatricule() == null || student.getMatricule().isBlank()) {
+            student.setMatricule(MatriculeGenerator.next(studentRepository, student.getClassItem()));
         }
 
         return studentRepository.save(student);

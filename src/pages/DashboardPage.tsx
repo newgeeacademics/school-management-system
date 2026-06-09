@@ -22,7 +22,15 @@ import {
   Wallet,
 } from 'lucide-react';
 
-import { getStoredRole, clearStoredRole, getStoredStudentId, setStoredStudentId, type UserRole } from '@/lib/auth';
+import { ACCESS_TOKEN_KEY } from '@/constants';
+import {
+  clearAuthSession,
+  getStoredRole,
+  getStoredUser,
+  getStoredStudentId,
+  setStoredStudentId,
+  type UserRole,
+} from '@/lib/auth';
 import {
   createAttendanceOnBackend,
   createCourseOnBackend,
@@ -33,6 +41,8 @@ import {
   createMatiereOnBackend,
   createOrUpdateGradeOnBackend,
   createParentOnBackend,
+  createAnnouncementOnBackend,
+  createFeeInstallmentOnBackend,
   createPaymentReceiptOnBackend,
   createPaymentReminderOnBackend,
   createRoomOnBackend,
@@ -41,14 +51,19 @@ import {
   createTeacherOnBackend,
   createTransportOnBackend,
   createUserOnBackend,
+  deleteAnnouncementOnBackend,
   deleteClassOnBackend,
+  deleteFeeInstallmentOnBackend,
   deleteParentOnBackend,
   deleteStudentOnBackend,
   deleteTeacherOnBackend,
   deleteUserOnBackend,
+  fetchStudentIdCardOnBackend,
   isBackendApiConfigured,
   loadDashboardFromBackend,
   refreshUsersFromBackend,
+  updateAnnouncementOnBackend,
+  updateFeeInstallmentOnBackend,
   updateAttendanceOnBackend,
   updateClassOnBackend,
   updateParentOnBackend,
@@ -115,8 +130,13 @@ import {
   type Course,
   type Matiere,
   type Evaluation,
+  type Announcement,
+  type FeeInstallment,
+  type NewAnnouncementFormState,
   type NewEvaluationFormState,
+  type NewFeeInstallmentFormState,
   type NewCanteenItemFormState,
+  type StudentIdCardData,
   type NewClassFormState,
   type NewCourseFormState,
   type NewMatiereFormState,
@@ -142,7 +162,10 @@ import {
   type Teacher,
   type TransportRoute,
 } from './dashboard/dashboardTypes';
+import { AnnouncementsSection } from './dashboard/AnnouncementsSection';
 import { CalendarSection } from './dashboard/CalendarSection';
+import { FeeSchedulesSection } from './dashboard/FeeSchedulesSection';
+import { StudentIdCardModal } from './dashboard/StudentIdCardModal';
 import { CanteenSection } from './dashboard/CanteenSection';
 import { ClassesSection } from './dashboard/ClassesSection';
 import { CoursesSection } from './dashboard/CoursesSection';
@@ -192,6 +215,8 @@ const ADMIN_SECTION_IDS: SectionId[] = [
   'attendance',
   'exams',
   'payments',
+  'fee_schedules',
+  'announcements',
   'users',
   'permissions',
   'billing',
@@ -341,9 +366,23 @@ const sectionConfig: Record<
       'Consultez le montant total à payer, ce qui a été réglé et le restant dû.',
     cta: '',
   },
+  fee_schedules: {
+    kicker: 'Échéanciers',
+    title: 'Tarifs et tranches',
+    description:
+      'Configurez les montants de scolarité, cantine et transport avec des dates d’échéance précises.',
+    cta: 'Ajouter une tranche',
+  },
+  announcements: {
+    kicker: 'Communication',
+    title: 'Annonces officielles',
+    description:
+      'Publiez les réunions de parents, événements et informations institutionnelles pour les familles.',
+    cta: 'Publier une annonce',
+  },
   grades: {
     kicker: 'Gestion des notes',
-    title: 'Notes & bulletins (démo)',
+    title: 'Notes & bulletins',
     description:
       'Créez des évaluations, saisissez les notes et préparez le conseil de classe.',
     cta: '',
@@ -366,7 +405,7 @@ const sectionConfig: Record<
     kicker: 'Rapports et synthèses',
     title: 'Rapports & statistiques',
     description:
-      'Obtenez une vue globale sur les présences et les paiements (mode démo, sans backend).',
+      'Obtenez une vue globale sur les présences et les paiements.',
     cta: '',
   },
   sis: {
@@ -490,7 +529,7 @@ const roleSectionOverrides: Partial<Record<UserRole, Partial<Record<SectionId, {
     canteen: { kicker: 'Cantine', title: 'Menus de la cantine', description: 'Plats prévus pour vos enfants cette semaine.', cta: '' },
     transport: { kicker: 'Transport', title: 'Ramassage scolaire', description: 'Horaires et trajets de ramassage scolaire.', cta: '' },
     payments: { kicker: 'Frais scolaires', title: 'Paiements', description: 'Total à payer, montant réglé et restant dû.', cta: '' },
-    reports: { kicker: 'Rapports', title: 'Rapports famille', description: 'Vue simplifiée des présences et paiements (démo).', cta: '' },
+    reports: { kicker: 'Rapports', title: 'Rapports famille', description: 'Vue simplifiée des présences et paiements.', cta: '' },
     schedule: { kicker: 'Emplois du temps', title: 'Emplois du temps des enfants', description: 'Consultez les emplois du temps par enfant.', cta: '' },
     calendar: { kicker: 'Événements', title: 'Événements à venir', description: 'Sorties, réunions, conseils de classe.', cta: '' },
   },
@@ -504,85 +543,19 @@ const roleSectionOverrides: Partial<Record<UserRole, Partial<Record<SectionId, {
   },
 };
 
-const initialTeachers: Teacher[] = [
-  { id: 't1', initials: 'JD', name: 'Jean Dupont', subject: 'Mathématiques' },
-  { id: 't2', initials: 'ML', name: 'Marie Leroy', subject: 'Français' },
-  { id: 't3', initials: 'SB', name: 'Sophie Bernard', subject: 'Histoire-Géographie' },
-];
-
-const initialClasses: ClassItem[] = [
-  {
-    id: 'c1',
-    name: '6ème A',
-    level: 'Collège - 6ème',
-    studentsCount: 24,
-    homeroomTeacherId: 't1',
-  },
-  {
-    id: 'c2',
-    name: '3ème C',
-    level: 'Collège - 3ème',
-    studentsCount: 22,
-    homeroomTeacherId: 't2',
-  },
-];
-
-const initialCourses: Course[] = [
-  { id: 'co1', name: 'Mathématiques', level: 'Collège' },
-  { id: 'co2', name: 'Français', level: 'Collège' },
-  { id: 'co3', name: 'Histoire-Géographie', level: 'Collège / Lycée' },
-];
-
-const initialRooms: Room[] = [
-  { id: 'r1', name: 'Salle 101', type: 'Salle de classe', capacity: 30 },
-  { id: 'r2', name: 'Salle 102', type: 'Salle de classe', capacity: 28 },
-  { id: 'r3', name: 'Salle polyvalente', type: 'Salle de réunion', capacity: 80 },
-  { id: 'r4', name: 'Salle des professeurs', type: 'Salle de réunion', capacity: 20 },
-];
-
-const initialEvents: CalendarEvent[] = [
-  {
-    id: 'e1',
-    label: 'Promotion des 3ème vers le lycée',
-    date: '15 juin 2025',
-    time: '18h00',
-    location: 'Salle polyvalente',
-    type: 'Promotion',
-  },
-  {
-    id: 'e2',
-    label: 'Conseils de classe du 2ème trimestre',
-    date: 'Du 2 au 6 avril',
-    location: 'Salle des professeurs',
-    type: 'Réunion',
-  },
-];
-
-const initialSchedule: ScheduleItem[] = [
-  {
-    id: 's1',
-    classId: 'c1',
-    courseId: 'co1',
-    day: 'Lundi',
-    time: '8h00 – 9h00',
-    room: 'Salle 101',
-  },
-  {
-    id: 's2',
-    classId: 'c1',
-    courseId: 'co2',
-    day: 'Lundi',
-    time: '9h00 – 10h00',
-    room: 'Salle 101',
-  },
-];
-
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const role = getStoredRole();
+  const sessionUser = getStoredUser();
 
   React.useEffect(() => {
-    if (!role) navigate('/login', { replace: true });
+    if (!role) {
+      navigate('/login', { replace: true });
+      return;
+    }
+    if (isBackendApiConfigured() && !localStorage.getItem(ACCESS_TOKEN_KEY)) {
+      navigate('/login', { replace: true });
+    }
   }, [role, navigate]);
 
   const currentNavItems = role ? roleNavItems[role] : [];
@@ -605,16 +578,15 @@ export const DashboardPage: React.FC = () => {
 
   const backendSync = isBackendApiConfigured();
 
-  const [teachers, setTeachers] = React.useState<Teacher[]>(backendSync ? [] : initialTeachers);
-  const [classes, setClasses] = React.useState<ClassItem[]>(backendSync ? [] : initialClasses);
+  const [teachers, setTeachers] = React.useState<Teacher[]>([]);
+  const [classes, setClasses] = React.useState<ClassItem[]>([]);
   const [students, setStudents] = React.useState<Student[]>([]);
   const [parents, setParents] = React.useState<ParentContact[]>([]);
-  const [courses, setCourses] = React.useState<Course[]>(backendSync ? [] : initialCourses);
+  const [courses, setCourses] = React.useState<Course[]>([]);
   const [matieres, setMatieres] = React.useState<Matiere[]>([]);
-  const [rooms, setRooms] = React.useState<Room[]>(backendSync ? [] : initialRooms);
-  const [events, setEvents] = React.useState<CalendarEvent[]>(backendSync ? [] : initialEvents);
-  const [schedule, setSchedule] =
-    React.useState<ScheduleItem[]>(backendSync ? [] : initialSchedule);
+  const [rooms, setRooms] = React.useState<Room[]>([]);
+  const [events, setEvents] = React.useState<CalendarEvent[]>([]);
+  const [schedule, setSchedule] = React.useState<ScheduleItem[]>([]);
 
   const [schoolProfile, setSchoolProfile] = React.useState<SchoolProfile | null>(() =>
     getSchoolProfile()
@@ -673,6 +645,7 @@ export const DashboardPage: React.FC = () => {
     subject: '',
     email: '',
     password: '',
+    phone: '',
   });
   const [teacherSubjectPreset, setTeacherSubjectPreset] = React.useState('');
 
@@ -681,6 +654,7 @@ export const DashboardPage: React.FC = () => {
       name: '',
       classId: '',
       email: '',
+      phone: '',
       password: '',
     });
 
@@ -731,15 +705,52 @@ export const DashboardPage: React.FC = () => {
   const [newUser, setNewUser] = React.useState<NewUserFormState>({
     name: '',
     email: '',
+    phone: '',
     role: 'teacher',
     password: '',
   });
 
-  const [parentFeesTotal] = React.useState(350000);
-  const [parentFeesPaid] = React.useState(150000);
+  const defaultAcademicYear = React.useMemo(() => {
+    const y = new Date().getFullYear();
+    return `${y}-${y + 1}`;
+  }, []);
+
+  const [feeInstallments, setFeeInstallments] = React.useState<FeeInstallment[]>([]);
+  const [newFeeInstallment, setNewFeeInstallment] = React.useState<NewFeeInstallmentFormState>({
+    category: 'Scolarité',
+    academicYear: defaultAcademicYear,
+    label: '',
+    amount: '',
+    periodStart: '',
+    periodEnd: '',
+    description: '',
+    sortOrder: '1',
+  });
+
+  const [announcements, setAnnouncements] = React.useState<Announcement[]>([]);
+  const [newAnnouncement, setNewAnnouncement] = React.useState<NewAnnouncementFormState>({
+    title: '',
+    body: '',
+    eventDate: '',
+    location: '',
+    published: true,
+  });
+
+  const [idCardOpen, setIdCardOpen] = React.useState(false);
+  const [idCardLoading, setIdCardLoading] = React.useState(false);
+  const [idCardData, setIdCardData] = React.useState<StudentIdCardData | null>(null);
 
   const [paymentReminders, setPaymentReminders] = React.useState<PaymentReminder[]>([]);
   const [paymentReceipts, setPaymentReceipts] = React.useState<PaymentReceipt[]>([]);
+
+  const parentFeesTotal = React.useMemo(
+    () => paymentReminders.reduce((sum, r) => sum + (r.amount || 0), 0),
+    [paymentReminders],
+  );
+  const parentFeesPaid = React.useMemo(
+    () => paymentReceipts.reduce((sum, r) => sum + (r.amount || 0), 0),
+    [paymentReceipts],
+  );
   const [newReminder, setNewReminder] = React.useState<NewPaymentReminderFormState>({
     parentName: '',
     studentName: '',
@@ -812,6 +823,8 @@ export const DashboardPage: React.FC = () => {
       setGrades,
       setPaymentReminders,
       setPaymentReceipts,
+      setFeeInstallments,
+      setAnnouncements,
     }).catch((err) => console.error('Failed to load dashboard from API', err));
   }, [backendSync, role]);
 
@@ -838,11 +851,11 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateParent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newParent.name.trim() || !newParent.email.trim()) return;
+    if (!newParent.name.trim() || (!newParent.email.trim() && !newParent.phone.trim())) return;
     const payload = {
       name: newParent.name.trim(),
       phone: newParent.phone.trim() || undefined,
-      email: newParent.email.trim(),
+      email: newParent.email.trim() || undefined,
       password: newParent.password.trim() || undefined,
       studentId: newParent.studentId || undefined,
     };
@@ -894,10 +907,11 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUser.name.trim() || !newUser.email.trim()) return;
+    if (!newUser.name.trim() || (!newUser.email.trim() && !newUser.phone.trim())) return;
     const payload = {
       name: newUser.name.trim(),
-      email: newUser.email.trim(),
+      email: newUser.email.trim() || undefined,
+      phone: newUser.phone.trim() || undefined,
       role: newUser.role,
       password: newUser.password?.trim() || undefined,
     };
@@ -906,10 +920,19 @@ export const DashboardPage: React.FC = () => {
         const created = await createUserOnBackend(payload);
         setUsers((prev) => [...prev, created]);
       } else {
-        setUsers((prev) => [...prev, { id: `u-${Date.now()}`, ...payload }]);
+        setUsers((prev) => [
+          ...prev,
+          {
+            id: `u-${Date.now()}`,
+            name: payload.name,
+            email: payload.email ?? '',
+            phone: payload.phone,
+            role: payload.role,
+          },
+        ]);
       }
       toast.success('Utilisateur créé');
-      setNewUser({ name: '', email: '', role: 'teacher', password: '' });
+      setNewUser({ name: '', email: '', phone: '', role: 'teacher', password: '' });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -917,7 +940,7 @@ export const DashboardPage: React.FC = () => {
 
   const handleUpdateUser = async (
     id: string,
-    data: { name: string; email: string; role: AppUserRole; password?: string }
+    data: { name: string; email?: string; phone?: string; role: AppUserRole; password?: string }
   ) => {
     try {
       if (backendSync) {
@@ -1151,6 +1174,7 @@ export const DashboardPage: React.FC = () => {
       subject: newTeacher.subject.trim() || 'Matière à définir',
       email: newTeacher.email.trim(),
       password: newTeacher.password.trim() || undefined,
+      phone: newTeacher.phone.trim() || undefined,
     };
     try {
       if (backendSync) {
@@ -1170,7 +1194,7 @@ export const DashboardPage: React.FC = () => {
         ]);
       }
       toast.success('Enseignant et compte portail créés');
-      setNewTeacher({ name: '', subject: '', email: '', password: '' });
+      setNewTeacher({ name: '', subject: '', email: '', password: '', phone: '' });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -1178,7 +1202,7 @@ export const DashboardPage: React.FC = () => {
 
   const handleUpdateTeacher = async (
     id: string,
-    data: { name: string; subject: string; email?: string; password?: string }
+    data: { name: string; subject: string; email?: string; password?: string; phone?: string }
   ) => {
     try {
       if (backendSync) {
@@ -1214,11 +1238,12 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStudent.name.trim() || !newStudent.email.trim()) return;
+    if (!newStudent.name.trim() || (!newStudent.email.trim() && !newStudent.phone.trim())) return;
     const payload = {
       name: newStudent.name.trim(),
       classId: newStudent.classId || undefined,
-      email: newStudent.email.trim(),
+      email: newStudent.email.trim() || undefined,
+      phone: newStudent.phone.trim() || undefined,
       password: newStudent.password.trim() || undefined,
     };
     try {
@@ -1230,7 +1255,7 @@ export const DashboardPage: React.FC = () => {
         setStudents((prev) => [...prev, { id: `st-${Date.now()}`, ...payload }]);
       }
       toast.success('Élève et compte portail créés');
-      setNewStudent({ name: '', classId: '', email: '', password: '' });
+      setNewStudent({ name: '', classId: '', email: '', phone: '', password: '' });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -1238,7 +1263,7 @@ export const DashboardPage: React.FC = () => {
 
   const handleUpdateStudent = async (
     id: string,
-    data: { name: string; classId?: string; email?: string; password?: string }
+    data: { name: string; classId?: string; email?: string; phone?: string; password?: string }
   ) => {
     try {
       if (backendSync) {
@@ -1265,6 +1290,157 @@ export const DashboardPage: React.FC = () => {
         prev.map((p) => (p.studentId === id ? { ...p, studentId: undefined } : p))
       );
       toast.success('Élève supprimé');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
+  };
+
+  const handlePrintStudentIdCard = async (studentId: string) => {
+    setIdCardOpen(true);
+    setIdCardLoading(true);
+    setIdCardData(null);
+    try {
+      if (backendSync) {
+        const card = await fetchStudentIdCardOnBackend(studentId);
+        setIdCardData(card);
+        setStudents((prev) =>
+          prev.map((s) => (s.id === studentId ? { ...s, matricule: card.matricule } : s))
+        );
+      } else {
+        const student = students.find((s) => s.id === studentId);
+        setIdCardData({
+          studentId,
+          matricule: student?.matricule ?? `DEMO-${studentId.slice(-4)}`,
+          studentName: student?.name ?? 'Élève',
+          className: student?.classId ? getClassName(student.classId) : '',
+          schoolName: schoolProfile?.name ?? 'Établissement',
+          qrPayload: JSON.stringify({ studentId, name: student?.name }),
+        });
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur carte scolaire');
+      setIdCardOpen(false);
+    } finally {
+      setIdCardLoading(false);
+    }
+  };
+
+  const handleCreateFeeInstallment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFeeInstallment.label.trim() || !newFeeInstallment.amount.trim()) return;
+    const payload = {
+      category: newFeeInstallment.category,
+      academicYear: newFeeInstallment.academicYear.trim() || defaultAcademicYear,
+      label: newFeeInstallment.label.trim(),
+      amount: Number(newFeeInstallment.amount),
+      periodStart: newFeeInstallment.periodStart,
+      periodEnd: newFeeInstallment.periodEnd,
+      description: newFeeInstallment.description.trim() || undefined,
+      sortOrder: Number(newFeeInstallment.sortOrder || 1),
+    };
+    try {
+      if (backendSync) {
+        const created = await createFeeInstallmentOnBackend(payload);
+        setFeeInstallments((prev) => [...prev, created]);
+      } else {
+        setFeeInstallments((prev) => [...prev, { id: `fee-${Date.now()}`, ...payload }]);
+      }
+      toast.success('Tranche ajoutée');
+      setNewFeeInstallment((f) => ({
+        ...f,
+        label: '',
+        amount: '',
+        periodStart: '',
+        periodEnd: '',
+        description: '',
+      }));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
+  };
+
+  const handleUpdateFeeInstallment = async (
+    id: string,
+    data: Omit<FeeInstallment, 'id'>
+  ) => {
+    try {
+      if (backendSync) {
+        const updated = await updateFeeInstallmentOnBackend(id, data);
+        setFeeInstallments((prev) => prev.map((f) => (f.id === id ? updated : f)));
+      } else {
+        setFeeInstallments((prev) => prev.map((f) => (f.id === id ? { ...f, ...data } : f)));
+      }
+      toast.success('Tranche mise à jour');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
+  };
+
+  const handleDeleteFeeInstallment = async (id: string) => {
+    try {
+      if (backendSync) await deleteFeeInstallmentOnBackend(id);
+      setFeeInstallments((prev) => prev.filter((f) => f.id !== id));
+      toast.success('Tranche supprimée');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
+  };
+
+  const handleCreateAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAnnouncement.title.trim() || !newAnnouncement.body.trim()) return;
+    const payload = {
+      title: newAnnouncement.title.trim(),
+      body: newAnnouncement.body.trim(),
+      eventDate: newAnnouncement.eventDate.trim() || undefined,
+      location: newAnnouncement.location.trim() || undefined,
+      published: newAnnouncement.published,
+    };
+    try {
+      if (backendSync) {
+        const created = await createAnnouncementOnBackend(payload);
+        setAnnouncements((prev) => [...prev, created]);
+      } else {
+        setAnnouncements((prev) => [
+          ...prev,
+          {
+            id: `ann-${Date.now()}`,
+            ...payload,
+            publishedAt: new Date().toISOString(),
+          },
+        ]);
+      }
+      toast.success('Annonce publiée');
+      setNewAnnouncement({ title: '', body: '', eventDate: '', location: '', published: true });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
+  };
+
+  const handleUpdateAnnouncement = async (
+    id: string,
+    data: Omit<Announcement, 'id' | 'publishedAt'>
+  ) => {
+    try {
+      if (backendSync) {
+        const updated = await updateAnnouncementOnBackend(id, data);
+        setAnnouncements((prev) => prev.map((a) => (a.id === id ? updated : a)));
+      } else {
+        setAnnouncements((prev) =>
+          prev.map((a) => (a.id === id ? { ...a, ...data } : a))
+        );
+      }
+      toast.success('Annonce mise à jour');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
+  };
+
+  const handleDeleteAnnouncement = async (id: string) => {
+    try {
+      if (backendSync) await deleteAnnouncementOnBackend(id);
+      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+      toast.success('Annonce supprimée');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -1504,8 +1680,8 @@ export const DashboardPage: React.FC = () => {
       .catch((err) => console.error(err));
   };
 
-  const handleChangeRole = () => {
-    clearStoredRole();
+  const handleLogout = () => {
+    clearAuthSession();
     navigate('/login');
   };
 
@@ -1760,6 +1936,26 @@ export const DashboardPage: React.FC = () => {
                       >
                         <Wallet className='mr-1.5' />
                         <span>Finances</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        tooltip='Échéanciers'
+                        isActive={activeSection === 'fee_schedules'}
+                        onClick={() => setActiveSection('fee_schedules')}
+                      >
+                        <Receipt className='mr-1.5' />
+                        <span>Échéanciers</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        tooltip='Annonces'
+                        isActive={activeSection === 'announcements'}
+                        onClick={() => setActiveSection('announcements')}
+                      >
+                        <BookMarked className='mr-1.5' />
+                        <span>Annonces</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   </SidebarMenu>
@@ -2127,16 +2323,16 @@ export const DashboardPage: React.FC = () => {
               </Avatar>
               <div className='min-w-0'>
                 <p className='truncate text-sm font-medium leading-tight'>
-                  {role === 'admin' ? 'Admin établissement' : role === 'teacher' ? 'Enseignant' : role === 'parent' ? 'Parent' : 'Élève'}
+                  {sessionUser?.name ?? (role === 'admin' ? 'Admin établissement' : role === 'teacher' ? 'Enseignant' : role === 'parent' ? 'Parent' : 'Élève')}
                 </p>
                 <p className='truncate text-xs text-muted-foreground'>
-                  Mode test
+                  {sessionUser?.email ?? roleTitles[role]}
                 </p>
               </div>
             </div>
             <UserPortalSidebarLink />
-            <Button variant='ghost' size='sm' className='w-full justify-start text-xs' onClick={handleChangeRole}>
-              Changer de rôle
+            <Button variant='ghost' size='sm' className='w-full justify-start text-xs' onClick={handleLogout}>
+              Se déconnecter
             </Button>
           </div>
         </SidebarFooter>
@@ -2172,9 +2368,6 @@ export const DashboardPage: React.FC = () => {
                   </Badge>
                 </>
               ) : null}
-              <Badge variant='outline' className='dashboard-header__year text-xs px-3 py-1'>
-                Année scolaire 2024–2025
-              </Badge>
               {current.cta ? <Button size='sm'>{current.cta}</Button> : null}
             </div>
           </div>
@@ -2264,6 +2457,7 @@ export const DashboardPage: React.FC = () => {
               onCreateStudent={handleCreateStudent}
               onUpdateStudent={handleUpdateStudent}
               onDeleteStudent={handleDeleteStudent}
+              onPrintIdCard={role === 'admin' ? handlePrintStudentIdCard : undefined}
               getClassName={getClassName}
               readOnly={role === 'parent' || role === 'student'}
             />
@@ -2337,6 +2531,28 @@ export const DashboardPage: React.FC = () => {
               onCreateUser={handleCreateUser}
               onUpdateUser={handleUpdateUser}
               onDeleteUser={handleDeleteUser}
+            />
+          )}
+
+          {activeSection === 'fee_schedules' && (
+            <FeeSchedulesSection
+              installments={feeInstallments}
+              newInstallment={newFeeInstallment}
+              setNewInstallment={setNewFeeInstallment}
+              onCreate={handleCreateFeeInstallment}
+              onUpdate={handleUpdateFeeInstallment}
+              onDelete={handleDeleteFeeInstallment}
+            />
+          )}
+
+          {activeSection === 'announcements' && (
+            <AnnouncementsSection
+              announcements={announcements}
+              newAnnouncement={newAnnouncement}
+              setNewAnnouncement={setNewAnnouncement}
+              onCreate={handleCreateAnnouncement}
+              onUpdate={handleUpdateAnnouncement}
+              onDelete={handleDeleteAnnouncement}
             />
           )}
 
@@ -2447,7 +2663,7 @@ export const DashboardPage: React.FC = () => {
           {activeSection === 'curriculum' && (
             <div className='space-y-4 max-w-2xl'>
               <p className='text-sm text-muted-foreground'>
-                Reliez vos référentiels pédagogiques aux matières et cours de l’établissement. En mode démo, utilisez les
+                Reliez vos référentiels pédagogiques aux matières et cours de l’établissement. Utilisez les
                 modules Matières et Cours pour structurer votre offre.
               </p>
               <div className='flex flex-wrap gap-2'>
@@ -2508,6 +2724,13 @@ export const DashboardPage: React.FC = () => {
           )}
         </main>
       </SidebarInset>
+
+      <StudentIdCardModal
+        open={idCardOpen}
+        onClose={() => setIdCardOpen(false)}
+        card={idCardData}
+        loading={idCardLoading}
+      />
     </SidebarProvider>
   );
 };

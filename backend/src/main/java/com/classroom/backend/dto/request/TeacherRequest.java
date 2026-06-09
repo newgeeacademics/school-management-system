@@ -18,4 +18,6 @@ public class TeacherRequest {
 
     /** Portal password; defaults to changeme when email is set. */
     private String password;
+
+    private String phone;
 }

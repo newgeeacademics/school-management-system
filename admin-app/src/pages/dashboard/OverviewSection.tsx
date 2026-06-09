@@ -39,8 +39,14 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
   receipts,
   transportRoutes,
 }) => {
+  const hasPaymentData =
+    (typeof remindersCount === 'number' && remindersCount > 0) ||
+    (receipts != null && receipts.length > 0);
+
   const remaining =
-    typeof totalDue === 'number' && typeof amountPaid === 'number'
+    hasPaymentData &&
+    typeof totalDue === 'number' &&
+    typeof amountPaid === 'number'
       ? Math.max(0, totalDue - amountPaid)
       : undefined;
 
@@ -104,7 +110,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
           <Card>
             <CardHeader className='flex flex-row items-center justify-between pb-2'>
               <CardTitle className='text-xs font-medium text-muted-foreground'>
-                Paiements (démo)
+                Paiements
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -140,7 +146,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
                 {transportRoutes.length.toString().padStart(2, '0')}
               </p>
               <p className='mt-1 text-xs text-muted-foreground'>
-                Lignes de ramassage configurées (mode démo).
+                Lignes de ramassage configurées.
               </p>
             </CardContent>
           </Card>
@@ -151,10 +157,13 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
         <Card>
           <CardHeader>
             <CardTitle className='text-sm font-medium'>
-              Prochaines échéances (exemple)
+              Prochaines échéances
             </CardTitle>
           </CardHeader>
           <CardContent className='space-y-3 text-sm'>
+            {events.length === 0 ? (
+              <p className='text-xs text-muted-foreground'>Aucun événement à venir.</p>
+            ) : null}
             {events.slice(0, 3).map((event) => (
               <div
                 key={event.id}

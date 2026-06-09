@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   Bus,
   CalendarDays,
@@ -5,9 +6,16 @@ import {
   School,
   Utensils,
 } from 'lucide-react';
+import { fetchPortalNotifications } from '@/lib/portal-notifications';
+import { PortalAttendanceView } from '@/pages/PortalAttendanceView';
 import { PortalGradesView } from '@/pages/PortalGradesView';
+import { PortalNotificationsView } from '@/pages/PortalNotificationsView';
+import { PortalAnnouncementsView } from '@/pages/PortalAnnouncementsView';
+import { PortalDirectoryView } from '@/pages/PortalDirectoryView';
+import { PortalFeesView } from '@/pages/PortalFeesView';
 import { useTranslation } from '@/i18n';
 import { usePortalFeedContext } from '@/context/PortalFeedContext';
+import { getPortalSession } from '@/lib/auth';
 import type { PortalSectionId } from '@/lib/portal-sections';
 
 function FeedSection({
@@ -31,21 +39,59 @@ function FeedSection({
 export function PortalOverviewView() {
   const { t } = useTranslation();
   const { feed, usesBackend } = usePortalFeedContext();
+  const session = getPortalSession();
+  const isParent = session?.role === 'parent';
+  const [notificationsCount, setNotificationsCount] = useState(0);
+
+  useEffect(() => {
+    if (!isParent || !usesBackend) {
+      setNotificationsCount(0);
+      return;
+    }
+    let cancelled = false;
+    void fetchPortalNotifications()
+      .then((data) => {
+        if (!cancelled) setNotificationsCount(data.notifications.length);
+      })
+      .catch(() => {
+        if (!cancelled) setNotificationsCount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isParent, usesBackend]);
+
+  const introKey = isParent
+    ? usesBackend
+      ? 'portalHome.introParentLive'
+      : 'portalHome.introParent'
+    : usesBackend
+      ? 'portalHome.introLive'
+      : 'portalHome.intro';
+
+  const summaryCards = isParent
+    ? [
+        { label: t('portalHome.navMyChild'), count: feed.students.length },
+        { label: t('portalHome.cardSchedule'), count: feed.schedule.length },
+        { label: t('portalHome.cardGrades'), count: feed.grades.length },
+        { label: t('portalHome.navNotifications'), count: notificationsCount },
+        { label: t('portalHome.cardCanteen'), count: feed.canteen.length },
+        { label: t('portalHome.cardTransport'), count: feed.transport.length },
+      ]
+    : [
+        { label: t('portalHome.cardClasses'), count: feed.classes.length },
+        { label: t('portalHome.cardStudents'), count: feed.students.length },
+        { label: t('portalHome.cardSchedule'), count: feed.schedule.length },
+        { label: t('portalHome.cardGrades'), count: feed.grades.length },
+        { label: t('portalHome.cardCanteen'), count: feed.canteen.length },
+        { label: t('portalHome.cardTransport'), count: feed.transport.length },
+      ];
 
   return (
     <div className='space-y-4'>
-      <p className='text-base leading-relaxed text-muted-foreground'>
-        {usesBackend ? t('portalHome.introLive') : t('portalHome.intro')}
-      </p>
+      <p className='text-base leading-relaxed text-muted-foreground'>{t(introKey)}</p>
       <div className='grid gap-3 sm:grid-cols-2'>
-        {[
-          { label: t('portalHome.cardClasses'), count: feed.classes.length },
-          { label: t('portalHome.cardStudents'), count: feed.students.length },
-          { label: t('portalHome.cardSchedule'), count: feed.schedule.length },
-          { label: t('portalHome.cardGrades'), count: feed.grades.length },
-          { label: t('portalHome.cardCanteen'), count: feed.canteen.length },
-          { label: t('portalHome.cardTransport'), count: feed.transport.length },
-        ].map((item) => (
+        {summaryCards.map((item) => (
           <div key={item.label} className='rounded-xl border border-border bg-muted/30 px-4 py-3'>
             <p className='text-xs text-muted-foreground'>{item.label}</p>
             <p className='text-2xl font-semibold text-foreground'>{item.count}</p>
@@ -59,9 +105,35 @@ export function PortalOverviewView() {
 export function PortalSectionView({ section }: { section: PortalSectionId }) {
   const { t } = useTranslation();
   const { feed } = usePortalFeedContext();
+  const session = getPortalSession();
+  const isParent = session?.role === 'parent';
 
   if (section === 'overview') {
     return <PortalOverviewView />;
+  }
+
+  if (section === 'presence') {
+    return <PortalAttendanceView variant='presence' />;
+  }
+
+  if (section === 'absences') {
+    return <PortalAttendanceView variant='absences' />;
+  }
+
+  if (section === 'notifications') {
+    return <PortalNotificationsView />;
+  }
+
+  if (section === 'directory') {
+    return <PortalDirectoryView />;
+  }
+
+  if (section === 'announcements') {
+    return <PortalAnnouncementsView />;
+  }
+
+  if (section === 'fees') {
+    return <PortalFeesView />;
   }
 
   if (section === 'classes') {
@@ -82,13 +154,19 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
 
   if (section === 'students') {
     return (
-      <FeedSection empty={t('portalHome.emptyStudents')} count={feed.students.length}>
+      <FeedSection
+        empty={isParent ? t('portalHome.emptyMyChild') : t('portalHome.emptyStudents')}
+        count={feed.students.length}
+      >
         {feed.students.map((student) => (
-          <div key={student.id} className='rounded-lg bg-muted/40 px-3 py-2'>
+          <div key={student.id} className='rounded-xl border border-border bg-muted/30 px-4 py-3'>
             <p className='font-medium text-foreground'>{student.name}</p>
             <p className='text-xs text-muted-foreground'>
               {student.className ? `${t('portalHome.classLabel')}: ${student.className}` : t('portalHome.noClass')}
             </p>
+            {isParent ? (
+              <p className='mt-2 text-[11px] text-primary'>{t('portalHome.childHint')}</p>
+            ) : null}
           </div>
         ))}
       </FeedSection>

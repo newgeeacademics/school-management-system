@@ -50,6 +50,72 @@ export type CountryPhoneMeta = {
   dialCode: string;
 };
 
+export type LocalPhoneRules = {
+  localDigits: number;
+  placeholder: string;
+  /** Local number must match (digits only, before country code). */
+  pattern?: RegExp;
+};
+
+/** National number length / format by ISO country code. */
+const LOCAL_PHONE_RULES: Record<string, LocalPhoneRules> = {
+  CI: {
+    localDigits: 10,
+    placeholder: '07 00 00 00 00',
+    pattern: /^0\d{9}$/,
+  },
+};
+
+export function getLocalPhoneRules(countryName: string): LocalPhoneRules | null {
+  const code = getCountryCodeByName(countryName);
+  if (!code) return null;
+  return LOCAL_PHONE_RULES[code] ?? null;
+}
+
+export function getPhonePlaceholder(countryName: string, fallback: string): string {
+  return getLocalPhoneRules(countryName)?.placeholder ?? fallback;
+}
+
+function formatGroupedPairs(digits: string): string {
+  const parts: string[] = [];
+  for (let i = 0; i < digits.length; i += 2) {
+    parts.push(digits.slice(i, i + 2));
+  }
+  return parts.join(' ').trim();
+}
+
+/** Strip, cap length, and apply national formatting (e.g. CI → pairs). */
+export function normalizeLocalPhoneInput(countryName: string, raw: string): string {
+  const digits = raw.replace(/\D/g, '');
+  const rules = getLocalPhoneRules(countryName);
+  const max = rules?.localDigits ?? 15;
+  const trimmed = digits.slice(0, max);
+  if (rules?.localDigits === 10) {
+    return formatGroupedPairs(trimmed);
+  }
+  return trimmed;
+}
+
+export function localPhoneDigitCount(value: string): number {
+  return value.replace(/\D/g, '').length;
+}
+
+export function isValidLocalPhone(countryName: string, localNumber: string): boolean {
+  const digits = localNumber.replace(/\D/g, '');
+  if (!digits) return false;
+  const rules = getLocalPhoneRules(countryName);
+  if (!rules) return digits.length >= 6;
+  if (digits.length !== rules.localDigits) return false;
+  if (rules.pattern && !rules.pattern.test(digits)) return false;
+  return true;
+}
+
+/** Optional field: empty is valid; if filled, must pass national rules. */
+export function isValidOptionalLocalPhone(countryName: string, localNumber: string): boolean {
+  if (!localNumber.trim()) return true;
+  return isValidLocalPhone(countryName, localNumber);
+}
+
 export function getCountryPhoneMeta(countryName: string): CountryPhoneMeta | null {
   const code = getCountryCodeByName(countryName);
   if (!code) return null;
@@ -65,9 +131,14 @@ export function getCountryPhoneMeta(countryName: string): CountryPhoneMeta | nul
 
 export function formatPhoneWithCountry(countryName: string, localNumber: string): string {
   const meta = getCountryPhoneMeta(countryName);
-  const digits = localNumber.replace(/\D/g, '');
+  let digits = localNumber.replace(/\D/g, '');
   if (!digits) return '';
   if (!meta) return localNumber.trim();
+
+  const rules = getLocalPhoneRules(countryName);
+  if (rules && digits.length > rules.localDigits) {
+    digits = digits.slice(0, rules.localDigits);
+  }
 
   let local = digits;
   if (local.startsWith(meta.phonecode)) {

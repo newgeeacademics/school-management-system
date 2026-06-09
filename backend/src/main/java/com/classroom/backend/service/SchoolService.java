@@ -43,6 +43,8 @@ public class SchoolService {
                 .studentCount(request.getStudentCount())
                 .teacherCount(request.getTeacherCount())
                 .series(request.getSeries())
+                .registrationNumber(request.getRegistrationNumber())
+                .languagesOffered(request.getLanguagesOffered())
                 .logoFileName(request.getLogoFileName())
                 .build();
         return schoolRepository.save(school);
@@ -67,6 +69,8 @@ public class SchoolService {
         school.setStudentCount(request.getStudentCount());
         school.setTeacherCount(request.getTeacherCount());
         school.setSeries(request.getSeries());
+        school.setRegistrationNumber(request.getRegistrationNumber());
+        school.setLanguagesOffered(request.getLanguagesOffered());
         school.setLogoFileName(request.getLogoFileName());
         return schoolRepository.save(school);
     }

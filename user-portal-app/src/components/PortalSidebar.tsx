@@ -1,21 +1,29 @@
 import {
+  Bell,
   Bus,
   CalendarDays,
+  Megaphone,
+  Wallet,
+  CheckCircle2,
   GraduationCap,
   LayoutGrid,
   Layers,
   LogOut,
   MessageCircle,
+  Phone,
   School,
-  Users,
+  UserCircle2,
   Utensils,
   X,
+  XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
+import type { PortalRole } from '@/lib/auth';
 import {
-  PORTAL_NAV_GROUPS,
+  navGroupsForRole,
   PORTAL_SECTIONS,
+  sectionLabelKey,
   type PortalSectionId,
 } from '@/lib/portal-sections';
 import { cn } from '@/lib/utils';
@@ -23,18 +31,25 @@ import { cn } from '@/lib/utils';
 const SECTION_ICONS: Record<PortalSectionId, React.ComponentType<{ className?: string }>> = {
   overview: LayoutGrid,
   classes: Layers,
-  students: Users,
+  students: UserCircle2,
   schools: School,
   schedule: CalendarDays,
   grades: GraduationCap,
+  presence: CheckCircle2,
+  absences: XCircle,
+  notifications: Bell,
   canteen: Utensils,
   transport: Bus,
   messages: MessageCircle,
+  directory: Phone,
+  announcements: Megaphone,
+  fees: Wallet,
 };
 
 type PortalSidebarProps = {
   activeSection: PortalSectionId;
   visibleSections: PortalSectionId[];
+  role: PortalRole;
   productName: string;
   roleLabel: string;
   userName?: string;
@@ -47,6 +62,7 @@ type PortalSidebarProps = {
 export function PortalSidebar({
   activeSection,
   visibleSections,
+  role,
   productName,
   roleLabel,
   userName,
@@ -56,6 +72,7 @@ export function PortalSidebar({
   onCloseMobile,
 }: PortalSidebarProps) {
   const { t } = useTranslation();
+  const navGroups = navGroupsForRole(role);
 
   const handleNav = (id: PortalSectionId) => {
     onNavigate(id);
@@ -89,7 +106,7 @@ export function PortalSidebar({
       </div>
 
       <nav className='flex-1 overflow-y-auto px-2 py-3'>
-        {PORTAL_NAV_GROUPS.map((group) => {
+        {navGroups.map((group) => {
           const items = PORTAL_SECTIONS.filter(
             (s) => group.sectionIds.includes(s.id) && visibleSections.includes(s.id)
           );
@@ -100,7 +117,7 @@ export function PortalSidebar({
                 {t(group.labelKey)}
               </p>
               <ul className='space-y-0.5'>
-                {items.map(({ id, labelKey }) => {
+                {items.map(({ id }) => {
                   const Icon = SECTION_ICONS[id];
                   const active = activeSection === id;
                   return (
@@ -116,7 +133,7 @@ export function PortalSidebar({
                         )}
                       >
                         <Icon className='size-4 shrink-0 opacity-80' aria-hidden />
-                        <span className='truncate'>{t(labelKey)}</span>
+                        <span className='truncate'>{t(sectionLabelKey(id, role))}</span>
                       </button>
                     </li>
                   );
