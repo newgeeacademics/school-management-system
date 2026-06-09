@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
-import { ChevronLeft, GraduationCap, Users, BookOpen } from 'lucide-react';
+import { BookOpen, GraduationCap, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getSchoolAppOrigin } from '@/lib/school-app-url';
 import { setPortalSession } from '@/lib/auth';
@@ -21,13 +20,14 @@ function parseRoleParam(value: string | null): PortalRoleState | null {
   return null;
 }
 
-export function UserPortalSignInForm() {
+export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 'embedded' }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t } = useTranslation();
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPending, setIsPending] = useState(false);
+  const isEmbedded = variant === 'embedded';
 
   const schoolOrigin = getSchoolAppOrigin();
 
@@ -110,95 +110,82 @@ export function UserPortalSignInForm() {
   };
 
   return (
-    <div className='relative w-full min-h-0 p-0'>
-      <div className='mb-4'>
-        <Button asChild variant='ghost' size='sm' className='-ml-2 gap-2 text-muted-foreground hover:text-foreground'>
-          <a href={`${schoolOrigin}/`}>
-            <ChevronLeft className='h-4 w-4' />
-            {t('common.goBack')}
-          </a>
-        </Button>
-      </div>
-
-      <div className='portal-login-form w-full max-w-none p-0'>
-        <div className='portal-field portal-field-1'>
-          <h1 className='text-3xl font-bold tracking-tight text-foreground sm:text-4xl'>{t('userPortal.welcomeTitle')}</h1>
-          <p className='mt-2 text-base font-medium text-muted-foreground'>{t('userPortal.loginSubtitle')}</p>
+    <div className={cn('relative w-full', isEmbedded ? 'min-h-0' : 'min-h-svh p-4 md:p-8')}>
+      <div className={cn(isEmbedded ? '' : 'mx-auto max-w-md rounded-2xl border border-border bg-card p-6 shadow-sm')}>
+        <div className={cn(isEmbedded ? '' : 'mb-6')}>
+          <h1 className={cn('font-bold tracking-tight text-slate-900', isEmbedded ? 'auth-page__title' : 'text-3xl')}>
+            {t('userPortal.welcomeTitle')}
+          </h1>
+          <p className={cn('font-medium text-slate-600', isEmbedded ? 'auth-page__subtitle' : 'mt-2 text-base')}>
+            {t('userPortal.loginSubtitle')}
+          </p>
         </div>
 
-        <div className='mt-6'>
-          <p className='mb-2 text-sm font-medium text-foreground'>{t('userPortal.chooseProfile')}</p>
-          <div className='mb-6 grid grid-cols-3 gap-2 sm:gap-3'>
-            {roleMeta.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type='button'
-                onClick={() => setRole(id)}
-                className={cn(
-                  'flex flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-3 text-center transition-all',
-                  'hover:border-primary/50 hover:bg-primary/5',
-                  role === id
-                    ? 'border-primary bg-primary/10 ring-2 ring-primary/25 shadow-sm'
-                    : 'border-border bg-card'
-                )}
-              >
-                <Icon
-                  className={cn('h-5 w-5 shrink-0', role === id ? 'text-primary' : 'text-muted-foreground')}
-                  aria-hidden
-                />
-                <span
+        <div className={isEmbedded ? 'auth-page__form' : 'mt-6 space-y-5'}>
+          <div className={isEmbedded ? 'auth-page__field' : 'space-y-2'}>
+            <p className='auth-page__role-label'>{t('userPortal.chooseProfile')}</p>
+            <div className='auth-page__role-grid'>
+              {roleMeta.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type='button'
+                  onClick={() => setRole(id)}
                   className={cn(
-                    'text-xs font-semibold leading-tight sm:text-sm',
-                    role === id ? 'text-foreground' : 'text-muted-foreground'
+                    'auth-page__role-btn',
+                    role === id && 'auth-page__role-btn--active'
                   )}
                 >
-                  {label}
-                </span>
-              </button>
-            ))}
+                  <Icon className='h-5 w-5 shrink-0' aria-hidden />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          <form onSubmit={onSubmit} className='space-y-5'>
-            <div className='portal-field portal-field-2 space-y-2'>
-              <Label className='text-sm font-medium'>
-                {t('auth.username')} / {t('auth.email')}
+          <form onSubmit={onSubmit} className={isEmbedded ? 'contents' : 'space-y-5'}>
+            <div className={isEmbedded ? 'auth-page__field' : 'space-y-2'}>
+              <Label htmlFor='portal-login-email' className='text-sm font-semibold text-slate-700'>
+                {t('userPortal.loginIdentifier')}
               </Label>
               <Input
+                id='portal-login-email'
                 type='text'
-                placeholder={t('auth.enterUsername')}
+                placeholder={t('userPortal.loginIdentifierPlaceholder')}
                 value={usernameOrEmail}
                 onChange={(e) => setUsernameOrEmail(e.target.value)}
-                className='h-11 rounded-xl border-border bg-background'
+                autoComplete='username'
+                className='h-11 rounded-xl border-slate-200 focus-visible:ring-teal-600'
               />
             </div>
-            <div className='portal-field portal-field-3 space-y-2'>
-              <Label className='text-sm font-medium'>{t('auth.password')}</Label>
+
+            <div className={isEmbedded ? 'auth-page__field' : 'space-y-2'}>
+              <Label htmlFor='portal-login-password' className='text-sm font-semibold text-slate-700'>
+                {t('auth.password')}
+              </Label>
               <InputPassword
+                id='portal-login-password'
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t('auth.enterPassword')}
-                className='h-11 rounded-xl border-border bg-background pr-10'
+                autoComplete='current-password'
+                className='h-11 rounded-xl border-slate-200 focus-visible:ring-teal-600'
               />
             </div>
 
-            <Button
-              type='submit'
-              size='lg'
-              className='portal-field portal-field-4 mt-2 h-12 w-full rounded-full text-base font-semibold shadow-md shadow-primary/20'
-              disabled={isPending}
-            >
-              {isPending ? t('auth.signingIn') : t('auth.signIn')}
-            </Button>
+            {isEmbedded ? (
+              <button type='submit' className='auth-page__submit' disabled={isPending}>
+                {isPending ? t('auth.signingIn') : t('auth.signIn')}
+              </button>
+            ) : (
+              <button type='submit' className='auth-page__submit w-full' disabled={isPending}>
+                {isPending ? t('auth.signingIn') : t('auth.signIn')}
+              </button>
+            )}
           </form>
 
-          <p className='mt-8 border-t border-border pt-6 text-center text-xs text-muted-foreground'>
+          <p className='auth-page__footer'>
             {t('userPortal.staffHint')}{' '}
-            <a
-              href={`${schoolOrigin}/login`}
-              className='font-medium text-primary underline-offset-4 hover:underline'
-            >
-              {t('userPortal.linkAdminLogin')}
-            </a>
+            <a href={`${schoolOrigin}/login`}>{t('userPortal.linkAdminLogin')}</a>
           </p>
         </div>
       </div>

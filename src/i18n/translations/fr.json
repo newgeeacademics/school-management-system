@@ -1,7 +1,8 @@
 {
   "common": {
     "goBack": "Retour au site",
-    "loading": "Chargement…"
+    "loading": "Chargement…",
+    "language": "Changer de langue"
   },
   "landing": {
     "brandName": "NewGee"
@@ -26,7 +27,9 @@
     "illustrationCaption": "Un portail pensé pour vous : moins technique, plus humain. Ce n’est pas le même écran que celui du personnel administratif.",
     "linkAdminLogin": "Connexion administration",
     "staffHint": "Vous êtes personnel de direction ou secrétariat ?",
-    "welcomeToast": "Bienvenue !"
+    "welcomeToast": "Bienvenue !",
+    "loginIdentifier": "Email ou numéro de téléphone",
+    "loginIdentifierPlaceholder": "email@exemple.com ou +225…"
   },
   "portalHome": {
     "productName": "NewGee Familles",
@@ -81,7 +84,101 @@
     "cardMessagesHint": "Échanges avec l’école",
     "comingSoon": "Les contenus seront reliés à votre établissement dès la mise en service.",
     "footerDistinct": "Ce portail est réservé aux familles et au personnel pédagogique. Il est distinct de l’espace de gestion de l’école.",
-    "schoolWebsiteLink": "Voir le site public de l’établissement"
+    "schoolWebsiteLink": "Voir le site public de l’établissement",
+    "navGroupChild": "Mon enfant",
+    "navGroupAttendance": "Assiduité",
+    "navMyChild": "Mon enfant",
+    "navPresence": "Présences",
+    "navAbsences": "Absences",
+    "navNotifications": "Notifications",
+    "descPresence": "Jours de présence et taux d’assiduité.",
+    "descAbsences": "Absences et retards signalés.",
+    "descNotifications": "Alertes, notes, événements et rappels.",
+    "introParent": "Suivez la scolarité de votre enfant : présences, notes, emploi du temps et actualités.",
+    "introParentLive": "Données en direct pour votre enfant — assiduité, notes, emploi du temps et notifications.",
+    "emptyMyChild": "Aucun enfant lié à ce compte. Contactez l’établissement.",
+    "childHint": "Consultez les présences, absences et notes depuis le menu.",
+    "navDirectory": "Annuaire enseignants",
+    "descDirectory": "Coordonnées du professeur principal de la classe.",
+    "descClasses": "Vue globale des classes et gestion pédagogique.",
+    "navAnnouncements": "Annonces",
+    "navFees": "Échéancier",
+    "descAnnouncements": "Annonces officielles de l’établissement.",
+    "descFees": "Tarifs et dates d’échéance (scolarité, cantine, transport)."
+  },
+  "portalAnnouncements": {
+    "loading": "Chargement des annonces…",
+    "empty": "Aucune annonce publiée pour le moment."
+  },
+  "portalFees": {
+    "loading": "Chargement de l’échéancier…",
+    "empty": "Aucun tarif configuré pour le moment.",
+    "totalLabel": "Total annuel indicatif",
+    "period": "Période"
+  },
+  "portalClassHub": {
+    "listIntro": "Sélectionnez une classe pour faire l’appel, saisir les notes ou publier des devoirs.",
+    "emptyClasses": "Aucune classe assignée. L’administrateur doit vous désigner comme professeur principal.",
+    "students": "élèves",
+    "openClass": "Gérer cette classe →",
+    "backToList": "Toutes les classes",
+    "unknownClass": "Classe",
+    "tabAttendance": "Appel",
+    "tabGrades": "Notes",
+    "tabHomework": "Devoirs",
+    "dateLabel": "Date",
+    "loading": "Chargement…",
+    "saving": "Enregistrement…",
+    "saveError": "Impossible d’enregistrer.",
+    "saveAttendance": "Enregistrer l’appel",
+    "attendanceLoadError": "Impossible de charger l’appel.",
+    "addHomework": "Nouveau devoir",
+    "homeworkTitle": "Intitulé",
+    "homeworkDesc": "Consignes (optionnel)",
+    "homeworkDue": "Date de remise",
+    "addHomeworkBtn": "Publier le devoir",
+    "emptyHomework": "Aucun devoir publié pour cette classe.",
+    "homeworkLoadError": "Impossible de charger les devoirs.",
+    "dueOn": "À rendre le {{date}}",
+    "deleteHomework": "Supprimer"
+  },
+  "portalDirectory": {
+    "loadError": "Impossible de charger l’annuaire.",
+    "loading": "Chargement…",
+    "empty": "Aucun enseignant référencé pour la classe de votre enfant.",
+    "intro": "Contactez le professeur principal en cas de besoin.",
+    "subjectUnknown": "Matière non renseignée",
+    "forChild": "Pour {{name}}",
+    "noPhone": "Numéro non renseigné par l’établissement"
+  },
+  "portalAttendance": {
+    "loadError": "Impossible de charger l’assiduité.",
+    "statPresent": "Présences",
+    "statAbsent": "Absences",
+    "statLate": "Retards",
+    "statRate": "Taux d’assiduité",
+    "presenceListTitle": "Historique des présences",
+    "absenceListTitle": "Absences et retards",
+    "emptyPresence": "Aucune présence enregistrée.",
+    "emptyAbsences": "Aucune absence ni retard signalé.",
+    "trackingChild": "Suivi pour {{name}}",
+    "status": {
+      "PRESENT": "Présent",
+      "ABSENT": "Absent",
+      "RETARD": "En retard"
+    }
+  },
+  "portalNotifications": {
+    "loadError": "Impossible de charger les notifications.",
+    "intro": "Alertes concernant votre enfant : absences, notes, événements et paiements.",
+    "empty": "Aucune notification pour le moment.",
+    "type": {
+      "ABSENCE": "Absence",
+      "LATE": "Retard",
+      "GRADE": "Note",
+      "EVENT": "Événement",
+      "PAYMENT": "Paiement"
+    }
   },
   "portalGrades": {
     "loadError": "Impossible de charger les notes.",

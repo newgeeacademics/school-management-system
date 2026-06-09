@@ -1,7 +1,8 @@
 {
   "common": {
     "goBack": "Back to website",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "language": "Change language"
   },
   "landing": {
     "brandName": "NewGee"
@@ -26,7 +27,9 @@
     "illustrationCaption": "A portal designed for you: less technical, more human. It’s not the same screen school administrators use.",
     "linkAdminLogin": "Admin sign-in",
     "staffHint": "Are you school management or office staff?",
-    "welcomeToast": "Welcome!"
+    "welcomeToast": "Welcome!",
+    "loginIdentifier": "Email or phone number",
+    "loginIdentifierPlaceholder": "email@example.com or +225…"
   },
   "portalHome": {
     "productName": "NewGee Families",
@@ -81,7 +84,101 @@
     "cardMessagesHint": "Communication with school",
     "comingSoon": "Content will connect to your school once the service goes live.",
     "footerDistinct": "This portal is for families and teaching staff. It is separate from the school management console.",
-    "schoolWebsiteLink": "Visit the school’s public website"
+    "schoolWebsiteLink": "Visit the school’s public website",
+    "navGroupChild": "My child",
+    "navGroupAttendance": "Attendance",
+    "navMyChild": "My child",
+    "navPresence": "Present days",
+    "navAbsences": "Absences",
+    "navNotifications": "Notifications",
+    "descPresence": "Days present and attendance rate.",
+    "descAbsences": "Reported absences and late arrivals.",
+    "descNotifications": "Alerts, grades, events and reminders.",
+    "introParent": "Follow your child’s school life: attendance, grades, timetable and news.",
+    "introParentLive": "Live data for your child — attendance, grades, timetable and notifications.",
+    "emptyMyChild": "No child linked to this account. Contact the school.",
+    "childHint": "View attendance, absences and grades from the menu.",
+    "navDirectory": "Teacher directory",
+    "descDirectory": "Homeroom teacher contact details for your child’s class.",
+    "descClasses": "All classes and day-to-day teaching tools.",
+    "navAnnouncements": "Announcements",
+    "navFees": "Fee schedule",
+    "descAnnouncements": "Official school announcements.",
+    "descFees": "Fees and due dates (tuition, canteen, transport)."
+  },
+  "portalAnnouncements": {
+    "loading": "Loading announcements…",
+    "empty": "No announcements published yet."
+  },
+  "portalFees": {
+    "loading": "Loading fee schedule…",
+    "empty": "No fees configured yet.",
+    "totalLabel": "Indicative annual total",
+    "period": "Period"
+  },
+  "portalClassHub": {
+    "listIntro": "Select a class to take attendance, enter grades or publish homework.",
+    "emptyClasses": "No class assigned. An administrator must set you as homeroom teacher.",
+    "students": "students",
+    "openClass": "Manage this class →",
+    "backToList": "All classes",
+    "unknownClass": "Class",
+    "tabAttendance": "Attendance",
+    "tabGrades": "Grades",
+    "tabHomework": "Homework",
+    "dateLabel": "Date",
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "saveError": "Could not save.",
+    "saveAttendance": "Save attendance",
+    "attendanceLoadError": "Could not load attendance.",
+    "addHomework": "New homework",
+    "homeworkTitle": "Title",
+    "homeworkDesc": "Instructions (optional)",
+    "homeworkDue": "Due date",
+    "addHomeworkBtn": "Publish homework",
+    "emptyHomework": "No homework published for this class.",
+    "homeworkLoadError": "Could not load homework.",
+    "dueOn": "Due on {{date}}",
+    "deleteHomework": "Delete"
+  },
+  "portalDirectory": {
+    "loadError": "Could not load directory.",
+    "loading": "Loading…",
+    "empty": "No teacher listed for your child’s class.",
+    "intro": "Contact the homeroom teacher when needed.",
+    "subjectUnknown": "Subject not set",
+    "forChild": "For {{name}}",
+    "noPhone": "Phone number not provided by the school"
+  },
+  "portalAttendance": {
+    "loadError": "Could not load attendance.",
+    "statPresent": "Present",
+    "statAbsent": "Absent",
+    "statLate": "Late",
+    "statRate": "Attendance rate",
+    "presenceListTitle": "Presence history",
+    "absenceListTitle": "Absences and late arrivals",
+    "emptyPresence": "No presence recorded yet.",
+    "emptyAbsences": "No absences or late arrivals reported.",
+    "trackingChild": "Tracking for {{name}}",
+    "status": {
+      "PRESENT": "Present",
+      "ABSENT": "Absent",
+      "RETARD": "Late"
+    }
+  },
+  "portalNotifications": {
+    "loadError": "Could not load notifications.",
+    "intro": "Alerts about your child: absences, grades, events and payments.",
+    "empty": "No notifications yet.",
+    "type": {
+      "ABSENCE": "Absence",
+      "LATE": "Late",
+      "GRADE": "Grade",
+      "EVENT": "Event",
+      "PAYMENT": "Payment"
+    }
   },
   "portalGrades": {
     "loadError": "Could not load grades.",
