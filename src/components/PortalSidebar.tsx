@@ -82,8 +82,8 @@ export function PortalSidebar({
   return (
     <aside
       className={cn(
-        'flex h-full w-64 shrink-0 flex-col border-sidebar-border bg-sidebar text-sidebar-foreground',
-        mobile ? 'border-r' : 'hidden border-r md:flex'
+        'flex h-svh w-64 shrink-0 flex-col border-sidebar-border bg-sidebar text-sidebar-foreground',
+        mobile ? 'border-r' : 'hidden border-r md:flex md:h-svh'
       )}
       aria-label={t('portalHome.navLabel')}
     >

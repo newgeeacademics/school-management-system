@@ -1,13 +1,15 @@
+import { ACCESS_TOKEN_KEY, BASE_URL } from '@/constants';
 import { apiFetch } from '@/lib/api';
 
-export type EvaluationPeriod =
-  | 'Trimestre 1'
-  | 'Trimestre 2'
-  | 'Trimestre 3'
-  | 'Semestre 1'
-  | 'Semestre 2';
+export type EvaluationPeriod = string;
 
-export type EvaluationType = 'Devoir' | 'Interro' | 'Examen';
+export type EvaluationType = string;
+
+export type PortalGradingConfig = {
+  gradingScale: number;
+  evaluationTypes: string[];
+  evaluationPeriods: string[];
+};
 
 export type PortalGradesDetail = {
   role: string;
@@ -15,6 +17,7 @@ export type PortalGradesDetail = {
   classId?: string;
   period: string;
   studentId?: string;
+  gradingConfig?: PortalGradingConfig;
   classes: { id: string; name: string; level?: string }[];
   courses: { id: string; name: string }[];
   students: { id: string; name: string; classId?: string; className?: string }[];
@@ -29,12 +32,16 @@ export type PortalGradesDetail = {
     type: string;
     coefficient: number;
     maxScore: number;
+    teacherName?: string;
+    hasDocument?: boolean;
+    documentFileName?: string;
+    documentContentType?: string;
   }[];
   grades: { id: string; evaluationId: string; studentId: string; score: number }[];
   bulletin: { studentId: string; studentName: string; average: number | null; rank: number | null }[];
 };
 
-const PERIOD_TO_API: Record<EvaluationPeriod, string> = {
+const PERIOD_TO_API: Record<string, string> = {
   'Trimestre 1': 'TRIMESTRE_1',
   'Trimestre 2': 'TRIMESTRE_2',
   'Trimestre 3': 'TRIMESTRE_3',
@@ -42,19 +49,18 @@ const PERIOD_TO_API: Record<EvaluationPeriod, string> = {
   'Semestre 2': 'SEMESTRE_2',
 };
 
-const EVAL_TYPE_TO_API: Record<EvaluationType, string> = {
+const EVAL_TYPE_TO_API: Record<string, string> = {
   Devoir: 'DEVOIR',
   Interro: 'INTERRO',
   Examen: 'EXAMEN',
+  Composition: 'COMPOSITION',
+  Contrôle: 'CONTROLE',
+  Controle: 'CONTROLE',
+  Projet: 'PROJET',
 };
 
-export const PERIOD_OPTIONS: EvaluationPeriod[] = [
-  'Trimestre 1',
-  'Trimestre 2',
-  'Trimestre 3',
-];
-
-export const EVAL_TYPE_OPTIONS: EvaluationType[] = ['Devoir', 'Interro', 'Examen'];
+export const DEFAULT_PERIOD_OPTIONS = ['Trimestre 1', 'Trimestre 2', 'Trimestre 3'];
+export const DEFAULT_EVAL_TYPE_OPTIONS = ['Devoir', 'Interro', 'Examen'];
 
 export async function fetchPortalGradesDetail(params: {
   classId?: string;
@@ -86,8 +92,8 @@ export async function createPortalEvaluation(item: {
       courseId: item.courseId,
       label: item.label,
       date: item.date,
-      period: PERIOD_TO_API[item.period],
-      type: EVAL_TYPE_TO_API[item.type],
+      period: PERIOD_TO_API[item.period] ?? item.period,
+      type: EVAL_TYPE_TO_API[item.type] ?? 'DEVOIR',
       coefficient: item.coefficient,
       maxScore: item.maxScore,
     }),
@@ -105,6 +111,46 @@ export async function savePortalGrade(item: {
   });
 }
 
+export async function uploadPortalEvaluationDocument(evaluationId: string, file: File) {
+  const form = new FormData();
+  form.append('file', file);
+  const token = typeof window !== 'undefined' ? localStorage.getItem(ACCESS_TOKEN_KEY) : null;
+  const headers: HeadersInit = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}/api/portal/grades/evaluations/${evaluationId}/document`, {
+    method: 'POST',
+    headers,
+    body: form,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(
+      (body && typeof body === 'object' && 'error' in body && String(body.error)) ||
+        `Upload failed (${res.status})`
+    );
+  }
+  return res.json();
+}
+
+export function getEvaluationDocumentUrl(evaluationId: string): string {
+  return `${BASE_URL}/api/portal/grades/evaluations/${evaluationId}/document`;
+}
+
+export async function downloadPortalEvaluationDocument(evaluationId: string, filename: string) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem(ACCESS_TOKEN_KEY) : null;
+  const res = await fetch(getEvaluationDocumentUrl(evaluationId), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error(`Download failed (${res.status})`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function getGradeScore(
   grades: PortalGradesDetail['grades'],
   evaluationId: string,
@@ -117,15 +163,16 @@ export function getGradeScore(
 export function computeStudentAverage(
   evaluations: PortalGradesDetail['evaluations'],
   grades: PortalGradesDetail['grades'],
-  studentId: string
+  studentId: string,
+  gradingScale = 20
 ): number | null {
   let num = 0;
   let den = 0;
   for (const ev of evaluations) {
     const g = grades.find((gr) => gr.evaluationId === ev.id && gr.studentId === studentId);
     if (g && ev.maxScore > 0) {
-      const on20 = (g.score / ev.maxScore) * 20;
-      num += on20 * ev.coefficient;
+      const normalized = (g.score / ev.maxScore) * gradingScale;
+      num += normalized * ev.coefficient;
       den += ev.coefficient;
     }
   }

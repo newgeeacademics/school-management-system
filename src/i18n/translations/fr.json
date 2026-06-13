@@ -29,7 +29,11 @@
     "staffHint": "Vous êtes personnel de direction ou secrétariat ?",
     "welcomeToast": "Bienvenue !",
     "loginIdentifier": "Email ou numéro de téléphone",
-    "loginIdentifierPlaceholder": "email@exemple.com ou +225…"
+    "loginIdentifierPlaceholder": "email@exemple.com ou +225…",
+    "loginInvalid": "Identifiants invalides. Seul un compte créé par l'établissement peut accéder.",
+    "backendRequired": "Connexion au serveur requise. Configurez VITE_API_URL.",
+    "adminAccountDenied": "Ce compte est réservé à la console administration.",
+    "roleMismatch": "Ce compte est un profil « {{actual}} », pas « {{selected}} »."
   },
   "portalHome": {
     "productName": "NewGee Familles",
@@ -142,6 +146,22 @@
     "dueOn": "À rendre le {{date}}",
     "deleteHomework": "Supprimer"
   },
+  "portalMessages": {
+    "loading": "Chargement des messages…",
+    "loadError": "Impossible de charger les messages.",
+    "empty": "Aucun message pour le moment.",
+    "inboxTitle": "Boîte de réception",
+    "teacherComposeTitle": "Message aux parents",
+    "teacherComposeHint": "Envoi par e-mail et sur le portail aux parents de la classe sélectionnée.",
+    "class": "Classe",
+    "chooseClass": "Choisir une classe",
+    "subject": "Objet",
+    "body": "Message",
+    "send": "Envoyer",
+    "sending": "Envoi…",
+    "sent": "Message envoyé.",
+    "sendError": "Échec de l’envoi."
+  },
   "portalDirectory": {
     "loadError": "Impossible de charger l’annuaire.",
     "loading": "Chargement…",
@@ -208,6 +228,9 @@
     "addEvaluation": "Ajouter l'évaluation",
     "marksTitle": "Grille de notes",
     "emptyMarks": "Aucune évaluation pour cette période.",
-    "noStudents": "Aucun élève dans cette classe."
+    "noStudents": "Aucun élève dans cette classe.",
+    "uploadDoc": "Joindre sujet",
+    "replaceDoc": "Remplacer",
+    "downloadDoc": "Télécharger"
   }
 }

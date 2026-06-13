@@ -65,34 +65,34 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
     }
 
     try {
-      if (isBackendApiConfigured()) {
-        const auth = await loginWithEmail(email, password);
-        const portalRole = backendRoleToPortal(auth.role);
-        if (!portalRole) {
-          toast.error('Ce compte est réservé à la console admin.', { richColors: true });
-          setIsPending(false);
-          return;
-        }
-        if (!portalRoleMatchesBackend(role, auth.role)) {
-          toast.error(`Ce compte est un profil « ${portalRole} », pas « ${role} ».`, { richColors: true });
-          setIsPending(false);
-          return;
-        }
-        setPortalSession({
-          role,
-          email: auth.email,
-          name: auth.name,
-          userId: auth.id,
-          token: auth.token,
-          emailHint: auth.email,
-        });
-      } else {
-        setPortalSession({
-          role,
-          emailHint: email || undefined,
-          email: email || '',
-        });
+      if (!isBackendApiConfigured()) {
+        toast.error(t('userPortal.backendRequired'), { richColors: true });
+        setIsPending(false);
+        return;
       }
+
+      const auth = await loginWithEmail(email, password);
+      const portalRole = backendRoleToPortal(auth.role);
+      if (!portalRole) {
+        toast.error(t('userPortal.adminAccountDenied'), { richColors: true });
+        setIsPending(false);
+        return;
+      }
+      if (!portalRoleMatchesBackend(role, auth.role)) {
+        toast.error(t('userPortal.roleMismatch', { actual: portalRole, selected: role }), {
+          richColors: true,
+        });
+        setIsPending(false);
+        return;
+      }
+      setPortalSession({
+        role,
+        email: auth.email,
+        name: auth.name,
+        userId: auth.id,
+        token: auth.token,
+        emailHint: auth.email,
+      });
 
       toast.success(t('userPortal.welcomeToast'), { richColors: true });
       setUsernameOrEmail('');
@@ -102,7 +102,7 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
       const message =
         err && typeof err === 'object' && 'message' in err
           ? String((err as { message: string }).message)
-          : t('auth.signIn');
+          : t('userPortal.loginInvalid');
       toast.error(message, { richColors: true });
     } finally {
       setIsPending(false);

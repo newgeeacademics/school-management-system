@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { GraduationCap, Plus } from 'lucide-react';
+import { Download, GraduationCap, Plus, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from '@/i18n';
 import { getPortalSession } from '@/lib/auth';
 import {
-  EVAL_TYPE_OPTIONS,
-  PERIOD_OPTIONS,
+  DEFAULT_EVAL_TYPE_OPTIONS,
+  DEFAULT_PERIOD_OPTIONS,
   computeStudentAverage,
   createPortalEvaluation,
+  downloadPortalEvaluationDocument,
   fetchPortalGradesDetail,
   getGradeScore,
   savePortalGrade,
+  uploadPortalEvaluationDocument,
   type EvaluationPeriod,
   type EvaluationType,
   type PortalGradesDetail,
@@ -82,17 +84,34 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
   const isParent = session?.role === 'parent';
   const showStudentPicker = isParent && (data?.students.length ?? 0) > 1;
   const showClassPicker = !fixedClassId && canEdit && (data?.classes.length ?? 0) > 1;
+  const gradingScale = data?.gradingConfig?.gradingScale ?? 20;
+  const periodOptions = data?.gradingConfig?.evaluationPeriods?.length
+    ? data.gradingConfig.evaluationPeriods
+    : DEFAULT_PERIOD_OPTIONS;
+  const typeOptions = data?.gradingConfig?.evaluationTypes?.length
+    ? data.gradingConfig.evaluationTypes
+    : DEFAULT_EVAL_TYPE_OPTIONS;
 
   const bulletinRows = useMemo(() => {
     if (!data) return [];
     if (data.bulletin.length > 0) return data.bulletin;
+    const scale = data.gradingConfig?.gradingScale ?? 20;
     return data.students.map((s) => ({
       studentId: s.id,
       studentName: s.name,
-      average: computeStudentAverage(data.evaluations, data.grades, s.id),
+      average: computeStudentAverage(data.evaluations, data.grades, s.id, scale),
       rank: null as number | null,
     }));
   }, [data]);
+
+  useEffect(() => {
+    if (data?.gradingConfig?.gradingScale) {
+      setNewEval((p) => ({ ...p, maxScore: data.gradingConfig!.gradingScale }));
+    }
+    if (data?.gradingConfig?.evaluationTypes?.[0]) {
+      setNewEval((p) => ({ ...p, type: data.gradingConfig!.evaluationTypes[0] as EvaluationType }));
+    }
+  }, [data?.gradingConfig?.gradingScale, data?.gradingConfig?.evaluationTypes]);
 
   const handleCreateEvaluation = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,6 +130,20 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
         maxScore: newEval.maxScore,
       });
       setNewEval((prev) => ({ ...prev, label: '' }));
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('portalGrades.saveError'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUploadDocument = async (evaluationId: string, file: File) => {
+    if (!canEdit) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await uploadPortalEvaluationDocument(evaluationId, file);
       await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('portalGrades.saveError'));
@@ -190,7 +223,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
             value={period}
             onChange={(e) => setPeriod(e.target.value as EvaluationPeriod)}
           >
-            {PERIOD_OPTIONS.map((p) => (
+            {periodOptions.map((p) => (
               <option key={p} value={p}>
                 {p}
               </option>
@@ -247,7 +280,9 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
                       ) : null}
                       <td className='py-2 pr-3'>
                         {row.average != null ? (
-                          <span className='font-semibold text-foreground'>{row.average}/20</span>
+                          <span className='font-semibold text-foreground'>
+                            {row.average}/{gradingScale}
+                          </span>
                         ) : (
                           '—'
                         )}
@@ -318,7 +353,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
                   value={newEval.type}
                   onChange={(e) => setNewEval((p) => ({ ...p, type: e.target.value as EvaluationType }))}
                 >
-                  {EVAL_TYPE_OPTIONS.map((type) => (
+                  {typeOptions.map((type) => (
                     <option key={type} value={type}>
                       {type}
                     </option>
@@ -372,11 +407,42 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
                   <tr className='border-b border-border text-left text-xs text-muted-foreground'>
                     <th className='py-2 pr-3'>{t('portalGrades.colStudent')}</th>
                     {data.evaluations.map((ev) => (
-                      <th key={ev.id} className='min-w-[7rem] py-2 pr-2'>
+                      <th key={ev.id} className='min-w-[7rem] py-2 pr-2 align-top'>
                         <span className='block font-medium text-foreground'>{ev.label}</span>
-                        <span className='text-[10px]'>
-                          {ev.courseName} · /{ev.maxScore}
+                        <span className='text-[10px] text-muted-foreground'>
+                          {ev.courseName} · {ev.type} · /{ev.maxScore}
                         </span>
+                        <div className='mt-1 flex flex-wrap gap-1'>
+                          {canEdit ? (
+                            <label className='inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[10px] hover:bg-muted'>
+                              <Upload className='size-3' aria-hidden />
+                              {ev.hasDocument ? t('portalGrades.replaceDoc') : t('portalGrades.uploadDoc')}
+                              <input
+                                type='file'
+                                className='sr-only'
+                                accept='.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg'
+                                disabled={saving}
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) void handleUploadDocument(ev.id, f);
+                                  e.target.value = '';
+                                }}
+                              />
+                            </label>
+                          ) : null}
+                          {ev.hasDocument && ev.documentFileName ? (
+                            <button
+                              type='button'
+                              className='inline-flex items-center gap-1 rounded-md border border-primary/30 px-1.5 py-0.5 text-[10px] text-primary hover:bg-primary/5'
+                              onClick={() =>
+                                void downloadPortalEvaluationDocument(ev.id, ev.documentFileName!)
+                              }
+                            >
+                              <Download className='size-3' aria-hidden />
+                              {t('portalGrades.downloadDoc')}
+                            </button>
+                          ) : null}
+                        </div>
                       </th>
                     ))}
                     <th className='py-2'>{t('portalGrades.colAverage')}</th>
@@ -384,7 +450,12 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
                 </thead>
                 <tbody>
                   {data.students.map((student) => {
-                    const avg = computeStudentAverage(data.evaluations, data.grades, student.id);
+                    const avg = computeStudentAverage(
+                      data.evaluations,
+                      data.grades,
+                      student.id,
+                      gradingScale
+                    );
                     return (
                       <tr key={student.id} className='border-b border-border/60'>
                         <td className='py-2 pr-3 font-medium text-foreground'>{student.name}</td>
@@ -411,7 +482,9 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
                             </td>
                           );
                         })}
-                        <td className='py-2 font-semibold text-foreground'>{avg != null ? `${avg}/20` : '—'}</td>
+                        <td className='py-2 font-semibold text-foreground'>
+                          {avg != null ? `${avg}/${gradingScale}` : '—'}
+                        </td>
                       </tr>
                     );
                   })}

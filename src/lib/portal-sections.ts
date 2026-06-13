@@ -43,13 +43,16 @@ export const PORTAL_SECTIONS: {
 export const TEACHER_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId[] }[] = [
   { labelKey: 'portalHome.navGroupSpace', sectionIds: ['overview', 'classes', 'students'] },
   { labelKey: 'portalHome.navGroupSchool', sectionIds: ['schedule', 'grades'] },
-  { labelKey: 'portalHome.navGroupLife', sectionIds: ['canteen', 'transport', 'messages', 'schools'] },
+  { labelKey: 'portalHome.navGroupLife', sectionIds: ['messages', 'canteen', 'transport', 'schools'] },
 ];
 
 export const PORTAL_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId[] }[] = [
   { labelKey: 'portalHome.navGroupSpace', sectionIds: ['overview', 'classes', 'students'] },
   { labelKey: 'portalHome.navGroupSchool', sectionIds: ['schedule', 'grades'] },
-  { labelKey: 'portalHome.navGroupLife', sectionIds: ['canteen', 'transport', 'messages', 'schools'] },
+  {
+    labelKey: 'portalHome.navGroupLife',
+    sectionIds: ['announcements', 'directory', 'messages', 'canteen', 'transport', 'schools'],
+  },
 ];
 
 export const PARENT_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId[] }[] = [
