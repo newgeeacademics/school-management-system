@@ -23,7 +23,9 @@ import { PhoneWithDialCode } from '@/components/refine-ui/form/phone-with-dial-c
 import { RegistrationNumberField, type RegistrationNumberStatus } from '@/components/refine-ui/form/registration-number-field';
 import { SchoolLanguagesPicker } from '@/components/refine-ui/form/school-languages-picker';
 import { SchoolOpeningHoursPicker } from '@/components/refine-ui/form/school-opening-hours-picker';
+import { SchoolGradingPicker } from '@/components/refine-ui/form/school-grading-picker';
 import { SchoolSeriesPicker } from '@/components/refine-ui/form/school-series-picker';
+import type { EvaluationTypeId } from '@/lib/school-grading-types';
 import {
   formatPhoneWithCountry,
   getCitiesByCountryName,
@@ -103,6 +105,8 @@ type SchoolState = {
   studentCount: string;
   teacherCount: string;
   series: string[];
+  gradingScale: string;
+  evaluationTypes: EvaluationTypeId[];
   legalName: string;
   registrationNumber: string;
   accreditationRef: string;
@@ -154,6 +158,8 @@ export function SchoolRegisterWizard() {
     studentCount: '',
     teacherCount: '',
     series: [],
+    gradingScale: '20',
+    evaluationTypes: ['Devoir', 'Interro', 'Examen'],
     legalName: '',
     registrationNumber: '',
     accreditationRef: '',
@@ -343,6 +349,8 @@ export function SchoolRegisterWizard() {
       studentCount: school.studentCount,
       teacherCount: school.teacherCount,
       series: school.series,
+      gradingScale: school.gradingScale,
+      evaluationTypes: school.evaluationTypes,
       registrationNumber: school.registrationNumber
         ? normalizeRegistrationNumber(school.registrationNumber)
         : '',
@@ -420,6 +428,8 @@ export function SchoolRegisterWizard() {
       studentCount: school.studentCount ? Number(school.studentCount) : null,
       teacherCount: school.teacherCount ? Number(school.teacherCount) : null,
       series: school.series,
+      gradingScale: school.gradingScale ? Number(school.gradingScale) : 20,
+      evaluationTypes: school.evaluationTypes,
       languagesOffered: school.languagesOffered.map((id) => t(instructionLanguageLabelKey(id))),
       legalName: school.legalName || '',
       registrationNumber: school.registrationNumber
@@ -713,6 +723,14 @@ export function SchoolRegisterWizard() {
               schoolType={school.schoolType}
               value={school.series}
               onChange={(series) => setSchool((prev) => ({ ...prev, series }))}
+            />
+            <SchoolGradingPicker
+              gradingScale={school.gradingScale}
+              evaluationTypes={school.evaluationTypes}
+              onGradingScaleChange={(gradingScale) => setSchool((prev) => ({ ...prev, gradingScale }))}
+              onEvaluationTypesChange={(evaluationTypes) =>
+                setSchool((prev) => ({ ...prev, evaluationTypes }))
+              }
             />
           </>
         );

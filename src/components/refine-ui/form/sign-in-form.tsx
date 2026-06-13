@@ -60,7 +60,11 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
       setPassword('');
       navigate('/dashboard');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('auth.signIn'), { richColors: true });
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : 'Identifiants invalides. Seul un compte créé par l\'établissement peut accéder.';
+      toast.error(message, { richColors: true });
     } finally {
       setIsPending(false);
     }
