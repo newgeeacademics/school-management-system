@@ -395,7 +395,7 @@ class ApiIntegrationTest {
                         .content(String.format(
                                 "{\"name\":\"API Test\",\"email\":\"%s\",\"password\":\"test1234\",\"role\":\"PARENT\"}",
                                 email)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isForbidden());
     }
 
     @Test

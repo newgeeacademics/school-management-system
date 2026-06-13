@@ -78,6 +78,7 @@ public class EmailNotificationService {
             case TEACHER -> "Enseignant";
             case STUDENT -> "Élève";
             case PARENT -> "Parent";
+            case STAFF -> "Personnel";
         };
     }
 }

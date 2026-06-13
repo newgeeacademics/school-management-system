@@ -1,4 +1,4 @@
-import { clearAccessToken, setAccessToken } from '@/lib/api';
+import { clearAccessToken, isBackendApiConfigured, setAccessToken } from '@/lib/api';
 
 const SESSION_KEY = 'newgee_portal_session_v1';
 
@@ -20,6 +20,10 @@ export function getPortalSession(): PortalSession | null {
     if (!raw) return null;
     const data = JSON.parse(raw) as Partial<PortalSession>;
     if (data.role === 'student' || data.role === 'parent' || data.role === 'teacher') {
+      if (isBackendApiConfigured() && !data.token) {
+        sessionStorage.removeItem(SESSION_KEY);
+        return null;
+      }
       return {
         role: data.role,
         email: data.email ?? data.emailHint ?? '',

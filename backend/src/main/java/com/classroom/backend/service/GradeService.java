@@ -39,6 +39,11 @@ public class GradeService {
 
     @Transactional
     public Evaluation createEvaluation(EvaluationRequest request) {
+        return createEvaluation(request, null);
+    }
+
+    @Transactional
+    public Evaluation createEvaluation(EvaluationRequest request, Teacher teacher) {
         ClassItem classItem = classItemRepository.findById(request.getClassId())
                 .orElseThrow(() -> new RuntimeException("Class not found: " + request.getClassId()));
         Course course = courseRepository.findById(request.getCourseId())
@@ -53,6 +58,7 @@ public class GradeService {
                 .type(request.getType())
                 .coefficient(request.getCoefficient())
                 .maxScore(request.getMaxScore())
+                .createdByTeacher(teacher)
                 .build();
 
         return evaluationRepository.save(evaluation);

@@ -52,6 +52,8 @@ import {
   createTransportOnBackend,
   createUserOnBackend,
   deleteAnnouncementOnBackend,
+  fetchCommunicationStatusOnBackend,
+  sendParentMessageOnBackend,
   deleteClassOnBackend,
   deleteFeeInstallmentOnBackend,
   deleteParentOnBackend,
@@ -133,6 +135,7 @@ import {
   type Announcement,
   type FeeInstallment,
   type NewAnnouncementFormState,
+  type NewParentMessageFormState,
   type NewEvaluationFormState,
   type NewFeeInstallmentFormState,
   type NewCanteenItemFormState,
@@ -162,7 +165,7 @@ import {
   type Teacher,
   type TransportRoute,
 } from './dashboard/dashboardTypes';
-import { AnnouncementsSection } from './dashboard/AnnouncementsSection';
+import { CommunicationsSection } from './dashboard/CommunicationsSection';
 import { CalendarSection } from './dashboard/CalendarSection';
 import { FeeSchedulesSection } from './dashboard/FeeSchedulesSection';
 import { StudentIdCardModal } from './dashboard/StudentIdCardModal';
@@ -742,7 +745,24 @@ export const DashboardPage: React.FC = () => {
     eventDate: '',
     location: '',
     published: true,
+    notifyByEmail: false,
   });
+  const [newParentMessage, setNewParentMessage] = React.useState<NewParentMessageFormState>({
+    subject: '',
+    body: '',
+    audience: 'PARENTS',
+    classId: '',
+    sendEmail: true,
+    publishOnPortal: true,
+  });
+  const [emailConfigured, setEmailConfigured] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    if (!backendSync || activeSection !== 'announcements') return;
+    void fetchCommunicationStatusOnBackend()
+      .then((status) => setEmailConfigured(status.configured))
+      .catch(() => setEmailConfigured(null));
+  }, [backendSync, activeSection]);
 
   const [idCardOpen, setIdCardOpen] = React.useState(false);
   const [idCardLoading, setIdCardLoading] = React.useState(false);
@@ -1403,11 +1423,15 @@ export const DashboardPage: React.FC = () => {
       eventDate: newAnnouncement.eventDate.trim() || undefined,
       location: newAnnouncement.location.trim() || undefined,
       published: newAnnouncement.published,
+      notifyByEmail: newAnnouncement.notifyByEmail,
     };
     try {
       if (backendSync) {
         const created = await createAnnouncementOnBackend(payload);
         setAnnouncements((prev) => [...prev, created]);
+        if (newAnnouncement.notifyByEmail) {
+          toast.success('Annonce publiée — e-mails en cours d’envoi');
+        }
       } else {
         setAnnouncements((prev) => [
           ...prev,
@@ -1419,7 +1443,51 @@ export const DashboardPage: React.FC = () => {
         ]);
       }
       toast.success('Annonce publiée');
-      setNewAnnouncement({ title: '', body: '', eventDate: '', location: '', published: true });
+      setNewAnnouncement({
+        title: '',
+        body: '',
+        eventDate: '',
+        location: '',
+        published: true,
+        notifyByEmail: false,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
+  };
+
+  const handleSendParentMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newParentMessage.subject.trim() || !newParentMessage.body.trim()) return;
+    if (newParentMessage.audience === 'CLASS_PARENTS' && !newParentMessage.classId) {
+      toast.error('Choisissez une classe');
+      return;
+    }
+    try {
+      if (backendSync) {
+        const result = await sendParentMessageOnBackend({
+          subject: newParentMessage.subject.trim(),
+          body: newParentMessage.body.trim(),
+          audience: newParentMessage.audience,
+          classId:
+            newParentMessage.audience === 'CLASS_PARENTS'
+              ? newParentMessage.classId
+              : undefined,
+          sendEmail: newParentMessage.sendEmail,
+          publishOnPortal: newParentMessage.publishOnPortal,
+        });
+        toast.success(result.message ?? 'Message envoyé');
+      } else {
+        toast.success('Message enregistré (mode démo)');
+      }
+      setNewParentMessage({
+        subject: '',
+        body: '',
+        audience: 'PARENTS',
+        classId: '',
+        sendEmail: true,
+        publishOnPortal: true,
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -2554,13 +2622,18 @@ export const DashboardPage: React.FC = () => {
           )}
 
           {activeSection === 'announcements' && (
-            <AnnouncementsSection
+            <CommunicationsSection
               announcements={announcements}
               newAnnouncement={newAnnouncement}
               setNewAnnouncement={setNewAnnouncement}
-              onCreate={handleCreateAnnouncement}
-              onUpdate={handleUpdateAnnouncement}
-              onDelete={handleDeleteAnnouncement}
+              onCreateAnnouncement={handleCreateAnnouncement}
+              onUpdateAnnouncement={handleUpdateAnnouncement}
+              onDeleteAnnouncement={handleDeleteAnnouncement}
+              newParentMessage={newParentMessage}
+              setNewParentMessage={setNewParentMessage}
+              onSendParentMessage={handleSendParentMessage}
+              classes={classes}
+              emailConfigured={emailConfigured}
             />
           )}
 

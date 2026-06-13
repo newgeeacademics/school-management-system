@@ -21,6 +21,7 @@ public class PortalGradesDetailResponse {
     private List<PortalEvaluationDto> evaluations;
     private List<PortalGradeEntryDto> grades;
     private List<GradeAverageResponse> bulletin;
+    private PortalGradingConfigDto gradingConfig;
 
     @Data
     @Builder
@@ -48,6 +49,14 @@ public class PortalGradesDetailResponse {
 
     @Data
     @Builder
+    public static class PortalGradingConfigDto {
+        private Double gradingScale;
+        private List<String> evaluationTypes;
+        private List<String> evaluationPeriods;
+    }
+
+    @Data
+    @Builder
     public static class PortalEvaluationDto {
         private String id;
         private String classId;
@@ -59,6 +68,10 @@ public class PortalGradesDetailResponse {
         private String type;
         private Double coefficient;
         private Double maxScore;
+        private String teacherName;
+        private boolean hasDocument;
+        private String documentFileName;
+        private String documentContentType;
     }
 
     @Data

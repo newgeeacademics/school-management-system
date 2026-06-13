@@ -22,10 +22,12 @@ public class AuthController {
     private final AuthService authService;
     private final SchoolRepository schoolRepository;
 
+    /** Self-service registration is disabled — accounts are provisioned by the school admin. */
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        AuthResponse response = authService.register(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "error", "Inscription fermée. Seuls les comptes créés par l'établissement peuvent se connecter."
+        ));
     }
 
     /** Creates admin account + school in one transaction (used by main site registration). */

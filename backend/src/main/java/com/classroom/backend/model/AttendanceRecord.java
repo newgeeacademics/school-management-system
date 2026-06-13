@@ -27,4 +27,8 @@ public class AttendanceRecord {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AttendanceStatus status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recorded_by_teacher_id")
+    private Teacher recordedByTeacher;
 }

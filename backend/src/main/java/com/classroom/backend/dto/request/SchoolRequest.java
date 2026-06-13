@@ -28,4 +28,7 @@ public class SchoolRequest {
     private String registrationNumber;
     private String languagesOffered;
     private String logoFileName;
+    private Double gradingScale;
+    private String evaluationTypes;
+    private String evaluationPeriods;
 }

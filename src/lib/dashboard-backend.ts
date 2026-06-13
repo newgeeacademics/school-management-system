@@ -885,12 +885,41 @@ export async function deleteFeeInstallmentOnBackend(id: string) {
   await adminApiFetch(`/api/fees/${id}`, { method: 'DELETE' });
 }
 
+export type CommunicationResult = {
+  recipientsCount: number;
+  emailsSent: number;
+  emailConfigured: boolean;
+  portalPublished: boolean;
+  message?: string;
+};
+
+export async function fetchCommunicationStatusOnBackend() {
+  return adminApiFetch<{ configured: boolean; enabled: boolean }>('/api/communications/status');
+}
+
+export async function sendParentMessageOnBackend(item: {
+  subject: string;
+  body: string;
+  audience: 'PARENTS' | 'CLASS_PARENTS' | 'ALL_FAMILIES';
+  classId?: string;
+  sendEmail?: boolean;
+  publishOnPortal?: boolean;
+}) {
+  const path =
+    item.audience === 'ALL_FAMILIES' ? '/api/communications/broadcast' : '/api/communications/parents';
+  return adminApiFetch<CommunicationResult>(path, {
+    method: 'POST',
+    body: JSON.stringify(item),
+  });
+}
+
 export async function createAnnouncementOnBackend(item: {
   title: string;
   body: string;
   eventDate?: string;
   location?: string;
   published?: boolean;
+  notifyByEmail?: boolean;
 }) {
   const data = await adminApiFetch<Record<string, unknown>>('/api/announcements', {
     method: 'POST',
@@ -907,6 +936,7 @@ export async function updateAnnouncementOnBackend(
     eventDate?: string;
     location?: string;
     published?: boolean;
+    notifyByEmail?: boolean;
   }
 ) {
   const data = await adminApiFetch<Record<string, unknown>>(`/api/announcements/${id}`, {

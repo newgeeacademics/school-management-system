@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -44,12 +45,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
+    @ExceptionHandler({ BadCredentialsException.class, UsernameNotFoundException.class })
+    public ResponseEntity<Map<String, Object>> handleBadCredentials(RuntimeException ex) {
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now().toString());
         response.put("status", HttpStatus.UNAUTHORIZED.value());
-        response.put("error", "Invalid email or password");
+        String message = ex.getMessage();
+        if (message == null || message.isBlank()) {
+            message = "Identifiants invalides. Seul un compte créé par l'établissement peut accéder.";
+        }
+        response.put("error", message);
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }

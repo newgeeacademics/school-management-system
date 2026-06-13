@@ -159,7 +159,7 @@
   }
 
   .portal-dashboard {
-    @apply min-h-svh bg-background text-foreground;
+    @apply h-svh overflow-hidden bg-background text-foreground;
   }
 }
 

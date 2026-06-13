@@ -29,7 +29,11 @@
     "staffHint": "Are you school management or office staff?",
     "welcomeToast": "Welcome!",
     "loginIdentifier": "Email or phone number",
-    "loginIdentifierPlaceholder": "email@example.com or +225…"
+    "loginIdentifierPlaceholder": "email@example.com or +225…",
+    "loginInvalid": "Invalid credentials. Only accounts created by the school can sign in.",
+    "backendRequired": "Server connection required. Set VITE_API_URL.",
+    "adminAccountDenied": "This account is for the admin console only.",
+    "roleMismatch": "This account is a « {{actual}} » profile, not « {{selected}} »."
   },
   "portalHome": {
     "productName": "NewGee Families",
@@ -142,6 +146,22 @@
     "dueOn": "Due on {{date}}",
     "deleteHomework": "Delete"
   },
+  "portalMessages": {
+    "loading": "Loading messages…",
+    "loadError": "Could not load messages.",
+    "empty": "No messages yet.",
+    "inboxTitle": "Inbox",
+    "teacherComposeTitle": "Message to parents",
+    "teacherComposeHint": "Sends email and portal notification to parents of the selected class.",
+    "class": "Class",
+    "chooseClass": "Choose a class",
+    "subject": "Subject",
+    "body": "Message",
+    "send": "Send",
+    "sending": "Sending…",
+    "sent": "Message sent.",
+    "sendError": "Send failed."
+  },
   "portalDirectory": {
     "loadError": "Could not load directory.",
     "loading": "Loading…",
@@ -208,6 +228,9 @@
     "addEvaluation": "Add assessment",
     "marksTitle": "Grade grid",
     "emptyMarks": "No assessments for this period.",
-    "noStudents": "No students in this class."
+    "noStudents": "No students in this class.",
+    "uploadDoc": "Attach paper",
+    "replaceDoc": "Replace",
+    "downloadDoc": "Download"
   }
 }

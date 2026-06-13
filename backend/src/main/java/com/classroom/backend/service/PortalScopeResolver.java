@@ -58,6 +58,17 @@ public class PortalScopeResolver {
         }
     }
 
+    public Teacher resolveTeacherForCurrentUser() {
+        AppUser user = resolveCurrentUser();
+        if (user.getRole() != UserRole.TEACHER) {
+            throw new IllegalStateException("Seuls les enseignants peuvent effectuer cette action.");
+        }
+        return teacherRepository.findByAppUser_Id(user.getId())
+                .or(() -> teacherRepository.findByEmailIgnoreCase(user.getEmail()))
+                .orElseThrow(() -> new IllegalStateException(
+                        "Aucun profil enseignant lié à ce compte."));
+    }
+
     public PortalScope resolveForCurrentUser() {
         AppUser user = resolveCurrentUser();
         UserRole role = user.getRole();

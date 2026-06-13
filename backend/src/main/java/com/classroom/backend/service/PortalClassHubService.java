@@ -102,6 +102,8 @@ public class PortalClassHubService {
         ClassItem clazz = classItemRepository.findById(request.getClassId())
                 .orElseThrow(() -> new IllegalStateException("Classe introuvable."));
 
+        Teacher teacher = portalScopeResolver.resolveTeacherForCurrentUser();
+
         for (var entry : request.getEntries()) {
             scope.assertStudentAccessible(entry.getStudentId());
 
@@ -112,6 +114,7 @@ public class PortalClassHubService {
             if (!existing.isEmpty()) {
                 AttendanceRecord record = existing.get(0);
                 record.setStatus(entry.getStatus());
+                record.setRecordedByTeacher(teacher);
                 attendanceRecordRepository.save(record);
             } else {
                 Student student = studentRepository.findById(entry.getStudentId())
@@ -121,6 +124,7 @@ public class PortalClassHubService {
                         .classItem(clazz)
                         .student(student)
                         .status(entry.getStatus())
+                        .recordedByTeacher(teacher)
                         .build();
                 attendanceRecordRepository.save(record);
             }
@@ -216,12 +220,36 @@ public class PortalClassHubService {
                     .teacherId(teacher.getId())
                     .teacherName(teacher.getName())
                     .subject(teacher.getSubject())
-                    .phone(teacher.getPhone())
-                    .email(teacher.getEmail())
+                    .phone(resolveTeacherPhone(teacher))
+                    .email(resolveTeacherEmail(teacher))
                     .build());
         }
 
         return PortalDirectoryResponse.builder().teachers(contacts).build();
+    }
+
+    private static String resolveTeacherPhone(Teacher teacher) {
+        if (teacher.getPhone() != null && !teacher.getPhone().isBlank()) {
+            return teacher.getPhone().trim();
+        }
+        if (teacher.getAppUser() != null
+                && teacher.getAppUser().getPhone() != null
+                && !teacher.getAppUser().getPhone().isBlank()) {
+            return teacher.getAppUser().getPhone().trim();
+        }
+        return null;
+    }
+
+    private static String resolveTeacherEmail(Teacher teacher) {
+        if (teacher.getEmail() != null && !teacher.getEmail().isBlank()) {
+            return teacher.getEmail().trim();
+        }
+        if (teacher.getAppUser() != null
+                && teacher.getAppUser().getEmail() != null
+                && !teacher.getAppUser().getEmail().isBlank()) {
+            return teacher.getAppUser().getEmail().trim();
+        }
+        return null;
     }
 
     private PortalHomeworkDto toHomeworkDto(HomeworkAssignment assignment) {

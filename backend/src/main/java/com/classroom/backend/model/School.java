@@ -39,6 +39,15 @@ public class School {
     private String languagesOffered;
     private String logoFileName;
 
+    /** Default max score for evaluations (e.g. 20 or 100). */
+    private Double gradingScale;
+
+    /** Comma-separated evaluation type labels (e.g. Devoir,Interro,Examen). */
+    private String evaluationTypes;
+
+    /** Comma-separated period labels (e.g. Trimestre 1,Trimestre 2). */
+    private String evaluationPeriods;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
 

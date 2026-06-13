@@ -39,7 +39,7 @@ function PortalLayoutInner() {
   };
 
   return (
-    <div className='portal-dashboard flex min-h-svh w-full bg-background'>
+    <div className='portal-dashboard flex h-svh w-full overflow-hidden bg-background'>
       {isMobile && mobileNavOpen ? (
         <button
           type='button'
@@ -82,7 +82,7 @@ function PortalLayoutInner() {
         />
       )}
 
-      <div className='flex min-w-0 flex-1 flex-col'>
+      <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
         <header className='sticky top-0 z-30 border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80'>
           <div className='flex items-start gap-3 px-4 py-3 md:px-6 md:py-4'>
             {isMobile ? (
@@ -143,7 +143,7 @@ function PortalLayoutInner() {
           </div>
         </header>
 
-        <main className='flex flex-1 flex-col gap-6 px-4 py-6 md:px-8 md:py-8'>
+        <main className='flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 md:px-8 md:py-8'>
           {error ? (
             <p className='rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700'>{error}</p>
           ) : null}

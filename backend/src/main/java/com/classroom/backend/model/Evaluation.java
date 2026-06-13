@@ -41,4 +41,12 @@ public class Evaluation {
 
     @Column(nullable = false)
     private Double maxScore;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "teacher_id")
+    private Teacher createdByTeacher;
+
+    private String documentStoredName;
+    private String documentOriginalName;
+    private String documentContentType;
 }

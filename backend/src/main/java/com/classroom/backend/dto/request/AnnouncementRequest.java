@@ -17,4 +17,7 @@ public class AnnouncementRequest {
     private String location;
 
     private boolean published = true;
+
+    /** When true and published, send the announcement by e-mail to all families with an address on file. */
+    private boolean notifyByEmail = false;
 }

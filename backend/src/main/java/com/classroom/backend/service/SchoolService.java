@@ -46,6 +46,9 @@ public class SchoolService {
                 .registrationNumber(request.getRegistrationNumber())
                 .languagesOffered(request.getLanguagesOffered())
                 .logoFileName(request.getLogoFileName())
+                .gradingScale(request.getGradingScale() != null ? request.getGradingScale() : 20.0)
+                .evaluationTypes(defaultEvaluationTypes(request.getEvaluationTypes()))
+                .evaluationPeriods(defaultEvaluationPeriods(request.getEvaluationPeriods()))
                 .build();
         return schoolRepository.save(school);
     }
@@ -72,7 +75,28 @@ public class SchoolService {
         school.setRegistrationNumber(request.getRegistrationNumber());
         school.setLanguagesOffered(request.getLanguagesOffered());
         school.setLogoFileName(request.getLogoFileName());
+        if (request.getGradingScale() != null) {
+            school.setGradingScale(request.getGradingScale());
+        }
+        if (request.getEvaluationTypes() != null && !request.getEvaluationTypes().isBlank()) {
+            school.setEvaluationTypes(request.getEvaluationTypes());
+        }
+        if (request.getEvaluationPeriods() != null && !request.getEvaluationPeriods().isBlank()) {
+            school.setEvaluationPeriods(request.getEvaluationPeriods());
+        }
         return schoolRepository.save(school);
+    }
+
+    public School getPrimarySchool() {
+        return schoolRepository.findAll().stream().findFirst().orElse(null);
+    }
+
+    private static String defaultEvaluationTypes(String value) {
+        return value != null && !value.isBlank() ? value : "Devoir,Interro,Examen";
+    }
+
+    private static String defaultEvaluationPeriods(String value) {
+        return value != null && !value.isBlank() ? value : "Trimestre 1,Trimestre 2,Trimestre 3";
     }
 
     @Transactional

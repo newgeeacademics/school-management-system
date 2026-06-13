@@ -13,6 +13,7 @@ import { PortalNotificationsView } from '@/pages/PortalNotificationsView';
 import { PortalAnnouncementsView } from '@/pages/PortalAnnouncementsView';
 import { PortalDirectoryView } from '@/pages/PortalDirectoryView';
 import { PortalFeesView } from '@/pages/PortalFeesView';
+import { PortalMessagesView } from '@/pages/PortalMessagesView';
 import { useTranslation } from '@/i18n';
 import { usePortalFeedContext } from '@/context/PortalFeedContext';
 import { getPortalSession } from '@/lib/auth';
@@ -130,6 +131,10 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
 
   if (section === 'announcements') {
     return <PortalAnnouncementsView />;
+  }
+
+  if (section === 'messages') {
+    return <PortalMessagesView />;
   }
 
   if (section === 'fees') {

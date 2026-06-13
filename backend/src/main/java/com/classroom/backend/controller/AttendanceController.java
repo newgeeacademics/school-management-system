@@ -51,13 +51,13 @@ public class AttendanceController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<AttendanceRecord> create(@Valid @RequestBody AttendanceRecordRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(attendanceService.create(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<AttendanceRecord> update(@PathVariable String id, @Valid @RequestBody AttendanceRecordRequest request) {
         return ResponseEntity.ok(attendanceService.update(id, request));
     }

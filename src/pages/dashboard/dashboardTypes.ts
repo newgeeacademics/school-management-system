@@ -246,6 +246,7 @@ export type Announcement = {
   location?: string;
   published: boolean;
   publishedAt: string;
+  notifyByEmail?: boolean;
 };
 
 export type NewAnnouncementFormState = {
@@ -254,6 +255,18 @@ export type NewAnnouncementFormState = {
   eventDate: string;
   location: string;
   published: boolean;
+  notifyByEmail: boolean;
+};
+
+export type ParentMessageAudience = 'PARENTS' | 'CLASS_PARENTS' | 'ALL_FAMILIES';
+
+export type NewParentMessageFormState = {
+  subject: string;
+  body: string;
+  audience: ParentMessageAudience;
+  classId: string;
+  sendEmail: boolean;
+  publishOnPortal: boolean;
 };
 
 export type NewParentFormState = {

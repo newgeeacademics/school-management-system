@@ -14,7 +14,11 @@ import com.classroom.backend.dto.response.PortalFeedResponse;
 import com.classroom.backend.dto.response.PortalGradesDetailResponse;
 import com.classroom.backend.dto.response.PortalGradesDetailResponse.PortalEvaluationDto;
 import com.classroom.backend.dto.response.PortalGradesDetailResponse.PortalGradeEntryDto;
+import com.classroom.backend.dto.request.TeacherClassMessageRequest;
+import com.classroom.backend.dto.response.CommunicationResultResponse;
+import com.classroom.backend.dto.response.PortalMessagesResponse;
 import com.classroom.backend.dto.response.PortalNotificationsResponse;
+import com.classroom.backend.service.SchoolCommunicationService;
 import com.classroom.backend.model.enums.AttendanceStatus;
 import com.classroom.backend.model.Announcement;
 import com.classroom.backend.model.FeeInstallment;
@@ -27,9 +31,17 @@ import com.classroom.backend.service.PortalNotificationService;
 import com.classroom.backend.service.PortalService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import java.util.List;
 
@@ -45,6 +57,7 @@ public class PortalController {
     private final PortalClassHubService portalClassHubService;
     private final AnnouncementService announcementService;
     private final FeeInstallmentService feeInstallmentService;
+    private final SchoolCommunicationService schoolCommunicationService;
 
     /** Role-scoped feed: teacher → their classes/students; student → their class; parent → children. */
     @GetMapping("/feed")
@@ -72,6 +85,26 @@ public class PortalController {
     @PostMapping("/grades")
     public ResponseEntity<PortalGradeEntryDto> saveGrade(@Valid @RequestBody StudentGradeRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(portalGradeService.saveGrade(request));
+    }
+
+    /** Teacher only — attach exam document (PDF, Word, etc.) for students to download. */
+    @PostMapping(value = "/grades/evaluations/{id}/document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<PortalEvaluationDto> uploadEvaluationDocument(
+            @PathVariable String id,
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        return ResponseEntity.ok(portalGradeService.uploadEvaluationDocument(id, file));
+    }
+
+    /** Teacher, student, parent — download exam document in original format. */
+    @GetMapping("/grades/evaluations/{id}/document")
+    public ResponseEntity<Resource> downloadEvaluationDocument(@PathVariable String id) throws IOException {
+        var doc = portalGradeService.downloadEvaluationDocument(id);
+        String encoded = URLEncoder.encode(doc.filename(), StandardCharsets.UTF_8).replace("+", "%20");
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(doc.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encoded)
+                .body(doc.resource());
     }
 
     /** Attendance scoped to the signed-in parent's children or student profile. */
@@ -138,6 +171,26 @@ public class PortalController {
     @GetMapping("/announcements")
     public ResponseEntity<List<Announcement>> announcements() {
         return ResponseEntity.ok(announcementService.findPublished());
+    }
+
+    /** School messages for parents, students, and teachers (scoped by audience). */
+    @GetMapping("/messages")
+    public ResponseEntity<PortalMessagesResponse> messages() {
+        return ResponseEntity.ok(schoolCommunicationService.getPortalMessages());
+    }
+
+    /** Teacher only — e-mail and portal message to parents of a homeroom class. */
+    @PostMapping("/messages/parents")
+    public ResponseEntity<CommunicationResultResponse> teacherMessageToParents(
+            @Valid @RequestBody TeacherClassMessageRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                schoolCommunicationService.sendTeacherClassMessage(
+                        request.getClassId(),
+                        request.getSubject(),
+                        request.getBody()
+                )
+        );
     }
 
     /** Fee schedule (échéancier) for families. */

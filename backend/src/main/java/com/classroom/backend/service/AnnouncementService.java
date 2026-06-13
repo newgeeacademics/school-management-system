@@ -15,6 +15,7 @@ import java.util.List;
 public class AnnouncementService {
 
     private final AnnouncementRepository announcementRepository;
+    private final SchoolCommunicationService schoolCommunicationService;
 
     public List<Announcement> findAll() {
         return announcementRepository.findAllByOrderByPublishedAtDesc();
@@ -39,7 +40,9 @@ public class AnnouncementService {
                 .published(request.isPublished())
                 .publishedAt(Instant.now())
                 .build();
-        return announcementRepository.save(announcement);
+        Announcement saved = announcementRepository.save(announcement);
+        maybeNotifyByEmail(saved, request.isNotifyByEmail());
+        return saved;
     }
 
     @Transactional
@@ -53,7 +56,15 @@ public class AnnouncementService {
         if (request.isPublished() && announcement.getPublishedAt() == null) {
             announcement.setPublishedAt(Instant.now());
         }
-        return announcementRepository.save(announcement);
+        Announcement saved = announcementRepository.save(announcement);
+        maybeNotifyByEmail(saved, request.isNotifyByEmail());
+        return saved;
+    }
+
+    private void maybeNotifyByEmail(Announcement announcement, boolean notifyByEmail) {
+        if (announcement.isPublished() && notifyByEmail) {
+            schoolCommunicationService.notifyAnnouncementPublished(announcement);
+        }
     }
 
     @Transactional

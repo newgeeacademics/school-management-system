@@ -25,6 +25,8 @@ public class PortalGradeService {
 
     private final PortalScopeResolver scopeResolver;
     private final GradeService gradeService;
+    private final SchoolService schoolService;
+    private final EvaluationDocumentService evaluationDocumentService;
     private final EvaluationRepository evaluationRepository;
     private final StudentGradeRepository studentGradeRepository;
     private final CourseRepository courseRepository;
@@ -45,10 +47,13 @@ public class PortalGradeService {
             "Semestre 2", EvaluationPeriod.SEMESTRE_2
     );
 
-    private static final Map<EvaluationType, String> TYPE_LABELS = Map.of(
-            EvaluationType.DEVOIR, "Devoir",
-            EvaluationType.INTERRO, "Interro",
-            EvaluationType.EXAMEN, "Examen"
+    private static final Map<EvaluationType, String> TYPE_LABELS = Map.ofEntries(
+            Map.entry(EvaluationType.DEVOIR, "Devoir"),
+            Map.entry(EvaluationType.INTERRO, "Interro"),
+            Map.entry(EvaluationType.EXAMEN, "Examen"),
+            Map.entry(EvaluationType.COMPOSITION, "Composition"),
+            Map.entry(EvaluationType.CONTROLE, "Contrôle"),
+            Map.entry(EvaluationType.PROJET, "Projet")
     );
 
     @Transactional(readOnly = true)
@@ -120,6 +125,7 @@ public class PortalGradeService {
                 .evaluations(evaluations.stream().map(this::toEvaluationDto).toList())
                 .grades(grades.stream().map(this::toGradeDto).toList())
                 .bulletin(bulletin)
+                .gradingConfig(buildGradingConfig())
                 .build();
     }
 
@@ -129,8 +135,72 @@ public class PortalGradeService {
         scope.assertCanEdit();
         scope.assertClassAccessible(request.getClassId());
 
-        Evaluation saved = gradeService.createEvaluation(request);
+        Teacher teacher = scopeResolver.resolveTeacherForCurrentUser();
+        if (request.getMaxScore() == null || request.getMaxScore() <= 0) {
+            request.setMaxScore(defaultGradingScale());
+        }
+        Evaluation saved = gradeService.createEvaluation(request, teacher);
         return toEvaluationDto(saved);
+    }
+
+    @Transactional
+    public PortalEvaluationDto uploadEvaluationDocument(String evaluationId, org.springframework.web.multipart.MultipartFile file)
+            throws java.io.IOException {
+        PortalScopeResolver.PortalScope scope = scopeResolver.resolveForCurrentUser();
+        scope.assertCanEdit();
+
+        Evaluation evaluation = evaluationRepository.findById(evaluationId)
+                .orElseThrow(() -> new IllegalStateException("Évaluation introuvable."));
+        scope.assertClassAccessible(evaluation.getClassItem().getId());
+
+        Teacher teacher = scopeResolver.resolveTeacherForCurrentUser();
+        if (evaluation.getCreatedByTeacher() != null
+                && !evaluation.getCreatedByTeacher().getId().equals(teacher.getId())) {
+            throw new IllegalStateException("Seul l'enseignant créateur peut joindre le document.");
+        }
+
+        Evaluation saved = evaluationDocumentService.attachDocument(evaluationId, file);
+        return toEvaluationDto(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public EvaluationDocumentService.DocumentDownload downloadEvaluationDocument(String evaluationId)
+            throws java.io.IOException {
+        PortalScopeResolver.PortalScope scope = scopeResolver.resolveForCurrentUser();
+        Evaluation evaluation = evaluationRepository.findById(evaluationId)
+                .orElseThrow(() -> new IllegalStateException("Évaluation introuvable."));
+        scope.assertClassAccessible(evaluation.getClassItem().getId());
+        return evaluationDocumentService.openDocument(evaluationId);
+    }
+
+    private PortalGradesDetailResponse.PortalGradingConfigDto buildGradingConfig() {
+        School school = schoolService.getPrimarySchool();
+        double scale = school != null && school.getGradingScale() != null ? school.getGradingScale() : 20.0;
+        List<String> types = splitCsv(school != null ? school.getEvaluationTypes() : null,
+                List.of("Devoir", "Interro", "Examen"));
+        List<String> periods = splitCsv(school != null ? school.getEvaluationPeriods() : null,
+                List.of("Trimestre 1", "Trimestre 2", "Trimestre 3"));
+        return PortalGradesDetailResponse.PortalGradingConfigDto.builder()
+                .gradingScale(scale)
+                .evaluationTypes(types)
+                .evaluationPeriods(periods)
+                .build();
+    }
+
+    private double defaultGradingScale() {
+        School school = schoolService.getPrimarySchool();
+        return school != null && school.getGradingScale() != null ? school.getGradingScale() : 20.0;
+    }
+
+    private static List<String> splitCsv(String raw, List<String> fallback) {
+        if (raw == null || raw.isBlank()) {
+            return fallback;
+        }
+        List<String> parts = Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        return parts.isEmpty() ? fallback : parts;
     }
 
     @Transactional
@@ -219,6 +289,7 @@ public class PortalGradeService {
     }
 
     private PortalEvaluationDto toEvaluationDto(Evaluation e) {
+        boolean hasDoc = e.getDocumentStoredName() != null && !e.getDocumentStoredName().isBlank();
         return PortalEvaluationDto.builder()
                 .id(e.getId())
                 .classId(e.getClassItem().getId())
@@ -230,6 +301,10 @@ public class PortalGradeService {
                 .type(TYPE_LABELS.getOrDefault(e.getType(), e.getType().name()))
                 .coefficient(e.getCoefficient())
                 .maxScore(e.getMaxScore())
+                .teacherName(e.getCreatedByTeacher() != null ? e.getCreatedByTeacher().getName() : null)
+                .hasDocument(hasDoc)
+                .documentFileName(e.getDocumentOriginalName())
+                .documentContentType(e.getDocumentContentType())
                 .build();
     }
 

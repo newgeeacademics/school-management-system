@@ -27,6 +27,8 @@ export type SchoolRegistrationPayload = {
     studentCount: string;
     teacherCount: string;
     series: string[];
+    gradingScale?: string;
+    evaluationTypes?: string[];
     registrationNumber?: string;
     languagesOffered?: string[];
     logoUrl: string;
@@ -69,6 +71,11 @@ function buildSchoolBody(school: SchoolRegistrationPayload['school'], email: str
     studentCount: school.studentCount ? Number(school.studentCount) : undefined,
     teacherCount: school.teacherCount ? Number(school.teacherCount) : undefined,
     series: school.series.length ? school.series.join(', ') : undefined,
+    gradingScale: school.gradingScale ? Number(school.gradingScale) : 20,
+    evaluationTypes: school.evaluationTypes?.length
+      ? school.evaluationTypes.join(', ')
+      : 'Devoir,Interro,Examen',
+    evaluationPeriods: 'Trimestre 1,Trimestre 2,Trimestre 3',
     registrationNumber: school.registrationNumber?.trim() || undefined,
     languagesOffered: school.languagesOffered?.length
       ? school.languagesOffered.join(', ')
