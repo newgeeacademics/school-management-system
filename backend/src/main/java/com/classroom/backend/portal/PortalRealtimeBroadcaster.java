@@ -42,6 +42,18 @@ public class PortalRealtimeBroadcaster {
         broadcast(payload);
     }
 
+    public void broadcastLocationUpdate(String routeId, double lat, double lng, java.time.Instant recordedAt) {
+        PortalWsMessage payload = PortalWsMessage.builder()
+                .type("LOCATION_UPDATE")
+                .section("transport")
+                .routeId(routeId)
+                .lat(lat)
+                .lng(lng)
+                .recordedAt(recordedAt != null ? recordedAt.toString() : null)
+                .build();
+        broadcast(payload);
+    }
+
     public void sendNavigate(WebSocketSession session, PortalSection section) {
         PortalWsMessage payload = PortalWsMessage.builder()
                 .type("NAVIGATE")

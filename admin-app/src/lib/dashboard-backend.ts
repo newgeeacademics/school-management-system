@@ -78,6 +78,18 @@ function relationId(value: unknown): string | undefined {
   return undefined;
 }
 
+export function mapTeacherFromApi(t: Record<string, unknown>): Teacher {
+  const appUser = t.appUser as Record<string, unknown> | undefined;
+  return {
+    id: String(t.id),
+    name: String(t.name ?? ''),
+    subject: String(t.subject ?? ''),
+    initials: String(t.initials ?? (String(t.name ?? '').slice(0, 2).toUpperCase() || 'ED')),
+    email: t.email ? String(t.email) : appUser?.email ? String(appUser.email) : undefined,
+    phone: t.phone ? String(t.phone) : undefined,
+  };
+}
+
 const MEAL_TO_API: Record<string, string> = {
   Déjeuner: 'DEJEUNER',
   Dîner: 'DINER',
@@ -225,14 +237,7 @@ export async function loadDashboardFromBackend(setters: DashboardBackendSetters)
     adminApiFetch<Record<string, unknown>[]>('/api/payments/receipts'),
   ]);
 
-  setters.setTeachers(
-    teachers.map((t) => ({
-      id: String(t.id),
-      name: String(t.name ?? ''),
-      subject: String(t.subject ?? ''),
-      initials: String(t.initials ?? (String(t.name ?? '').slice(0, 2).toUpperCase() || 'ED')),
-    }))
-  );
+  setters.setTeachers(teachers.map(mapTeacherFromApi));
   setters.setClasses(
     classes.map((c) => ({
       id: String(c.id),
@@ -543,11 +548,65 @@ export async function createClassOnBackend(item: {
   });
 }
 
-export async function createTeacherOnBackend(item: { name: string; subject: string; initials?: string }) {
-  return adminApiFetch('/api/teachers', {
+export async function createTeacherOnBackend(item: {
+  name: string;
+  subject: string;
+  email?: string;
+  password?: string;
+  phone?: string;
+  homeroomClassIds?: string[];
+}) {
+  const data = await adminApiFetch<Record<string, unknown>>('/api/teachers', {
     method: 'POST',
-    body: JSON.stringify(item),
+    body: JSON.stringify({
+      name: item.name,
+      subject: item.subject,
+      email: item.email?.trim() || undefined,
+      password: item.password?.trim() || undefined,
+      phone: item.phone?.trim() || undefined,
+      homeroomClassIds: item.homeroomClassIds?.length ? item.homeroomClassIds : undefined,
+    }),
   });
+  return mapTeacherFromApi(data);
+}
+
+export async function updateTeacherOnBackend(
+  id: string,
+  item: {
+    name: string;
+    subject: string;
+    email?: string;
+    password?: string;
+    phone?: string;
+    homeroomClassIds?: string[];
+  }
+) {
+  const data = await adminApiFetch<Record<string, unknown>>(`/api/teachers/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      name: item.name,
+      subject: item.subject,
+      email: item.email?.trim() || undefined,
+      password: item.password?.trim() || undefined,
+      phone: item.phone?.trim() || undefined,
+      homeroomClassIds: item.homeroomClassIds ?? [],
+    }),
+  });
+  return mapTeacherFromApi(data);
+}
+
+export async function deleteTeacherOnBackend(id: string) {
+  await adminApiFetch(`/api/teachers/${id}`, { method: 'DELETE' });
+}
+
+export async function refreshUsersFromBackend(): Promise<AppUser[]> {
+  const users = await adminApiFetch<Record<string, unknown>[]>('/api/users');
+  return users.map((u) => ({
+    id: String(u.id),
+    name: String(u.name ?? ''),
+    email: String(u.email ?? ''),
+    role: USER_ROLE_FROM_API[String(u.role)] ?? 'teacher',
+  }));
 }
 
 export async function createStudentOnBackend(item: { name: string; classId?: string }) {

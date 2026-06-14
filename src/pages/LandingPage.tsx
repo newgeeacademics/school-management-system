@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -18,19 +19,14 @@ import {
   Users,
   Utensils,
   Wallet,
+  X,
 } from 'lucide-react';
 
 import { AppLogo } from '@/components/AppLogo';
 import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
 import { useTranslation } from '@/i18n';
 import { getUserPortalLoginUrl } from '@/lib/app-urls';
+import { getLandingMobilePortal } from '@/lib/landing-mobile-portal';
 import { useLandingReveal } from './use-landing-reveal';
 import './landing-page.css';
 
@@ -68,6 +64,8 @@ export const LandingPage = () => {
     { value: t('landing.stat4Value'), label: t('landing.stat4Label') },
   ];
 
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+
   return (
     <div className='landing'>
       <header className='landing__header'>
@@ -101,9 +99,11 @@ export const LandingPage = () => {
             </Link>
           </nav>
 
-          <MobileNav />
+          <MobileMenuButton open={mobileMenuOpen} onOpen={() => setMobileMenuOpen(true)} />
         </div>
       </header>
+
+      <LandingMobileMenu open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
       <main ref={mainRef}>
         <section className='landing__hero landing__reveal landing__reveal--in'>
@@ -379,48 +379,111 @@ function LandingFaqSection() {
   );
 }
 
-function MobileNav() {
+function MobileMenuButton({ open, onOpen }: { open: boolean; onOpen: () => void }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-
-  const close = () => setOpen(false);
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <button type='button' className='landing__menu-btn' aria-label='Menu'>
-          <Menu size={18} />
-        </button>
-      </SheetTrigger>
-      <SheetContent side='right' className='w-full max-w-[320px] p-4'>
-        <SheetHeader>
-          <SheetTitle className='sr-only'>{t('landing.brandName')}</SheetTitle>
-        </SheetHeader>
+    <div className='landing__header-mobile'>
+      <button
+        type='button'
+        className='landing__menu-btn'
+        aria-label={t('landing.mobileMenuTitle')}
+        aria-expanded={open}
+        onClick={onOpen}
+      >
+        <Menu size={20} strokeWidth={2} />
+      </button>
+    </div>
+  );
+}
+
+function LandingMobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    document.body.classList.toggle('landing-mobile-menu-open', open);
+    return () => document.body.classList.remove('landing-mobile-menu-open');
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open, onClose]);
+
+  if (!open || typeof document === 'undefined') return null;
+
+  const portalTarget = getLandingMobilePortal();
+
+  return createPortal(
+    <div
+      className='landing landing__mobile-root'
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 99999,
+        width: '100vw',
+        height: '100dvh',
+      }}
+    >
+      <button
+        type='button'
+        className='landing__mobile-backdrop'
+        aria-label={t('landing.mobileMenuClose')}
+        onClick={onClose}
+      />
+      <aside
+        className='landing__mobile-drawer'
+        role='dialog'
+        aria-modal='true'
+        aria-label={t('landing.mobileMenuTitle')}
+      >
+        <div className='landing__mobile-drawer-header'>
+          <p className='landing__mobile-drawer-title'>{t('landing.mobileMenuTitle')}</p>
+          <button type='button' className='landing__mobile-close' aria-label={t('landing.mobileMenuClose')} onClick={onClose}>
+            <X size={20} strokeWidth={2} aria-hidden />
+          </button>
+        </div>
         <nav className='landing__mobile-panel'>
-          <a className='landing__btn landing__btn--ghost' href='#fonctionnalites' onClick={close}>
+          <Link className='landing__btn landing__btn--primary landing__btn--mobile-cta landing__mobile-link' to='/register' onClick={onClose}>
+            {t('school.registerSchool')}
+          </Link>
+          <a className='landing__btn landing__btn--ghost landing__mobile-link' href='#fonctionnalites' onClick={onClose}>
             {t('landing.navFeatures')}
           </a>
-          <a className='landing__btn landing__btn--ghost' href='#comment-ca-marche' onClick={close}>
+          <a className='landing__btn landing__btn--ghost landing__mobile-link' href='#comment-ca-marche' onClick={onClose}>
             {t('landing.navHowItWorks')}
           </a>
-          <a className='landing__btn landing__btn--ghost' href='#modules' onClick={close}>
+          <a className='landing__btn landing__btn--ghost landing__mobile-link' href='#modules' onClick={onClose}>
             {t('landing.navModules')}
           </a>
-          <a className='landing__btn landing__btn--ghost' href='#faq' onClick={close}>
+          <a className='landing__btn landing__btn--ghost landing__mobile-link' href='#faq' onClick={onClose}>
             {t('landing.navFaq')}
           </a>
-          <LanguageSwitcher showLabel />
-          <a className='landing__btn landing__btn--ghost' href={getUserPortalLoginUrl()} onClick={close}>
+          <LanguageSwitcher showLabel className='landing__mobile-lang' />
+          <a
+            className='landing__btn landing__btn--ghost landing__mobile-link'
+            href={getUserPortalLoginUrl()}
+            onClick={onClose}
+          >
             {t('landing.navUserPortal')}
           </a>
-          <Link className='landing__btn landing__btn--ghost' to='/login' onClick={close}>
+        </nav>
+        <div className='landing__mobile-panel-cta'>
+          <Link className='landing__btn landing__btn--ghost landing__btn--mobile-cta' to='/login' onClick={onClose}>
             {t('landing.signIn')}
           </Link>
-          <Link className='landing__btn landing__btn--primary' to='/register' onClick={close}>
-            {t('landing.heroCtaRegister')}
-          </Link>
-        </nav>
-      </SheetContent>
-    </Sheet>
+        </div>
+      </aside>
+    </div>,
+    portalTarget
   );
 }

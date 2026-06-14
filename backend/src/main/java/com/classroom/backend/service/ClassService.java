@@ -5,6 +5,7 @@ import com.classroom.backend.model.ClassItem;
 import com.classroom.backend.model.Teacher;
 import com.classroom.backend.repository.ClassItemRepository;
 import com.classroom.backend.repository.TeacherRepository;
+import com.classroom.backend.util.ClassCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +41,8 @@ public class ClassService {
         }
 
         ClassItem classItem = ClassItem.builder()
-                .name(request.getName())
+                .name(ClassCodeGenerator.ensureUniqueClassName(
+                        request.getName(), classItemRepository.findAll()))
                 .level(request.getLevel())
                 .studentsCount(request.getStudentsCount())
                 .homeroomTeacher(homeroomTeacher)
@@ -52,7 +54,8 @@ public class ClassService {
     @Transactional
     public ClassItem update(String id, ClassItemRequest request) {
         ClassItem classItem = findById(id);
-        classItem.setName(request.getName());
+        classItem.setName(ClassCodeGenerator.ensureUniqueClassName(
+                request.getName(), classItemRepository.findAll(), id));
         classItem.setLevel(request.getLevel());
         classItem.setStudentsCount(request.getStudentsCount());
 

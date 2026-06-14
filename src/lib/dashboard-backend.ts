@@ -645,6 +645,7 @@ export async function createTeacherOnBackend(item: {
   email?: string;
   password?: string;
   phone?: string;
+  homeroomClassIds?: string[];
 }) {
   const data = await adminApiFetch<Record<string, unknown>>('/api/teachers', {
     method: 'POST',
@@ -654,6 +655,7 @@ export async function createTeacherOnBackend(item: {
       email: item.email?.trim() || undefined,
       password: item.password?.trim() || undefined,
       phone: item.phone?.trim() || undefined,
+      homeroomClassIds: item.homeroomClassIds?.length ? item.homeroomClassIds : undefined,
     }),
   });
   return mapTeacherFromApi(data);
@@ -661,7 +663,14 @@ export async function createTeacherOnBackend(item: {
 
 export async function updateTeacherOnBackend(
   id: string,
-  item: { name: string; subject: string; email?: string; password?: string; phone?: string }
+  item: {
+    name: string;
+    subject: string;
+    email?: string;
+    password?: string;
+    phone?: string;
+    homeroomClassIds?: string[];
+  }
 ) {
   const data = await adminApiFetch<Record<string, unknown>>(`/api/teachers/${id}`, {
     method: 'PUT',
@@ -671,6 +680,7 @@ export async function updateTeacherOnBackend(
       email: item.email?.trim() || undefined,
       password: item.password?.trim() || undefined,
       phone: item.phone?.trim() || undefined,
+      homeroomClassIds: item.homeroomClassIds ?? [],
     }),
   });
   return mapTeacherFromApi(data);

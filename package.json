@@ -9,10 +9,12 @@
     "dev:admin": "npm --prefix admin-app run dev",
     "dev:portal": "npm --prefix user-portal-app run dev",
     "dev:finance": "npm --prefix finance-app run dev",
+    "dev:tracking": "npm --prefix tracking-app run dev",
     "build": "tsc && vite build",
     "build:admin": "npm --prefix admin-app run build",
     "build:portal": "npm --prefix user-portal-app run build",
     "build:finance": "npm --prefix finance-app run build",
+    "build:tracking": "npm --prefix tracking-app run build",
     "preview": "vite preview"
   },
   "devDependencies": {

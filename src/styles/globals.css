@@ -157,6 +157,27 @@
   }
 }
 
+/* Landing mobile menu — rendered in #landing-mobile-portal (sibling of #root) */
+#landing-mobile-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  pointer-events: none;
+}
+
+#landing-mobile-portal:not(:empty) {
+  pointer-events: auto;
+}
+
+body.landing-mobile-menu-open {
+  overflow: hidden !important;
+}
+
+body.landing-mobile-menu-open .landing__header {
+  z-index: 1 !important;
+  backdrop-filter: none !important;
+}
+
 @layer utilities {
   .grain-texture {
     position: relative;

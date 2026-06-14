@@ -203,6 +203,7 @@ export type NewTeacherFormState = {
   email: string;
   password: string;
   phone: string;
+  homeroomClassIds: string[];
 };
 
 export type NewStudentFormState = {

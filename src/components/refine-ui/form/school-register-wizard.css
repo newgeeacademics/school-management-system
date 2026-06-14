@@ -516,66 +516,6 @@
 
 @media (max-width: 899px) {
   .school-register {
-    padding: 0;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .school-register__shell {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    grid-template-columns: 1fr;
-    width: 100%;
-    max-width: none;
-    row-gap: 20px;
-    padding: 48px 16px calc(16px + env(safe-area-inset-bottom));
-  }
-
-  .school-register__topbar {
-    display: flex;
-  }
-
-  .school-register__logo--header {
-    display: none;
-  }
-
-  .school-register__header {
-    text-align: left;
-    margin-bottom: 0;
-  }
-
-  .school-register__title {
-    font-size: 1.25rem;
-  }
-
-  .school-register__fields-bare {
-    max-width: none;
-    flex: 1;
-  }
-
-  .school-register__grid-2 {
-    grid-template-columns: 1fr;
-  }
-
-  .school-register__footerbar {
-    display: flex;
-    flex-direction: row;
-    gap: 12px;
-    margin-top: auto;
-    padding-top: 16px;
-  }
-
-  .school-register__footerbar > .school-register__nav-back--footer,
-  .school-register__footerbar > .school-register__nav-next {
-    grid-column: unset;
-    justify-self: stretch;
-    max-width: none;
-    flex: 1;
-  }
-
-  .school-register__nav-back--footer svg {
-    display: inline;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   }
 }

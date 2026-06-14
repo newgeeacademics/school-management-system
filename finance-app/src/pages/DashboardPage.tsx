@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
   BarChart2,
   BookMarked,
@@ -49,9 +50,12 @@ import {
   createTeacherOnBackend,
   createTransportOnBackend,
   createUserOnBackend,
+  deleteTeacherOnBackend,
   isBackendApiConfigured,
   loadDashboardFromBackend,
+  refreshUsersFromBackend,
   updateAttendanceOnBackend,
+  updateTeacherOnBackend,
   updateTransportStudentsOnBackend,
 } from '@/lib/dashboard-backend';
 
@@ -79,6 +83,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import { ensureUniqueClassName } from '@/lib/class-name-utils';
 import { UserPortalSidebarLink } from '@/components/UserPortalSidebarLink';
 
 import {
@@ -257,7 +262,7 @@ const sectionConfig: Record<
     title: 'Enseignants et responsabilités',
     description:
       "Gardez une vue claire sur l’équipe pédagogique, leurs matières et leurs classes.",
-    cta: 'Inviter un enseignant',
+    cta: 'Ajouter un enseignant',
   },
   students: {
     kicker: 'Suivi des élèves',
@@ -526,6 +531,7 @@ export const DashboardPage: React.FC = () => {
   }, [role, currentNavItems, activeSection]);
 
   const backendSync = isBackendApiConfigured();
+  const teacherCreateFormRef = React.useRef<HTMLDivElement>(null);
 
   const [teachers, setTeachers] = React.useState<Teacher[]>([]);
   const [classes, setClasses] = React.useState<ClassItem[]>([]);
@@ -564,6 +570,10 @@ export const DashboardPage: React.FC = () => {
     React.useState<NewTeacherFormState>({
     name: '',
     subject: '',
+    email: '',
+    password: '',
+    phone: '',
+    homeroomClassIds: [],
   });
   const [teacherSubjectPreset, setTeacherSubjectPreset] = React.useState('');
 
@@ -719,6 +729,20 @@ export const DashboardPage: React.FC = () => {
 
   const getMatiereName = (id?: string) =>
     id ? matieres.find((m) => m.id === id)?.name ?? '—' : '—';
+
+  const syncPortalUsers = async () => {
+    if (!backendSync) return;
+    try {
+      setUsers(await refreshUsersFromBackend());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const scrollToTeacherForm = () => {
+    teacherCreateFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.setTimeout(() => document.getElementById('teacher-name')?.focus(), 350);
+  };
 
   const handleCreateParent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -912,11 +936,13 @@ export const DashboardPage: React.FC = () => {
     } else if (typeForLevel && LEVELS_BY_SCHOOL_TYPE[typeForLevel as SchoolType]?.length) {
       levelLabel = `${typeForLevel} - ${LEVELS_BY_SCHOOL_TYPE[typeForLevel as SchoolType][0]}`;
     }
+    const existingNames = classes.map((classe) => classe.name);
+    const uniqueName = ensureUniqueClassName(newClass.name.trim(), existingNames);
     setClasses((prev) => [
       ...prev,
       {
         id,
-        name: newClass.name.trim(),
+        name: uniqueName,
         level: levelLabel,
         studentsCount: Number(newClass.studentsCount || 0),
         homeroomTeacherId: newClass.homeroomTeacherId || undefined,
@@ -924,7 +950,7 @@ export const DashboardPage: React.FC = () => {
     ]);
     if (backendSync) {
       void createClassOnBackend({
-        name: newClass.name.trim(),
+        name: uniqueName,
         level: levelLabel,
         studentsCount: Number(newClass.studentsCount || 0),
         homeroomTeacherId: newClass.homeroomTeacherId || undefined,
@@ -939,33 +965,104 @@ export const DashboardPage: React.FC = () => {
     });
   };
 
-  const handleCreateTeacher = (e: React.FormEvent) => {
+  const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTeacher.name.trim()) return;
-    const id = `t-${Date.now()}`;
-    const initials = newTeacher.name
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase() ?? '')
-      .join('');
-    setTeachers((prev) => [
-      ...prev,
-      {
-        id,
-        initials: initials || 'ED',
-        name: newTeacher.name.trim(),
-        subject: newTeacher.subject.trim() || 'Matière à définir',
-      },
-    ]);
-    if (backendSync) {
-      void createTeacherOnBackend({
-        name: newTeacher.name.trim(),
-        subject: newTeacher.subject.trim() || 'Matière à définir',
-        initials: initials || 'ED',
-      }).catch((err) => console.error(err));
+    if (!newTeacher.email.trim() && !newTeacher.phone.trim()) {
+      toast.error('Email ou téléphone requis pour la connexion portail');
+      return;
     }
-    setNewTeacher({ name: '', subject: '' });
+    const payload = {
+      name: newTeacher.name.trim(),
+      subject: newTeacher.subject.trim() || 'Matière à définir',
+      email: newTeacher.email.trim() || undefined,
+      password: newTeacher.password.trim() || undefined,
+      phone: newTeacher.phone.trim() || undefined,
+      homeroomClassIds: newTeacher.homeroomClassIds,
+    };
+    try {
+      if (backendSync) {
+        const created = await createTeacherOnBackend(payload);
+        setTeachers((prev) => [...prev, created]);
+        applyHomeroomClasses(created.id, payload.homeroomClassIds ?? []);
+        await syncPortalUsers();
+      } else {
+        const initials = payload.name
+          .split(' ')
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((p) => p[0]?.toUpperCase() ?? '')
+          .join('');
+        const id = `t-${Date.now()}`;
+        setTeachers((prev) => [...prev, { id, initials: initials || 'ED', ...payload }]);
+        applyHomeroomClasses(id, payload.homeroomClassIds ?? []);
+      }
+      toast.success('Enseignant créé avec compte portail');
+      setNewTeacher({
+        name: '',
+        subject: '',
+        email: '',
+        password: '',
+        phone: '',
+        homeroomClassIds: [],
+      });
+      setTeacherSubjectPreset('');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
+  };
+
+  const applyHomeroomClasses = (teacherId: string, homeroomClassIds: string[]) => {
+    const idSet = new Set(homeroomClassIds);
+    setClasses((prev) =>
+      prev.map((c) => {
+        if (idSet.has(c.id)) return { ...c, homeroomTeacherId: teacherId };
+        if (c.homeroomTeacherId === teacherId) return { ...c, homeroomTeacherId: undefined };
+        return c;
+      })
+    );
+  };
+
+  const handleUpdateTeacher = async (
+    id: string,
+    data: {
+      name: string;
+      subject: string;
+      email?: string;
+      password?: string;
+      phone?: string;
+      homeroomClassIds?: string[];
+    }
+  ) => {
+    try {
+      if (backendSync) {
+        const updated = await updateTeacherOnBackend(id, data);
+        setTeachers((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      } else {
+        setTeachers((prev) => prev.map((t) => (t.id === id ? { ...t, ...data } : t)));
+      }
+      applyHomeroomClasses(id, data.homeroomClassIds ?? []);
+      if (backendSync) await syncPortalUsers();
+      toast.success('Enseignant mis à jour');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
+  };
+
+  const handleDeleteTeacher = async (id: string) => {
+    try {
+      if (backendSync) {
+        await deleteTeacherOnBackend(id);
+        await syncPortalUsers();
+      }
+      setTeachers((prev) => prev.filter((t) => t.id !== id));
+      setClasses((prev) =>
+        prev.map((c) => (c.homeroomTeacherId === id ? { ...c, homeroomTeacherId: undefined } : c))
+      );
+      toast.success('Enseignant supprimé');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
   };
 
   const handleCreateStudent = (e: React.FormEvent) => {
@@ -1891,7 +1988,14 @@ export const DashboardPage: React.FC = () => {
               </p>
             </div>
             <div className='flex items-center gap-2'>
-              {current.cta ? <Button size='sm'>{current.cta}</Button> : null}
+              {current.cta ? (
+                <Button
+                  size='sm'
+                  onClick={activeSection === 'teachers' ? scrollToTeacherForm : undefined}
+                >
+                  {current.cta}
+                </Button>
+              ) : null}
             </div>
           </div>
         </header>
@@ -1956,12 +2060,17 @@ export const DashboardPage: React.FC = () => {
           {activeSection === 'teachers' && (
             <TeachersSection
               teachers={teachers}
+              classes={classes}
               newTeacher={newTeacher}
               setNewTeacher={setNewTeacher}
               teacherSubjectPreset={teacherSubjectPreset}
               setTeacherSubjectPreset={setTeacherSubjectPreset}
               onCreateTeacher={handleCreateTeacher}
+              onUpdateTeacher={handleUpdateTeacher}
+              onDeleteTeacher={handleDeleteTeacher}
               subjectOptions={SUBJECT_OPTIONS}
+              getClassName={getClassName}
+              createFormRef={teacherCreateFormRef}
             />
           )}
 
