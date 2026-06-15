@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from '@/i18n';
 import { SignInForm } from '@/components/refine-ui/form/sign-in-form';
-import { GraduationCap } from 'lucide-react';
+import { AppLogo } from '@/components/AppLogo';
 
 function AuthIllustrationSet() {
   const { t } = useTranslation();
@@ -30,10 +30,7 @@ function AuthIllustrationSet() {
 
       <div className='relative flex h-full w-full flex-col justify-end p-6 sm:p-10'>
         <div className='max-w-xl rounded-2xl border border-white/60 bg-white/80 p-5 shadow-lg backdrop-blur-sm sm:p-6'>
-          <div className='mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500 text-white'>
-            <GraduationCap className='h-5 w-5' />
-          </div>
-          <div className='text-xl font-bold text-gray-900 sm:text-2xl'>{t('landing.brandName')} Admin</div>
+          <AppLogo className='mb-3' name={`${t('landing.brandName')} Admin`} />
           <p className='mt-2 text-sm text-gray-700 sm:text-base'>{t('auth.loginToClassroom')}</p>
         </div>
       </div>
