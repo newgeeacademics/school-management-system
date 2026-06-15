@@ -1,18 +1,16 @@
-import { GraduationCap } from 'lucide-react';
+import logoSrc from '@/assets/logo/newgee-logo.png';
 import { cn } from '@/lib/utils';
 
 type AppLogoProps = {
   className?: string;
   name?: string;
+  markClassName?: string;
 };
 
-export function AppLogo({ className, name = 'NewGee' }: AppLogoProps) {
+export function AppLogo({ className, name = 'NewGee', markClassName }: AppLogoProps) {
   return (
     <div className={cn('app-logo', className)} aria-label={name}>
-      <span className='app-logo__mark' aria-hidden='true'>
-        <GraduationCap size={18} strokeWidth={2.25} />
-      </span>
-      <span className='app-logo__name'>{name}</span>
+      <img src={logoSrc} alt={name} className={cn('app-logo__mark', markClassName)} />
     </div>
   );
 }
