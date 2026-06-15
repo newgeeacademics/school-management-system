@@ -2,7 +2,7 @@
   "name": "newgee-main-app",
   "private": true,
   "version": "0.0.0",
-  "description": "NewGee main site (canonical): marketing, school registration, /login and /dashboard at repo root src/. Do not use a separate classroom-app — use this package only.",
+  "description": "NewGee classroom app (canonical): root src/ — landing, school registration, /login and /dashboard. Deploy branch: classroom-app. Replaces the old classroom-app/ folder.",
   "type": "module",
   "scripts": {
     "dev": "vite",

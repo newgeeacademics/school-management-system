@@ -1,5 +1,6 @@
 # Sync monorepo apps to per-app Git branches for Vercel deploy.
-# Root src/ (main marketing app + /dashboard): develop on branch `main`, then run this script.
+# Root src/ (replaces deleted classroom-app/ folder): deploy branch `classroom-app`.
+# Develop in the monorepo, then run this script to publish root src/ to `classroom-app`.
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path $PSScriptRoot -Parent
 $WtRoot = Join-Path $env:TEMP "newgee-branch-sync"
@@ -34,19 +35,24 @@ New-Item -ItemType Directory -Path $WtRoot | Out-Null
 
 Push-Location $RepoRoot
 
-# --- main ---
-git worktree add (Join-Path $WtRoot "main") main
-Copy-AppFiles -Source $RepoRoot -Dest (Join-Path $WtRoot "main") -Files $AppFiles
-Copy-Item (Join-Path $RepoRoot ".gitignore") (Join-Path $WtRoot "main\.gitignore") -Force
-Copy-Item (Join-Path $RepoRoot "VERCEL.md") (Join-Path $WtRoot "main\VERCEL.md") -Force -ErrorAction SilentlyContinue
-Remove-Clutter (Join-Path $WtRoot "main")
-Push-Location (Join-Path $WtRoot "main")
+# --- classroom-app (root src/: landing, registration, /login, /dashboard) ---
+if (git show-ref --verify --quiet refs/heads/classroom-app) {
+    git worktree add (Join-Path $WtRoot "classroom-app") classroom-app
+} else {
+    git branch classroom-app main
+    git worktree add (Join-Path $WtRoot "classroom-app") classroom-app
+}
+Copy-AppFiles -Source $RepoRoot -Dest (Join-Path $WtRoot "classroom-app") -Files $AppFiles
+Copy-Item (Join-Path $RepoRoot ".gitignore") (Join-Path $WtRoot "classroom-app\.gitignore") -Force
+Copy-Item (Join-Path $RepoRoot "VERCEL.md") (Join-Path $WtRoot "classroom-app\VERCEL.md") -Force -ErrorAction SilentlyContinue
+Remove-Clutter (Join-Path $WtRoot "classroom-app")
+Push-Location (Join-Path $WtRoot "classroom-app")
 git add -A
 git diff --cached --quiet
 if ($LASTEXITCODE -ne 0) {
-    git commit -m "Sync main marketing app from monorepo (main branch)"
-    git push origin main
-} else { Write-Host "main: no changes" }
+    git commit -m "Sync classroom-app (root src) from monorepo"
+    git push -u origin classroom-app
+} else { Write-Host "classroom-app: no changes" }
 Pop-Location
 
 # --- admin ---
@@ -119,7 +125,7 @@ if ($LASTEXITCODE -ne 0) {
 Pop-Location
 
 # cleanup worktrees
-git worktree remove (Join-Path $WtRoot "main") --force
+git worktree remove (Join-Path $WtRoot "classroom-app") --force
 git worktree remove (Join-Path $WtRoot "admin") --force
 git worktree remove (Join-Path $WtRoot "user-portal") --force
 git worktree remove (Join-Path $WtRoot "finance") --force
