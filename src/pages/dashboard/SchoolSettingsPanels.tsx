@@ -23,7 +23,6 @@ import {
 import type { School } from '@/types';
 import type { SectionId } from './dashboardTypes';
 
-const LOCAL_SCHOOLS_KEY = 'newgee_local_schools';
 const BRANDING_STORAGE_KEY = 'newgee_school_branding_v1';
 
 export const SCHOOL_SETTINGS_IDS = [
@@ -65,39 +64,6 @@ const defaultBranding: BrandingPersisted = {
   fontHeading: 'Inter',
   fontBody: 'Inter',
 };
-
-function readLatestSchool(): Partial<School> | null {
-  try {
-    const raw = window.localStorage.getItem(LOCAL_SCHOOLS_KEY);
-    if (!raw) return null;
-    const list = JSON.parse(raw) as Partial<School>[];
-    if (!Array.isArray(list) || list.length === 0) return null;
-    return list[list.length - 1];
-  } catch {
-    return null;
-  }
-}
-
-function persistSchoolPatch(patch: Partial<School>) {
-  try {
-    const raw = window.localStorage.getItem(LOCAL_SCHOOLS_KEY) || '[]';
-    const list = JSON.parse(raw) as Partial<School>[];
-    if (!Array.isArray(list) || list.length === 0) {
-      const now = new Date().toISOString();
-      window.localStorage.setItem(
-        LOCAL_SCHOOLS_KEY,
-        JSON.stringify([{ id: `sch-${Date.now()}`, ...patch, createdAt: now, updatedAt: now }]),
-      );
-      return;
-    }
-    const last = { ...list[list.length - 1], ...patch, updatedAt: new Date().toISOString() };
-    list[list.length - 1] = last;
-    window.localStorage.setItem(LOCAL_SCHOOLS_KEY, JSON.stringify(list));
-  } catch (e) {
-    console.error(e);
-    throw e;
-  }
-}
 
 function readBranding(): BrandingPersisted {
   try {

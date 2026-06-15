@@ -300,7 +300,6 @@ export function SchoolRegisterWizard() {
     setSubmitError(null);
 
     let logoUrl = '';
-    let logoCldPubId = '';
 
     if (logoFiles.length > 0 && CLOUDINARY_UPLOAD_URL && CLOUDINARY_UPLOAD_PRESET) {
       try {
@@ -311,7 +310,6 @@ export function SchoolRegisterWizard() {
         if (res.ok) {
           const data = await res.json();
           logoUrl = data.secure_url || '';
-          logoCldPubId = data.public_id || '';
         }
       } catch (err) {
         console.error('Logo upload failed', err);
