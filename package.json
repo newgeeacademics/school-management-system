@@ -2,7 +2,7 @@
   "name": "newgee-main-app",
   "private": true,
   "version": "0.0.0",
-  "description": "NewGee main site: marketing, school registration, /login and /dashboard (separate from admin-app and user-portal-app)",
+  "description": "NewGee main site (canonical): marketing, school registration, /login and /dashboard at repo root src/. Do not use a separate classroom-app — use this package only.",
   "type": "module",
   "scripts": {
     "dev": "vite",

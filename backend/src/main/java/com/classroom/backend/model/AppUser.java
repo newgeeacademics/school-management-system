@@ -30,4 +30,8 @@ public class AppUser {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
+
+    /** School this account administers (set when registering an establishment). */
+    @Column(name = "school_id")
+    private String schoolId;
 }

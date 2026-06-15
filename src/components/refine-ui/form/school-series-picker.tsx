@@ -23,6 +23,12 @@ export function SchoolSeriesPicker({ system, schoolType, value, onChange }: Scho
     setDraft('');
   };
 
+  const addAllSeries = () => {
+    if (available.length === 0) return;
+    onChange([...options]);
+    setDraft('');
+  };
+
   const removeSeries = (item: string) => {
     onChange(value.filter((s) => s !== item));
   };
@@ -72,6 +78,14 @@ export function SchoolSeriesPicker({ system, schoolType, value, onChange }: Scho
         >
           <Plus className='size-4' aria-hidden />
           {t('school.seriesAdd')}
+        </button>
+        <button
+          type='button'
+          className='school-register__series-add-btn school-register__series-add-btn--secondary'
+          onClick={addAllSeries}
+          disabled={available.length === 0}
+        >
+          {t('school.seriesAddAll')}
         </button>
       </div>
 

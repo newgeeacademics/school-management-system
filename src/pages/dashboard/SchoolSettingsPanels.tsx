@@ -156,13 +156,12 @@ export function SchoolSettingsContent({ section, onNavigate }: Props) {
   const [school, setSchool] = React.useState<Partial<School> | null>(null);
 
   React.useEffect(() => {
-    if (isBackendApiConfigured()) {
-      void fetchLatestSchoolFromBackend()
-        .then((loaded) => setSchool(loaded ?? readLatestSchool()))
-        .catch(() => setSchool(readLatestSchool()));
-    } else {
-      setSchool(readLatestSchool());
-    }
+    void fetchLatestSchoolFromBackend()
+      .then((loaded) => setSchool(loaded))
+      .catch(() => {
+        setSchool(null);
+        toast.error('Impossible de charger le profil école depuis le serveur.', { richColors: true });
+      });
   }, [cacheTick]);
 
   const linkRow = (label: string, target: SectionId, text: string) => (
@@ -182,12 +181,7 @@ export function SchoolSettingsContent({ section, onNavigate }: Props) {
           school={school}
           onSaved={() => {
             setCacheTick((n) => n + 1);
-            toast.success(
-              isBackendApiConfigured()
-                ? 'Profil enregistré sur le serveur.'
-                : 'Profil enregistré (mémoire locale).',
-              { richColors: true },
-            );
+            toast.success('Profil enregistré sur le serveur.', { richColors: true });
           }}
           linkRow={linkRow}
         />
@@ -325,11 +319,14 @@ function SchoolProfilePanel({
       internalNotes: form.internalNotes || undefined,
     };
     try {
-      if (isBackendApiConfigured()) {
-        await persistSchoolPatchOnBackend(patch);
-      } else {
-        persistSchoolPatch(patch);
+      if (!isBackendApiConfigured()) {
+        toast.error(
+          'Connexion au serveur requise pour enregistrer le profil école.',
+          { richColors: true }
+        );
+        return;
       }
+      await persistSchoolPatchOnBackend(patch);
       onSaved();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Enregistrement impossible', { richColors: true });

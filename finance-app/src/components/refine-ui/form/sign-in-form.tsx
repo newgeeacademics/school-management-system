@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import { ChevronLeft } from 'lucide-react';
+import { AppLogo } from '@/components/AppLogo';
 import { cn } from '@/lib/utils';
 import { clearAuthSession, persistAuthSession } from '@/lib/auth';
 import { getMainAppOrigin } from '@/lib/main-app-url';
@@ -103,6 +104,7 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
         {!isEmbedded && <div className='absolute top-0 left-0 right-0 h-2 bg-gradient-finance' />}
 
         <div className='px-0 relative z-10 rental-field rental-field-1'>
+          {!isEmbedded ? <AppLogo className='mb-6' name='NewGee Finance' /> : null}
           <h1 className='text-4xl font-bold mb-2 text-gradient-finance'>
             {t('auth.welcomeBack')}
           </h1>

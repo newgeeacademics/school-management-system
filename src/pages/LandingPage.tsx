@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -9,33 +8,28 @@ import {
   Check,
   ChevronDown,
   ClipboardList,
-  Facebook,
   GraduationCap,
-  Instagram,
-  Linkedin,
+  LayoutDashboard,
   MapPin,
-  Menu,
   ShieldCheck,
   Users,
   Utensils,
   Wallet,
-  X,
 } from 'lucide-react';
 
-import { AppLogo } from '@/components/AppLogo';
-import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
+import logoSrc from '@/assets/logo/newgee-logo.png';
+
+import { LandingSiteChrome } from '@/components/landing/LandingSiteChrome';
 import { useTranslation } from '@/i18n';
-import { getUserPortalLoginUrl } from '@/lib/app-urls';
-import { getLandingMobilePortal } from '@/lib/landing-mobile-portal';
 import { useLandingReveal } from './use-landing-reveal';
 import './landing-page.css';
 
 const FEATURE_ICONS = [GraduationCap, Users, ClipboardList, CalendarDays, MapPin, ShieldCheck] as const;
 const MODULE_ICONS = [BarChart3, Users, ClipboardList, CalendarDays, Check, Wallet, Utensils, Bus] as const;
+const PLAN_IDS = ['starter', 'standard', 'establishment'] as const;
 
 export const LandingPage = () => {
   const { t } = useTranslation();
-  const year = new Date().getFullYear();
   const mainRef = React.useRef<HTMLElement>(null);
   useLandingReveal(mainRef);
 
@@ -55,6 +49,33 @@ export const LandingPage = () => {
     label: t(`landing.module${i + 1}`),
   }));
 
+  const previewNav: Array<{
+    icon: typeof LayoutDashboard;
+    label: string;
+    active?: boolean;
+  }> = [
+    { icon: LayoutDashboard, label: t('landing.previewNavOverview'), active: true },
+    { icon: Users, label: t('landing.previewNavStudents') },
+    { icon: ClipboardList, label: t('landing.previewNavGrades') },
+    { icon: CalendarDays, label: t('landing.previewNavSchedule') },
+    { icon: Wallet, label: t('landing.previewNavFinance') },
+  ];
+
+  const previewStats = [
+    { label: t('landing.previewStudents'), value: '428', trend: '+12' },
+    { label: t('landing.previewTeachers'), value: '36', trend: '+2' },
+    { label: t('landing.previewClasses'), value: '18', trend: '' },
+    { label: t('landing.previewAttendance'), value: '94%', trend: '+3%' },
+  ];
+
+  const previewActivity = [
+    t('landing.previewActivity1'),
+    t('landing.previewActivity2'),
+    t('landing.previewActivity3'),
+  ];
+
+  const previewBars = [68, 82, 74, 91, 88, 76, 94];
+
   const heroPoints = [t('landing.heroPoint1'), t('landing.heroPoint2'), t('landing.heroPoint3')];
 
   const stats = [
@@ -64,52 +85,12 @@ export const LandingPage = () => {
     { value: t('landing.stat4Value'), label: t('landing.stat4Label') },
   ];
 
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-
   return (
-    <div className='landing'>
-      <header className='landing__header'>
-        <div className='landing__header-inner'>
-          <Link to='/' aria-label={t('landing.logoAlt')}>
-            <AppLogo name={t('landing.brandName')} />
-          </Link>
-
-          <nav className='landing__nav-desktop' aria-label='Primary'>
-            <a className='landing__nav-link' href='#fonctionnalites'>
-              {t('landing.navFeatures')}
-            </a>
-            <a className='landing__nav-link' href='#comment-ca-marche'>
-              {t('landing.navHowItWorks')}
-            </a>
-            <a className='landing__nav-link' href='#modules'>
-              {t('landing.navModules')}
-            </a>
-            <a className='landing__nav-link' href='#faq'>
-              {t('landing.navFaq')}
-            </a>
-            <LanguageSwitcher showLabel className='landing__nav-link !inline-flex' />
-            <a className='landing__btn landing__btn--ghost' href={getUserPortalLoginUrl()}>
-              {t('landing.navUserPortal')}
-            </a>
-            <Link className='landing__btn landing__btn--ghost' to='/login'>
-              {t('landing.signIn')}
-            </Link>
-            <Link className='landing__btn landing__btn--primary' to='/register'>
-              {t('landing.heroCtaRegister')}
-            </Link>
-          </nav>
-
-          <MobileMenuButton open={mobileMenuOpen} onOpen={() => setMobileMenuOpen(true)} />
-        </div>
-      </header>
-
-      <LandingMobileMenu open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
-
+    <LandingSiteChrome>
       <main ref={mainRef}>
         <section className='landing__hero landing__reveal landing__reveal--in'>
           <div className='landing__hero-inner'>
             <div>
-              <span className='landing__badge'>{t('landing.heroBadge')}</span>
               <h1 className='landing__title'>
                 {t('landing.heroTitle')}{' '}
                 <span className='landing__title-accent'>{t('landing.heroTitleAccent')}</span>
@@ -137,36 +118,78 @@ export const LandingPage = () => {
             </div>
 
             <div className='landing__preview' aria-hidden='true'>
-              <div className='landing__preview-top'>
+              <div className='landing__preview-chrome'>
                 <span className='landing__preview-dot landing__preview-dot--blue' />
                 <span className='landing__preview-dot landing__preview-dot--green' />
                 <span className='landing__preview-dot' />
               </div>
-              <div className='landing__preview-body'>
-                <div className='landing__preview-card landing__preview-card--accent'>
-                  <p className='landing__preview-label'>{t('landing.brandName')}</p>
-                  <p className='landing__preview-value'>{t('landing.previewSchool')}</p>
-                  <span className='landing__preview-pill'>
-                    <MapPin size={12} />
-                    {t('landing.previewLocation')}
-                  </span>
-                </div>
-                <div className='landing__preview-grid'>
-                  <div className='landing__preview-card'>
-                    <p className='landing__preview-label'>{t('landing.previewStudents')}</p>
-                    <p className='landing__preview-value'>428</p>
+
+              <div className='landing__preview-app'>
+                <aside className='landing__preview-sidebar'>
+                  <img src={logoSrc} alt='' className='landing__preview-logo' />
+                  <nav className='landing__preview-nav'>
+                    {previewNav.map(({ icon: Icon, label, active }) => (
+                      <div
+                        key={label}
+                        className={`landing__preview-nav-item${active ? ' landing__preview-nav-item--active' : ''}`}
+                      >
+                        <Icon size={14} strokeWidth={2.25} />
+                        <span>{label}</span>
+                      </div>
+                    ))}
+                  </nav>
+                </aside>
+
+                <div className='landing__preview-main'>
+                  <header className='landing__preview-header'>
+                    <div>
+                      <p className='landing__preview-eyebrow'>{t('landing.previewDashboardEyebrow')}</p>
+                      <p className='landing__preview-heading'>{t('landing.previewDashboardTitle')}</p>
+                    </div>
+                    <div className='landing__preview-header-badges'>
+                      <span className='landing__preview-badge'>{t('landing.previewSchoolYear')}</span>
+                      <span className='landing__preview-badge landing__preview-badge--school'>
+                        {t('landing.previewSchool')}
+                      </span>
+                    </div>
+                  </header>
+
+                  <div className='landing__preview-stats'>
+                    {previewStats.map((stat) => (
+                      <div key={stat.label} className='landing__preview-stat'>
+                        <p className='landing__preview-stat-label'>{stat.label}</p>
+                        <div className='landing__preview-stat-row'>
+                          <p className='landing__preview-stat-value'>{stat.value}</p>
+                          {stat.trend ? (
+                            <span className='landing__preview-stat-trend'>{stat.trend}</span>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className='landing__preview-card'>
-                    <p className='landing__preview-label'>{t('landing.previewTeachers')}</p>
-                    <p className='landing__preview-value'>36</p>
-                  </div>
-                  <div className='landing__preview-card'>
-                    <p className='landing__preview-label'>{t('landing.previewClasses')}</p>
-                    <p className='landing__preview-value'>18</p>
-                  </div>
-                  <div className='landing__preview-card'>
-                    <p className='landing__preview-label'>{t('landing.previewAttendance')}</p>
-                    <p className='landing__preview-value'>94%</p>
+
+                  <div className='landing__preview-panels'>
+                    <div className='landing__preview-panel'>
+                      <p className='landing__preview-panel-title'>{t('landing.previewChartTitle')}</p>
+                      <div className='landing__preview-chart' role='presentation'>
+                        {previewBars.map((height, index) => (
+                          <span
+                            key={index}
+                            className='landing__preview-chart-bar'
+                            style={{ height: `${height}%` }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className='landing__preview-panel'>
+                      <p className='landing__preview-panel-title'>{t('landing.previewActivityTitle')}</p>
+                      <ul className='landing__preview-activity'>
+                        {previewActivity.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -247,6 +270,48 @@ export const LandingPage = () => {
           </div>
         </section>
 
+        <section className='landing__section landing__section--soft landing__reveal' id='plans'>
+          <div className='landing__section-inner'>
+            <div className='landing__section-head'>
+              <p className='landing__eyebrow'>{t('landing.plansEyebrow')}</p>
+              <h2 className='landing__section-title'>{t('landing.plansTitle')}</h2>
+              <p className='landing__section-desc'>{t('landing.plansDesc')}</p>
+            </div>
+            <div className='landing__plans-grid'>
+              {PLAN_IDS.map((planId) => (
+                <article
+                  key={planId}
+                  className={`landing__plan-card${planId === 'standard' ? ' landing__plan-card--featured' : ''}`}
+                >
+                  {planId === 'standard' && <span className='landing__plan-badge'>{t('plans.recommended')}</span>}
+                  <h3 className='landing__plan-name'>{t(`plans.${planId}Name`)}</h3>
+                  <p className='landing__plan-tagline'>{t(`plans.${planId}Tagline`)}</p>
+                  <p className='landing__plan-price'>
+                    {t(`plans.${planId}Price`)}
+                    {planId !== 'establishment' && <span className='landing__plan-period'>{t('plans.perMonth')}</span>}
+                  </p>
+                  <p className='landing__plan-limit'>{t(`plans.${planId}Limit`)}</p>
+                  <ul className='landing__plan-highlights'>
+                    {[1, 2, 3].map((n) => (
+                      <li key={n}>
+                        <Check size={14} aria-hidden />
+                        {t(`plans.${planId}Highlight${n}`)}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    className={`landing__btn${planId === 'standard' ? ' landing__btn--primary' : ' landing__btn--ghost'} landing__plan-cta`}
+                    to='/plans'
+                  >
+                    {t('landing.plansViewDetails')}
+                    <ArrowRight size={16} />
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <LandingFaqSection />
 
         <section className='landing__cta landing__reveal'>
@@ -263,70 +328,7 @@ export const LandingPage = () => {
           </div>
         </section>
       </main>
-
-      <footer className='landing__footer'>
-        <div className='landing__section-inner landing__footer-grid'>
-          <div>
-            <AppLogo name={t('landing.brandName')} />
-            <p className='landing__footer-tagline'>{t('landing.footerTagline')}</p>
-          </div>
-          <div>
-            <p className='landing__footer-heading'>{t('landing.footerContact')}</p>
-            <ul className='landing__footer-list'>
-              <li>
-                <span className='landing__footer-label'>{t('landing.footerPhoneLabel')}</span>
-                <a href='tel:+2250555965862'>+225 05 55 96 58 62</a>
-              </li>
-              <li>
-                <span className='landing__footer-label'>{t('landing.footerEmailLabel')}</span>
-                <a href='mailto:contact@newgeeacademy.com'>contact@newgeeacademy.com</a>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <p className='landing__footer-heading'>{t('landing.footerUsefulLinks')}</p>
-            <ul className='landing__footer-list'>
-              <li>
-                <a href='#faq'>{t('landing.navFaq')}</a>
-              </li>
-              <li>
-                <a href='#cgu'>{t('landing.footerCgu')}</a>
-              </li>
-              <li>
-                <a href='#mentions-legales'>{t('landing.footerLegal')}</a>
-              </li>
-              <li>
-                <a href='mailto:contact@newgeeacademy.com?subject=Support%20NewGee'>
-                  {t('landing.footerSupport')}
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <p className='landing__footer-heading'>{t('landing.footerSocial')}</p>
-            <p className='landing__footer-hint'>{t('landing.footerSocialHint')}</p>
-            <div className='landing__footer-social'>
-              <a href='https://www.linkedin.com' target='_blank' rel='noopener noreferrer' aria-label='LinkedIn'>
-                <Linkedin size={18} />
-              </a>
-              <a href='https://www.facebook.com' target='_blank' rel='noopener noreferrer' aria-label='Facebook'>
-                <Facebook size={18} />
-              </a>
-              <a href='https://www.instagram.com' target='_blank' rel='noopener noreferrer' aria-label='Instagram'>
-                <Instagram size={18} />
-              </a>
-            </div>
-          </div>
-        </div>
-        <div className='landing__section-inner landing__footer-legal'>
-          <p id='cgu'>{t('landing.footerCguBloc')}</p>
-          <p id='mentions-legales'>{t('landing.footerLegalBloc')}</p>
-          <p className='landing__footer-copy'>
-            {t('landing.footerCopyright', { year })} · {t('landing.footerSecondary')}
-          </p>
-        </div>
-      </footer>
-    </div>
+    </LandingSiteChrome>
   );
 };
 
@@ -376,114 +378,5 @@ function LandingFaqSection() {
         </div>
       </div>
     </section>
-  );
-}
-
-function MobileMenuButton({ open, onOpen }: { open: boolean; onOpen: () => void }) {
-  const { t } = useTranslation();
-
-  return (
-    <div className='landing__header-mobile'>
-      <button
-        type='button'
-        className='landing__menu-btn'
-        aria-label={t('landing.mobileMenuTitle')}
-        aria-expanded={open}
-        onClick={onOpen}
-      >
-        <Menu size={20} strokeWidth={2} />
-      </button>
-    </div>
-  );
-}
-
-function LandingMobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { t } = useTranslation();
-
-  useEffect(() => {
-    document.body.classList.toggle('landing-mobile-menu-open', open);
-    return () => document.body.classList.remove('landing-mobile-menu-open');
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open, onClose]);
-
-  if (!open || typeof document === 'undefined') return null;
-
-  const portalTarget = getLandingMobilePortal();
-
-  return createPortal(
-    <div
-      className='landing landing__mobile-root'
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 99999,
-        width: '100vw',
-        height: '100dvh',
-      }}
-    >
-      <button
-        type='button'
-        className='landing__mobile-backdrop'
-        aria-label={t('landing.mobileMenuClose')}
-        onClick={onClose}
-      />
-      <aside
-        className='landing__mobile-drawer'
-        role='dialog'
-        aria-modal='true'
-        aria-label={t('landing.mobileMenuTitle')}
-      >
-        <div className='landing__mobile-drawer-header'>
-          <p className='landing__mobile-drawer-title'>{t('landing.mobileMenuTitle')}</p>
-          <button type='button' className='landing__mobile-close' aria-label={t('landing.mobileMenuClose')} onClick={onClose}>
-            <X size={20} strokeWidth={2} aria-hidden />
-          </button>
-        </div>
-        <nav className='landing__mobile-panel'>
-          <Link className='landing__btn landing__btn--primary landing__btn--mobile-cta landing__mobile-link' to='/register' onClick={onClose}>
-            {t('school.registerSchool')}
-          </Link>
-          <a className='landing__btn landing__btn--ghost landing__mobile-link' href='#fonctionnalites' onClick={onClose}>
-            {t('landing.navFeatures')}
-          </a>
-          <a className='landing__btn landing__btn--ghost landing__mobile-link' href='#comment-ca-marche' onClick={onClose}>
-            {t('landing.navHowItWorks')}
-          </a>
-          <a className='landing__btn landing__btn--ghost landing__mobile-link' href='#modules' onClick={onClose}>
-            {t('landing.navModules')}
-          </a>
-          <a className='landing__btn landing__btn--ghost landing__mobile-link' href='#faq' onClick={onClose}>
-            {t('landing.navFaq')}
-          </a>
-          <LanguageSwitcher showLabel className='landing__mobile-lang' />
-          <a
-            className='landing__btn landing__btn--ghost landing__mobile-link'
-            href={getUserPortalLoginUrl()}
-            onClick={onClose}
-          >
-            {t('landing.navUserPortal')}
-          </a>
-        </nav>
-        <div className='landing__mobile-panel-cta'>
-          <Link className='landing__btn landing__btn--ghost landing__btn--mobile-cta' to='/login' onClick={onClose}>
-            {t('landing.signIn')}
-          </Link>
-        </div>
-      </aside>
-    </div>,
-    portalTarget
   );
 }

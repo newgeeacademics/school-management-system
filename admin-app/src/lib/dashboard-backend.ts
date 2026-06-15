@@ -1,5 +1,5 @@
 import type React from 'react';
-import { BASE_URL, ACCESS_TOKEN_KEY } from '@/constants';
+import { BASE_URL, ACCESS_TOKEN_KEY, isApiUrlFromEnv } from '@/constants';
 import { parseApiErrorResponse, wrapFetchError } from '@/lib/api-error';
 import type { School } from '@/types';
 import type {
@@ -25,7 +25,11 @@ import type {
 } from '@/pages/dashboard/dashboardTypes';
 
 export function isBackendApiConfigured(): boolean {
-  return Boolean(import.meta.env.VITE_API_URL?.trim());
+  return Boolean(BASE_URL?.trim());
+}
+
+export function isBackendApiEnvConfigured(): boolean {
+  return isApiUrlFromEnv;
 }
 
 function getToken(): string | null {

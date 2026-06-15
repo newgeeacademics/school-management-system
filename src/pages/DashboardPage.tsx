@@ -13,6 +13,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   Layers,
+  LogOut,
   MoreHorizontal,
   Receipt,
   School,
@@ -62,6 +63,7 @@ import {
   deleteUserOnBackend,
   fetchStudentIdCardOnBackend,
   isBackendApiConfigured,
+  BACKEND_REQUIRED_MESSAGE,
   loadDashboardFromBackend,
   refreshUsersFromBackend,
   updateAnnouncementOnBackend,
@@ -188,7 +190,7 @@ import { UsersSection } from './dashboard/UsersSection';
 import { GradesSection } from './dashboard/GradesSection';
 import { isSchoolSettingsSection, SchoolSettingsContent } from './dashboard/SchoolSettingsPanels';
 import { SystemRegistrySection } from './dashboard/SystemRegistrySection';
-import { AppLogo } from '@/components/AppLogo';
+import logoSrc from '@/assets/logo/newgee-logo.png';
 import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 
 import './dashboard-shell.css';
@@ -589,6 +591,13 @@ export const DashboardPage: React.FC = () => {
 
   const backendSync = isBackendApiConfigured();
 
+  const requireBackend = (): boolean => {
+    if (backendSync) return true;
+    toast.error(BACKEND_REQUIRED_MESSAGE, { richColors: true });
+    return false;
+  };
+
+  const teacherCreateFormRef = React.useRef<HTMLDivElement>(null);
   const [teachers, setTeachers] = React.useState<Teacher[]>([]);
   const [classes, setClasses] = React.useState<ClassItem[]>([]);
   const [students, setStudents] = React.useState<Student[]>([]);
@@ -657,6 +666,7 @@ export const DashboardPage: React.FC = () => {
     email: '',
     password: '',
     phone: '',
+    homeroomClassIds: [],
   });
   const [teacherSubjectPreset, setTeacherSubjectPreset] = React.useState('');
 
@@ -862,6 +872,10 @@ export const DashboardPage: React.FC = () => {
   const getClassName = (id: string) =>
     classes.find((c) => c.id === id)?.name ?? 'Classe inconnue';
 
+  const scrollToTeacherForm = () => {
+    teacherCreateFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const getCourseName = (id?: string) =>
     id ? courses.find((c) => c.id === id)?.name ?? '—' : '—';
 
@@ -888,13 +902,10 @@ export const DashboardPage: React.FC = () => {
       studentId: newParent.studentId || undefined,
     };
     try {
-      if (backendSync) {
-        const created = await createParentOnBackend(payload);
-        setParents((prev) => [...prev, created]);
-        await syncPortalUsers();
-      } else {
-        setParents((prev) => [...prev, { id: `p-${Date.now()}`, ...payload }]);
-      }
+      if (!requireBackend()) return;
+      const created = await createParentOnBackend(payload);
+      setParents((prev) => [...prev, created]);
+      await syncPortalUsers();
       toast.success('Parent et compte portail créés');
       setNewParent({ name: '', phone: '', email: '', password: '', studentId: '' });
     } catch (err) {
@@ -907,13 +918,10 @@ export const DashboardPage: React.FC = () => {
     data: { name: string; phone?: string; email?: string; studentId?: string; password?: string }
   ) => {
     try {
-      if (backendSync) {
-        const updated = await updateParentOnBackend(id, data);
-        setParents((prev) => prev.map((p) => (p.id === id ? updated : p)));
-        await syncPortalUsers();
-      } else {
-        setParents((prev) => prev.map((p) => (p.id === id ? { ...p, ...data } : p)));
-      }
+      if (!requireBackend()) return;
+      const updated = await updateParentOnBackend(id, data);
+      setParents((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      await syncPortalUsers();
       toast.success('Parent mis à jour');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
@@ -922,10 +930,9 @@ export const DashboardPage: React.FC = () => {
 
   const handleDeleteParent = async (id: string) => {
     try {
-      if (backendSync) {
-        await deleteParentOnBackend(id);
-        await syncPortalUsers();
-      }
+      if (!requireBackend()) return;
+      await deleteParentOnBackend(id);
+      await syncPortalUsers();
       setParents((prev) => prev.filter((p) => p.id !== id));
       toast.success('Parent supprimé');
     } catch (err) {
@@ -944,21 +951,9 @@ export const DashboardPage: React.FC = () => {
       password: newUser.password?.trim() || undefined,
     };
     try {
-      if (backendSync) {
-        const created = await createUserOnBackend(payload);
-        setUsers((prev) => [...prev, created]);
-      } else {
-        setUsers((prev) => [
-          ...prev,
-          {
-            id: `u-${Date.now()}`,
-            name: payload.name,
-            email: payload.email ?? '',
-            phone: payload.phone,
-            role: payload.role,
-          },
-        ]);
-      }
+      if (!requireBackend()) return;
+      const created = await createUserOnBackend(payload);
+      setUsers((prev) => [...prev, created]);
       toast.success('Utilisateur créé');
       setNewUser({ name: '', email: '', phone: '', role: 'teacher', password: '' });
     } catch (err) {
@@ -971,12 +966,9 @@ export const DashboardPage: React.FC = () => {
     data: { name: string; email?: string; phone?: string; role: AppUserRole; password?: string }
   ) => {
     try {
-      if (backendSync) {
-        const updated = await updateUserOnBackend(id, data);
-        setUsers((prev) => prev.map((u) => (u.id === id ? updated : u)));
-      } else {
-        setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...data } : u)));
-      }
+      if (!requireBackend()) return;
+      const updated = await updateUserOnBackend(id, data);
+      setUsers((prev) => prev.map((u) => (u.id === id ? updated : u)));
       toast.success('Utilisateur mis à jour');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
@@ -985,7 +977,8 @@ export const DashboardPage: React.FC = () => {
 
   const handleDeleteUser = async (id: string) => {
     try {
-      if (backendSync) await deleteUserOnBackend(id);
+      if (!requireBackend()) return;
+      await deleteUserOnBackend(id);
       setUsers((prev) => prev.filter((u) => u.id !== id));
       toast.success('Utilisateur supprimé');
     } catch (err) {
@@ -993,131 +986,142 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleCreateReminder = (e: React.FormEvent) => {
+  const handleCreateReminder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newReminder.parentName.trim() || !newReminder.amount.trim()) return;
-    const id = `rem-${Date.now()}`;
+    if (!requireBackend()) return;
     const reminder = {
-      id,
+      id: `rem-${Date.now()}`,
       parentName: newReminder.parentName.trim(),
       studentName: newReminder.studentName.trim() || undefined,
       amount: Number(newReminder.amount || 0),
       dueDate: newReminder.dueDate,
       status: 'Envoyé' as const,
     };
-    setPaymentReminders((prev) => [...prev, reminder]);
-    if (backendSync) {
-      void createPaymentReminderOnBackend({
+    try {
+      await createPaymentReminderOnBackend({
         parentName: reminder.parentName,
         studentName: reminder.studentName,
         amount: reminder.amount,
         dueDate: reminder.dueDate || new Date().toISOString().slice(0, 10),
-      }).catch((err) => console.error(err));
+      });
+      setPaymentReminders((prev) => [...prev, reminder]);
+      setNewReminder({
+        parentName: '',
+        studentName: '',
+        amount: '',
+        dueDate: '',
+        note: '',
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
     }
-    setNewReminder({
-      parentName: '',
-      studentName: '',
-      amount: '',
-      dueDate: '',
-      note: '',
-    });
   };
 
-  const handleCreateReceipt = (e: React.FormEvent) => {
+  const handleCreateReceipt = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newReceipt.parentName.trim() || !newReceipt.amount.trim()) return;
-    const id = `rec-${Date.now()}`;
+    if (!requireBackend()) return;
     const reference =
       newReceipt.reference.trim() || `RECU-${new Date().getFullYear()}-${Date.now()}`;
     const receipt = {
-      id,
+      id: `rec-${Date.now()}`,
       parentName: newReceipt.parentName.trim(),
       studentName: newReceipt.studentName.trim() || undefined,
       amount: Number(newReceipt.amount || 0),
       date: newReceipt.date || new Date().toISOString().slice(0, 10),
       reference,
     };
-    setPaymentReceipts((prev) => [...prev, receipt]);
-    if (backendSync) {
-      void createPaymentReceiptOnBackend(receipt).catch((err) => console.error(err));
+    try {
+      await createPaymentReceiptOnBackend(receipt);
+      setPaymentReceipts((prev) => [...prev, receipt]);
+      setNewReceipt({
+        parentName: '',
+        studentName: '',
+        amount: '',
+        date: '',
+        reference: '',
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
     }
-    setNewReceipt({
-      parentName: '',
-      studentName: '',
-      amount: '',
-      date: '',
-      reference: '',
-    });
   };
 
-  const handleCreateCanteenItem = (e: React.FormEvent) => {
+  const handleCreateCanteenItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCanteenItem.dish.trim() || !newCanteenItem.day) return;
-    const id = `cant-${Date.now()}`;
+    if (!requireBackend()) return;
     const item = {
-      id,
+      id: `cant-${Date.now()}`,
       day: newCanteenItem.day,
       mealType: newCanteenItem.mealType,
       dish: newCanteenItem.dish.trim(),
       note: newCanteenItem.note.trim() || undefined,
     };
-    setCanteenMenuItems((prev) => [...prev, item]);
-    if (backendSync) {
-      void createCanteenOnBackend(item).catch((err) => console.error(err));
+    try {
+      await createCanteenOnBackend(item);
+      setCanteenMenuItems((prev) => [...prev, item]);
+      setNewCanteenItem({
+        day: '',
+        mealType: 'Déjeuner',
+        dish: '',
+        note: '',
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
     }
-    setNewCanteenItem({
-      day: '',
-      mealType: 'Déjeuner',
-      dish: '',
-      note: '',
-    });
   };
 
-  const handleCreateTransportRoute = (
+  const handleCreateTransportRoute = async (
     e: React.FormEvent,
     payload?: { waypoints?: { lat: number; lng: number; name: string }[]; routePolyline?: [number, number][] },
   ) => {
     e.preventDefault();
     if (!newTransportRoute.name.trim() || !newTransportRoute.driverName.trim() || !newTransportRoute.departureTime.trim()) return;
+    if (!requireBackend()) return;
     const id = `tr-${Date.now()}`;
-    setTransportRoutes((prev) => [
-      ...prev,
-      {
-        id,
-        name: newTransportRoute.name.trim(),
-        driverName: newTransportRoute.driverName.trim(),
-        departureTime: newTransportRoute.departureTime.trim(),
-        returnTime: newTransportRoute.returnTime.trim() || undefined,
-        note: newTransportRoute.note.trim() || undefined,
-        waypoints: payload?.waypoints,
-        routePolyline: payload?.routePolyline,
-        studentIds: [],
-      },
-    ]);
-    if (backendSync) {
-      void createTransportOnBackend({
-        name: newTransportRoute.name.trim(),
-        driverName: newTransportRoute.driverName.trim(),
-        departureTime: newTransportRoute.departureTime.trim(),
-        returnTime: newTransportRoute.returnTime.trim() || undefined,
-        note: newTransportRoute.note.trim() || undefined,
-      }).catch((err) => console.error(err));
+    const route = {
+      id,
+      name: newTransportRoute.name.trim(),
+      driverName: newTransportRoute.driverName.trim(),
+      departureTime: newTransportRoute.departureTime.trim(),
+      returnTime: newTransportRoute.returnTime.trim() || undefined,
+      note: newTransportRoute.note.trim() || undefined,
+      waypoints: payload?.waypoints,
+      routePolyline: payload?.routePolyline,
+      studentIds: [] as string[],
+    };
+    try {
+      await createTransportOnBackend({
+        name: route.name,
+        driverName: route.driverName,
+        departureTime: route.departureTime,
+        returnTime: route.returnTime,
+        note: route.note,
+      });
+      setTransportRoutes((prev) => [...prev, route]);
+      setNewTransportRoute({
+        name: '',
+        driverName: '',
+        departureTime: '',
+        returnTime: '',
+        note: '',
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
     }
-    setNewTransportRoute({
-      name: '',
-      driverName: '',
-      departureTime: '',
-      returnTime: '',
-      note: '',
-    });
   };
 
-  const handleUpdateRouteStudents = (routeId: string, studentIds: string[]) => {
-    setTransportRoutes((prev) =>
-      prev.map((r) => (r.id === routeId ? { ...r, studentIds } : r)),
-    );
-    if (backendSync && routeId && !routeId.startsWith('tr-')) {
-      void updateTransportStudentsOnBackend(routeId, studentIds).catch((err) => console.error(err));
+  const handleUpdateRouteStudents = async (routeId: string, studentIds: string[]) => {
+    if (!requireBackend()) return;
+    if (!routeId || routeId.startsWith('tr-')) return;
+    try {
+      await updateTransportStudentsOnBackend(routeId, studentIds);
+      setTransportRoutes((prev) =>
+        prev.map((r) => (r.id === routeId ? { ...r, studentIds } : r)),
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
     }
   };
 
@@ -1151,12 +1155,9 @@ export const DashboardPage: React.FC = () => {
       homeroomTeacherId: newClass.homeroomTeacherId || undefined,
     };
     try {
-      if (backendSync) {
-        const created = await createClassOnBackend(payload);
-        setClasses((prev) => [...prev, created]);
-      } else {
-        setClasses((prev) => [...prev, { id: `c-${Date.now()}`, ...payload }]);
-      }
+      if (!requireBackend()) return;
+      const created = await createClassOnBackend(payload);
+      setClasses((prev) => [...prev, created]);
       toast.success('Classe créée');
       setNewClass({ name: '', schoolType: '', level: '', studentsCount: '', homeroomTeacherId: '' });
     } catch (err) {
@@ -1169,12 +1170,9 @@ export const DashboardPage: React.FC = () => {
     data: { name: string; level: string; studentsCount: number; homeroomTeacherId?: string }
   ) => {
     try {
-      if (backendSync) {
-        const updated = await updateClassOnBackend(id, data);
-        setClasses((prev) => prev.map((c) => (c.id === id ? updated : c)));
-      } else {
-        setClasses((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c)));
-      }
+      if (!requireBackend()) return;
+      const updated = await updateClassOnBackend(id, data);
+      setClasses((prev) => prev.map((c) => (c.id === id ? updated : c)));
       toast.success('Classe mise à jour');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
@@ -1183,7 +1181,8 @@ export const DashboardPage: React.FC = () => {
 
   const handleDeleteClass = async (id: string) => {
     try {
-      if (backendSync) await deleteClassOnBackend(id);
+      if (!requireBackend()) return;
+      await deleteClassOnBackend(id);
       setClasses((prev) => prev.filter((c) => c.id !== id));
       setStudents((prev) =>
         prev.map((s) => (s.classId === id ? { ...s, classId: undefined } : s))
@@ -1196,50 +1195,68 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTeacher.name.trim() || !newTeacher.email.trim()) return;
+    if (!newTeacher.name.trim()) return;
+    if (!newTeacher.email.trim() && !newTeacher.phone.trim()) {
+      toast.error('Email ou téléphone requis pour la connexion portail');
+      return;
+    }
     const payload = {
       name: newTeacher.name.trim(),
       subject: newTeacher.subject.trim() || 'Matière à définir',
-      email: newTeacher.email.trim(),
+      email: newTeacher.email.trim() || undefined,
       password: newTeacher.password.trim() || undefined,
       phone: newTeacher.phone.trim() || undefined,
+      homeroomClassIds: newTeacher.homeroomClassIds,
     };
     try {
-      if (backendSync) {
-        const created = await createTeacherOnBackend(payload);
-        setTeachers((prev) => [...prev, created]);
-        await syncPortalUsers();
-      } else {
-        const initials = payload.name
-          .split(' ')
-          .filter(Boolean)
-          .slice(0, 2)
-          .map((p) => p[0]?.toUpperCase() ?? '')
-          .join('');
-        setTeachers((prev) => [
-          ...prev,
-          { id: `t-${Date.now()}`, initials: initials || 'ED', ...payload },
-        ]);
-      }
-      toast.success('Enseignant et compte portail créés');
-      setNewTeacher({ name: '', subject: '', email: '', password: '', phone: '' });
+      if (!requireBackend()) return;
+      const created = await createTeacherOnBackend(payload);
+      setTeachers((prev) => [...prev, created]);
+      applyHomeroomClasses(created.id, payload.homeroomClassIds ?? []);
+      await syncPortalUsers();
+      toast.success('Enseignant créé avec compte portail');
+      setNewTeacher({
+        name: '',
+        subject: '',
+        email: '',
+        password: '',
+        phone: '',
+        homeroomClassIds: [],
+      });
+      setTeacherSubjectPreset('');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
   };
 
+  const applyHomeroomClasses = (teacherId: string, homeroomClassIds: string[]) => {
+    const idSet = new Set(homeroomClassIds);
+    setClasses((prev) =>
+      prev.map((c) => {
+        if (idSet.has(c.id)) return { ...c, homeroomTeacherId: teacherId };
+        if (c.homeroomTeacherId === teacherId) return { ...c, homeroomTeacherId: undefined };
+        return c;
+      })
+    );
+  };
+
   const handleUpdateTeacher = async (
     id: string,
-    data: { name: string; subject: string; email?: string; password?: string; phone?: string }
+    data: {
+      name: string;
+      subject: string;
+      email?: string;
+      password?: string;
+      phone?: string;
+      homeroomClassIds?: string[];
+    }
   ) => {
     try {
-      if (backendSync) {
-        const updated = await updateTeacherOnBackend(id, data);
-        setTeachers((prev) => prev.map((t) => (t.id === id ? updated : t)));
-        await syncPortalUsers();
-      } else {
-        setTeachers((prev) => prev.map((t) => (t.id === id ? { ...t, ...data } : t)));
-      }
+      if (!requireBackend()) return;
+      const updated = await updateTeacherOnBackend(id, data);
+      setTeachers((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      applyHomeroomClasses(id, data.homeroomClassIds ?? []);
+      await syncPortalUsers();
       toast.success('Enseignant mis à jour');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
@@ -1248,10 +1265,9 @@ export const DashboardPage: React.FC = () => {
 
   const handleDeleteTeacher = async (id: string) => {
     try {
-      if (backendSync) {
-        await deleteTeacherOnBackend(id);
-        await syncPortalUsers();
-      }
+      if (!requireBackend()) return;
+      await deleteTeacherOnBackend(id);
+      await syncPortalUsers();
       setTeachers((prev) => prev.filter((t) => t.id !== id));
       setClasses((prev) =>
         prev.map((c) =>
@@ -1275,13 +1291,10 @@ export const DashboardPage: React.FC = () => {
       password: newStudent.password.trim() || undefined,
     };
     try {
-      if (backendSync) {
-        const created = await createStudentOnBackend(payload);
-        setStudents((prev) => [...prev, created]);
-        await syncPortalUsers();
-      } else {
-        setStudents((prev) => [...prev, { id: `st-${Date.now()}`, ...payload }]);
-      }
+      if (!requireBackend()) return;
+      const created = await createStudentOnBackend(payload);
+      setStudents((prev) => [...prev, created]);
+      await syncPortalUsers();
       toast.success('Élève et compte portail créés');
       setNewStudent({ name: '', classId: '', email: '', phone: '', password: '' });
     } catch (err) {
@@ -1294,13 +1307,10 @@ export const DashboardPage: React.FC = () => {
     data: { name: string; classId?: string; email?: string; phone?: string; password?: string }
   ) => {
     try {
-      if (backendSync) {
-        const updated = await updateStudentOnBackend(id, data);
-        setStudents((prev) => prev.map((s) => (s.id === id ? updated : s)));
-        await syncPortalUsers();
-      } else {
-        setStudents((prev) => prev.map((s) => (s.id === id ? { ...s, ...data } : s)));
-      }
+      if (!requireBackend()) return;
+      const updated = await updateStudentOnBackend(id, data);
+      setStudents((prev) => prev.map((s) => (s.id === id ? updated : s)));
+      await syncPortalUsers();
       toast.success('Élève mis à jour');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
@@ -1309,10 +1319,9 @@ export const DashboardPage: React.FC = () => {
 
   const handleDeleteStudent = async (id: string) => {
     try {
-      if (backendSync) {
-        await deleteStudentOnBackend(id);
-        await syncPortalUsers();
-      }
+      if (!requireBackend()) return;
+      await deleteStudentOnBackend(id);
+      await syncPortalUsers();
       setStudents((prev) => prev.filter((s) => s.id !== id));
       setParents((prev) =>
         prev.map((p) => (p.studentId === id ? { ...p, studentId: undefined } : p))
@@ -1328,23 +1337,12 @@ export const DashboardPage: React.FC = () => {
     setIdCardLoading(true);
     setIdCardData(null);
     try {
-      if (backendSync) {
-        const card = await fetchStudentIdCardOnBackend(studentId);
-        setIdCardData(card);
-        setStudents((prev) =>
-          prev.map((s) => (s.id === studentId ? { ...s, matricule: card.matricule } : s))
-        );
-      } else {
-        const student = students.find((s) => s.id === studentId);
-        setIdCardData({
-          studentId,
-          matricule: student?.matricule ?? `DEMO-${studentId.slice(-4)}`,
-          studentName: student?.name ?? 'Élève',
-          className: student?.classId ? getClassName(student.classId) : '',
-          schoolName: schoolProfile?.name ?? 'Établissement',
-          qrPayload: JSON.stringify({ studentId, name: student?.name }),
-        });
-      }
+      if (!requireBackend()) return;
+      const card = await fetchStudentIdCardOnBackend(studentId);
+      setIdCardData(card);
+      setStudents((prev) =>
+        prev.map((s) => (s.id === studentId ? { ...s, matricule: card.matricule } : s))
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur carte scolaire');
       setIdCardOpen(false);
@@ -1367,12 +1365,9 @@ export const DashboardPage: React.FC = () => {
       sortOrder: Number(newFeeInstallment.sortOrder || 1),
     };
     try {
-      if (backendSync) {
-        const created = await createFeeInstallmentOnBackend(payload);
-        setFeeInstallments((prev) => [...prev, created]);
-      } else {
-        setFeeInstallments((prev) => [...prev, { id: `fee-${Date.now()}`, ...payload }]);
-      }
+      if (!requireBackend()) return;
+      const created = await createFeeInstallmentOnBackend(payload);
+      setFeeInstallments((prev) => [...prev, created]);
       toast.success('Tranche ajoutée');
       setNewFeeInstallment((f) => ({
         ...f,
@@ -1392,12 +1387,9 @@ export const DashboardPage: React.FC = () => {
     data: Omit<FeeInstallment, 'id'>
   ) => {
     try {
-      if (backendSync) {
-        const updated = await updateFeeInstallmentOnBackend(id, data);
-        setFeeInstallments((prev) => prev.map((f) => (f.id === id ? updated : f)));
-      } else {
-        setFeeInstallments((prev) => prev.map((f) => (f.id === id ? { ...f, ...data } : f)));
-      }
+      if (!requireBackend()) return;
+      const updated = await updateFeeInstallmentOnBackend(id, data);
+      setFeeInstallments((prev) => prev.map((f) => (f.id === id ? updated : f)));
       toast.success('Tranche mise à jour');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
@@ -1406,7 +1398,8 @@ export const DashboardPage: React.FC = () => {
 
   const handleDeleteFeeInstallment = async (id: string) => {
     try {
-      if (backendSync) await deleteFeeInstallmentOnBackend(id);
+      if (!requireBackend()) return;
+      await deleteFeeInstallmentOnBackend(id);
       setFeeInstallments((prev) => prev.filter((f) => f.id !== id));
       toast.success('Tranche supprimée');
     } catch (err) {
@@ -1426,23 +1419,14 @@ export const DashboardPage: React.FC = () => {
       notifyByEmail: newAnnouncement.notifyByEmail,
     };
     try {
-      if (backendSync) {
-        const created = await createAnnouncementOnBackend(payload);
-        setAnnouncements((prev) => [...prev, created]);
-        if (newAnnouncement.notifyByEmail) {
-          toast.success('Annonce publiée — e-mails en cours d’envoi');
-        }
+      if (!requireBackend()) return;
+      const created = await createAnnouncementOnBackend(payload);
+      setAnnouncements((prev) => [...prev, created]);
+      if (newAnnouncement.notifyByEmail) {
+        toast.success('Annonce publiée — e-mails en cours d’envoi');
       } else {
-        setAnnouncements((prev) => [
-          ...prev,
-          {
-            id: `ann-${Date.now()}`,
-            ...payload,
-            publishedAt: new Date().toISOString(),
-          },
-        ]);
+        toast.success('Annonce publiée');
       }
-      toast.success('Annonce publiée');
       setNewAnnouncement({
         title: '',
         body: '',
@@ -1464,22 +1448,19 @@ export const DashboardPage: React.FC = () => {
       return;
     }
     try {
-      if (backendSync) {
-        const result = await sendParentMessageOnBackend({
-          subject: newParentMessage.subject.trim(),
-          body: newParentMessage.body.trim(),
-          audience: newParentMessage.audience,
-          classId:
-            newParentMessage.audience === 'CLASS_PARENTS'
-              ? newParentMessage.classId
-              : undefined,
-          sendEmail: newParentMessage.sendEmail,
-          publishOnPortal: newParentMessage.publishOnPortal,
-        });
-        toast.success(result.message ?? 'Message envoyé');
-      } else {
-        toast.success('Message enregistré (mode démo)');
-      }
+      if (!requireBackend()) return;
+      const result = await sendParentMessageOnBackend({
+        subject: newParentMessage.subject.trim(),
+        body: newParentMessage.body.trim(),
+        audience: newParentMessage.audience,
+        classId:
+          newParentMessage.audience === 'CLASS_PARENTS'
+            ? newParentMessage.classId
+            : undefined,
+        sendEmail: newParentMessage.sendEmail,
+        publishOnPortal: newParentMessage.publishOnPortal,
+      });
+      toast.success(result.message ?? 'Message envoyé');
       setNewParentMessage({
         subject: '',
         body: '',
@@ -1498,14 +1479,9 @@ export const DashboardPage: React.FC = () => {
     data: Omit<Announcement, 'id' | 'publishedAt'>
   ) => {
     try {
-      if (backendSync) {
-        const updated = await updateAnnouncementOnBackend(id, data);
-        setAnnouncements((prev) => prev.map((a) => (a.id === id ? updated : a)));
-      } else {
-        setAnnouncements((prev) =>
-          prev.map((a) => (a.id === id ? { ...a, ...data } : a))
-        );
-      }
+      if (!requireBackend()) return;
+      const updated = await updateAnnouncementOnBackend(id, data);
+      setAnnouncements((prev) => prev.map((a) => (a.id === id ? updated : a)));
       toast.success('Annonce mise à jour');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
@@ -1514,7 +1490,8 @@ export const DashboardPage: React.FC = () => {
 
   const handleDeleteAnnouncement = async (id: string) => {
     try {
-      if (backendSync) await deleteAnnouncementOnBackend(id);
+      if (!requireBackend()) return;
+      await deleteAnnouncementOnBackend(id);
       setAnnouncements((prev) => prev.filter((a) => a.id !== id));
       toast.success('Annonce supprimée');
     } catch (err) {
@@ -1522,147 +1499,147 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleCreateCourse = (e: React.FormEvent) => {
+  const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCourse.matiereId) return;
+    if (!requireBackend()) return;
     const matiereName = getMatiereName(newCourse.matiereId);
     const name =
       newCourse.name.trim() || (matiereName !== '—' ? matiereName : 'Cours sans nom');
-    const id = `co-${Date.now()}`;
-    setCourses((prev) => [
-      ...prev,
-      {
-        id,
-        name,
-        matiereId: newCourse.matiereId,
-        level: newCourse.level.trim() || 'Niveau non défini',
-      },
-    ]);
-    if (backendSync) {
-      void createCourseOnBackend({
-        name,
-        matiereId: newCourse.matiereId,
-        level: newCourse.level.trim() || 'Niveau non défini',
-      }).catch((err) => console.error(err));
+    const course = {
+      id: `co-${Date.now()}`,
+      name,
+      matiereId: newCourse.matiereId,
+      level: newCourse.level.trim() || 'Niveau non défini',
+    };
+    try {
+      await createCourseOnBackend({
+        name: course.name,
+        matiereId: course.matiereId,
+        level: course.level,
+      });
+      setCourses((prev) => [...prev, course]);
+      setNewCourse({ name: '', matiereId: '', level: '' });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
     }
-    setNewCourse({ name: '', matiereId: '', level: '' });
   };
 
-  const handleCreateMatiere = (e: React.FormEvent) => {
+  const handleCreateMatiere = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMatiere.name.trim()) return;
-    const id = `mat-${Date.now()}`;
-    setMatieres((prev) => [
-      ...prev,
-      { id, name: newMatiere.name.trim() },
-    ]);
-    if (backendSync) {
-      void createMatiereOnBackend(newMatiere.name.trim()).catch((err) => console.error(err));
+    if (!requireBackend()) return;
+    const matiere = { id: `mat-${Date.now()}`, name: newMatiere.name.trim() };
+    try {
+      await createMatiereOnBackend(matiere.name);
+      setMatieres((prev) => [...prev, matiere]);
+      setNewMatiere({ name: '' });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
     }
-    setNewMatiere({ name: '' });
   };
 
-  const handleCreateEvent = (e: React.FormEvent) => {
+  const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEvent.label.trim()) return;
-    const id = `ev-${Date.now()}`;
-    setEvents((prev) => [
-      ...prev,
-      {
-        id,
-        label: newEvent.label.trim(),
-        date: newEvent.date.trim() || 'Date à définir',
-        time: newEvent.time.trim() || undefined,
-        location: newEvent.location.trim() || undefined,
-        type: newEvent.type,
-      },
-    ]);
-    if (backendSync) {
-      void createEventOnBackend({
-        label: newEvent.label.trim(),
-        date: newEvent.date.trim() || 'Date à définir',
-        time: newEvent.time.trim() || undefined,
-        location: newEvent.location.trim() || undefined,
-        type: newEvent.type,
-      }).catch((err) => console.error(err));
+    if (!requireBackend()) return;
+    const event = {
+      id: `ev-${Date.now()}`,
+      label: newEvent.label.trim(),
+      date: newEvent.date.trim() || 'Date à définir',
+      time: newEvent.time.trim() || undefined,
+      location: newEvent.location.trim() || undefined,
+      type: newEvent.type,
+    };
+    try {
+      await createEventOnBackend({
+        label: event.label,
+        date: event.date,
+        time: event.time,
+        location: event.location,
+        type: event.type,
+      });
+      setEvents((prev) => [...prev, event]);
+      setNewEvent({
+        label: '',
+        date: '',
+        time: '',
+        location: '',
+        type: 'Promotion',
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
     }
-    setNewEvent({
-      label: '',
-      date: '',
-      time: '',
-      location: '',
-      type: 'Promotion',
-    });
   };
 
-  const handleCreateSlot = (e: React.FormEvent) => {
+  const handleCreateSlot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSlot.classId || !newSlot.day || !newSlot.time) return;
-    const id = `sl-${Date.now()}`;
-    setSchedule((prev) => [
-      ...prev,
-      {
-        id,
-        classId: newSlot.classId,
-        courseId: newSlot.courseId || undefined,
-        day: newSlot.day,
-        time: newSlot.time,
-        room: newSlot.room || undefined,
-      },
-    ]);
-    if (backendSync) {
-      void createScheduleOnBackend({
-        classId: newSlot.classId,
-        courseId: newSlot.courseId || undefined,
-        day: newSlot.day,
-        time: newSlot.time,
-        room: newSlot.room || undefined,
-      }).catch((err) => console.error(err));
+    if (!requireBackend()) return;
+    const slot = {
+      id: `sl-${Date.now()}`,
+      classId: newSlot.classId,
+      courseId: newSlot.courseId || undefined,
+      day: newSlot.day,
+      time: newSlot.time,
+      room: newSlot.room || undefined,
+    };
+    try {
+      await createScheduleOnBackend({
+        classId: slot.classId,
+        courseId: slot.courseId,
+        day: slot.day,
+        time: slot.time,
+        room: slot.room,
+      });
+      setSchedule((prev) => [...prev, slot]);
+      setNewSlot({
+        classId: '',
+        courseId: '',
+        day: '',
+        time: '',
+        room: '',
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
     }
-    setNewSlot({
-      classId: '',
-      courseId: '',
-      day: '',
-      time: '',
-      room: '',
-    });
   };
 
-  const handleCreateRoom = (e: React.FormEvent) => {
+  const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRoom.name.trim()) return;
-    const id = `r-${Date.now()}`;
-    setRooms((prev) => [
-      ...prev,
-      {
-        id,
-        name: newRoom.name.trim(),
-        type: newRoom.type || 'Salle de classe',
-        capacity: newRoom.capacity ? Number(newRoom.capacity) : undefined,
-      },
-    ]);
-    if (backendSync) {
-      void createRoomOnBackend({
-        name: newRoom.name.trim(),
-        type: newRoom.type || 'Salle de classe',
-        capacity: newRoom.capacity ? Number(newRoom.capacity) : undefined,
-      }).catch((err) => console.error(err));
+    if (!requireBackend()) return;
+    const room = {
+      id: `r-${Date.now()}`,
+      name: newRoom.name.trim(),
+      type: newRoom.type || 'Salle de classe',
+      capacity: newRoom.capacity ? Number(newRoom.capacity) : undefined,
+    };
+    try {
+      await createRoomOnBackend({
+        name: room.name,
+        type: room.type,
+        capacity: room.capacity,
+      });
+      setRooms((prev) => [...prev, room]);
+      setNewRoom({
+        name: '',
+        type: '',
+        capacity: '',
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
     }
-    setNewRoom({
-      name: '',
-      type: '',
-      capacity: '',
-    });
   };
 
-  const handleCreateEvaluation = (e: React.FormEvent) => {
+  const handleCreateEvaluation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEvaluation.classId || !newEvaluation.courseId || !newEvaluation.label.trim()) return;
+    if (!requireBackend()) return;
     const coef = Number(newEvaluation.coefficient || '1') || 1;
     const maxScore = Number(newEvaluation.maxScore || '20') || 20;
-    const id = `ev-${Date.now()}`;
     const evaluation = {
-      id,
+      id: `ev-${Date.now()}`,
       classId: newEvaluation.classId,
       courseId: newEvaluation.courseId,
       label: newEvaluation.label.trim(),
@@ -1672,23 +1649,26 @@ export const DashboardPage: React.FC = () => {
       coefficient: coef,
       maxScore,
     };
-    setEvaluations((prev) => [...prev, evaluation]);
-    if (backendSync) {
-      void createEvaluationOnBackend(evaluation).catch((err) => console.error(err));
+    try {
+      await createEvaluationOnBackend(evaluation);
+      setEvaluations((prev) => [...prev, evaluation]);
+      setNewEvaluation({
+        classId: '',
+        courseId: '',
+        label: '',
+        date: '',
+        period: newEvaluation.period,
+        type: newEvaluation.type,
+        coefficient: '1',
+        maxScore: '20',
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
     }
-    setNewEvaluation({
-      classId: '',
-      courseId: '',
-      label: '',
-      date: '',
-      period: newEvaluation.period,
-      type: newEvaluation.type,
-      coefficient: '1',
-      maxScore: '20',
-    });
   };
 
   const handleUpdateGrade = (evaluationId: string, studentId: string, score: number | '') => {
+    if (!requireBackend()) return;
     setGrades((prev) => {
       const existingIndex = prev.findIndex(
         (g) => g.evaluationId === evaluationId && g.studentId === studentId,
@@ -1718,17 +1698,17 @@ export const DashboardPage: React.FC = () => {
       };
       return clone;
     });
-    if (backendSync && score !== '' && !Number.isNaN(score) && evaluationId && !evaluationId.startsWith('ev-')) {
+    if (score !== '' && !Number.isNaN(score) && evaluationId && !evaluationId.startsWith('ev-')) {
       void createOrUpdateGradeOnBackend({
         evaluationId,
         studentId,
         score: Number(score),
-      }).catch((err) => console.error(err));
+      }).catch((err) => toast.error(err instanceof Error ? err.message : 'Erreur'));
     }
   };
 
   const handleAttendanceStatusChange = (record: AttendanceRecord, isUpdate: boolean) => {
-    if (!backendSync) return;
+    if (!requireBackend()) return;
     const payload = {
       date: record.date,
       classId: record.classId,
@@ -1766,12 +1746,10 @@ export const DashboardPage: React.FC = () => {
   return (
     <SidebarProvider className='dashboard-shell min-h-svh w-full max-w-full'>
       <Sidebar collapsible='icon' variant='inset'>
-        <SidebarHeader>
-          <div className='dashboard-sidebar-brand flex flex-col gap-1 px-2'>
-            <AppLogo name='NewGee Admin' />
-            <span className='text-[11px] font-medium text-muted-foreground'>
-              {roleTitles[role]}
-            </span>
+        <SidebarHeader className='dashboard-sidebar-header'>
+          <div className='dashboard-sidebar-header__inner'>
+            <img src={logoSrc} alt='NewGee' className='dashboard-sidebar-logo' />
+            <SidebarTrigger className='dashboard-sidebar-trigger hidden md:inline-flex' />
           </div>
         </SidebarHeader>
 
@@ -2389,15 +2367,15 @@ export const DashboardPage: React.FC = () => {
 
         <SidebarSeparator />
 
-        <SidebarFooter>
+        <SidebarFooter className='dashboard-sidebar-footer'>
           <div className='dashboard-user-pill flex flex-col gap-2'>
             <div className='flex items-center gap-2'>
-              <Avatar className='h-8 w-8'>
+              <Avatar className='dashboard-sidebar-avatar h-8 w-8 shrink-0'>
                 <AvatarFallback>
                   {role === 'admin' ? 'AD' : role === 'teacher' ? 'EN' : role === 'parent' ? 'PA' : 'EL'}
                 </AvatarFallback>
               </Avatar>
-              <div className='min-w-0'>
+              <div className='dashboard-sidebar-footer-text min-w-0'>
                 <p className='truncate text-sm font-medium leading-tight'>
                   {sessionUser?.name ?? (role === 'admin' ? 'Admin établissement' : role === 'teacher' ? 'Enseignant' : role === 'parent' ? 'Parent' : 'Élève')}
                 </p>
@@ -2406,10 +2384,18 @@ export const DashboardPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            <UserPortalSidebarLink />
-            <Button variant='ghost' size='sm' className='w-full justify-start text-xs' onClick={handleLogout}>
-              Se déconnecter
-            </Button>
+            <div className='dashboard-sidebar-footer-actions'>
+              <UserPortalSidebarLink />
+              <Button
+                variant='ghost'
+                size='sm'
+                className='dashboard-sidebar-logout w-full justify-start text-xs'
+                onClick={handleLogout}
+              >
+                <LogOut className='size-3.5 shrink-0' aria-hidden />
+                <span className='dashboard-sidebar-logout-label'>Se déconnecter</span>
+              </Button>
+            </div>
           </div>
         </SidebarFooter>
 
@@ -2419,7 +2405,7 @@ export const DashboardPage: React.FC = () => {
       <SidebarInset>
         <header className='dashboard-header'>
           <div className='dashboard-header__row'>
-            <SidebarTrigger />
+            <SidebarTrigger className='md:hidden' />
             <div className='dashboard-header__lead'>
               <p className='dashboard-header__eyebrow'>{current.kicker}</p>
               <h1 className='dashboard-header__title'>{current.title}</h1>
@@ -2444,7 +2430,14 @@ export const DashboardPage: React.FC = () => {
                   </Badge>
                 </>
               ) : null}
-              {current.cta ? <Button size='sm'>{current.cta}</Button> : null}
+              {current.cta ? (
+                <Button
+                  size='sm'
+                  onClick={activeSection === 'teachers' ? scrollToTeacherForm : undefined}
+                >
+                  {current.cta}
+                </Button>
+              ) : null}
             </div>
           </div>
         </header>
@@ -2513,6 +2506,7 @@ export const DashboardPage: React.FC = () => {
           {activeSection === 'teachers' && (
             <TeachersSection
               teachers={teachers}
+              classes={classes}
               newTeacher={newTeacher}
               setNewTeacher={setNewTeacher}
               teacherSubjectPreset={teacherSubjectPreset}
@@ -2521,6 +2515,8 @@ export const DashboardPage: React.FC = () => {
               onUpdateTeacher={handleUpdateTeacher}
               onDeleteTeacher={handleDeleteTeacher}
               subjectOptions={SUBJECT_OPTIONS}
+              getClassName={getClassName}
+              createFormRef={teacherCreateFormRef}
             />
           )}
 

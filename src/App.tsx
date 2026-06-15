@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { LandingPage } from './pages/LandingPage';
+import { PlansPage } from './pages/PlansPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -22,6 +23,7 @@ export const App: React.FC = () => {
         <SetRoleFromQuery />
         <Routes>
           <Route path='/' element={<LandingPage />} />
+          <Route path='/plans' element={<PlansPage />} />
           <Route path='/login' element={<LoginPage />} />
           <Route path='/dashboard' element={<DashboardPage />} />
           <Route path='/register' element={<RegisterPage />} />

@@ -23,6 +23,8 @@ import {
   Wallet,
 } from 'lucide-react';
 
+import { AppLogo } from '@/components/AppLogo';
+
 import { ACCESS_TOKEN_KEY } from '@/constants';
 import {
   clearAuthSession,
@@ -1323,13 +1325,9 @@ export const DashboardPage: React.FC = () => {
       <Sidebar collapsible='icon' variant='inset'>
         <SidebarHeader>
           <div className='flex items-center gap-2 px-2'>
-            <div className='size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-semibold'>
-              NG
-            </div>
+            <AppLogo markClassName='app-logo__mark--compact' name='NewGee Admin' />
             <div className='flex flex-col'>
-              <span className='text-sm font-semibold leading-tight'>
-                NewGee Admin
-              </span>
+              <span className='text-sm font-semibold leading-tight'>Admin</span>
               <span className='text-[11px] text-muted-foreground'>
                 {roleTitles[role]}
               </span>
