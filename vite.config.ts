@@ -11,9 +11,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
-    // 5173 is often taken by another local app (e.g. Coopec) — use next free port.
-    strictPort: false,
+    port: 5179,
+    strictPort: true,
   },
 });
-

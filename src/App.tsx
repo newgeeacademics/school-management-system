@@ -1,34 +1,28 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { LandingPage } from './pages/LandingPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { LoginPage } from './pages/LoginPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { UserPortalRedirectPage } from './pages/UserPortalRedirectPage';
-import { EnvConfigBanner } from '@/components/EnvConfigBanner';
-import { RegistrationHandoff } from '@/components/RegistrationHandoff';
-import { SetRoleFromQuery } from '@/components/SetRoleFromQuery';
+import { TrackingSessionGate } from '@/components/TrackingSessionGate';
+import { LoginPage } from '@/pages/LoginPage';
+import { TrackingDashboardPage } from '@/pages/TrackingDashboardPage';
 
-export const App: React.FC = () => {
+export function App() {
   return (
-    <TooltipProvider>
+    <>
       <Toaster richColors position='top-center' />
-      <EnvConfigBanner />
       <BrowserRouter>
-        <RegistrationHandoff />
-        <SetRoleFromQuery />
         <Routes>
-          <Route path='/' element={<LandingPage />} />
-          <Route path='/login' element={<LoginPage />} />
-          <Route path='/dashboard' element={<DashboardPage />} />
-          <Route path='/register' element={<RegisterPage />} />
-          <Route path='/connexion' element={<UserPortalRedirectPage />} />
-          <Route path='*' element={<Navigate to='/' replace />} />
+          <Route path='/' element={<Navigate to='/connexion' replace />} />
+          <Route path='/connexion' element={<LoginPage />} />
+          <Route
+            path='/suivi'
+            element={
+              <TrackingSessionGate>
+                <TrackingDashboardPage />
+              </TrackingSessionGate>
+            }
+          />
+          <Route path='*' element={<Navigate to='/connexion' replace />} />
         </Routes>
       </BrowserRouter>
-    </TooltipProvider>
+    </>
   );
-};
+}
