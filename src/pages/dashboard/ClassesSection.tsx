@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 
 import { getSystemLabel, type SchoolProfile } from '@/lib/school-profile';
+import { buildClassNameOptions } from '@/lib/class-name-utils';
 
 import { type SchoolType } from './dashboardConstants';
 import type { ClassItem, NewClassFormState, SetStateAction, Teacher } from './dashboardTypes';
@@ -52,9 +53,11 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
   const effectiveType: SchoolType | '' = schoolTypes.length > 0 ? schoolTypes[0] : '';
 
   const classNameOptions = React.useMemo(() => {
-    if (!newClass.level.trim()) return [];
-    return ['A', 'B', 'C', 'D', 'E'].map((letter) => `${newClass.level} ${letter}`);
-  }, [newClass.level]);
+    return buildClassNameOptions(
+      newClass.level,
+      classes.map((classe) => classe.name)
+    );
+  }, [newClass.level, classes]);
 
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState({

@@ -37,41 +37,24 @@
   margin-bottom: 8px;
 }
 
-.school-register__logo--header {
-  display: inline-flex;
+.school-register__logo-img {
+  height: 140px;
+  width: auto;
+  max-width: 440px;
+  object-fit: contain;
+  display: block;
+  margin-inline: auto;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.school-register__logo-img--header {
+  display: block;
 }
 
 .school-register__topbar-lang {
   flex: 0 0 auto;
-}
-
-.app-logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.app-logo__mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  color: #fff;
-  background: #2563eb;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.app-logo__name {
-  font-size: 1.15rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: #111827;
-}
-
-.school-register__logo {
-  justify-content: center;
 }
 
 .school-register__title {
@@ -278,8 +261,21 @@
   color: #6b7280;
 }
 
+.school-register__account-email {
+  margin: 0;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.9rem;
+  word-break: break-word;
+}
+
 .school-register__series-add {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: stretch;
 }
@@ -308,6 +304,16 @@
 
 .school-register__series-add-btn:hover:not(:disabled) {
   background: #1d4ed8;
+}
+
+.school-register__series-add-btn--secondary {
+  border-color: #e5e7eb;
+  background: #fff;
+  color: #374151;
+}
+
+.school-register__series-add-btn--secondary:hover:not(:disabled) {
+  background: #f9fafb;
 }
 
 .school-register__series-add-btn:disabled {
@@ -480,7 +486,7 @@
   justify-content: center;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: none;
 }
 
 .school-register__btn--ghost {
@@ -516,66 +522,18 @@
 
 @media (max-width: 899px) {
   .school-register {
-    padding: 0;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   }
 
-  .school-register__shell {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    grid-template-columns: 1fr;
-    width: 100%;
-    max-width: none;
-    row-gap: 20px;
-    padding: 48px 16px calc(16px + env(safe-area-inset-bottom));
+  .school-register__logo-img {
+    height: 120px;
+    max-width: 360px;
   }
+}
 
-  .school-register__topbar {
-    display: flex;
-  }
-
-  .school-register__logo--header {
-    display: none;
-  }
-
-  .school-register__header {
-    text-align: left;
-    margin-bottom: 0;
-  }
-
-  .school-register__title {
-    font-size: 1.25rem;
-  }
-
-  .school-register__fields-bare {
-    max-width: none;
-    flex: 1;
-  }
-
-  .school-register__grid-2 {
-    grid-template-columns: 1fr;
-  }
-
-  .school-register__footerbar {
-    display: flex;
-    flex-direction: row;
-    gap: 12px;
-    margin-top: auto;
-    padding-top: 16px;
-  }
-
-  .school-register__footerbar > .school-register__nav-back--footer,
-  .school-register__footerbar > .school-register__nav-next {
-    grid-column: unset;
-    justify-self: stretch;
-    max-width: none;
-    flex: 1;
-  }
-
-  .school-register__nav-back--footer svg {
-    display: inline;
+@media (min-width: 900px) {
+  .school-register__logo-img {
+    height: 152px;
+    max-width: 480px;
   }
 }

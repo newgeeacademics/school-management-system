@@ -30,9 +30,10 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
     const email = usernameOrEmail.trim();
     try {
       if (!isBackendApiConfigured()) {
-        toast.error('VITE_API_URL n’est pas configuré sur ce déploiement Vercel.', {
-          richColors: true,
-        });
+        toast.error(
+          'Impossible de joindre le serveur API. Vérifiez VITE_API_URL et que le backend est démarré.',
+          { richColors: true }
+        );
         setIsPending(false);
         return;
       }

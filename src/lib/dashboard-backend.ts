@@ -1,5 +1,5 @@
 import type React from 'react';
-import { BASE_URL, ACCESS_TOKEN_KEY } from '@/constants';
+import { BASE_URL, ACCESS_TOKEN_KEY, isApiUrlFromEnv } from '@/constants';
 import { parseApiErrorResponse, wrapFetchError } from '@/lib/api-error';
 import type { School } from '@/types';
 import type {
@@ -28,8 +28,17 @@ import type {
   TransportRoute,
 } from '@/pages/dashboard/dashboardTypes';
 
+export const BACKEND_REQUIRED_MESSAGE =
+  'Connexion au serveur requise. Démarrez le backend (port 8080) ou définissez VITE_API_URL puis redémarrez le front.';
+
+/** True when the app has a resolved API base URL (local dev default or env). */
 export function isBackendApiConfigured(): boolean {
-  return Boolean(import.meta.env.VITE_API_URL?.trim());
+  return Boolean(BASE_URL?.trim());
+}
+
+/** True only when VITE_API_URL / VITE_BACKEND_BASE_URL was set explicitly. */
+export function isBackendApiEnvConfigured(): boolean {
+  return isApiUrlFromEnv;
 }
 
 function getToken(): string | null {
@@ -645,6 +654,7 @@ export async function createTeacherOnBackend(item: {
   email?: string;
   password?: string;
   phone?: string;
+  homeroomClassIds?: string[];
 }) {
   const data = await adminApiFetch<Record<string, unknown>>('/api/teachers', {
     method: 'POST',
@@ -654,6 +664,7 @@ export async function createTeacherOnBackend(item: {
       email: item.email?.trim() || undefined,
       password: item.password?.trim() || undefined,
       phone: item.phone?.trim() || undefined,
+      homeroomClassIds: item.homeroomClassIds?.length ? item.homeroomClassIds : undefined,
     }),
   });
   return mapTeacherFromApi(data);
@@ -661,7 +672,14 @@ export async function createTeacherOnBackend(item: {
 
 export async function updateTeacherOnBackend(
   id: string,
-  item: { name: string; subject: string; email?: string; password?: string; phone?: string }
+  item: {
+    name: string;
+    subject: string;
+    email?: string;
+    password?: string;
+    phone?: string;
+    homeroomClassIds?: string[];
+  }
 ) {
   const data = await adminApiFetch<Record<string, unknown>>(`/api/teachers/${id}`, {
     method: 'PUT',
@@ -671,6 +689,7 @@ export async function updateTeacherOnBackend(
       email: item.email?.trim() || undefined,
       password: item.password?.trim() || undefined,
       phone: item.phone?.trim() || undefined,
+      homeroomClassIds: item.homeroomClassIds ?? [],
     }),
   });
   return mapTeacherFromApi(data);

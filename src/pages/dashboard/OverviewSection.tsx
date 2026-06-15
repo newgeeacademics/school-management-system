@@ -205,7 +205,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
               className='w-full justify-start'
               onClick={() => onNavigate('teachers')}
             >
-              Inviter des enseignants
+              Ajouter un enseignant
             </Button>
             <Button
               variant='outline'

@@ -4,12 +4,104 @@
   overflow-x: clip;
 }
 
-.dashboard-shell .dashboard-sidebar-brand {
-  padding: 4px 2px 8px;
+/* Sidebar header: logo + collapse control */
+.dashboard-shell .dashboard-sidebar-header {
+  padding: 8px 10px !important;
+  gap: 0 !important;
 }
 
-.dashboard-shell .dashboard-sidebar-brand .app-logo__name {
-  font-size: 1rem;
+.dashboard-shell .dashboard-sidebar-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  min-height: 0;
+}
+
+.dashboard-shell .dashboard-sidebar-logo {
+  display: block;
+  height: 36px;
+  width: auto;
+  max-width: 108px;
+  object-fit: contain;
+  object-position: left center;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.dashboard-shell .dashboard-sidebar-trigger {
+  height: 28px;
+  width: 28px;
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.dashboard-shell .dashboard-sidebar-footer {
+  padding: 6px 8px !important;
+}
+
+.dashboard-shell .dashboard-sidebar-logout {
+  gap: 0.5rem;
+}
+
+/* Collapsed (icon) sidebar */
+.dashboard-shell .group[data-collapsible='icon'] .dashboard-sidebar-header {
+  padding: 6px 4px !important;
+}
+
+.dashboard-shell .group[data-collapsible='icon'] .dashboard-sidebar-header__inner {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.dashboard-shell .group[data-collapsible='icon'] .dashboard-sidebar-logo {
+  height: 32px;
+  width: 32px;
+  max-width: 32px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.dashboard-shell .group[data-collapsible='icon'] .dashboard-sidebar-trigger {
+  height: 26px;
+  width: 26px;
+}
+
+.dashboard-shell .group[data-collapsible='icon'] [data-sidebar='menu-button'] > span {
+  display: none !important;
+}
+
+.dashboard-shell .group[data-collapsible='icon'] [data-sidebar='menu-button'] svg {
+  margin-right: 0 !important;
+}
+
+.dashboard-shell .group[data-collapsible='icon'] [data-sidebar='menu-button'] svg.transition-transform {
+  display: none !important;
+}
+
+.dashboard-shell .group[data-collapsible='icon'] .dashboard-sidebar-footer-text,
+.dashboard-shell .group[data-collapsible='icon'] .dashboard-sidebar-footer-actions,
+.dashboard-shell .group[data-collapsible='icon'] .dashboard-sidebar-logout-label {
+  display: none !important;
+}
+
+.dashboard-shell .group[data-collapsible='icon'] .dashboard-user-pill {
+  padding: 6px;
+  align-items: center;
+}
+
+.dashboard-shell .group[data-collapsible='icon'] .dashboard-sidebar-avatar {
+  margin: 0 auto;
+}
+
+.dashboard-shell .group[data-collapsible='icon'] .dashboard-sidebar-logout {
+  width: 2rem !important;
+  height: 2rem !important;
+  padding: 0 !important;
+  justify-content: center !important;
 }
 
 .dashboard-shell [data-sidebar='sidebar'] {

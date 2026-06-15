@@ -5,7 +5,6 @@ export type SchoolRegistrationPayload = {
   credentials: {
     email: string;
     password: string;
-    username: string;
     directorName: string;
     schoolName: string;
   };
@@ -27,17 +26,13 @@ export type SchoolRegistrationPayload = {
     studentCount: string;
     teacherCount: string;
     series: string[];
-    gradingScale?: string;
-    evaluationTypes?: string[];
     registrationNumber?: string;
     languagesOffered?: string[];
     logoUrl: string;
   };
 };
 
-export function isBackendApiConfigured(): boolean {
-  return Boolean(import.meta.env.VITE_API_URL?.trim());
-}
+export { isBackendApiConfigured } from '@/lib/dashboard-backend';
 
 const SCHOOL_TYPE_MAP: Record<string, string> = {
   primaire: 'PRIMAIRE',
@@ -71,11 +66,6 @@ function buildSchoolBody(school: SchoolRegistrationPayload['school'], email: str
     studentCount: school.studentCount ? Number(school.studentCount) : undefined,
     teacherCount: school.teacherCount ? Number(school.teacherCount) : undefined,
     series: school.series.length ? school.series.join(', ') : undefined,
-    gradingScale: school.gradingScale ? Number(school.gradingScale) : 20,
-    evaluationTypes: school.evaluationTypes?.length
-      ? school.evaluationTypes.join(', ')
-      : 'Devoir,Interro,Examen',
-    evaluationPeriods: 'Trimestre 1,Trimestre 2,Trimestre 3',
     registrationNumber: school.registrationNumber?.trim() || undefined,
     languagesOffered: school.languagesOffered?.length
       ? school.languagesOffered.join(', ')

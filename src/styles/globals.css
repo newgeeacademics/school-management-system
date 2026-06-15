@@ -118,26 +118,22 @@
 .app-logo {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
 }
 
 .app-logo__mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: #2563eb;
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  width: auto;
+  height: auto;
+  max-width: none;
+  border-radius: 0;
+  background: transparent;
+  object-fit: contain;
   flex-shrink: 0;
+  display: block;
 }
 
-.app-logo__name {
-  font-size: 1.15rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: #111827;
+.app-logo__mark--compact {
+  height: 36px;
+  max-width: 108px;
 }
 
 @layer base {
@@ -155,6 +151,27 @@
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
   }
+}
+
+/* Landing mobile menu — rendered in #landing-mobile-portal (sibling of #root) */
+#landing-mobile-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  pointer-events: none;
+}
+
+#landing-mobile-portal:not(:empty) {
+  pointer-events: auto;
+}
+
+body.landing-mobile-menu-open {
+  overflow: hidden !important;
+}
+
+body.landing-mobile-menu-open .landing__header {
+  z-index: 1 !important;
+  backdrop-filter: none !important;
 }
 
 @layer utilities {

@@ -5,7 +5,7 @@ Each frontend is a **separate Vercel project** from the same GitHub repo, on **i
 
 | App | Vercel branch | Login | Dashboard / home |
 |-----|---------------|-------|-------------------|
-| **Main** — marketing, registration, **school console** | `main` | `/login` | `/dashboard` |
+| **Classroom app** — marketing, registration, **school console** | `classroom-app` | `/login` | `/dashboard` |
 | **Admin** — separate admin console (optional 2nd deploy) | `admin` | `/login` | `/dashboard` |
 | **User portal** — students / parents / teachers | `user-portal` | `/connexion` | `/accueil` … |
 | **Finance** — trésorerie, paie enseignants & personnel | `finance` | `/login` | `/` |
@@ -26,12 +26,12 @@ Each app is an **independent** Vite project and Vercel deployment. They share on
 
 [Vercel Dashboard](https://vercel.com/new) → **Add New → Project** → `newgeeacademics/school-management-system`.
 
-### Project A — Main site
+### Project A — Classroom app (root src/)
 
 | Setting | Value |
 |---------|--------|
 | **Project name** | `newgee-main` |
-| **Production branch** | `main` |
+| **Production branch** | `classroom-app` |
 | **Root Directory** | `.` (leave empty / repo root) |
 | **Framework** | Vite |
 | **Build Command** | `npm run build` |
@@ -80,7 +80,7 @@ Each branch should include a root `vercel.json` with SPA rewrites for React Rout
 
 After the first deploy, note each Vercel URL. Redeploy after setting env vars (Vite bakes them at build time).
 
-### Main site — branch `main`
+### Classroom app (root src/) — branch `classroom-app`
 
 | Key | Example |
 |-----|---------|
@@ -94,7 +94,7 @@ School registration → `POST /api/auth/register-school` → redirect to **`/das
 ### Fix: still sent to admin / `your-admin.vercel.app` on Vercel
 
 1. **Main** project → Settings → Environment Variables → **delete** `VITE_ADMIN_APP_URL` (and any value like `https://your-admin.vercel.app`).
-2. Ensure **main** branch on GitHub has the latest sync (login/dashboard on main, not redirect to admin). Run `scripts/sync-branches.ps1` from `it` if needed.
+2. Ensure **`classroom-app`** branch on GitHub has the latest sync (login/dashboard on root src). Run `scripts/sync-branches.ps1` from the monorepo when ready to publish.
 3. **Redeploy** the main project (Deployments → … → Redeploy, *without* reusing old env).
 4. **User portal** project → set `VITE_MAIN_APP_URL` = your **main** site URL (not the admin URL).
 
@@ -187,7 +187,7 @@ Admin app (if deployed): `https://newgee-admin.vercel.app/login` → `admin@clas
 ## Checklist
 
 - [ ] Render backend on branch **`it`**, root **`backend`**
-- [ ] Vercel main on branch **`main`**
+- [ ] Vercel classroom app on branch **`classroom-app`**
 - [ ] Vercel admin on branch **`admin`**
 - [ ] Vercel portal on branch **`user-portal`**
 - [ ] Vercel finance on branch **`finance`**

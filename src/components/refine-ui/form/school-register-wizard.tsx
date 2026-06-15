@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
-import { AppLogo } from '@/components/AppLogo';
+import logoSrc from '@/assets/logo/newgee-logo.png';
 import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { FileUploader } from '@/components/refine-ui/form/file-uploader';
@@ -11,8 +11,8 @@ import { MapLocationPicker } from '@/components/refine-ui/form/map-location-pick
 import { CLOUDINARY_UPLOAD_PRESET, CLOUDINARY_UPLOAD_URL } from '@/constants';
 import { useTranslation } from '@/i18n';
 import { toast } from 'sonner';
-import { getDashboardUrl } from '@/lib/app-urls';
-import { buildDashboardHandoffUrl, storeAccessToken } from '@/lib/auth-handoff';
+import { buildDashboardHandoffUrl } from '@/lib/auth-handoff';
+import { persistAuthSession } from '@/lib/auth';
 import { persistSchoolProfileFromRegistration } from '@/lib/school-profile';
 import { isBackendApiConfigured, registerSchoolWithAdmin } from '@/lib/school-registration-api';
 import {
@@ -39,8 +39,6 @@ import { normalizeRegistrationNumber, validateRegistrationNumber } from '@/lib/s
 import { filterSeriesForSystem } from '@/lib/school-series';
 import './school-register-wizard.css';
 
-const LOCAL_SCHOOLS_KEY = 'newgee_local_schools';
-const LOCAL_USERS_KEY = 'newgee_local_users';
 const TOTAL_STEPS = 7;
 
 const STEP_TITLE_KEYS = [
@@ -63,10 +61,6 @@ const STEP_SUBTITLE_KEYS = [
   'school.stepAccountSubtitle',
 ] as const;
 
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
-}
-
 const SCHOOL_TYPES = [
   { value: 'primaire', labelKey: 'school.typePrimaire' },
   { value: 'college', labelKey: 'school.typeCollege' },
@@ -81,8 +75,6 @@ const SYSTEMS = [
 ] as const;
 
 type CredentialsState = {
-  username: string;
-  email: string;
   password: string;
   confirmPassword: string;
 };
@@ -134,8 +126,6 @@ export function SchoolRegisterWizard() {
     useState<RegistrationNumberStatus>('idle');
 
   const [credentials, setCredentials] = useState<CredentialsState>({
-    username: '',
-    email: '',
     password: '',
     confirmPassword: '',
   });
@@ -215,7 +205,7 @@ export function SchoolRegisterWizard() {
         }
         case 7:
           return Boolean(
-            isCompleteEmail(credentials.email) &&
+            isCompleteEmail(school.officialEmail) &&
               credentials.password.trim() &&
               credentials.confirmPassword.trim() &&
               credentials.password === credentials.confirmPassword
@@ -328,8 +318,7 @@ export function SchoolRegisterWizard() {
       }
     }
 
-    const username = credentials.username || credentials.email.split('@')[0];
-    const now = new Date().toISOString();
+    const loginEmail = school.officialEmail.trim();
 
     const schoolPayload = {
       schoolName: school.schoolName,
@@ -342,7 +331,7 @@ export function SchoolRegisterWizard() {
       gpsLat: school.gpsLat,
       gpsLng: school.gpsLng,
       phone: formatPhoneWithCountry(school.country, school.phone) || '',
-      officialEmail: school.officialEmail || credentials.email,
+      officialEmail: loginEmail,
       directorName: school.directorName || '',
       directorPhone: formatPhoneWithCountry(school.country, school.directorPhone) || '',
       website: school.website || '',
@@ -358,135 +347,37 @@ export function SchoolRegisterWizard() {
       logoUrl: logoUrl || '',
     };
 
-    if (isBackendApiConfigured()) {
-      try {
-        const result = await registerSchoolWithAdmin({
-          credentials: {
-            email: credentials.email,
-            password: credentials.password,
-            username,
-            directorName: school.directorName,
-            schoolName: school.schoolName,
-          },
-          school: schoolPayload,
-        });
-
-        storeAccessToken(result.token);
-        localStorage.setItem(
-          'user',
-          JSON.stringify({
-            id: result.userId,
-            email: credentials.email,
-            name: school.directorName || school.schoolName,
-            role: 'admin',
-            schoolId: result.schoolId,
-          })
-        );
-
-        persistSchoolProfileFromRegistration({
-          schoolId: result.schoolId,
-          schoolName: school.schoolName,
-          schoolType: school.schoolType,
-          system: school.system,
-          country: school.country,
-          city: school.city,
-        });
-
-        toast.success(t('auth.schoolRegistered'), { richColors: true });
-        window.location.assign(buildDashboardHandoffUrl(result.token));
-        return;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : t('auth.registrationFailed');
-        setSubmitError(message);
-        toast.error(message, { richColors: true });
-        setIsLoading(false);
-        return;
-      }
+    if (!isBackendApiConfigured()) {
+      const message =
+        'Impossible de joindre le serveur API. Vérifiez VITE_API_URL et que le backend est démarré.';
+      setSubmitError(message);
+      toast.error(message, { richColors: true });
+      setIsLoading(false);
+      return;
     }
 
-    const schoolId = generateId();
-    const userId = generateId();
-
-    const schoolRecord = {
-      id: schoolId,
-      name: school.schoolName,
-      type: school.schoolType || '',
-      system: school.system || '',
-      country: school.country || '',
-      city: school.city || '',
-      commune: school.commune || '',
-      address: school.address || '',
-      gpsLat: school.gpsLat ? Number(school.gpsLat) : null,
-      gpsLng: school.gpsLng ? Number(school.gpsLng) : null,
-      phone: formatPhoneWithCountry(school.country, school.phone) || '',
-      officialEmail: school.officialEmail || credentials.email,
-      directorName: school.directorName || '',
-      directorPhone: formatPhoneWithCountry(school.country, school.directorPhone) || '',
-      website: school.website || '',
-      logoUrl: logoUrl || '',
-      logoCldPubId: logoCldPubId || '',
-      studentCount: school.studentCount ? Number(school.studentCount) : null,
-      teacherCount: school.teacherCount ? Number(school.teacherCount) : null,
-      series: school.series,
-      gradingScale: school.gradingScale ? Number(school.gradingScale) : 20,
-      evaluationTypes: school.evaluationTypes,
-      languagesOffered: school.languagesOffered.map((id) => t(instructionLanguageLabelKey(id))),
-      legalName: school.legalName || '',
-      registrationNumber: school.registrationNumber
-        ? normalizeRegistrationNumber(school.registrationNumber)
-        : '',
-      accreditationRef: school.accreditationRef || '',
-      academicYearLabel: school.academicYearLabel || '',
-      openingHours: school.openingHours || '',
-      socialLinks: school.socialLinks || '',
-      billingContactName: school.billingContactName || '',
-      billingEmail: school.billingEmail || '',
-      billingPhone: school.billingPhone
-        ? formatPhoneWithCountry(school.country, school.billingPhone)
-        : '',
-      emergencyContactName: school.emergencyContactName || '',
-      emergencyContactPhone: school.emergencyContactPhone
-        ? formatPhoneWithCountry(school.country, school.emergencyContactPhone)
-        : '',
-      internalNotes: school.internalNotes || '',
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    const userRecord = {
-      id: userId,
-      username,
-      email: credentials.email,
-      name: school.directorName || school.schoolName,
-      role: 'admin',
-      schoolId,
-      password: credentials.password,
-      createdAt: now,
-      updatedAt: now,
-    };
-
     try {
-      const existingSchools: unknown[] = JSON.parse(localStorage.getItem(LOCAL_SCHOOLS_KEY) || '[]');
-      const existingUsers: { email: string; username: string }[] = JSON.parse(
-        localStorage.getItem(LOCAL_USERS_KEY) || '[]'
-      );
+      const result = await registerSchoolWithAdmin({
+        credentials: {
+          email: loginEmail,
+          password: credentials.password,
+          directorName: school.directorName,
+          schoolName: school.schoolName,
+        },
+        school: schoolPayload,
+      });
 
-      if (existingUsers.some((u) => u.email === credentials.email || u.username === username)) {
-        const message = "Un compte avec cet email ou ce nom d'utilisateur existe déjà.";
-        setSubmitError(message);
-        toast.error(message, { richColors: true });
-        setIsLoading(false);
-        return;
-      }
-
-      existingSchools.push(schoolRecord);
-      existingUsers.push(userRecord);
-
-      localStorage.setItem(LOCAL_SCHOOLS_KEY, JSON.stringify(existingSchools));
-      localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(existingUsers));
+      persistAuthSession({
+        token: result.token,
+        id: result.userId,
+        name: school.directorName || school.schoolName,
+        email: loginEmail.trim(),
+        role: 'ADMIN',
+        schoolId: result.schoolId,
+      });
 
       persistSchoolProfileFromRegistration({
-        schoolId,
+        schoolId: result.schoolId,
         schoolName: school.schoolName,
         schoolType: school.schoolType,
         system: school.system,
@@ -494,15 +385,12 @@ export function SchoolRegisterWizard() {
         city: school.city,
       });
 
-      const { password: _p, ...userForSession } = userRecord;
-      localStorage.setItem('user', JSON.stringify(userForSession));
-
       toast.success(t('auth.schoolRegistered'), { richColors: true });
-      window.location.assign(getDashboardUrl());
+      window.location.assign(buildDashboardHandoffUrl(result.token));
     } catch (err) {
-      console.error('School registration error', err);
-      setSubmitError(t('auth.registrationFailed'));
-      toast.error(t('auth.registrationFailed'), { richColors: true });
+      const message = err instanceof Error ? err.message : t('auth.registrationFailed');
+      setSubmitError(message);
+      toast.error(message, { richColors: true });
     } finally {
       setIsLoading(false);
     }
@@ -830,24 +718,10 @@ export function SchoolRegisterWizard() {
       case 7:
         return (
           <>
-            <label className='school-register__field'>
-              <span>{t('auth.email')} *</span>
-              <EmailWithAtSeparator
-                value={credentials.email}
-                onChange={(email) => setCredentials((prev) => ({ ...prev, email }))}
-                localPlaceholder={t('school.emailLocalPlaceholder')}
-                domainPlaceholder={t('school.emailDomainPlaceholder')}
-                required
-              />
-            </label>
-            <label className='school-register__field'>
-              <span>{t('auth.username')}</span>
-              <input
-                value={credentials.username}
-                onChange={handleCredentialsInput('username')}
-                placeholder={t('auth.enterUsername')}
-              />
-            </label>
+            <div className='school-register__field'>
+              <span>{t('school.stepAccountEmailLabel')}</span>
+              <p className='school-register__account-email'>{school.officialEmail}</p>
+            </div>
             <label className='school-register__field'>
               <span>{t('auth.password')} *</span>
               <InputPassword
@@ -864,7 +738,7 @@ export function SchoolRegisterWizard() {
                 placeholder={t('auth.enterConfirmPassword')}
               />
             </label>
-            <p className='school-register__hint'>{t('school.stepAccountHint')}</p>
+            <p className='school-register__hint'>{t('school.stepAccountHint', { email: school.officialEmail })}</p>
           </>
         );
       default:
@@ -888,11 +762,11 @@ export function SchoolRegisterWizard() {
             >
               <ChevronLeft size={18} />
             </button>
-            <AppLogo className='school-register__logo' />
+            <img src={logoSrc} alt='NewGee' className='school-register__logo-img' />
             <LanguageSwitcher compact showLabel className='school-register__topbar-lang' />
           </div>
 
-          <AppLogo className='school-register__logo school-register__logo--header' />
+          <img src={logoSrc} alt='NewGee' className='school-register__logo-img school-register__logo-img--header' />
           <h1 className='school-register__title'>{title}</h1>
           <p className='school-register__subtitle'>{subtitle}</p>
         </div>

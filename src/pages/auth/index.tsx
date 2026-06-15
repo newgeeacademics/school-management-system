@@ -2,9 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '@/i18n';
 import { SignInForm } from '@/components/refine-ui/form/sign-in-form';
-import { AppLogo } from '@/components/AppLogo';
-import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
-
+import logoSrc from '@/assets/logo/newgee-logo.png';
 import '../auth-page.css';
 
 function AuthIllustrationSet() {
@@ -31,16 +29,12 @@ export function AuthPage() {
   return (
     <div className='auth-page'>
       <section className='auth-page__panel'>
-        <header className='auth-page__top auth-page__top--split'>
-          <Link to='/'>
-            <AppLogo />
-          </Link>
-          <LanguageSwitcher compact showLabel />
-        </header>
         <main className='auth-page__main'>
           <div className='auth-page__card'>
-            <SignInForm variant='embedded' />
-          </div>
+            <Link to='/' className='auth-page__brand-link auth-page__brand-link--hero'>
+              <img src={logoSrc} alt='NewGee' className='auth-page__logo auth-page__logo--hero' />
+            </Link>
+            <SignInForm variant='embedded' />          </div>
         </main>
       </section>
       <AuthIllustrationSet />
