@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Bus, LogOut, MapPin, Radio, Users } from 'lucide-react';
+import { LogOut, MapPin, Radio, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AppLogo } from '@/components/AppLogo';
 import { TrackingMap } from '@/components/TrackingMap';
 import {
   canDrive,
@@ -168,9 +169,7 @@ export function TrackingDashboardPage() {
       <header className='border-b bg-card'>
         <div className='mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4'>
           <div className='flex items-center gap-3'>
-            <div className='flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground'>
-              <Bus className='size-5' />
-            </div>
+            <AppLogo markClassName='app-logo__mark--compact' name='NewGee Transport' />
             <div>
               <h1 className='font-semibold'>Suivi Transport</h1>
               <p className='text-xs text-muted-foreground'>

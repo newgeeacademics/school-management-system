@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Bus, Users, BookOpen, Navigation } from 'lucide-react';
+import { Users, BookOpen, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InputPassword } from '@/components/InputPassword';
+import { AppLogo } from '@/components/AppLogo';
 import { cn } from '@/lib/utils';
 import { isBackendApiConfigured, loginWithEmail } from '@/lib/api';
 import { setTrackingSession, type TrackingRole } from '@/lib/auth';
@@ -74,9 +75,7 @@ export function LoginPage() {
     <div className='min-h-svh bg-gradient-to-br from-orange-50 via-white to-slate-50 px-4 py-10'>
       <div className='mx-auto max-w-md'>
         <div className='mb-8 text-center'>
-          <div className='mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg'>
-            <Bus className='size-7' />
-          </div>
+          <AppLogo className='mx-auto mb-4 justify-center' name='NewGee Transport' />
           <h1 className='text-2xl font-bold tracking-tight'>Suivi Transport</h1>
           <p className='mt-2 text-sm text-muted-foreground'>
             Suivez en direct le trajet du bus scolaire et la position de votre enfant.

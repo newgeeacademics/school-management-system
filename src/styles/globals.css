@@ -52,6 +52,25 @@
   --ring: #f97316;
 }
 
+.app-logo {
+  display: inline-flex;
+  align-items: center;
+}
+
+.app-logo__mark {
+  height: 44px;
+  width: auto;
+  max-width: 148px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+
+.app-logo__mark--compact {
+  height: 36px;
+  max-width: 108px;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
