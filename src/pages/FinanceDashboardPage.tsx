@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Banknote,
   LayoutDashboard,
   LogOut,
   UserCircle2,
@@ -9,6 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { AppLogo } from '@/components/AppLogo';
 import { FinanceOverviewPanel } from '@/components/finance/FinanceOverviewPanel';
 import { PayrollPanel } from '@/components/finance/PayrollPanel';
 import { Button } from '@/components/ui/button';
@@ -118,11 +118,8 @@ export function FinanceDashboardPage() {
     <div className='flex min-h-svh bg-violet-50/40'>
       <aside className='flex w-64 shrink-0 flex-col border-r border-violet-900/30 bg-[#2e1065] text-violet-100'>
         <div className='flex items-center gap-2 border-b border-violet-800/60 px-4 py-4'>
-          <div className='flex size-9 items-center justify-center rounded-lg bg-violet-600 text-white shadow-sm'>
-            <Banknote className='size-5' />
-          </div>
+          <AppLogo markClassName='app-logo__mark--compact' name='NewGee Finance' />
           <div>
-            <p className='text-sm font-bold text-white'>NewGee Finance</p>
             <p className='text-[10px] text-violet-300'>Back-office trésorerie</p>
           </div>
         </div>

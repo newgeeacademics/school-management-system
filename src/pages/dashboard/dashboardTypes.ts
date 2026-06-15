@@ -40,6 +40,8 @@ export type Teacher = {
   initials: string;
   name: string;
   subject: string;
+  email?: string;
+  phone?: string;
 };
 
 export type ClassItem = {
@@ -193,6 +195,10 @@ export type NewClassFormState = {
 export type NewTeacherFormState = {
   name: string;
   subject: string;
+  email: string;
+  password: string;
+  phone: string;
+  homeroomClassIds: string[];
 };
 
 export type NewStudentFormState = {

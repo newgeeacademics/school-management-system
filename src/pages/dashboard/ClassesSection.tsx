@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 
 import { LEVELS_BY_SCHOOL_TYPE, type SchoolType } from './dashboardConstants';
+import { buildClassNameOptions } from '@/lib/class-name-utils';
 import type {
   ClassItem,
   NewClassFormState,
@@ -48,10 +49,11 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
     : [];
 
   const classNameOptions = React.useMemo(() => {
-    if (!newClass.level.trim()) return [];
-    const divisionLetters = ['A', 'B', 'C', 'D', 'E'];
-    return divisionLetters.map((letter) => `${newClass.level} ${letter}`);
-  }, [newClass.level]);
+    return buildClassNameOptions(
+      newClass.level,
+      classes.map((classe) => classe.name)
+    );
+  }, [newClass.level, classes]);
 
   return (
     <section className='space-y-5'>
