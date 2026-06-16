@@ -197,23 +197,21 @@ Admin app (if deployed): `https://newgee-admin.vercel.app/login` → `admin@clas
 
 ---
 
-## 5. Custom domains (`newgee.com` and subdomains)
+## 5. Custom domains (`newgeeacademy.com`)
 
 Each app is a **separate Vercel project**. Add one subdomain per project, then point env vars at those URLs.
 
-> Your main project already serves **`www.newgeeacademy.com`**. If you also use **`newgee.com`**, add both apex + `www` on the classroom project, or pick one canonical domain and redirect the other.
-
 ### Domain map
 
-| App | Vercel project | Git branch | Suggested domain |
-|-----|----------------|------------|------------------|
-| **Classroom** (landing, register, `/dashboard`) | `school-management-system` | `classroom-app` | `newgee.com` + `www.newgee.com` |
-| **Admin** | `school-management-system-admin` | `admin` | `admin.newgee.com` |
-| **User portal** | `school-management-system-portal` | `user-portal` | `portal.newgee.com` |
-| **Finance** | `school-management-system-finance` | `finance` | `finance.newgee.com` |
-| **Tracking** (optional) | create new project | `tracking` | `tracking.newgee.com` |
+| App | Vercel project | Git branch | Production domain |
+|-----|----------------|------------|-------------------|
+| **Classroom** (landing, register, `/dashboard`) | `school-management-system` | `classroom-app` | `www.newgeeacademy.com` |
+| **Admin** | `school-management-system-admin` | `admin` | `admin.newgeeacademy.com` |
+| **User portal** | `school-management-system-portal` | `user-portal` | `portal.newgeeacademy.com` |
+| **Finance** | `school-management-system-finance` | `finance` | `finance.newgeeacademy.com` |
+| **Tracking** | create new project | `tracking` | `tracker.newgeeacademy.com` |
 
-Backend stays on **Render** (not Vercel): e.g. `api.newgee.com` → Render custom domain, or keep `*.onrender.com`.
+Backend stays on **Render** (not Vercel): e.g. `api.newgeeacademy.com` → Render custom domain, or keep `*.onrender.com`.
 
 ### Step 1 — Add domain in each Vercel project
 
@@ -221,18 +219,19 @@ For each row above:
 
 1. [Vercel Dashboard](https://vercel.com/newgeeacademics-projects) → open the **project**
 2. **Settings → Domains → Add**
-3. Enter the domain (e.g. `admin.newgee.com`)
+3. Enter the domain (e.g. `admin.newgeeacademy.com`)
 4. Vercel shows the **DNS record** to create at your registrar (Namecheap, Cloudflare, etc.)
 
 **CLI (optional):**
 
 ```bash
-vercel domains add admin.newgee.com school-management-system-admin
-vercel domains add portal.newgee.com school-management-system-portal
-vercel domains add finance.newgee.com school-management-system-finance
+vercel domains add admin.newgeeacademy.com school-management-system-admin
+vercel domains add portal.newgeeacademy.com school-management-system-portal
+vercel domains add tracker.newgeeacademy.com YOUR-TRACKING-PROJECT
+vercel domains add finance.newgeeacademy.com school-management-system-finance
 ```
 
-### Step 2 — DNS at your registrar (for `newgee.com`)
+### Step 2 — DNS at your registrar (for `newgeeacademy.com`)
 
 Typical setup:
 
@@ -242,8 +241,8 @@ Typical setup:
 | `www` | `CNAME` | `cname.vercel-dns.com` |
 | `admin` | `CNAME` | `cname.vercel-dns.com` |
 | `portal` | `CNAME` | `cname.vercel-dns.com` |
+| `tracker` | `CNAME` | `cname.vercel-dns.com` |
 | `finance` | `CNAME` | `cname.vercel-dns.com` |
-| `tracking` | `CNAME` | `cname.vercel-dns.com` |
 
 Use the **exact** records Vercel shows after you add each domain (they can differ slightly).
 
@@ -255,6 +254,7 @@ Use the **exact** records Vercel shows after you add each domain (they can diffe
 | `school-management-system-admin` | `admin` |
 | `school-management-system-portal` | `user-portal` |
 | `school-management-system-finance` | `finance` |
+| Tracking project | `tracking` |
 
 Run `powershell -File scripts/sync-branches.ps1` from the monorepo before relying on production deploys.
 
@@ -267,38 +267,48 @@ Replace `*.vercel.app` with custom URLs, then **Redeploy** each project.
 | Key | Production value |
 |-----|------------------|
 | `VITE_API_URL` | `https://YOUR-SERVICE.onrender.com` |
-| `VITE_USER_PORTAL_URL` | `https://portal.newgee.com` |
+| `VITE_USER_PORTAL_URL` | `https://portal.newgeeacademy.com` |
 
 **Admin** (`school-management-system-admin`):
 
 | Key | Production value |
 |-----|------------------|
 | `VITE_API_URL` | same Render URL |
-| `VITE_MAIN_APP_URL` | `https://www.newgee.com` |
-| `VITE_USER_PORTAL_URL` | `https://portal.newgee.com` |
+| `VITE_MAIN_APP_URL` | `https://www.newgeeacademy.com` |
+| `VITE_USER_PORTAL_URL` | `https://portal.newgeeacademy.com` |
 
 **Portal** (`school-management-system-portal`):
 
 | Key | Production value |
 |-----|------------------|
 | `VITE_API_URL` | same Render URL |
-| `VITE_MAIN_APP_URL` | `https://www.newgee.com` |
+| `VITE_MAIN_APP_URL` | `https://www.newgeeacademy.com` |
+| `VITE_ADMIN_APP_URL` | `https://admin.newgeeacademy.com` |
+| `VITE_TRACKING_APP_URL` | `https://tracker.newgeeacademy.com` |
 
 **Finance** (`school-management-system-finance`):
 
 | Key | Production value |
 |-----|------------------|
 | `VITE_API_URL` | same Render URL |
-| `VITE_MAIN_APP_URL` | `https://www.newgee.com` |
+| `VITE_MAIN_APP_URL` | `https://www.newgeeacademy.com` |
+
+**Tracking** (new Vercel project, branch `tracking`):
+
+| Key | Production value |
+|-----|------------------|
+| `VITE_API_URL` | same Render URL |
+| `VITE_MAIN_APP_URL` | `https://www.newgeeacademy.com` |
+| `VITE_USER_PORTAL_URL` | `https://portal.newgeeacademy.com` |
 
 ### Step 5 — Render CORS + app URLs
 
 On **Render** → backend → Environment:
 
 ```
-APP_CORS_ALLOWED_ORIGINS=https://www.newgee.com,https://newgee.com,https://admin.newgee.com,https://portal.newgee.com,https://finance.newgee.com,http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5179
-APP_MAIN_URL=https://www.newgee.com
-APP_PORTAL_URL=https://portal.newgee.com
+APP_CORS_ALLOWED_ORIGINS=https://www.newgeeacademy.com,https://admin.newgeeacademy.com,https://portal.newgeeacademy.com,https://tracker.newgeeacademy.com,https://finance.newgeeacademy.com,http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5179
+APP_MAIN_URL=https://www.newgeeacademy.com
+APP_PORTAL_URL=https://portal.newgeeacademy.com
 ```
 
 Redeploy Render after changing env vars.
@@ -306,10 +316,11 @@ Redeploy Render after changing env vars.
 ### Step 6 — Verify
 
 ```bash
-curl -I https://www.newgee.com
-curl -I https://admin.newgee.com
-curl -I https://portal.newgee.com
-curl -I https://finance.newgee.com
+curl -I https://www.newgeeacademy.com
+curl -I https://admin.newgeeacademy.com
+curl -I https://portal.newgeeacademy.com
+curl -I https://tracker.newgeeacademy.com
+curl -I https://finance.newgeeacademy.com
 ```
 
-Each should return `200` or `307` (SPA). Login paths: `/login` (classroom, admin, finance), `/connexion` (portal).
+Each should return `200` or `307` (SPA). Login paths: `/login` (classroom, admin, finance, tracking), `/connexion` (portal).

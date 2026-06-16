@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import { BookOpen, GraduationCap, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getSchoolAppOrigin } from '@/lib/school-app-url';
+import { getAdminLoginUrl } from '@/lib/school-app-url';
 import { setPortalSession } from '@/lib/auth';
 import { loginWithEmail, isBackendApiConfigured } from '@/lib/api';
 import { backendRoleToPortal, portalRoleMatchesBackend } from '@/lib/portal-role';
@@ -29,7 +29,7 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
   const [isPending, setIsPending] = useState(false);
   const isEmbedded = variant === 'embedded';
 
-  const schoolOrigin = getSchoolAppOrigin();
+  const adminLoginUrl = getAdminLoginUrl();
 
   const initialRole = useMemo(
     () => parseRoleParam(searchParams.get('role')) ?? 'student',
@@ -185,7 +185,7 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
 
           <p className='auth-page__footer'>
             {t('userPortal.staffHint')}{' '}
-            <a href={`${schoolOrigin}/login`}>{t('userPortal.linkAdminLogin')}</a>
+            <a href={adminLoginUrl}>{t('userPortal.linkAdminLogin')}</a>
           </p>
         </div>
       </div>
