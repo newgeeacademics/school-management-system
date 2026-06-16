@@ -8,12 +8,16 @@ import {
   type PortalWebSocketClient,
   type PortalWsMessage,
 } from '@/lib/portal-websocket';
+import { chatMessageFromWs } from '@/lib/portal-chat';
+
+import type { PortalChatMessage } from '@/lib/portal-chat';
 
 type Options = {
   onRefresh?: (section: PortalSectionId | 'all') => void;
+  onChatMessage?: (message: PortalChatMessage) => void;
 };
 
-export function usePortalWebSocket({ onRefresh }: Options = {}) {
+export function usePortalWebSocket({ onRefresh, onChatMessage }: Options = {}) {
   const navigate = useNavigate();
   const session = getPortalSession();
   const clientRef = useRef<PortalWebSocketClient | null>(null);
@@ -31,9 +35,15 @@ export function usePortalWebSocket({ onRefresh }: Options = {}) {
 
       if (type === 'REFRESH') {
         onRefresh?.(section === 'all' ? 'all' : section);
+        return;
+      }
+
+      if (type === 'CHAT') {
+        const chat = chatMessageFromWs(msg as Record<string, unknown>);
+        if (chat) onChatMessage?.(chat);
       }
     },
-    [navigate, onRefresh]
+    [navigate, onRefresh, onChatMessage]
   );
 
   useEffect(() => {
@@ -66,5 +76,9 @@ export function usePortalWebSocket({ onRefresh }: Options = {}) {
     [navigate]
   );
 
-  return { connected, navigateSection, wsClient: clientRef };
+  const sendChat = useCallback((body: string) => {
+    clientRef.current?.sendChat(body);
+  }, []);
+
+  return { connected, navigateSection, sendChat, wsClient: clientRef };
 }

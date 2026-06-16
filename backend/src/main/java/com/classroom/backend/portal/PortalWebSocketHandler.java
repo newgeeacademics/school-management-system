@@ -1,10 +1,12 @@
 package com.classroom.backend.portal;
 
+import com.classroom.backend.service.PortalChatService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -17,6 +19,7 @@ public class PortalWebSocketHandler extends TextWebSocketHandler {
 
     private final PortalRealtimeBroadcaster broadcaster;
     private final ObjectMapper objectMapper;
+    private final PortalChatService portalChatService;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -45,6 +48,17 @@ public class PortalWebSocketHandler extends TextWebSocketHandler {
                 case "SUBSCRIBE" -> {
                     broadcaster.setActiveSection(session, section);
                     broadcaster.sendAck(session, "SUBSCRIBED", section);
+                }
+                case "CHAT" -> {
+                    String body = root.path("body").asText("");
+                    String username = (String) session.getAttributes().get("username");
+                    if (StringUtils.hasText(username) && StringUtils.hasText(body)) {
+                        try {
+                            portalChatService.sendMessageFromEmail(username, body);
+                        } catch (Exception ex) {
+                            log.debug("Chat message rejected for {}: {}", username, ex.getMessage());
+                        }
+                    }
                 }
                 default -> broadcaster.sendAck(session, "ACK", section);
             }

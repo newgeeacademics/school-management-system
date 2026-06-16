@@ -17,4 +17,11 @@ public class PortalWsMessage {
     private Double lat;
     private Double lng;
     private String recordedAt;
+    /** Live chat payload */
+    private String id;
+    private String senderUserId;
+    private String senderName;
+    private String senderRole;
+    private String body;
+    private String sentAt;
 }

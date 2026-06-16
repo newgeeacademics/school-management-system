@@ -50,8 +50,8 @@ function StudentProfile({ card }: { card: PublicStudentCard }) {
 
   return (
     <div className='space-y-4'>
-      <div className='overflow-hidden rounded-xl border-2 border-teal-600 bg-card shadow-sm'>
-        <div className='bg-gradient-to-br from-teal-600 to-teal-800 px-4 py-3 text-white'>
+      <div className='overflow-hidden rounded-xl border border-border bg-card shadow-sm'>
+        <div className='bg-primary px-4 py-3 text-primary-foreground'>
           <p className='text-xs font-bold uppercase tracking-wide'>{card.schoolName}</p>
           {card.schoolCity ? <p className='text-[10px] opacity-90'>{card.schoolCity}</p> : null}
           <p className='mt-1 text-[10px] font-medium uppercase tracking-wider opacity-80'>
@@ -59,7 +59,7 @@ function StudentProfile({ card }: { card: PublicStudentCard }) {
           </p>
         </div>
         <div className='flex gap-3 px-4 py-4'>
-          <div className='flex size-16 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-muted/40'>
+          <div className='flex size-16 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-input bg-muted'>
             <User className='size-8 text-muted-foreground/50' aria-hidden />
           </div>
           <div className='min-w-0'>
@@ -112,8 +112,8 @@ function TeacherProfile({ card }: { card: PublicTeacherCard }) {
 
   return (
     <div className='space-y-4'>
-      <div className='overflow-hidden rounded-xl border-2 border-blue-700 bg-card shadow-sm'>
-        <div className='bg-gradient-to-br from-blue-700 to-blue-900 px-4 py-3 text-white'>
+      <div className='overflow-hidden rounded-xl border border-border bg-card shadow-sm'>
+        <div className='bg-primary px-4 py-3 text-primary-foreground'>
           <p className='text-xs font-bold uppercase tracking-wide'>{card.schoolName}</p>
           {card.schoolCity ? <p className='text-[10px] opacity-90'>{card.schoolCity}</p> : null}
           <p className='mt-1 text-[10px] font-medium uppercase tracking-wider opacity-80'>
@@ -121,7 +121,7 @@ function TeacherProfile({ card }: { card: PublicTeacherCard }) {
           </p>
         </div>
         <div className='flex gap-3 px-4 py-4'>
-          <div className='flex size-16 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-muted/40'>
+          <div className='flex size-16 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-input bg-muted'>
             <GraduationCap className='size-8 text-muted-foreground/50' aria-hidden />
           </div>
           <div className='min-w-0'>
@@ -193,8 +193,8 @@ export function IdCardScanPage() {
   const schoolName = studentCard?.schoolName || teacherCard?.schoolName;
 
   return (
-    <div className='min-h-screen bg-gradient-to-b from-slate-50 to-white'>
-      <header className='border-b bg-white/90 backdrop-blur'>
+    <div className='min-h-screen bg-background'>
+      <header className='border-b border-border bg-card/90 backdrop-blur'>
         <div className='mx-auto flex max-w-lg items-center justify-between gap-3 px-4 py-4'>
           <div className='flex items-center gap-2'>
             <AppLogo className='h-8' />
@@ -226,7 +226,7 @@ export function IdCardScanPage() {
         ) : (
           <div className='space-y-4'>
             <div className='flex flex-col items-center gap-2 text-center'>
-              <span className='inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-xs font-medium text-white'>
+              <span className='inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground'>
                 <ShieldCheck className='size-3.5' aria-hidden />
                 Carte authentique
               </span>
