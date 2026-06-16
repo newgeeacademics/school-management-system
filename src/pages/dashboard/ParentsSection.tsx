@@ -29,10 +29,26 @@ type ParentsSectionProps = {
   onCreateParent: (e: React.FormEvent) => void;
   onUpdateParent: (
     id: string,
-    data: { name: string; phone?: string; email?: string; studentId?: string; password?: string }
+    data: {
+      firstName: string;
+      lastName: string;
+      phone?: string;
+      email?: string;
+      studentId?: string;
+      password?: string;
+    }
   ) => void | Promise<void>;
   onDeleteParent: (id: string) => void | Promise<void>;
 };
+
+const emptyDraft = (): NewParentFormState => ({
+  firstName: '',
+  lastName: '',
+  phone: '',
+  email: '',
+  password: '',
+  studentId: '',
+});
 
 export const ParentsSection: React.FC<ParentsSectionProps> = ({
   parents,
@@ -44,13 +60,7 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
   onDeleteParent,
 }) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
-  const [draft, setDraft] = React.useState<NewParentFormState>({
-    name: '',
-    phone: '',
-    email: '',
-    password: '',
-    studentId: '',
-  });
+  const [draft, setDraft] = React.useState<NewParentFormState>(emptyDraft());
 
   const getStudentName = (id: string | undefined) =>
     id ? students.find((s) => s.id === id)?.name ?? '—' : '—';
@@ -58,7 +68,8 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
   const startEdit = (parent: ParentContact) => {
     setEditingId(parent.id);
     setDraft({
-      name: parent.name,
+      firstName: parent.firstName ?? parent.name.split(' ')[0] ?? '',
+      lastName: parent.lastName ?? parent.name.split(' ').slice(1).join(' ') ?? '',
       phone: parent.phone ?? '',
       email: parent.email ?? '',
       password: '',
@@ -67,10 +78,11 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
   };
 
   const saveEdit = () => {
-    if (!editingId || !draft.name.trim()) return;
+    if (!editingId || !draft.firstName.trim() || !draft.lastName.trim()) return;
     void Promise.resolve(
       onUpdateParent(editingId, {
-        name: draft.name.trim(),
+        firstName: draft.firstName.trim(),
+        lastName: draft.lastName.trim(),
         phone: draft.phone.trim() || undefined,
         email: draft.email.trim() || undefined,
         studentId:
@@ -88,18 +100,28 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
         </CardHeader>
         <CardContent>
           <p className='mb-3 text-[11px] text-muted-foreground'>
-            Email ou téléphone + mot de passe = connexion portail (rôle parent).
+            Liez le parent à un ou plusieurs enfants (même compte portail réutilisé). Email ou
+            téléphone + mot de passe = connexion portail famille.
           </p>
           <form
-            className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
+            className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
             onSubmit={onCreateParent}
           >
             <div className='grid gap-2'>
-              <Label htmlFor='parent-name'>Nom complet</Label>
+              <Label htmlFor='parent-first-name'>Prénom</Label>
               <Input
-                id='parent-name'
-                value={newParent.name}
-                onChange={(e) => setNewParent((p) => ({ ...p, name: e.target.value }))}
+                id='parent-first-name'
+                value={newParent.firstName}
+                onChange={(e) => setNewParent((p) => ({ ...p, firstName: e.target.value }))}
+                required
+              />
+            </div>
+            <div className='grid gap-2'>
+              <Label htmlFor='parent-last-name'>Nom</Label>
+              <Input
+                id='parent-last-name'
+                value={newParent.lastName}
+                onChange={(e) => setNewParent((p) => ({ ...p, lastName: e.target.value }))}
                 required
               />
             </div>
@@ -176,8 +198,14 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
                     {isEditing ? (
                       <div className='space-y-2'>
                         <Input
-                          value={draft.name}
-                          onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                          value={draft.firstName}
+                          onChange={(e) => setDraft((d) => ({ ...d, firstName: e.target.value }))}
+                          placeholder='Prénom'
+                        />
+                        <Input
+                          value={draft.lastName}
+                          onChange={(e) => setDraft((d) => ({ ...d, lastName: e.target.value }))}
+                          placeholder='Nom'
                         />
                         <Input
                           value={draft.phone}

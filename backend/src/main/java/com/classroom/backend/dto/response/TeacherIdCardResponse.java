@@ -5,14 +5,13 @@ import lombok.Data;
 
 @Data
 @Builder
-public class StudentIdCardResponse {
-  private String studentId;
-  private String matricule;
-  private String idCardNumber;
+public class TeacherIdCardResponse {
+  private String teacherId;
+  private String staffId;
   private String firstName;
   private String lastName;
-  private String studentName;
-  private String className;
+  private String teacherName;
+  private String subject;
   private String schoolName;
   private String schoolCity;
   private String academicYear;

@@ -7,7 +7,9 @@ import com.classroom.backend.model.Student;
 import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.ClassItemRepository;
 import com.classroom.backend.repository.StudentRepository;
+import com.classroom.backend.util.IdCardNumberUtil;
 import com.classroom.backend.util.MatriculeGenerator;
+import com.classroom.backend.util.PersonNameUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,22 +39,35 @@ public class StudentService {
 
     @Transactional
     public Student create(StudentRequest request) {
+        String fullName = PersonNameUtil.requireFullName(
+                request.getFirstName(), request.getLastName(), request.getName());
+
         ClassItem classItem = null;
         if (request.getClassId() != null && !request.getClassId().isBlank()) {
             classItem = classItemRepository.findById(request.getClassId()).orElse(null);
         }
 
         AppUser appUser = portalAccountService.createLinkedAccount(
-                request.getName(), request.getEmail(), request.getPhone(),
+                fullName, request.getEmail(), request.getPhone(),
                 request.getPassword(), UserRole.STUDENT);
 
+        String matricule = MatriculeGenerator.next(studentRepository, classItem);
+
         Student student = Student.builder()
-                .name(request.getName())
-                .matricule(MatriculeGenerator.next(studentRepository, classItem))
+                .name(fullName)
+                .firstName(PersonNameUtil.trim(request.getFirstName()))
+                .lastName(PersonNameUtil.trim(request.getLastName()))
+                .matricule(matricule)
+                .idCardNumber(IdCardNumberUtil.resolveStudentCardNumber(
+                        request.getIdCardNumber(), matricule, null))
                 .email(request.getEmail() != null ? request.getEmail().trim() : null)
                 .classItem(classItem)
                 .appUser(appUser)
                 .build();
+
+        if (student.getIdCardNumber() == null || student.getIdCardNumber().isBlank()) {
+            student.setIdCardNumber(IdCardNumberUtil.resolveStudentCardNumber(null, matricule, student.getId()));
+        }
 
         return studentRepository.save(student);
     }
@@ -60,8 +75,17 @@ public class StudentService {
     @Transactional
     public Student update(String id, StudentRequest request) {
         Student student = findById(id);
-        student.setName(request.getName());
+        String fullName = PersonNameUtil.requireFullName(
+                request.getFirstName(), request.getLastName(), request.getName());
+
+        student.setName(fullName);
+        student.setFirstName(PersonNameUtil.trim(request.getFirstName()));
+        student.setLastName(PersonNameUtil.trim(request.getLastName()));
         student.setEmail(request.getEmail() != null ? request.getEmail().trim() : null);
+
+        if (request.getIdCardNumber() != null && !request.getIdCardNumber().isBlank()) {
+            student.setIdCardNumber(request.getIdCardNumber().trim());
+        }
 
         if (request.getClassId() != null && !request.getClassId().isBlank()) {
             ClassItem classItem = classItemRepository.findById(request.getClassId()).orElse(null);
@@ -72,18 +96,23 @@ public class StudentService {
 
         if (student.getAppUser() != null) {
             portalAccountService.syncLinkedAccount(
-                    student.getAppUser(), request.getName(), request.getEmail(),
+                    student.getAppUser(), fullName, request.getEmail(),
                     request.getPhone(), request.getPassword());
         } else if ((request.getEmail() != null && !request.getEmail().isBlank())
                 || (request.getPhone() != null && !request.getPhone().isBlank())) {
             AppUser appUser = portalAccountService.createLinkedAccount(
-                    request.getName(), request.getEmail(), request.getPhone(),
+                    fullName, request.getEmail(), request.getPhone(),
                     request.getPassword(), UserRole.STUDENT);
             student.setAppUser(appUser);
         }
 
         if (student.getMatricule() == null || student.getMatricule().isBlank()) {
             student.setMatricule(MatriculeGenerator.next(studentRepository, student.getClassItem()));
+        }
+
+        if (student.getIdCardNumber() == null || student.getIdCardNumber().isBlank()) {
+            student.setIdCardNumber(IdCardNumberUtil.resolveStudentCardNumber(
+                    null, student.getMatricule(), student.getId()));
         }
 
         return studentRepository.save(student);

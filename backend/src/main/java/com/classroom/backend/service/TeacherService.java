@@ -7,6 +7,8 @@ import com.classroom.backend.model.Teacher;
 import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.ClassItemRepository;
 import com.classroom.backend.repository.TeacherRepository;
+import com.classroom.backend.util.IdCardNumberUtil;
+import com.classroom.backend.util.PersonNameUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,21 +37,30 @@ public class TeacherService {
     @Transactional
     public Teacher create(TeacherRequest request) {
         validatePortalContact(request);
+        String fullName = PersonNameUtil.requireFullName(
+                request.getFirstName(), request.getLastName(), request.getName());
 
         AppUser appUser = portalAccountService.createLinkedAccount(
-                request.getName(), request.getEmail(), request.getPhone(),
+                fullName, request.getEmail(), request.getPhone(),
                 request.getPassword(), UserRole.TEACHER);
 
         Teacher teacher = Teacher.builder()
-                .name(request.getName())
-                .initials(generateInitials(request.getName()))
+                .name(fullName)
+                .firstName(PersonNameUtil.trim(request.getFirstName()))
+                .lastName(PersonNameUtil.trim(request.getLastName()))
+                .initials(generateInitials(fullName))
                 .subject(request.getSubject())
+                .staffId(IdCardNumberUtil.resolveTeacherStaffId(request.getStaffId(), null))
                 .email(request.getEmail() != null ? request.getEmail().trim() : null)
                 .phone(trimPhone(request.getPhone()))
                 .appUser(appUser)
                 .build();
 
         teacher = teacherRepository.save(teacher);
+        if (teacher.getStaffId() == null || teacher.getStaffId().isBlank()) {
+            teacher.setStaffId(IdCardNumberUtil.resolveTeacherStaffId(null, teacher.getId()));
+            teacher = teacherRepository.save(teacher);
+        }
         syncHomeroomClasses(teacher, request.getHomeroomClassIds());
         return teacher;
     }
@@ -57,20 +68,31 @@ public class TeacherService {
     @Transactional
     public Teacher update(String id, TeacherRequest request) {
         Teacher teacher = findById(id);
-        teacher.setName(request.getName());
-        teacher.setInitials(generateInitials(request.getName()));
+        String fullName = PersonNameUtil.requireFullName(
+                request.getFirstName(), request.getLastName(), request.getName());
+
+        teacher.setName(fullName);
+        teacher.setFirstName(PersonNameUtil.trim(request.getFirstName()));
+        teacher.setLastName(PersonNameUtil.trim(request.getLastName()));
+        teacher.setInitials(generateInitials(fullName));
         teacher.setSubject(request.getSubject());
         teacher.setEmail(request.getEmail() != null ? request.getEmail().trim() : null);
         teacher.setPhone(trimPhone(request.getPhone()));
 
+        if (request.getStaffId() != null && !request.getStaffId().isBlank()) {
+            teacher.setStaffId(request.getStaffId().trim());
+        } else if (teacher.getStaffId() == null || teacher.getStaffId().isBlank()) {
+            teacher.setStaffId(IdCardNumberUtil.resolveTeacherStaffId(null, teacher.getId()));
+        }
+
         if (teacher.getAppUser() != null) {
             portalAccountService.syncLinkedAccount(
-                    teacher.getAppUser(), request.getName(), request.getEmail(),
+                    teacher.getAppUser(), fullName, request.getEmail(),
                     request.getPhone(), request.getPassword());
         } else if ((request.getEmail() != null && !request.getEmail().isBlank())
                 || (request.getPhone() != null && !request.getPhone().isBlank())) {
             AppUser appUser = portalAccountService.createLinkedAccount(
-                    request.getName(), request.getEmail(), request.getPhone(),
+                    fullName, request.getEmail(), request.getPhone(),
                     request.getPassword(), UserRole.TEACHER);
             teacher.setAppUser(appUser);
         }

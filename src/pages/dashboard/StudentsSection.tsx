@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { CreditCard } from 'lucide-react';
+import { CreditCard, FileDown } from 'lucide-react';
 
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { EntityCrudActions, NONE_SELECT_VALUE } from '@/components/dashboard/EntityCrudActions';
@@ -31,13 +31,32 @@ type StudentsSectionProps = {
   onCreateStudent: (e: React.FormEvent) => void;
   onUpdateStudent: (
     id: string,
-    data: { name: string; classId?: string; email?: string; phone?: string; password?: string }
+    data: {
+      firstName: string;
+      lastName: string;
+      idCardNumber?: string;
+      classId?: string;
+      email?: string;
+      phone?: string;
+      password?: string;
+    }
   ) => void | Promise<void>;
   onDeleteStudent: (id: string) => void | Promise<void>;
   onPrintIdCard?: (studentId: string) => void | Promise<void>;
+  onExportRoster?: (classId?: string) => void | Promise<void>;
   getClassName: (id: string) => string;
   readOnly?: boolean;
 };
+
+const emptyDraft = (): NewStudentFormState => ({
+  firstName: '',
+  lastName: '',
+  idCardNumber: '',
+  classId: '',
+  email: '',
+  phone: '',
+  password: '',
+});
 
 export const StudentsSection: React.FC<StudentsSectionProps> = ({
   students,
@@ -48,22 +67,20 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
   onUpdateStudent,
   onDeleteStudent,
   onPrintIdCard,
+  onExportRoster,
   getClassName,
   readOnly = false,
 }) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
-  const [draft, setDraft] = React.useState<NewStudentFormState>({
-    name: '',
-    classId: '',
-    email: '',
-    phone: '',
-    password: '',
-  });
+  const [draft, setDraft] = React.useState<NewStudentFormState>(emptyDraft());
+  const [exportClassId, setExportClassId] = React.useState('');
 
   const startEdit = (student: Student) => {
     setEditingId(student.id);
     setDraft({
-      name: student.name,
+      firstName: student.firstName ?? student.name.split(' ')[0] ?? '',
+      lastName: student.lastName ?? student.name.split(' ').slice(1).join(' ') ?? '',
+      idCardNumber: student.idCardNumber ?? '',
       classId: student.classId ?? '',
       email: student.email ?? '',
       phone: student.phone ?? '',
@@ -72,10 +89,12 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
   };
 
   const saveEdit = () => {
-    if (!editingId || !draft.name.trim()) return;
+    if (!editingId || !draft.firstName.trim() || !draft.lastName.trim()) return;
     void Promise.resolve(
       onUpdateStudent(editingId, {
-        name: draft.name.trim(),
+        firstName: draft.firstName.trim(),
+        lastName: draft.lastName.trim(),
+        idCardNumber: draft.idCardNumber.trim() || undefined,
         classId: draft.classId && draft.classId !== NONE_SELECT_VALUE ? draft.classId : undefined,
         email: draft.email.trim() || undefined,
         phone: draft.phone.trim() || undefined,
@@ -93,21 +112,40 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
           </CardHeader>
           <CardContent>
             <p className='mb-3 text-[11px] text-muted-foreground'>
-              Email ou téléphone pour la connexion portail (rôle élève). Le matricule est généré
-              automatiquement.
+              Prénom et nom séparés. Email ou téléphone pour la connexion portail. Le matricule et
+              le numéro de carte sont générés automatiquement si non renseignés.
             </p>
             <form
-              className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
+              className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
               onSubmit={onCreateStudent}
             >
               <div className='grid gap-2'>
-                <Label htmlFor='student-name'>Nom complet</Label>
+                <Label htmlFor='student-first-name'>Prénom</Label>
                 <Input
-                  id='student-name'
-                  value={newStudent.name}
-                  onChange={(e) => setNewStudent((s) => ({ ...s, name: e.target.value }))}
-                  placeholder='Ex : Aïcha Konaté'
+                  id='student-first-name'
+                  value={newStudent.firstName}
+                  onChange={(e) => setNewStudent((s) => ({ ...s, firstName: e.target.value }))}
+                  placeholder='Ex : Aïcha'
                   required
+                />
+              </div>
+              <div className='grid gap-2'>
+                <Label htmlFor='student-last-name'>Nom</Label>
+                <Input
+                  id='student-last-name'
+                  value={newStudent.lastName}
+                  onChange={(e) => setNewStudent((s) => ({ ...s, lastName: e.target.value }))}
+                  placeholder='Ex : Konaté'
+                  required
+                />
+              </div>
+              <div className='grid gap-2'>
+                <Label htmlFor='student-id-card'>N° carte (opt.)</Label>
+                <Input
+                  id='student-id-card'
+                  value={newStudent.idCardNumber}
+                  onChange={(e) => setNewStudent((s) => ({ ...s, idCardNumber: e.target.value }))}
+                  placeholder='Auto si vide'
                 />
               </div>
               <div className='grid gap-2'>
@@ -169,8 +207,44 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
       )}
 
       <Card>
-        <CardHeader>
+        <CardHeader className='flex flex-row flex-wrap items-center justify-between gap-2'>
           <CardTitle className='text-sm font-medium'>Élèves ({students.length})</CardTitle>
+          {!readOnly && onExportRoster ? (
+            <div className='flex flex-wrap items-center gap-2'>
+              <Select
+                value={exportClassId || NONE_SELECT_VALUE}
+                onValueChange={(value) =>
+                  setExportClassId(value === NONE_SELECT_VALUE ? '' : value)
+                }
+              >
+                <SelectTrigger className='h-8 w-[160px] text-xs'>
+                  <SelectValue placeholder='Classe (export)' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_SELECT_VALUE}>Toutes les classes</SelectItem>
+                  {classes.map((classe) => (
+                    <SelectItem key={classe.id} value={classe.id}>
+                      {classe.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                className='h-8 gap-1 text-xs'
+                onClick={() =>
+                  void Promise.resolve(
+                    onExportRoster(exportClassId && exportClassId !== NONE_SELECT_VALUE ? exportClassId : undefined)
+                  )
+                }
+              >
+                <FileDown className='size-3.5' />
+                Export Word
+              </Button>
+            </div>
+          ) : null}
         </CardHeader>
         <CardContent className='space-y-2 text-xs'>
           {students.length === 0 ? (
@@ -184,9 +258,19 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
                     {isEditing ? (
                       <div className='space-y-2'>
                         <Input
-                          value={draft.name}
-                          onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                          value={draft.firstName}
+                          onChange={(e) => setDraft((d) => ({ ...d, firstName: e.target.value }))}
+                          placeholder='Prénom'
+                        />
+                        <Input
+                          value={draft.lastName}
+                          onChange={(e) => setDraft((d) => ({ ...d, lastName: e.target.value }))}
                           placeholder='Nom'
+                        />
+                        <Input
+                          value={draft.idCardNumber}
+                          onChange={(e) => setDraft((d) => ({ ...d, idCardNumber: e.target.value }))}
+                          placeholder='N° carte (opt.)'
                         />
                         <Select
                           value={draft.classId || NONE_SELECT_VALUE}
@@ -243,6 +327,11 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
                         {student.matricule && (
                           <p className='text-[11px] font-mono text-muted-foreground'>
                             Matricule : {student.matricule}
+                          </p>
+                        )}
+                        {student.idCardNumber && (
+                          <p className='text-[11px] font-mono text-muted-foreground'>
+                            N° carte : {student.idCardNumber}
                           </p>
                         )}
                         {(student.email || student.phone) && (

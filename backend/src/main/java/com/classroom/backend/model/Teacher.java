@@ -15,7 +15,15 @@ public class Teacher {
     @Column(nullable = false)
     private String name;
 
+    private String firstName;
+
+    private String lastName;
+
     private String initials;
+
+    /** Optional badge / staff card number. */
+    @Column(unique = true)
+    private String staffId;
 
     @Column(nullable = false)
     private String subject;

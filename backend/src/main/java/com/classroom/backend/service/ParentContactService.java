@@ -7,6 +7,7 @@ import com.classroom.backend.model.Student;
 import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.ParentContactRepository;
 import com.classroom.backend.repository.StudentRepository;
+import com.classroom.backend.util.PersonNameUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,17 +37,21 @@ public class ParentContactService {
 
     @Transactional
     public ParentContact create(ParentContactRequest request) {
+        String fullName = PersonNameUtil.requireFullName(
+                request.getFirstName(), request.getLastName(), request.getName());
+
         Student student = null;
         if (request.getStudentId() != null && !request.getStudentId().isBlank()) {
             student = studentRepository.findById(request.getStudentId()).orElse(null);
         }
 
-        AppUser appUser = portalAccountService.createLinkedAccount(
-                request.getName(), request.getEmail(), request.getPhone(),
-                request.getPassword(), UserRole.PARENT);
+        AppUser appUser = portalAccountService.findOrCreateParentAccount(
+                fullName, request.getEmail(), request.getPhone(), request.getPassword());
 
         ParentContact parent = ParentContact.builder()
-                .name(request.getName())
+                .name(fullName)
+                .firstName(PersonNameUtil.trim(request.getFirstName()))
+                .lastName(PersonNameUtil.trim(request.getLastName()))
                 .phone(request.getPhone())
                 .email(request.getEmail() != null ? request.getEmail().trim() : null)
                 .student(student)
@@ -59,7 +64,12 @@ public class ParentContactService {
     @Transactional
     public ParentContact update(String id, ParentContactRequest request) {
         ParentContact parent = findById(id);
-        parent.setName(request.getName());
+        String fullName = PersonNameUtil.requireFullName(
+                request.getFirstName(), request.getLastName(), request.getName());
+
+        parent.setName(fullName);
+        parent.setFirstName(PersonNameUtil.trim(request.getFirstName()));
+        parent.setLastName(PersonNameUtil.trim(request.getLastName()));
         parent.setPhone(request.getPhone());
         parent.setEmail(request.getEmail() != null ? request.getEmail().trim() : null);
 
@@ -72,13 +82,12 @@ public class ParentContactService {
 
         if (parent.getAppUser() != null) {
             portalAccountService.syncLinkedAccount(
-                    parent.getAppUser(), request.getName(), request.getEmail(),
+                    parent.getAppUser(), fullName, request.getEmail(),
                     request.getPhone(), request.getPassword());
         } else if ((request.getEmail() != null && !request.getEmail().isBlank())
                 || (request.getPhone() != null && !request.getPhone().isBlank())) {
-            AppUser appUser = portalAccountService.createLinkedAccount(
-                    request.getName(), request.getEmail(), request.getPhone(),
-                    request.getPassword(), UserRole.PARENT);
+            AppUser appUser = portalAccountService.findOrCreateParentAccount(
+                    fullName, request.getEmail(), request.getPhone(), request.getPassword());
             parent.setAppUser(appUser);
         }
 
@@ -90,6 +99,8 @@ public class ParentContactService {
         ParentContact parent = findById(id);
         AppUser linked = parent.getAppUser();
         parentContactRepository.delete(parent);
-        portalAccountService.deleteLinkedAccount(linked);
+        if (linked != null && parentContactRepository.countByAppUser_Id(linked.getId()) == 0) {
+            portalAccountService.deleteLinkedAccount(linked);
+        }
     }
 }
