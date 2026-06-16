@@ -25,7 +25,8 @@ export function EnvConfigBanner() {
       {apiMissing && portalMissing ? ' · ' : null}
       {portalMissing ? (
         <>
-          Set <strong>VITE_USER_PORTAL_URL</strong> on this Vercel project, then redeploy.
+          Set <strong>VITE_USER_PORTAL_URL</strong> on this Vercel project (e.g.{' '}
+          <strong>https://portal.newgeeacademy.com</strong>), then redeploy.
         </>
       ) : null}
     </div>
