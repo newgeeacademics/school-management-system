@@ -139,7 +139,7 @@ export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' 
                 value={usernameOrEmail}
                 onChange={(e) => setUsernameOrEmail(e.target.value)}
                 autoComplete='username'
-                className='h-11 rounded-xl border-slate-200 focus-visible:ring-teal-600'
+                className='h-11 rounded-xl border-slate-200 focus-visible:ring-orange-600'
               />
             </div>
 
@@ -153,7 +153,7 @@ export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' 
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder='Entrez votre mot de passe'
                 autoComplete='current-password'
-                className='h-11 rounded-xl border-slate-200 focus-visible:ring-teal-600'
+                className='h-11 rounded-xl border-slate-200 focus-visible:ring-orange-600'
               />
             </div>
 
