@@ -26,6 +26,7 @@ import type {
   StudentIdCardData,
   Teacher,
   TeacherIdCardData,
+  Driver,
   TransportRoute,
 } from '@/pages/dashboard/dashboardTypes';
 
@@ -105,6 +106,64 @@ export function mapTeacherFromApi(t: Record<string, unknown>): Teacher {
     initials: String(t.initials ?? (String(t.name ?? '').slice(0, 2).toUpperCase() || 'ED')),
     email: t.email ? String(t.email) : appUser?.email ? String(appUser.email) : undefined,
     phone: t.phone ? String(t.phone) : undefined,
+  };
+}
+
+function parseRoutePolyline(raw: unknown): [number, number][] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const points = raw
+    .filter((p): p is number[] => Array.isArray(p) && p.length >= 2)
+    .map((p) => [Number(p[0]), Number(p[1])] as [number, number]);
+  return points.length >= 2 ? points : undefined;
+}
+
+export function mapTransportFromApi(t: Record<string, unknown>): TransportRoute {
+  const studentsOnRoute = Array.isArray(t.students) ? t.students : [];
+  const waypointsRaw = Array.isArray(t.waypoints) ? t.waypoints : [];
+  let routePolyline: [number, number][] | undefined;
+  if (typeof t.routePolylineJson === 'string' && t.routePolylineJson) {
+    try {
+      routePolyline = parseRoutePolyline(JSON.parse(t.routePolylineJson));
+    } catch {
+      routePolyline = undefined;
+    }
+  } else {
+    routePolyline = parseRoutePolyline(t.routePolyline);
+  }
+  return {
+    id: String(t.id),
+    name: String(t.name ?? ''),
+    driverName: String(t.driverName ?? ''),
+    driverId: relationId(t.driver),
+    departureTime: String(t.departureTime ?? ''),
+    returnTime: t.returnTime ? String(t.returnTime) : undefined,
+    note: t.note ? String(t.note) : undefined,
+    studentIds: studentsOnRoute
+      .map((s) => relationId(s))
+      .filter((id): id is string => Boolean(id)),
+    waypoints: waypointsRaw.map((wp) => {
+      const w = wp as Record<string, unknown>;
+      return {
+        lat: Number(w.lat ?? 0),
+        lng: Number(w.lng ?? 0),
+        name: String(w.name ?? ''),
+      };
+    }),
+    routePolyline,
+  };
+}
+
+export function mapDriverFromApi(d: Record<string, unknown>): Driver {
+  const appUser = d.appUser as Record<string, unknown> | undefined;
+  return {
+    id: String(d.id),
+    name: String(d.name ?? ''),
+    firstName: d.firstName ? String(d.firstName) : undefined,
+    lastName: d.lastName ? String(d.lastName) : undefined,
+    staffId: d.staffId ? String(d.staffId) : undefined,
+    licenseNumber: d.licenseNumber ? String(d.licenseNumber) : undefined,
+    email: d.email ? String(d.email) : appUser?.email ? String(appUser.email) : undefined,
+    phone: d.phone ? String(d.phone) : undefined,
   };
 }
 
@@ -294,6 +353,7 @@ export type DashboardBackendSetters = {
   setSchedule: React.Dispatch<React.SetStateAction<ScheduleItem[]>>;
   setCanteenMenuItems: React.Dispatch<React.SetStateAction<import('@/pages/dashboard/dashboardTypes').CanteenMenuItem[]>>;
   setTransportRoutes: React.Dispatch<React.SetStateAction<TransportRoute[]>>;
+  setDrivers: React.Dispatch<React.SetStateAction<Driver[]>>;
   setParents: React.Dispatch<React.SetStateAction<ParentContact[]>>;
   setUsers: React.Dispatch<React.SetStateAction<AppUser[]>>;
   setAttendanceRecords: React.Dispatch<React.SetStateAction<AttendanceRecord[]>>;
@@ -317,6 +377,7 @@ export async function loadDashboardFromBackend(setters: DashboardBackendSetters)
     schedule,
     canteen,
     transport,
+    drivers,
     parents,
     users,
     attendance,
@@ -337,6 +398,7 @@ export async function loadDashboardFromBackend(setters: DashboardBackendSetters)
     adminApiFetch<Record<string, unknown>[]>('/api/schedule'),
     adminApiFetch<Record<string, unknown>[]>('/api/canteen'),
     adminApiFetch<Record<string, unknown>[]>('/api/transport'),
+    adminApiFetch<Record<string, unknown>[]>('/api/drivers'),
     adminApiFetch<Record<string, unknown>[]>('/api/parents'),
     adminApiFetch<Record<string, unknown>[]>('/api/users'),
     adminApiFetch<Record<string, unknown>[]>('/api/attendance'),
@@ -397,22 +459,8 @@ export async function loadDashboardFromBackend(setters: DashboardBackendSetters)
       note: c.note ? String(c.note) : undefined,
     }))
   );
-  setters.setTransportRoutes(
-    transport.map((t) => {
-      const studentsOnRoute = Array.isArray(t.students) ? t.students : [];
-      return {
-        id: String(t.id),
-        name: String(t.name ?? ''),
-        driverName: String(t.driverName ?? ''),
-        departureTime: String(t.departureTime ?? ''),
-        returnTime: t.returnTime ? String(t.returnTime) : undefined,
-        note: t.note ? String(t.note) : undefined,
-        studentIds: studentsOnRoute
-          .map((s) => relationId(s))
-          .filter((id): id is string => Boolean(id)),
-      };
-    })
-  );
+  setters.setTransportRoutes(transport.map(mapTransportFromApi));
+  setters.setDrivers(drivers.map(mapDriverFromApi));
   setters.setParents(parents.map(mapParentFromApi));
   setters.setUsers(users.map(mapUserFromApi));
   setters.setAttendanceRecords(
@@ -578,22 +626,96 @@ export async function createScheduleOnBackend(item: {
 
 export async function createTransportOnBackend(item: {
   name: string;
-  driverName: string;
+  driverName?: string;
+  driverId?: string;
   departureTime: string;
   returnTime?: string;
   note?: string;
-}) {
-  return adminApiFetch('/api/transport', {
+  waypoints?: { lat: number; lng: number; name: string }[];
+  routePolyline?: [number, number][];
+  studentIds?: string[];
+}): Promise<TransportRoute> {
+  const data = await adminApiFetch<Record<string, unknown>>('/api/transport', {
     method: 'POST',
-    body: JSON.stringify(item),
+    body: JSON.stringify({
+      name: item.name,
+      driverName: item.driverName,
+      driverId: item.driverId,
+      departureTime: item.departureTime,
+      returnTime: item.returnTime,
+      note: item.note,
+      waypoints: item.waypoints,
+      routePolyline: item.routePolyline,
+      studentIds: item.studentIds,
+    }),
   });
+  return mapTransportFromApi(data);
 }
 
-export async function updateTransportStudentsOnBackend(routeId: string, studentIds: string[]) {
-  return adminApiFetch(`/api/transport/${routeId}/students`, {
+export async function updateTransportStudentsOnBackend(
+  routeId: string,
+  studentIds: string[],
+): Promise<TransportRoute> {
+  const data = await adminApiFetch<Record<string, unknown>>(`/api/transport/${routeId}/students`, {
     method: 'PATCH',
     body: JSON.stringify(studentIds),
   });
+  return mapTransportFromApi(data);
+}
+
+export async function createDriverOnBackend(item: {
+  firstName: string;
+  lastName: string;
+  staffId?: string;
+  licenseNumber?: string;
+  email?: string;
+  password?: string;
+  phone?: string;
+}) {
+  const data = await adminApiFetch<Record<string, unknown>>('/api/drivers', {
+    method: 'POST',
+    body: JSON.stringify({
+      firstName: item.firstName.trim(),
+      lastName: item.lastName.trim(),
+      staffId: item.staffId?.trim() || undefined,
+      licenseNumber: item.licenseNumber?.trim() || undefined,
+      email: item.email?.trim() || undefined,
+      password: item.password?.trim() || undefined,
+      phone: item.phone?.trim() || undefined,
+    }),
+  });
+  return mapDriverFromApi(data);
+}
+
+export async function updateDriverOnBackend(
+  id: string,
+  item: {
+    firstName: string;
+    lastName: string;
+    staffId?: string;
+    licenseNumber?: string;
+    email?: string;
+    password?: string;
+    phone?: string;
+  },
+) {
+  const data = await adminApiFetch<Record<string, unknown>>(`/api/drivers/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      firstName: item.firstName.trim(),
+      lastName: item.lastName.trim(),
+      staffId: item.staffId?.trim() || undefined,
+      licenseNumber: item.licenseNumber?.trim() || undefined,
+      email: item.email?.trim() || undefined,
+      password: item.password?.trim() || undefined,
+      phone: item.phone?.trim() || undefined,
+    }),
+  });
+  return mapDriverFromApi(data);
+}
+
+export async function deleteDriverOnBackend(id: string) {
+  await adminApiFetch(`/api/drivers/${id}`, { method: 'DELETE' });
 }
 
 export async function createEventOnBackend(item: {

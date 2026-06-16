@@ -1,9 +1,11 @@
 package com.classroom.backend.service;
 
 import com.classroom.backend.dto.request.TransportRouteRequest;
+import com.classroom.backend.model.Driver;
 import com.classroom.backend.model.Student;
 import com.classroom.backend.model.TransportRoute;
 import com.classroom.backend.model.TransportRouteWaypoint;
+import com.classroom.backend.repository.DriverRepository;
 import com.classroom.backend.repository.StudentRepository;
 import com.classroom.backend.repository.TransportRouteRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -21,6 +23,7 @@ public class TransportService {
 
     private final TransportRouteRepository transportRouteRepository;
     private final StudentRepository studentRepository;
+    private final DriverRepository driverRepository;
     private final ObjectMapper objectMapper;
 
     public List<TransportRoute> findAll() {
@@ -38,9 +41,12 @@ public class TransportService {
 
     @Transactional
     public TransportRoute create(TransportRouteRequest request) {
+        String driverName = resolveDriverName(request);
+
         TransportRoute route = TransportRoute.builder()
                 .name(request.getName())
-                .driverName(request.getDriverName())
+                .driverName(driverName)
+                .driver(resolveDriver(request.getDriverId()))
                 .departureTime(request.getDepartureTime())
                 .returnTime(request.getReturnTime())
                 .note(request.getNote())
@@ -80,7 +86,8 @@ public class TransportService {
     public TransportRoute update(String id, TransportRouteRequest request) {
         TransportRoute route = findById(id);
         route.setName(request.getName());
-        route.setDriverName(request.getDriverName());
+        route.setDriverName(resolveDriverName(request));
+        route.setDriver(resolveDriver(request.getDriverId()));
         route.setDepartureTime(request.getDepartureTime());
         route.setReturnTime(request.getReturnTime());
         route.setNote(request.getNote());
@@ -120,5 +127,25 @@ public class TransportService {
     @Transactional
     public void delete(String id) {
         transportRouteRepository.deleteById(id);
+    }
+
+    private Driver resolveDriver(String driverId) {
+        if (driverId == null || driverId.isBlank()) {
+            return null;
+        }
+        return driverRepository.findById(driverId)
+                .orElseThrow(() -> new RuntimeException("Driver not found: " + driverId));
+    }
+
+    private String resolveDriverName(TransportRouteRequest request) {
+        if (request.getDriverId() != null && !request.getDriverId().isBlank()) {
+            return driverRepository.findById(request.getDriverId())
+                    .map(Driver::getName)
+                    .orElseThrow(() -> new RuntimeException("Driver not found: " + request.getDriverId()));
+        }
+        if (request.getDriverName() == null || request.getDriverName().isBlank()) {
+            throw new IllegalArgumentException("Driver name or driverId is required");
+        }
+        return request.getDriverName().trim();
     }
 }

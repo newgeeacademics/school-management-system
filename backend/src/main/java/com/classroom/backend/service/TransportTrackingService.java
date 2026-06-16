@@ -31,11 +31,23 @@ public class TransportTrackingService {
     private final ClassItemRepository classItemRepository;
     private final TransportRouteRepository transportRouteRepository;
     private final BusTripRepository busTripRepository;
+    private final DriverRepository driverRepository;
     private final ObjectMapper objectMapper;
     private final PortalRealtimeBroadcaster realtimeBroadcaster;
 
     @Transactional(readOnly = true)
     public List<LiveTrackingResponse> getLiveRoutesForCurrentUser() {
+        AppUser user = resolveCurrentUser();
+        if (user.getRole() == UserRole.STAFF) {
+            return driverRepository.findByAppUser_Id(user.getId())
+                    .map(driver -> transportRouteRepository.findAll().stream()
+                            .filter(route -> route.getDriver() != null
+                                    && driver.getId().equals(route.getDriver().getId()))
+                            .map(route -> toLiveResponse(route, Set.of()))
+                            .toList())
+                    .orElse(List.of());
+        }
+
         Set<String> studentIds = resolveScopedStudentIds();
         if (studentIds.isEmpty()) {
             return List.of();
@@ -60,6 +72,14 @@ public class TransportTrackingService {
         AppUser user = resolveCurrentUser();
         if (!allowed && user.getRole() != UserRole.ADMIN && user.getRole() != UserRole.STAFF) {
             throw new RuntimeException("Access denied to this route");
+        }
+        if (user.getRole() == UserRole.STAFF) {
+            boolean isAssignedDriver = driverRepository.findByAppUser_Id(user.getId())
+                    .map(driver -> route.getDriver() != null && driver.getId().equals(route.getDriver().getId()))
+                    .orElse(false);
+            if (!isAssignedDriver) {
+                throw new RuntimeException("Access denied to this route");
+            }
         }
 
         return toLiveResponse(route, studentIds);
@@ -146,22 +166,17 @@ public class TransportTrackingService {
         Map<String, String> classNames = classItemRepository.findAll().stream()
                 .collect(Collectors.toMap(ClassItem::getId, ClassItem::getName, (a, b) -> a));
 
-        List<StudentOnRouteDto> students = route.getStudents() == null ? List.of() :
-                route.getStudents().stream()
-                        .filter(s -> scopedStudentIds.isEmpty() || scopedStudentIds.contains(s.getId()))
-                        .map(s -> StudentOnRouteDto.builder()
-                                .id(s.getId())
-                                .name(s.getName())
-                                .className(s.getClassItem() != null
-                                        ? classNames.getOrDefault(s.getClassItem().getId(), "")
-                                        : "")
-                                .build())
-                        .toList();
-
         Optional<BusTrip> activeTrip = busTripRepository
                 .findFirstByTransportRoute_IdAndStatusOrderByStartedAtDesc(route.getId(), BusTripStatus.ACTIVE);
 
+        List<StudentOnRouteDto> students = route.getStudents() == null ? List.of() :
+                route.getStudents().stream()
+                        .filter(s -> scopedStudentIds.isEmpty() || scopedStudentIds.contains(s.getId()))
+                        .map(s -> buildStudentOnRoute(s, classNames, route, activeTrip.orElse(null)))
+                        .toList();
+
         LivePositionDto livePosition = null;
+        LivePositionDto driverPosition = null;
         String tripStatus = "INACTIVE";
         if (activeTrip.isPresent()) {
             BusTrip trip = activeTrip.get();
@@ -174,7 +189,27 @@ public class TransportTrackingService {
                         .speedKmh(trip.getSpeedKmh())
                         .recordedAt(trip.getLastPositionAt() != null ? trip.getLastPositionAt().toString() : null)
                         .build();
+                driverPosition = livePosition;
             }
+        }
+
+        // Rebuild students with live positions when trip is active
+        if (activeTrip.isPresent() && livePosition != null) {
+            final LivePositionDto busPos = livePosition;
+            students = route.getStudents() == null ? List.of() :
+                    route.getStudents().stream()
+                            .filter(s -> scopedStudentIds.isEmpty() || scopedStudentIds.contains(s.getId()))
+                            .map(s -> StudentOnRouteDto.builder()
+                                    .id(s.getId())
+                                    .name(s.getName())
+                                    .className(s.getClassItem() != null
+                                            ? classNames.getOrDefault(s.getClassItem().getId(), "")
+                                            : "")
+                                    .lat(busPos.getLat())
+                                    .lng(busPos.getLng())
+                                    .trackingStatus("ON_BUS")
+                                    .build())
+                            .toList();
         }
 
         return LiveTrackingResponse.builder()
@@ -187,8 +222,45 @@ public class TransportTrackingService {
                 .routePolyline(polyline)
                 .students(students)
                 .livePosition(livePosition)
+                .driverPosition(driverPosition)
                 .tripStatus(tripStatus)
                 .build();
+    }
+
+    private StudentOnRouteDto buildStudentOnRoute(
+            Student s, Map<String, String> classNames, TransportRoute route, BusTrip activeTrip) {
+        double[] pickup = resolveStudentPickup(route, s.getId());
+        return StudentOnRouteDto.builder()
+                .id(s.getId())
+                .name(s.getName())
+                .className(s.getClassItem() != null
+                        ? classNames.getOrDefault(s.getClassItem().getId(), "")
+                        : "")
+                .lat(pickup != null ? pickup[0] : null)
+                .lng(pickup != null ? pickup[1] : null)
+                .trackingStatus(activeTrip != null ? "ON_BUS" : "WAITING")
+                .build();
+    }
+
+    private double[] resolveStudentPickup(TransportRoute route, String studentId) {
+        List<TransportRouteWaypoint> waypoints = route.getWaypoints();
+        if (waypoints == null || waypoints.isEmpty()) {
+            return null;
+        }
+        List<Student> students = route.getStudents();
+        if (students == null || students.isEmpty()) {
+            TransportRouteWaypoint wp = waypoints.get(0);
+            return new double[]{wp.getLat(), wp.getLng()};
+        }
+        int index = 0;
+        for (int i = 0; i < students.size(); i++) {
+            if (studentId.equals(students.get(i).getId())) {
+                index = i;
+                break;
+            }
+        }
+        TransportRouteWaypoint wp = waypoints.get(index % waypoints.size());
+        return new double[]{wp.getLat(), wp.getLng()};
     }
 
     private List<double[]> parsePolyline(String json) {

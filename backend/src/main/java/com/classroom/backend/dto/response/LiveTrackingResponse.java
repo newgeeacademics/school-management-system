@@ -22,6 +22,7 @@ public class LiveTrackingResponse {
     private List<double[]> routePolyline;
     private List<StudentOnRouteDto> students;
     private LivePositionDto livePosition;
+    private LivePositionDto driverPosition;
     private String tripStatus;
 
     @Data
@@ -43,6 +44,10 @@ public class LiveTrackingResponse {
         private String id;
         private String name;
         private String className;
+        private Double lat;
+        private Double lng;
+        /** WAITING at pickup stop, ON_BUS when trip is active. */
+        private String trackingStatus;
     }
 
     @Data
