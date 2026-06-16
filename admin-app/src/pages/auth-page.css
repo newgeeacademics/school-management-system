@@ -14,18 +14,6 @@
   min-height: 100dvh;
 }
 
-.auth-page__top {
-  padding: 16px 20px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.auth-page__top--split {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
 .auth-page__brand-link {
   display: inline-flex;
   flex-shrink: 0;
@@ -208,10 +196,6 @@
 }
 
 @media (max-width: 639px) {
-  .auth-page__top {
-    padding: 12px 16px;
-  }
-
   .auth-page__main {
     padding: 24px 16px;
     align-items: flex-start;
