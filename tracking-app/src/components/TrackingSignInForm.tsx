@@ -126,7 +126,7 @@ export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' 
               <>
                 {' '}
                 ·{' '}
-                <a href={`${userPortalOrigin}/connexion`}>Portail familles</a>
+                <a href={`${userPortalOrigin}/connexion`}>Portail utilisateur</a>
               </>
             ) : null}
           </p>

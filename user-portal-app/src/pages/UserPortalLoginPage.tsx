@@ -13,7 +13,7 @@ function UserPortalIllustrationSet() {
   const { t } = useTranslation();
   const heroImage = useMemo(
     () =>
-      'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=1800&q=80',
+      'https://images.unsplash.com/photo-1509062520756-531426a66e0b?auto=format&fit=crop&w=1800&q=80',
     []
   );
 
