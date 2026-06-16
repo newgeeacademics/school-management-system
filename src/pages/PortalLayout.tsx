@@ -2,7 +2,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Menu, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PortalSidebar } from '@/components/PortalSidebar';
-import { clearPortalSession, getPortalSession, type PortalRole } from '@/lib/auth';
+import { clearPortalSession, getPortalSession } from '@/lib/auth';
 import { getSchoolAppOrigin } from '@/lib/school-app-url';
 import { useTranslation } from '@/i18n';
 import { PortalFeedProvider, usePortalFeedContext } from '@/context/PortalFeedContext';
@@ -10,12 +10,6 @@ import { sectionFromPath, sectionLabelKey, sectionMeta, sectionsForRole } from '
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
-
-function roleLabel(role: PortalRole, t: (k: string) => string): string {
-  if (role === 'student') return t('userPortal.student');
-  if (role === 'parent') return t('userPortal.parent');
-  return t('userPortal.teacher');
-}
 
 function PortalLayoutInner() {
   const { t } = useTranslation();
@@ -62,7 +56,6 @@ function PortalLayoutInner() {
             visibleSections={visibleSections}
             role={session.role}
             productName={t('portalHome.productName')}
-            roleLabel={roleLabel(session.role, t)}
             userName={session.name ?? session.emailHint}
             onNavigate={navigateSection}
             onLogout={handleLogout}
@@ -75,7 +68,6 @@ function PortalLayoutInner() {
           visibleSections={visibleSections}
           role={session.role}
           productName={t('portalHome.productName')}
-          roleLabel={roleLabel(session.role, t)}
           userName={session.name ?? session.emailHint}
           onNavigate={navigateSection}
           onLogout={handleLogout}

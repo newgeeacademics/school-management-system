@@ -1,28 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
-import { BookOpen, GraduationCap, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getAdminLoginUrl } from '@/lib/school-app-url';
 import { setPortalSession } from '@/lib/auth';
 import { loginWithEmail, isBackendApiConfigured } from '@/lib/api';
-import { backendRoleToPortal, portalRoleMatchesBackend } from '@/lib/portal-role';
-
-const PORTAL_ROLES = ['student', 'parent', 'teacher'] as const;
-type PortalRoleState = (typeof PORTAL_ROLES)[number];
-
-function parseRoleParam(value: string | null): PortalRoleState | null {
-  if (value === 'student' || value === 'parent' || value === 'teacher') return value;
-  return null;
-}
+import { backendRoleToPortal } from '@/lib/portal-role';
 
 export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 'embedded' }) {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { t } = useTranslation();
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,28 +20,6 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
   const isEmbedded = variant === 'embedded';
 
   const adminLoginUrl = getAdminLoginUrl();
-
-  const initialRole = useMemo(
-    () => parseRoleParam(searchParams.get('role')) ?? 'student',
-    [searchParams]
-  );
-  const [role, setRole] = useState<PortalRoleState>(initialRole);
-
-  const roleParam = searchParams.get('role');
-  useEffect(() => {
-    const r = parseRoleParam(roleParam);
-    if (r) setRole(r);
-  }, [roleParam]);
-
-  const roleMeta = useMemo(
-    () =>
-      [
-        { id: 'student' as const, label: t('userPortal.student'), icon: GraduationCap },
-        { id: 'parent' as const, label: t('userPortal.parent'), icon: Users },
-        { id: 'teacher' as const, label: t('userPortal.teacher'), icon: BookOpen },
-      ] as const,
-    [t]
-  );
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,15 +46,9 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
         setIsPending(false);
         return;
       }
-      if (!portalRoleMatchesBackend(role, auth.role)) {
-        toast.error(t('userPortal.roleMismatch', { actual: portalRole, selected: role }), {
-          richColors: true,
-        });
-        setIsPending(false);
-        return;
-      }
+
       setPortalSession({
-        role,
+        role: portalRole,
         email: auth.email,
         name: auth.name,
         userId: auth.id,
@@ -122,26 +84,6 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
         </div>
 
         <div className={isEmbedded ? 'auth-page__form' : 'mt-6 space-y-5'}>
-          <div className={isEmbedded ? 'auth-page__field' : 'space-y-2'}>
-            <p className='auth-page__role-label'>{t('userPortal.chooseProfile')}</p>
-            <div className='auth-page__role-grid'>
-              {roleMeta.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type='button'
-                  onClick={() => setRole(id)}
-                  className={cn(
-                    'auth-page__role-btn',
-                    role === id && 'auth-page__role-btn--active'
-                  )}
-                >
-                  <Icon className='h-5 w-5 shrink-0' aria-hidden />
-                  <span>{label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
           <form onSubmit={onSubmit} className={isEmbedded ? 'contents' : 'space-y-5'}>
             <div className={isEmbedded ? 'auth-page__field' : 'space-y-2'}>
               <Label htmlFor='portal-login-email' className='text-sm font-semibold text-slate-700'>
