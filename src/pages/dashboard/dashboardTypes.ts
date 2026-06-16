@@ -49,6 +49,17 @@ export type Teacher = {
   phone?: string;
 };
 
+export type Driver = {
+  id: string;
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  staffId?: string;
+  licenseNumber?: string;
+  email?: string;
+  phone?: string;
+};
+
 export type ClassItem = {
   id: string;
   name: string;
@@ -147,6 +158,7 @@ export type TransportRoute = {
   id: string;
   name: string;
   driverName: string;
+  driverId?: string;
   departureTime: string;
   returnTime?: string;
   note?: string;
@@ -332,10 +344,21 @@ export type NewCanteenItemFormState = {
 
 export type NewTransportRouteFormState = {
   name: string;
+  driverId: string;
   driverName: string;
   departureTime: string;
   returnTime: string;
   note: string;
+};
+
+export type NewDriverFormState = {
+  firstName: string;
+  lastName: string;
+  staffId: string;
+  licenseNumber: string;
+  email: string;
+  password: string;
+  phone: string;
 };
 
 export type NewEvaluationFormState = {
