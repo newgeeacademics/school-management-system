@@ -172,9 +172,7 @@ export function TrackingDashboardPage() {
             <AppLogo markClassName='app-logo__mark--compact' name='NewGee Transport' />
             <div>
               <h1 className='font-semibold'>Suivi Transport</h1>
-              <p className='text-xs text-muted-foreground'>
-                {session.name ?? session.email} · {session.role === 'parent' ? 'Parent' : session.role === 'teacher' ? 'Enseignant' : 'Chauffeur'}
-              </p>
+              <p className='text-xs text-muted-foreground'>{session.name ?? session.email}</p>
             </div>
           </div>
           <Button variant='outline' size='sm' onClick={handleLogout}>

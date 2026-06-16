@@ -1,50 +1,24 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { BookOpen, Navigation, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { cn } from '@/lib/utils';
 import { isBackendApiConfigured, loginWithEmail } from '@/lib/api';
 import { getSchoolLoginUrl, getUserPortalOrigin } from '@/lib/school-app-url';
-import { setTrackingSession, type TrackingRole } from '@/lib/auth';
-
-const TRACKING_ROLES = ['parent', 'teacher', 'driver'] as const;
-type TrackingRoleState = (typeof TRACKING_ROLES)[number];
-
-function backendToTrackingRole(
-  backendRole: string,
-  selected: TrackingRoleState
-): TrackingRole | null {
-  if (selected === 'driver') {
-    return ['ADMIN', 'STAFF', 'TEACHER'].includes(backendRole) ? 'driver' : null;
-  }
-  if (selected === 'parent' && backendRole === 'PARENT') return 'parent';
-  if (selected === 'teacher' && backendRole === 'TEACHER') return 'teacher';
-  return null;
-}
+import { setTrackingSession } from '@/lib/auth';
+import { backendRoleToTracking } from '@/lib/tracking-role';
 
 export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' | 'embedded' }) {
   const navigate = useNavigate();
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPending, setIsPending] = useState(false);
-  const [role, setRole] = useState<TrackingRoleState>('parent');
   const isEmbedded = variant === 'embedded';
 
   const schoolLoginUrl = getSchoolLoginUrl();
   const userPortalOrigin = getUserPortalOrigin();
-
-  const roleMeta = useMemo(
-    () =>
-      [
-        { id: 'parent' as const, label: 'Parent', icon: Users },
-        { id: 'teacher' as const, label: 'Enseignant', icon: BookOpen },
-        { id: 'driver' as const, label: 'Chauffeur', icon: Navigation },
-      ] as const,
-    []
-  );
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,9 +39,12 @@ export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' 
       }
 
       const auth = await loginWithEmail(email, password);
-      const trackingRole = backendToTrackingRole(auth.role, role);
+      const trackingRole = backendRoleToTracking(auth.role);
       if (!trackingRole) {
-        toast.error('Ce compte ne correspond pas au profil sélectionné.', { richColors: true });
+        toast.error(
+          'Ce compte ne peut pas accéder au suivi transport. Utilisez le portail adapté à votre profil.',
+          { richColors: true }
+        );
         setIsPending(false);
         return;
       }
@@ -107,26 +84,6 @@ export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' 
         </div>
 
         <div className={isEmbedded ? 'auth-page__form' : 'mt-6 space-y-5'}>
-          <div className={isEmbedded ? 'auth-page__field' : 'space-y-2'}>
-            <p className='auth-page__role-label'>Choisissez votre profil</p>
-            <div className='auth-page__role-grid'>
-              {roleMeta.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type='button'
-                  onClick={() => setRole(id)}
-                  className={cn(
-                    'auth-page__role-btn',
-                    role === id && 'auth-page__role-btn--active'
-                  )}
-                >
-                  <Icon className='h-5 w-5 shrink-0' aria-hidden />
-                  <span>{label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
           <form onSubmit={onSubmit} className={isEmbedded ? 'contents' : 'space-y-5'}>
             <div className={isEmbedded ? 'auth-page__field' : 'space-y-2'}>
               <Label htmlFor='tracking-login-email' className='text-sm font-semibold text-slate-700'>
