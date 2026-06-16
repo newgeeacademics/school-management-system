@@ -66,6 +66,17 @@ export function TrackingDashboardPage() {
                     lng: msg.lng!,
                     recordedAt: msg.recordedAt ?? null,
                   },
+                  driverPosition: {
+                    lat: msg.lat!,
+                    lng: msg.lng!,
+                    recordedAt: msg.recordedAt ?? null,
+                  },
+                  students: route.students.map((s) => ({
+                    ...s,
+                    lat: msg.lat!,
+                    lng: msg.lng!,
+                    trackingStatus: 'ON_BUS',
+                  })),
                 }
               : route
           )
@@ -217,6 +228,8 @@ export function TrackingDashboardPage() {
                     waypoints={selected.waypoints}
                     routePolyline={selected.routePolyline}
                     livePosition={selected.livePosition}
+                    driverPosition={selected.driverPosition}
+                    students={selected.students}
                     className='h-[480px] w-full rounded-xl border shadow-sm'
                   />
 
