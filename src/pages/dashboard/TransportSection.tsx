@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { RouteMap } from '@/components/RouteMap';
 import { fetchRoadRoute } from '@/lib/osrm';
 import { TRANSPORT_NODES } from '@/lib/transportGraph';
+import { DriversSection } from '@/pages/dashboard/DriversSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,17 +19,24 @@ import {
 
 import type {
   NewTransportRouteFormState,
-  TransportRoute,
+  NewDriverFormState,
   SetStateAction,
   Student,
+  Driver,
+  TransportRoute,
 } from './dashboardTypes';
 
 type TransportSectionProps = {
   routes: TransportRoute[];
+  drivers?: Driver[];
   newRoute: NewTransportRouteFormState;
   setNewRoute: SetStateAction<NewTransportRouteFormState>;
   onCreateRoute: (e: React.FormEvent, payload?: { waypoints: { lat: number; lng: number; name: string }[]; routePolyline: [number, number][] }) => void;
   onUpdateRouteStudents?: (routeId: string, studentIds: string[]) => void;
+  newDriver?: NewDriverFormState;
+  setNewDriver?: SetStateAction<NewDriverFormState>;
+  onCreateDriver?: (e: React.FormEvent) => void | Promise<void>;
+  onDeleteDriver?: (id: string) => void | Promise<void>;
   readOnly?: boolean;
   students?: Student[];
   currentStudentId?: string | null;
@@ -37,10 +45,15 @@ type TransportSectionProps = {
 
 export const TransportSection: React.FC<TransportSectionProps> = ({
   routes,
+  drivers = [],
   newRoute,
   setNewRoute,
   onCreateRoute,
   onUpdateRouteStudents,
+  newDriver,
+  setNewDriver,
+  onCreateDriver,
+  onDeleteDriver,
   readOnly = false,
   students = [],
   currentStudentId,
@@ -288,6 +301,15 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
 
   return (
     <section className='space-y-5'>
+      {!readOnly && onCreateDriver && newDriver && setNewDriver && onDeleteDriver && (
+        <DriversSection
+          drivers={drivers}
+          newDriver={newDriver}
+          setNewDriver={setNewDriver}
+          onCreateDriver={onCreateDriver}
+          onDeleteDriver={onDeleteDriver}
+        />
+      )}
       {!readOnly && (
       <div className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)]'>
         <Card>
@@ -316,15 +338,46 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
                 </div>
                 <div className='grid gap-2'>
                   <Label htmlFor='transport-driver'>Conducteur</Label>
-                  <Input
-                    id='transport-driver'
-                    value={newRoute.driverName}
-                    onChange={(e) =>
-                      setNewRoute((r) => ({ ...r, driverName: e.target.value }))
-                    }
-                    placeholder='Nom du conducteur'
-                    required
-                  />
+                  {drivers.length > 0 ? (
+                    <Select
+                      value={newRoute.driverId || '__manual__'}
+                      onValueChange={(value) => {
+                        if (value === '__manual__') {
+                          setNewRoute((r) => ({ ...r, driverId: '', driverName: '' }));
+                          return;
+                        }
+                        const driver = drivers.find((d) => d.id === value);
+                        setNewRoute((r) => ({
+                          ...r,
+                          driverId: value,
+                          driverName: driver?.name ?? '',
+                        }));
+                      }}
+                    >
+                      <SelectTrigger id='transport-driver'>
+                        <SelectValue placeholder='Choisir un chauffeur' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='__manual__'>Saisie manuelle</SelectItem>
+                        {drivers.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : null}
+                  {(!newRoute.driverId || drivers.length === 0) && (
+                    <Input
+                      id='transport-driver-manual'
+                      value={newRoute.driverName}
+                      onChange={(e) =>
+                        setNewRoute((r) => ({ ...r, driverName: e.target.value, driverId: '' }))
+                      }
+                      placeholder='Nom du conducteur'
+                      required={!newRoute.driverId}
+                    />
+                  )}
                 </div>
               </div>
               <div className='grid gap-2 sm:grid-cols-2'>
