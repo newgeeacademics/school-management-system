@@ -61,7 +61,9 @@ import {
   deleteStudentOnBackend,
   deleteTeacherOnBackend,
   deleteUserOnBackend,
+  downloadStudentRosterDocx,
   fetchStudentIdCardOnBackend,
+  fetchTeacherIdCardOnBackend,
   isBackendApiConfigured,
   BACKEND_REQUIRED_MESSAGE,
   loadDashboardFromBackend,
@@ -142,6 +144,7 @@ import {
   type NewFeeInstallmentFormState,
   type NewCanteenItemFormState,
   type StudentIdCardData,
+  type TeacherIdCardData,
   type NewClassFormState,
   type NewCourseFormState,
   type NewMatiereFormState,
@@ -171,6 +174,7 @@ import { CommunicationsSection } from './dashboard/CommunicationsSection';
 import { CalendarSection } from './dashboard/CalendarSection';
 import { FeeSchedulesSection } from './dashboard/FeeSchedulesSection';
 import { StudentIdCardModal } from './dashboard/StudentIdCardModal';
+import { TeacherIdCardModal } from './dashboard/TeacherIdCardModal';
 import { CanteenSection } from './dashboard/CanteenSection';
 import { ClassesSection } from './dashboard/ClassesSection';
 import { CoursesSection } from './dashboard/CoursesSection';
@@ -661,8 +665,10 @@ export const DashboardPage: React.FC = () => {
 
   const [newTeacher, setNewTeacher] =
     React.useState<NewTeacherFormState>({
-    name: '',
+    firstName: '',
+    lastName: '',
     subject: '',
+    staffId: '',
     email: '',
     password: '',
     phone: '',
@@ -672,7 +678,9 @@ export const DashboardPage: React.FC = () => {
 
   const [newStudent, setNewStudent] =
     React.useState<NewStudentFormState>({
-      name: '',
+      firstName: '',
+      lastName: '',
+      idCardNumber: '',
       classId: '',
       email: '',
       phone: '',
@@ -680,7 +688,8 @@ export const DashboardPage: React.FC = () => {
     });
 
   const [newParent, setNewParent] = React.useState<NewParentFormState>({
-    name: '',
+    firstName: '',
+    lastName: '',
     phone: '',
     email: '',
     password: '',
@@ -777,6 +786,9 @@ export const DashboardPage: React.FC = () => {
   const [idCardOpen, setIdCardOpen] = React.useState(false);
   const [idCardLoading, setIdCardLoading] = React.useState(false);
   const [idCardData, setIdCardData] = React.useState<StudentIdCardData | null>(null);
+  const [teacherIdCardOpen, setTeacherIdCardOpen] = React.useState(false);
+  const [teacherIdCardLoading, setTeacherIdCardLoading] = React.useState(false);
+  const [teacherIdCardData, setTeacherIdCardData] = React.useState<TeacherIdCardData | null>(null);
 
   const [paymentReminders, setPaymentReminders] = React.useState<PaymentReminder[]>([]);
   const [paymentReceipts, setPaymentReceipts] = React.useState<PaymentReceipt[]>([]);
@@ -893,9 +905,16 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateParent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newParent.name.trim() || (!newParent.email.trim() && !newParent.phone.trim())) return;
+    if (
+      !newParent.firstName.trim() ||
+      !newParent.lastName.trim() ||
+      (!newParent.email.trim() && !newParent.phone.trim())
+    ) {
+      return;
+    }
     const payload = {
-      name: newParent.name.trim(),
+      firstName: newParent.firstName.trim(),
+      lastName: newParent.lastName.trim(),
       phone: newParent.phone.trim() || undefined,
       email: newParent.email.trim() || undefined,
       password: newParent.password.trim() || undefined,
@@ -907,7 +926,14 @@ export const DashboardPage: React.FC = () => {
       setParents((prev) => [...prev, created]);
       await syncPortalUsers();
       toast.success('Parent et compte portail créés');
-      setNewParent({ name: '', phone: '', email: '', password: '', studentId: '' });
+      setNewParent({
+        firstName: '',
+        lastName: '',
+        phone: '',
+        email: '',
+        password: '',
+        studentId: '',
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -915,7 +941,14 @@ export const DashboardPage: React.FC = () => {
 
   const handleUpdateParent = async (
     id: string,
-    data: { name: string; phone?: string; email?: string; studentId?: string; password?: string }
+    data: {
+      firstName: string;
+      lastName: string;
+      phone?: string;
+      email?: string;
+      studentId?: string;
+      password?: string;
+    }
   ) => {
     try {
       if (!requireBackend()) return;
@@ -1195,14 +1228,16 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTeacher.name.trim()) return;
+    if (!newTeacher.firstName.trim() || !newTeacher.lastName.trim()) return;
     if (!newTeacher.email.trim() && !newTeacher.phone.trim()) {
       toast.error('Email ou téléphone requis pour la connexion portail');
       return;
     }
     const payload = {
-      name: newTeacher.name.trim(),
+      firstName: newTeacher.firstName.trim(),
+      lastName: newTeacher.lastName.trim(),
       subject: newTeacher.subject.trim() || 'Matière à définir',
+      staffId: newTeacher.staffId.trim() || undefined,
       email: newTeacher.email.trim() || undefined,
       password: newTeacher.password.trim() || undefined,
       phone: newTeacher.phone.trim() || undefined,
@@ -1216,8 +1251,10 @@ export const DashboardPage: React.FC = () => {
       await syncPortalUsers();
       toast.success('Enseignant créé avec compte portail');
       setNewTeacher({
-        name: '',
+        firstName: '',
+        lastName: '',
         subject: '',
+        staffId: '',
         email: '',
         password: '',
         phone: '',
@@ -1243,8 +1280,10 @@ export const DashboardPage: React.FC = () => {
   const handleUpdateTeacher = async (
     id: string,
     data: {
-      name: string;
+      firstName: string;
+      lastName: string;
       subject: string;
+      staffId?: string;
       email?: string;
       password?: string;
       phone?: string;
@@ -1282,9 +1321,17 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStudent.name.trim() || (!newStudent.email.trim() && !newStudent.phone.trim())) return;
+    if (
+      !newStudent.firstName.trim() ||
+      !newStudent.lastName.trim() ||
+      (!newStudent.email.trim() && !newStudent.phone.trim())
+    ) {
+      return;
+    }
     const payload = {
-      name: newStudent.name.trim(),
+      firstName: newStudent.firstName.trim(),
+      lastName: newStudent.lastName.trim(),
+      idCardNumber: newStudent.idCardNumber.trim() || undefined,
       classId: newStudent.classId || undefined,
       email: newStudent.email.trim() || undefined,
       phone: newStudent.phone.trim() || undefined,
@@ -1296,7 +1343,15 @@ export const DashboardPage: React.FC = () => {
       setStudents((prev) => [...prev, created]);
       await syncPortalUsers();
       toast.success('Élève et compte portail créés');
-      setNewStudent({ name: '', classId: '', email: '', phone: '', password: '' });
+      setNewStudent({
+        firstName: '',
+        lastName: '',
+        idCardNumber: '',
+        classId: '',
+        email: '',
+        phone: '',
+        password: '',
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -1304,7 +1359,15 @@ export const DashboardPage: React.FC = () => {
 
   const handleUpdateStudent = async (
     id: string,
-    data: { name: string; classId?: string; email?: string; phone?: string; password?: string }
+    data: {
+      firstName: string;
+      lastName: string;
+      idCardNumber?: string;
+      classId?: string;
+      email?: string;
+      phone?: string;
+      password?: string;
+    }
   ) => {
     try {
       if (!requireBackend()) return;
@@ -1341,13 +1404,50 @@ export const DashboardPage: React.FC = () => {
       const card = await fetchStudentIdCardOnBackend(studentId);
       setIdCardData(card);
       setStudents((prev) =>
-        prev.map((s) => (s.id === studentId ? { ...s, matricule: card.matricule } : s))
+        prev.map((s) =>
+          s.id === studentId
+            ? {
+                ...s,
+                matricule: card.matricule,
+                idCardNumber: card.idCardNumber,
+              }
+            : s
+        )
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur carte scolaire');
       setIdCardOpen(false);
     } finally {
       setIdCardLoading(false);
+    }
+  };
+
+  const handlePrintTeacherIdCard = async (teacherId: string) => {
+    setTeacherIdCardOpen(true);
+    setTeacherIdCardLoading(true);
+    setTeacherIdCardData(null);
+    try {
+      if (!requireBackend()) return;
+      const card = await fetchTeacherIdCardOnBackend(teacherId);
+      setTeacherIdCardData(card);
+      setTeachers((prev) =>
+        prev.map((t) => (t.id === teacherId ? { ...t, staffId: card.staffId || t.staffId } : t))
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur carte enseignant');
+      setTeacherIdCardOpen(false);
+    } finally {
+      setTeacherIdCardLoading(false);
+    }
+  };
+
+  const handleExportStudentRoster = async (classId?: string) => {
+    try {
+      if (!requireBackend()) return;
+      await downloadStudentRosterDocx(classId);
+      toast.success('Liste élèves exportée (Word)');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur export');
     }
   };
 
@@ -2514,6 +2614,7 @@ export const DashboardPage: React.FC = () => {
               onCreateTeacher={handleCreateTeacher}
               onUpdateTeacher={handleUpdateTeacher}
               onDeleteTeacher={handleDeleteTeacher}
+              onPrintIdCard={role === 'admin' ? handlePrintTeacherIdCard : undefined}
               subjectOptions={SUBJECT_OPTIONS}
               getClassName={getClassName}
               createFormRef={teacherCreateFormRef}
@@ -2530,6 +2631,7 @@ export const DashboardPage: React.FC = () => {
               onUpdateStudent={handleUpdateStudent}
               onDeleteStudent={handleDeleteStudent}
               onPrintIdCard={role === 'admin' ? handlePrintStudentIdCard : undefined}
+              onExportRoster={role === 'admin' ? handleExportStudentRoster : undefined}
               getClassName={getClassName}
               readOnly={role === 'parent' || role === 'student'}
             />
@@ -2794,6 +2896,12 @@ export const DashboardPage: React.FC = () => {
         onClose={() => setIdCardOpen(false)}
         card={idCardData}
         loading={idCardLoading}
+      />
+      <TeacherIdCardModal
+        open={teacherIdCardOpen}
+        onClose={() => setTeacherIdCardOpen(false)}
+        card={teacherIdCardData}
+        loading={teacherIdCardLoading}
       />
     </SidebarProvider>
   );

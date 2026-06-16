@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Users } from 'lucide-react';
+import { CreditCard, Plus, Users } from 'lucide-react';
 
 import { EntityCrudActions } from '@/components/dashboard/EntityCrudActions';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
@@ -30,8 +30,10 @@ type TeachersSectionProps = {
   onUpdateTeacher: (
     id: string,
     data: {
-      name: string;
+      firstName: string;
+      lastName: string;
       subject: string;
+      staffId?: string;
       email?: string;
       password?: string;
       phone?: string;
@@ -39,6 +41,7 @@ type TeachersSectionProps = {
     }
   ) => void | Promise<void>;
   onDeleteTeacher: (id: string) => void | Promise<void>;
+  onPrintIdCard?: (teacherId: string) => void | Promise<void>;
   subjectOptions: string[];
   getClassName: (id: string) => string;
   createFormRef?: React.RefObject<HTMLDivElement | null>;
@@ -119,14 +122,17 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
   onCreateTeacher,
   onUpdateTeacher,
   onDeleteTeacher,
+  onPrintIdCard,
   subjectOptions,
   getClassName,
   createFormRef,
 }) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState<NewTeacherFormState>({
-    name: '',
+    firstName: '',
+    lastName: '',
     subject: '',
+    staffId: '',
     email: '',
     password: '',
     phone: '',
@@ -138,8 +144,10 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
   const startEdit = (teacher: Teacher) => {
     setEditingId(teacher.id);
     setDraft({
-      name: teacher.name,
+      firstName: teacher.firstName ?? teacher.name.split(' ')[0] ?? '',
+      lastName: teacher.lastName ?? teacher.name.split(' ').slice(1).join(' ') ?? '',
       subject: teacher.subject,
+      staffId: teacher.staffId ?? '',
       email: teacher.email ?? '',
       password: '',
       phone: teacher.phone ?? '',
@@ -148,11 +156,13 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
   };
 
   const saveEdit = () => {
-    if (!editingId || !draft.name.trim() || !draft.subject.trim()) return;
+    if (!editingId || !draft.firstName.trim() || !draft.lastName.trim() || !draft.subject.trim()) return;
     void Promise.resolve(
       onUpdateTeacher(editingId, {
-        name: draft.name.trim(),
+        firstName: draft.firstName.trim(),
+        lastName: draft.lastName.trim(),
         subject: draft.subject.trim(),
+        staffId: draft.staffId.trim() || undefined,
         email: draft.email.trim() || undefined,
         password: draft.password.trim() || undefined,
         phone: draft.phone.trim() || undefined,
@@ -196,13 +206,32 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
           <form className='space-y-4' onSubmit={onCreateTeacher}>
             <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
               <div className='grid gap-2'>
-                <Label htmlFor='teacher-name'>Nom complet *</Label>
+                <Label htmlFor='teacher-first-name'>Prénom *</Label>
                 <Input
-                  id='teacher-name'
-                  value={newTeacher.name}
-                  onChange={(e) => setNewTeacher((t) => ({ ...t, name: e.target.value }))}
-                  placeholder='Ex : Aminata Koné'
+                  id='teacher-first-name'
+                  value={newTeacher.firstName}
+                  onChange={(e) => setNewTeacher((t) => ({ ...t, firstName: e.target.value }))}
+                  placeholder='Ex : Aminata'
                   required
+                />
+              </div>
+              <div className='grid gap-2'>
+                <Label htmlFor='teacher-last-name'>Nom *</Label>
+                <Input
+                  id='teacher-last-name'
+                  value={newTeacher.lastName}
+                  onChange={(e) => setNewTeacher((t) => ({ ...t, lastName: e.target.value }))}
+                  placeholder='Ex : Koné'
+                  required
+                />
+              </div>
+              <div className='grid gap-2'>
+                <Label htmlFor='teacher-staff-id'>N° personnel (opt.)</Label>
+                <Input
+                  id='teacher-staff-id'
+                  value={newTeacher.staffId}
+                  onChange={(e) => setNewTeacher((t) => ({ ...t, staffId: e.target.value }))}
+                  placeholder='Auto si vide'
                 />
               </div>
               <div className='grid gap-2'>
@@ -314,9 +343,19 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                     {isEditing ? (
                       <div className='space-y-2 text-xs'>
                         <Input
-                          value={draft.name}
-                          onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                          value={draft.firstName}
+                          onChange={(e) => setDraft((d) => ({ ...d, firstName: e.target.value }))}
+                          placeholder='Prénom'
+                        />
+                        <Input
+                          value={draft.lastName}
+                          onChange={(e) => setDraft((d) => ({ ...d, lastName: e.target.value }))}
                           placeholder='Nom'
+                        />
+                        <Input
+                          value={draft.staffId}
+                          onChange={(e) => setDraft((d) => ({ ...d, staffId: e.target.value }))}
+                          placeholder='N° personnel (opt.)'
                         />
                         <Input
                           value={draft.subject}
@@ -370,6 +409,11 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                             {teacher.phone ? (
                               <p className='text-[11px] text-muted-foreground'>{teacher.phone}</p>
                             ) : null}
+                            {teacher.staffId ? (
+                              <p className='text-[11px] font-mono text-muted-foreground'>
+                                N° personnel : {teacher.staffId}
+                              </p>
+                            ) : null}
                             {homeroomIds.length > 0 ? (
                               <div className='mt-2 flex flex-wrap gap-1'>
                                 {homeroomIds.map((classId) => (
@@ -383,6 +427,18 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                             )}
                           </div>
                         </div>
+                        {onPrintIdCard ? (
+                          <Button
+                            type='button'
+                            variant='outline'
+                            size='sm'
+                            className='mt-2 h-7 gap-1 text-[11px]'
+                            onClick={() => void Promise.resolve(onPrintIdCard(teacher.id))}
+                          >
+                            <CreditCard className='size-3' />
+                            Carte enseignant
+                          </Button>
+                        ) : null}
                         <EntityCrudActions
                           onEdit={() => startEdit(teacher)}
                           onDelete={() => {
