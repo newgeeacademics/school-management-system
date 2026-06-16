@@ -111,6 +111,35 @@ export async function savePortalGrade(item: {
   });
 }
 
+export type PortalGradeModificationRequest = {
+  id: string;
+  evaluationId: string;
+  evaluationLabel: string;
+  studentId: string;
+  studentName: string;
+  currentScore: number;
+  requestedScore: number;
+  maxScore?: number;
+  reason: string;
+  status: string;
+};
+
+export async function fetchPortalGradeModificationRequests(): Promise<PortalGradeModificationRequest[]> {
+  return apiFetch<PortalGradeModificationRequest[]>('/api/grades/modification-requests');
+}
+
+export async function submitPortalGradeModificationRequest(item: {
+  evaluationId: string;
+  studentId: string;
+  requestedScore: number;
+  reason: string;
+}) {
+  return apiFetch('/api/grades/modification-requests', {
+    method: 'POST',
+    body: JSON.stringify(item),
+  });
+}
+
 export async function uploadPortalEvaluationDocument(evaluationId: string, file: File) {
   const form = new FormData();
   form.append('file', file);

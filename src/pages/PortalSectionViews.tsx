@@ -3,7 +3,6 @@ import {
   Bus,
   CalendarDays,
   ExternalLink,
-  MessageCircle,
   Navigation,
   School,
   Utensils,
@@ -13,6 +12,7 @@ import { PortalAttendanceView } from '@/pages/PortalAttendanceView';
 import { PortalGradesView } from '@/pages/PortalGradesView';
 import { PortalNotificationsView } from '@/pages/PortalNotificationsView';
 import { PortalAnnouncementsView } from '@/pages/PortalAnnouncementsView';
+import { PortalCalendarView } from '@/pages/PortalCalendarView';
 import { PortalDirectoryView } from '@/pages/PortalDirectoryView';
 import { PortalFeesView } from '@/pages/PortalFeesView';
 import { PortalMessagesView } from '@/pages/PortalMessagesView';
@@ -199,6 +199,10 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
     );
   }
 
+  if (section === 'calendar') {
+    return <PortalCalendarView />;
+  }
+
   if (section === 'schedule') {
     return (
       <FeedSection empty={t('portalHome.emptySchedule')} count={feed.schedule.length}>
@@ -269,16 +273,8 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
   }
 
   return (
-    <FeedSection empty={t('portalHome.emptyEvents')} count={feed.events.length}>
-      {feed.events.map((event) => (
-        <div key={event.id} className='flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2'>
-          <MessageCircle className='mt-0.5 size-4 shrink-0 text-primary' aria-hidden />
-          <p>
-            <span className='font-medium text-foreground'>{event.label}</span>
-            {event.date ? ` · ${event.date}` : ''}
-          </p>
-        </div>
-      ))}
+    <FeedSection empty={t('portalHome.emptySection')} count={0}>
+      <p className='text-xs text-muted-foreground'>{t('portalHome.comingSoon')}</p>
     </FeedSection>
   );
 }

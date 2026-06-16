@@ -14,6 +14,9 @@ import {
   fetchPortalGradesDetail,
   getGradeScore,
   savePortalGrade,
+  fetchPortalGradeModificationRequests,
+  submitPortalGradeModificationRequest,
+  type PortalGradeModificationRequest,
   uploadPortalEvaluationDocument,
   type EvaluationPeriod,
   type EvaluationType,
@@ -42,6 +45,17 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [modRequests, setModRequests] = useState<PortalGradeModificationRequest[]>([]);
+  const [modDialog, setModDialog] = useState<{
+    evaluationId: string;
+    studentId: string;
+    studentName: string;
+    evaluationLabel: string;
+    maxScore: number;
+    currentScore: number;
+    requestedScore: number;
+    reason: string;
+  } | null>(null);
 
   const [newEval, setNewEval] = useState({
     courseId: '',
@@ -64,6 +78,16 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
       setData(detail);
       if (!fixedClassId && !classId && detail.classId) setClassId(detail.classId);
       if (!studentId && detail.studentId) setStudentId(detail.studentId);
+      if (detail.canEdit) {
+        try {
+          const requests = await fetchPortalGradeModificationRequests();
+          setModRequests(requests);
+        } catch {
+          setModRequests([]);
+        }
+      } else {
+        setModRequests([]);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('portalGrades.loadError'));
       setData(null);
@@ -152,12 +176,35 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
     }
   };
 
-  const handleGradeChange = async (evaluationId: string, sid: string, raw: string) => {
+  const handleGradeChange = async (
+    evaluationId: string,
+    sid: string,
+    raw: string,
+    previousScore: number | '',
+    studentName: string,
+    evaluationLabel: string,
+    maxScore: number,
+  ) => {
     if (!canEdit) return;
     const trimmed = raw.trim();
     if (trimmed === '') return;
     const score = Number(trimmed);
     if (Number.isNaN(score) || score < 0) return;
+
+    if (previousScore !== '' && score !== previousScore) {
+      setModDialog({
+        evaluationId,
+        studentId: sid,
+        studentName,
+        evaluationLabel,
+        maxScore,
+        currentScore: previousScore,
+        requestedScore: score,
+        reason: '',
+      });
+      return;
+    }
+
     setSaving(true);
     setError(null);
     try {
@@ -170,12 +217,96 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
     }
   };
 
+  const submitModificationRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!modDialog || !modDialog.reason.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await submitPortalGradeModificationRequest({
+        evaluationId: modDialog.evaluationId,
+        studentId: modDialog.studentId,
+        requestedScore: modDialog.requestedScore,
+        reason: modDialog.reason.trim(),
+      });
+      setModDialog(null);
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('portalGrades.saveError'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const hasPendingRequest = (evaluationId: string, sid: string) =>
+    modRequests.some(
+      (r) => r.status === 'PENDING' && r.evaluationId === evaluationId && r.studentId === sid,
+    );
+
   if (loading && !data) {
     return <p className='text-sm text-muted-foreground'>{t('common.loading')}</p>;
   }
 
   return (
     <div className='space-y-4'>
+      {modDialog ? (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4'>
+          <div className='w-full max-w-md rounded-xl border bg-card p-4 shadow-lg'>
+            <h3 className='text-sm font-semibold'>Demande de modification de note</h3>
+            <form className='mt-3 space-y-3 text-sm' onSubmit={(e) => void submitModificationRequest(e)}>
+              <p>
+                <span className='font-medium'>{modDialog.studentName}</span> · {modDialog.evaluationLabel}
+              </p>
+              <p className='text-muted-foreground text-xs'>
+                Note actuelle : {modDialog.currentScore}/{modDialog.maxScore}
+              </p>
+              <div>
+                <Label htmlFor='portal-mod-score'>Nouvelle note demandée</Label>
+                <Input
+                  id='portal-mod-score'
+                  type='number'
+                  min={0}
+                  max={modDialog.maxScore}
+                  step={0.25}
+                  className='mt-1'
+                  value={modDialog.requestedScore}
+                  onChange={(e) =>
+                    setModDialog((d) => (d ? { ...d, requestedScore: Number(e.target.value) } : d))
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor='portal-mod-reason'>Motif *</Label>
+                <textarea
+                  id='portal-mod-reason'
+                  className='mt-1 min-h-[80px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm'
+                  value={modDialog.reason}
+                  onChange={(e) =>
+                    setModDialog((d) => (d ? { ...d, reason: e.target.value } : d))
+                  }
+                  required
+                />
+              </div>
+              <div className='flex justify-end gap-2'>
+                <Button type='button' variant='outline' size='sm' onClick={() => setModDialog(null)}>
+                  Annuler
+                </Button>
+                <Button type='submit' size='sm' disabled={saving || !modDialog.reason.trim()}>
+                  Envoyer à l&apos;administration
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {canEdit ? (
+        <p className='text-xs text-muted-foreground rounded-lg border border-dashed px-3 py-2'>
+          La saisie initiale est directe. Pour modifier une note déjà enregistrée, changez la valeur
+          puis envoyez une demande à l&apos;administration.
+        </p>
+      ) : null}
+
       <div className='flex flex-wrap items-end gap-3'>
         {showClassPicker ? (
           <div className='min-w-[10rem] flex-1'>
@@ -461,9 +592,11 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
                         <td className='py-2 pr-3 font-medium text-foreground'>{student.name}</td>
                         {data.evaluations.map((ev) => {
                           const score = getGradeScore(data.grades, ev.id, student.id);
+                          const pending = hasPendingRequest(ev.id, student.id);
                           return (
                             <td key={ev.id} className='py-2 pr-2'>
                               {canEdit ? (
+                                <div className='space-y-1'>
                                 <Input
                                   type='number'
                                   min={0}
@@ -471,9 +604,23 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
                                   step={0.25}
                                   className='h-8 w-20 text-sm'
                                   defaultValue={score === '' ? undefined : score}
-                                  disabled={saving}
-                                  onBlur={(e) => void handleGradeChange(ev.id, student.id, e.target.value)}
+                                  disabled={saving || (score !== '' && pending)}
+                                  onBlur={(e) =>
+                                    void handleGradeChange(
+                                      ev.id,
+                                      student.id,
+                                      e.target.value,
+                                      score,
+                                      student.name,
+                                      ev.label,
+                                      ev.maxScore,
+                                    )
+                                  }
                                 />
+                                {pending ? (
+                                  <span className='text-[10px] text-amber-700'>En attente</span>
+                                ) : null}
+                                </div>
                               ) : (
                                 <span className={cn('font-medium', score === '' ? 'text-muted-foreground' : 'text-foreground')}>
                                   {score === '' ? '—' : `${score}/${ev.maxScore}`}
