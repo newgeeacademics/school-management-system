@@ -14,10 +14,14 @@ import com.classroom.backend.dto.response.PortalFeedResponse;
 import com.classroom.backend.dto.response.PortalGradesDetailResponse;
 import com.classroom.backend.dto.response.PortalGradesDetailResponse.PortalEvaluationDto;
 import com.classroom.backend.dto.response.PortalGradesDetailResponse.PortalGradeEntryDto;
+import com.classroom.backend.dto.request.PortalChatSendRequest;
 import com.classroom.backend.dto.request.TeacherClassMessageRequest;
+import com.classroom.backend.dto.response.PortalChatResponse;
+import com.classroom.backend.dto.response.PortalChatResponse.PortalChatMessageDto;
 import com.classroom.backend.dto.response.CommunicationResultResponse;
 import com.classroom.backend.dto.response.PortalMessagesResponse;
 import com.classroom.backend.dto.response.PortalNotificationsResponse;
+import com.classroom.backend.service.PortalChatService;
 import com.classroom.backend.service.SchoolCommunicationService;
 import com.classroom.backend.model.enums.AttendanceStatus;
 import com.classroom.backend.model.Announcement;
@@ -58,6 +62,7 @@ public class PortalController {
     private final AnnouncementService announcementService;
     private final FeeInstallmentService feeInstallmentService;
     private final SchoolCommunicationService schoolCommunicationService;
+    private final PortalChatService portalChatService;
 
     /** Role-scoped feed: teacher → their classes/students; student → their class; parent → children. */
     @GetMapping("/feed")
@@ -171,6 +176,20 @@ public class PortalController {
     @GetMapping("/announcements")
     public ResponseEntity<List<Announcement>> announcements() {
         return ResponseEntity.ok(announcementService.findPublished());
+    }
+
+    /** Recent live chat messages for the signed-in school community. */
+    @GetMapping("/chat/messages")
+    public ResponseEntity<PortalChatResponse> chatMessages() {
+        return ResponseEntity.ok(PortalChatResponse.builder()
+                .messages(portalChatService.getRecentMessages())
+                .build());
+    }
+
+    /** Send a live chat message (also available over WebSocket type CHAT). */
+    @PostMapping("/chat/messages")
+    public ResponseEntity<PortalChatMessageDto> sendChatMessage(@Valid @RequestBody PortalChatSendRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(portalChatService.sendMessage(request.getBody()));
     }
 
     /** School messages for parents, students, and teachers (scoped by audience). */

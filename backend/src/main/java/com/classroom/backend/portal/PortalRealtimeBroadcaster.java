@@ -1,5 +1,6 @@
 package com.classroom.backend.portal;
 
+import com.classroom.backend.dto.response.PortalChatResponse.PortalChatMessageDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,23 @@ public class PortalRealtimeBroadcaster {
         PortalWsMessage payload = PortalWsMessage.builder()
                 .type("REFRESH")
                 .section(section.name().toLowerCase())
+                .build();
+        broadcast(payload);
+    }
+
+    public void broadcastChatMessage(PortalChatMessageDto chatMessage) {
+        if (chatMessage == null) {
+            return;
+        }
+        PortalWsMessage payload = PortalWsMessage.builder()
+                .type("CHAT")
+                .section("messages")
+                .id(chatMessage.getId())
+                .senderUserId(chatMessage.getSenderUserId())
+                .senderName(chatMessage.getSenderName())
+                .senderRole(chatMessage.getSenderRole())
+                .body(chatMessage.getBody())
+                .sentAt(chatMessage.getSentAt())
                 .build();
         broadcast(payload);
     }

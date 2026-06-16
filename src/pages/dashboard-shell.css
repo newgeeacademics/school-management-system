@@ -221,6 +221,15 @@
 }
 
 @media (max-width: 767px) {
+  .dashboard-shell [data-mobile='true'] .dashboard-sidebar-header {
+    padding: 10px 12px !important;
+  }
+
+  .dashboard-shell [data-mobile='true'] .dashboard-sidebar-logo {
+    height: 32px;
+    max-width: 88px;
+  }
+
   .dashboard-header {
     padding: 12px 16px;
   }

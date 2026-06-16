@@ -167,7 +167,28 @@
     "send": "Envoyer",
     "sending": "Envoi…",
     "sent": "Message envoyé.",
-    "sendError": "Échec de l’envoi."
+    "sendError": "Échec de l’envoi.",
+    "tabOfficial": "Messages officiels"
+  },
+  "portalChat": {
+    "tabLive": "Chat en direct",
+    "title": "Salon de l’école",
+    "subtitle": "Échanges rapides entre enseignants, parents et élèves.",
+    "loading": "Chargement du chat…",
+    "loadError": "Impossible de charger le chat.",
+    "empty": "Aucun message. Dites bonjour !",
+    "placeholder": "Écrire un message…",
+    "send": "Envoyer",
+    "sendError": "Impossible d’envoyer le message.",
+    "live": "En direct",
+    "offline": "Hors ligne",
+    "connected": "Connecté en temps réel",
+    "disconnected": "Reconnexion… les messages passent toujours par le serveur",
+    "role": {
+      "TEACHER": "Enseignant",
+      "PARENT": "Parent",
+      "STUDENT": "Élève"
+    }
   },
   "portalDirectory": {
     "loadError": "Impossible de charger l’annuaire.",
