@@ -52,7 +52,6 @@ type PortalSidebarProps = {
   visibleSections: PortalSectionId[];
   role: PortalRole;
   productName: string;
-  roleLabel: string;
   userName?: string;
   onNavigate: (id: PortalSectionId) => void;
   onLogout: () => void;
@@ -65,7 +64,6 @@ export function PortalSidebar({
   visibleSections,
   role,
   productName,
-  roleLabel,
   userName,
   onNavigate,
   onLogout,
@@ -92,7 +90,11 @@ export function PortalSidebar({
         <div className='flex min-w-0 items-center gap-2.5'>
           <AppLogo markClassName='app-logo__mark--compact' name={productName} />
           <div className='min-w-0'>
-            <p className='truncate text-[11px] text-muted-foreground'>{roleLabel}</p>
+            {userName ? (
+              <p className='truncate text-[11px] font-medium text-foreground'>{userName}</p>
+            ) : (
+              <p className='truncate text-[11px] text-muted-foreground'>{productName}</p>
+            )}
           </div>
         </div>
         {mobile ? (
