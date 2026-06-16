@@ -8,14 +8,9 @@ import com.classroom.backend.repository.TeacherRepository;
 import com.classroom.backend.util.AcademicYearUtil;
 import com.classroom.backend.util.IdCardNumberUtil;
 import com.classroom.backend.util.PersonNameUtil;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -23,7 +18,7 @@ public class TeacherIdCardService {
 
     private final TeacherRepository teacherRepository;
     private final SchoolRepository schoolRepository;
-    private final ObjectMapper objectMapper;
+    private final PublicAppUrlService publicAppUrlService;
 
     @Transactional
     public TeacherIdCardResponse getIdCard(String teacherId) {
@@ -47,7 +42,7 @@ public class TeacherIdCardService {
             lastName = parts.length > 1 ? parts[1] : "";
         }
 
-        String qrPayload = buildQrPayload(teacher, schoolName, schoolCity);
+        String qrPayload = publicAppUrlService.teacherCardScanUrl(teacher.getId());
 
         return TeacherIdCardResponse.builder()
                 .teacherId(teacher.getId())
@@ -61,24 +56,5 @@ public class TeacherIdCardService {
                 .academicYear(AcademicYearUtil.currentLabel())
                 .qrPayload(qrPayload)
                 .build();
-    }
-
-    private String buildQrPayload(Teacher teacher, String schoolName, String schoolCity) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("type", "teacher");
-        payload.put("teacherId", teacher.getId());
-        payload.put("staffId", teacher.getStaffId());
-        payload.put("name", teacher.getName());
-        payload.put("subject", teacher.getSubject());
-        payload.put("school", schoolName);
-        if (!schoolCity.isEmpty()) {
-            payload.put("city", schoolCity);
-        }
-        payload.put("academicYear", AcademicYearUtil.currentLabel());
-        try {
-            return objectMapper.writeValueAsString(payload);
-        } catch (JsonProcessingException e) {
-            return "{\"teacherId\":\"" + teacher.getId() + "\",\"staffId\":\"" + teacher.getStaffId() + "\"}";
-        }
     }
 }

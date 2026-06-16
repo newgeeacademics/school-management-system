@@ -18,7 +18,7 @@ public final class PhoneAccountUtil {
         return n.length() >= 8 && !n.contains("@");
     }
 
-    /** Synthetic login email for phone-only portal accounts. */
+   
     public static String syntheticEmailForPhone(String phone) {
         String n = normalizePhone(phone).replace("+", "");
         return "phone." + n + "@portal.classroom";

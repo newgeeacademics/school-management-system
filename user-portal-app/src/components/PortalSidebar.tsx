@@ -1,6 +1,7 @@
 import {
   Bell,
   Bus,
+  Calendar,
   CalendarDays,
   Megaphone,
   Wallet,
@@ -35,6 +36,7 @@ const SECTION_ICONS: Record<PortalSectionId, React.ComponentType<{ className?: s
   students: UserCircle2,
   schools: School,
   schedule: CalendarDays,
+  calendar: Calendar,
   grades: GraduationCap,
   presence: CheckCircle2,
   absences: XCircle,

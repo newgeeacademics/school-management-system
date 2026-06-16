@@ -47,8 +47,9 @@ public class StudentService {
             classItem = classItemRepository.findById(request.getClassId()).orElse(null);
         }
 
-        AppUser appUser = portalAccountService.createLinkedAccount(
-                fullName, request.getEmail(), request.getPhone(),
+        AppUser appUser = portalAccountService.createLinkedAccountForPerson(
+                request.getFirstName(), request.getLastName(), fullName,
+                request.getEmail(), request.getPhone(),
                 request.getPassword(), UserRole.STUDENT);
 
         String matricule = MatriculeGenerator.next(studentRepository, classItem);
@@ -60,7 +61,7 @@ public class StudentService {
                 .matricule(matricule)
                 .idCardNumber(IdCardNumberUtil.resolveStudentCardNumber(
                         request.getIdCardNumber(), matricule, null))
-                .email(request.getEmail() != null ? request.getEmail().trim() : null)
+                .email(appUser != null ? appUser.getEmail() : null)
                 .classItem(classItem)
                 .appUser(appUser)
                 .build();
@@ -99,11 +100,16 @@ public class StudentService {
                     student.getAppUser(), fullName, request.getEmail(),
                     request.getPhone(), request.getPassword());
         } else if ((request.getEmail() != null && !request.getEmail().isBlank())
-                || (request.getPhone() != null && !request.getPhone().isBlank())) {
-            AppUser appUser = portalAccountService.createLinkedAccount(
-                    fullName, request.getEmail(), request.getPhone(),
+                || (request.getPhone() != null && !request.getPhone().isBlank())
+                || PersonNameUtil.hasFirstAndLast(request.getFirstName(), request.getLastName())) {
+            AppUser appUser = portalAccountService.createLinkedAccountForPerson(
+                    request.getFirstName(), request.getLastName(), fullName,
+                    request.getEmail(), request.getPhone(),
                     request.getPassword(), UserRole.STUDENT);
             student.setAppUser(appUser);
+            if (appUser != null) {
+                student.setEmail(appUser.getEmail());
+            }
         }
 
         if (student.getMatricule() == null || student.getMatricule().isBlank()) {

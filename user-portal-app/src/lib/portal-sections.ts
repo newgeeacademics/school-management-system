@@ -6,6 +6,7 @@ export type PortalSectionId =
   | 'students'
   | 'schools'
   | 'schedule'
+  | 'calendar'
   | 'grades'
   | 'presence'
   | 'absences'
@@ -30,6 +31,7 @@ export const PORTAL_SECTIONS: {
   { id: 'classes', path: '/accueil/classes', labelKey: 'portalHome.cardClasses', descKey: 'portalHome.descClasses' },
   { id: 'schools', path: '/accueil/schools', labelKey: 'portalHome.cardSchools', descKey: 'portalHome.descSchools' },
   { id: 'schedule', path: '/accueil/schedule', labelKey: 'portalHome.cardSchedule', descKey: 'portalHome.descSchedule' },
+  { id: 'calendar', path: '/accueil/calendar', labelKey: 'portalHome.cardCalendar', descKey: 'portalHome.descCalendar' },
   { id: 'grades', path: '/accueil/grades', labelKey: 'portalHome.cardGrades', descKey: 'portalHome.descGrades' },
   { id: 'notifications', path: '/accueil/notifications', labelKey: 'portalHome.navNotifications', descKey: 'portalHome.descNotifications' },
   { id: 'canteen', path: '/accueil/canteen', labelKey: 'portalHome.cardCanteen', descKey: 'portalHome.descCanteen' },
@@ -42,13 +44,13 @@ export const PORTAL_SECTIONS: {
 
 export const TEACHER_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId[] }[] = [
   { labelKey: 'portalHome.navGroupSpace', sectionIds: ['overview', 'classes', 'students'] },
-  { labelKey: 'portalHome.navGroupSchool', sectionIds: ['schedule', 'grades'] },
+  { labelKey: 'portalHome.navGroupSchool', sectionIds: ['schedule', 'calendar', 'grades'] },
   { labelKey: 'portalHome.navGroupLife', sectionIds: ['messages', 'canteen', 'transport', 'schools'] },
 ];
 
 export const PORTAL_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId[] }[] = [
   { labelKey: 'portalHome.navGroupSpace', sectionIds: ['overview', 'classes', 'students'] },
-  { labelKey: 'portalHome.navGroupSchool', sectionIds: ['schedule', 'grades'] },
+  { labelKey: 'portalHome.navGroupSchool', sectionIds: ['schedule', 'calendar', 'grades'] },
   {
     labelKey: 'portalHome.navGroupLife',
     sectionIds: ['announcements', 'directory', 'messages', 'canteen', 'transport', 'schools'],
@@ -58,7 +60,7 @@ export const PORTAL_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId[
 export const PARENT_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId[] }[] = [
   { labelKey: 'portalHome.navGroupChild', sectionIds: ['overview', 'students'] },
   { labelKey: 'portalHome.navGroupAttendance', sectionIds: ['presence', 'absences'] },
-  { labelKey: 'portalHome.navGroupSchool', sectionIds: ['schedule', 'grades'] },
+  { labelKey: 'portalHome.navGroupSchool', sectionIds: ['schedule', 'calendar', 'grades'] },
   { labelKey: 'portalHome.navGroupLife', sectionIds: ['announcements', 'fees', 'directory', 'notifications', 'canteen', 'transport', 'messages'] },
 ];
 
@@ -89,6 +91,7 @@ const PARENT_SECTIONS: PortalSectionId[] = [
   'presence',
   'absences',
   'schedule',
+  'calendar',
   'grades',
   'notifications',
   'canteen',

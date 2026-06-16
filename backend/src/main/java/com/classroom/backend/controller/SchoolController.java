@@ -2,6 +2,8 @@ package com.classroom.backend.controller;
 
 import com.classroom.backend.dto.request.SchoolRequest;
 import com.classroom.backend.model.School;
+import com.classroom.backend.model.enums.UserRole;
+import com.classroom.backend.service.SchoolEmailService;
 import com.classroom.backend.service.SchoolService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/schools")
@@ -18,10 +21,21 @@ import java.util.List;
 public class SchoolController {
 
     private final SchoolService schoolService;
+    private final SchoolEmailService schoolEmailService;
 
     @GetMapping
     public ResponseEntity<List<School>> findAll() {
         return ResponseEntity.ok(schoolService.findAll());
+    }
+
+    @GetMapping("/login-email-preview")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> loginEmailPreview(
+            @RequestParam String firstName,
+            @RequestParam String lastName,
+            @RequestParam UserRole role) {
+        return ResponseEntity.ok(Map.of(
+                "email", schoolEmailService.previewLoginEmail(firstName, lastName, role)));
     }
 
     @GetMapping("/{id}")

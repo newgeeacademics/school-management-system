@@ -11,7 +11,7 @@ public final class ClassCodeGenerator {
 
     private ClassCodeGenerator() {}
 
-    /** Compact alphanumeric code from a class name (e.g. "4ème A" → "4meA"). */
+    
     public static String slug(String name) {
         if (name == null || name.isBlank()) {
             return "GEN";

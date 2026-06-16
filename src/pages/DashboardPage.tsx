@@ -41,6 +41,10 @@ import {
   createEventOnBackend,
   createMatiereOnBackend,
   createOrUpdateGradeOnBackend,
+  fetchGradeModificationRequests,
+  submitGradeModificationRequestOnBackend,
+  approveGradeModificationRequestOnBackend,
+  rejectGradeModificationRequestOnBackend,
   createParentOnBackend,
   createAnnouncementOnBackend,
   createFeeInstallmentOnBackend,
@@ -107,6 +111,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import { formatTimeRange } from '@/lib/schedule-time';
 import { UserPortalSidebarLink } from '@/components/UserPortalSidebarLink';
 
 import {
@@ -170,6 +175,7 @@ import {
   type SectionId,
   type Student,
   type StudentGrade,
+  type GradeModificationRequest,
   type Teacher,
   type TransportRoute,
   type Driver,
@@ -725,7 +731,8 @@ export const DashboardPage: React.FC = () => {
     classId: '',
     courseId: '',
     day: '',
-    time: '',
+    timeStart: '08:00',
+    timeEnd: '09:00',
     room: '',
   });
 
@@ -857,6 +864,9 @@ export const DashboardPage: React.FC = () => {
 
   const [evaluations, setEvaluations] = React.useState<Evaluation[]>([]);
   const [grades, setGrades] = React.useState<StudentGrade[]>([]);
+  const [gradeModificationRequests, setGradeModificationRequests] = React.useState<
+    GradeModificationRequest[]
+  >([]);
   const [newEvaluation, setNewEvaluation] = React.useState<NewEvaluationFormState>({
     classId: '',
     courseId: '',
@@ -894,6 +904,20 @@ export const DashboardPage: React.FC = () => {
     }).catch((err) => console.error('Failed to load dashboard from API', err));
   }, [backendSync, role]);
 
+  const reloadGradeModificationRequests = React.useCallback(async () => {
+    if (!backendSync || (role !== 'admin' && role !== 'teacher')) return;
+    try {
+      const rows = await fetchGradeModificationRequests();
+      setGradeModificationRequests(rows);
+    } catch (err) {
+      console.error('Failed to load grade modification requests', err);
+    }
+  }, [backendSync, role]);
+
+  React.useEffect(() => {
+    void reloadGradeModificationRequests();
+  }, [reloadGradeModificationRequests, activeSection]);
+
   const getTeacherName = (id?: string) =>
     id ? teachers.find((t) => t.id === id)?.name ?? '—' : '—';
 
@@ -921,11 +945,7 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateParent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !newParent.firstName.trim() ||
-      !newParent.lastName.trim() ||
-      (!newParent.email.trim() && !newParent.phone.trim())
-    ) {
+    if (!newParent.firstName.trim() || !newParent.lastName.trim()) {
       return;
     }
     const payload = {
@@ -1175,10 +1195,6 @@ export const DashboardPage: React.FC = () => {
   const handleCreateDriver = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDriver.firstName.trim() || !newDriver.lastName.trim()) return;
-    if (!newDriver.email.trim() && !newDriver.phone.trim()) {
-      toast.error('Email ou téléphone requis pour la connexion tracker');
-      return;
-    }
     if (!requireBackend()) return;
     try {
       const created = await createDriverOnBackend({
@@ -1288,10 +1304,6 @@ export const DashboardPage: React.FC = () => {
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTeacher.firstName.trim() || !newTeacher.lastName.trim()) return;
-    if (!newTeacher.email.trim() && !newTeacher.phone.trim()) {
-      toast.error('Email ou téléphone requis pour la connexion portail');
-      return;
-    }
     const payload = {
       firstName: newTeacher.firstName.trim(),
       lastName: newTeacher.lastName.trim(),
@@ -1380,11 +1392,7 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !newStudent.firstName.trim() ||
-      !newStudent.lastName.trim() ||
-      (!newStudent.email.trim() && !newStudent.phone.trim())
-    ) {
+    if (!newStudent.firstName.trim() || !newStudent.lastName.trim()) {
       return;
     }
     const payload = {
@@ -1733,14 +1741,16 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateSlot = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSlot.classId || !newSlot.day || !newSlot.time) return;
+    if (!newSlot.classId || !newSlot.day || !newSlot.timeStart || !newSlot.timeEnd) return;
+    const timeLabel = formatTimeRange(newSlot.timeStart, newSlot.timeEnd);
+    if (!timeLabel) return;
     if (!requireBackend()) return;
     const slot = {
       id: `sl-${Date.now()}`,
       classId: newSlot.classId,
       courseId: newSlot.courseId || undefined,
       day: newSlot.day,
-      time: newSlot.time,
+      time: timeLabel,
       room: newSlot.room || undefined,
     };
     try {
@@ -1756,7 +1766,8 @@ export const DashboardPage: React.FC = () => {
         classId: '',
         courseId: '',
         day: '',
-        time: '',
+        timeStart: '08:00',
+        timeEnd: '09:00',
         room: '',
       });
     } catch (err) {
@@ -1863,6 +1874,64 @@ export const DashboardPage: React.FC = () => {
         studentId,
         score: Number(score),
       }).catch((err) => toast.error(err instanceof Error ? err.message : 'Erreur'));
+    }
+  };
+
+  const handleSubmitGradeModificationRequest = async (payload: {
+    evaluationId: string;
+    studentId: string;
+    requestedScore: number;
+    reason: string;
+  }) => {
+    if (!requireBackend()) return;
+    try {
+      await submitGradeModificationRequestOnBackend(payload);
+      await reloadGradeModificationRequests();
+      toast.success('Demande envoyée à l\'administration');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
+  };
+
+  const handleApproveGradeModificationRequest = async (id: string, adminNote?: string) => {
+    if (!requireBackend()) return;
+    try {
+      const approved = await approveGradeModificationRequestOnBackend(id, adminNote);
+      setGrades((prev) => {
+        const idx = prev.findIndex(
+          (g) =>
+            g.evaluationId === approved.evaluationId && g.studentId === approved.studentId,
+        );
+        if (idx === -1) {
+          return [
+            ...prev,
+            {
+              id: `gr-${approved.evaluationId}-${approved.studentId}`,
+              evaluationId: approved.evaluationId,
+              studentId: approved.studentId,
+              score: approved.requestedScore,
+            },
+          ];
+        }
+        const clone = [...prev];
+        clone[idx] = { ...clone[idx], score: approved.requestedScore };
+        return clone;
+      });
+      await reloadGradeModificationRequests();
+      toast.success('Modification approuvée et note mise à jour');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
+  };
+
+  const handleRejectGradeModificationRequest = async (id: string, adminNote?: string) => {
+    if (!requireBackend()) return;
+    try {
+      await rejectGradeModificationRequestOnBackend(id, adminNote);
+      await reloadGradeModificationRequests();
+      toast.success('Demande refusée');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
     }
   };
 
@@ -2873,10 +2942,15 @@ export const DashboardPage: React.FC = () => {
               students={students}
               evaluations={evaluations}
               grades={grades}
+              gradeModificationRequests={gradeModificationRequests}
+              isAdmin={role === 'admin'}
               newEvaluation={newEvaluation}
               setNewEvaluation={setNewEvaluation}
               onCreateEvaluation={handleCreateEvaluation}
               onUpdateGrade={handleUpdateGrade}
+              onSubmitGradeModificationRequest={handleSubmitGradeModificationRequest}
+              onApproveGradeModificationRequest={handleApproveGradeModificationRequest}
+              onRejectGradeModificationRequest={handleRejectGradeModificationRequest}
             />
           )}
 

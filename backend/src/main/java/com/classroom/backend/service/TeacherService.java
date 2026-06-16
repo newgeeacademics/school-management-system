@@ -36,12 +36,12 @@ public class TeacherService {
 
     @Transactional
     public Teacher create(TeacherRequest request) {
-        validatePortalContact(request);
         String fullName = PersonNameUtil.requireFullName(
                 request.getFirstName(), request.getLastName(), request.getName());
 
-        AppUser appUser = portalAccountService.createLinkedAccount(
-                fullName, request.getEmail(), request.getPhone(),
+        AppUser appUser = portalAccountService.createLinkedAccountForPerson(
+                request.getFirstName(), request.getLastName(), fullName,
+                request.getEmail(), request.getPhone(),
                 request.getPassword(), UserRole.TEACHER);
 
         Teacher teacher = Teacher.builder()
@@ -51,7 +51,7 @@ public class TeacherService {
                 .initials(generateInitials(fullName))
                 .subject(request.getSubject())
                 .staffId(IdCardNumberUtil.resolveTeacherStaffId(request.getStaffId(), null))
-                .email(request.getEmail() != null ? request.getEmail().trim() : null)
+                .email(appUser != null ? appUser.getEmail() : null)
                 .phone(trimPhone(request.getPhone()))
                 .appUser(appUser)
                 .build();
@@ -90,11 +90,16 @@ public class TeacherService {
                     teacher.getAppUser(), fullName, request.getEmail(),
                     request.getPhone(), request.getPassword());
         } else if ((request.getEmail() != null && !request.getEmail().isBlank())
-                || (request.getPhone() != null && !request.getPhone().isBlank())) {
-            AppUser appUser = portalAccountService.createLinkedAccount(
-                    fullName, request.getEmail(), request.getPhone(),
+                || (request.getPhone() != null && !request.getPhone().isBlank())
+                || PersonNameUtil.hasFirstAndLast(request.getFirstName(), request.getLastName())) {
+            AppUser appUser = portalAccountService.createLinkedAccountForPerson(
+                    request.getFirstName(), request.getLastName(), fullName,
+                    request.getEmail(), request.getPhone(),
                     request.getPassword(), UserRole.TEACHER);
             teacher.setAppUser(appUser);
+            if (appUser != null) {
+                teacher.setEmail(appUser.getEmail());
+            }
         }
 
         teacher = teacherRepository.save(teacher);
@@ -114,11 +119,7 @@ public class TeacherService {
     }
 
     private void validatePortalContact(TeacherRequest request) {
-        boolean hasEmail = request.getEmail() != null && !request.getEmail().isBlank();
-        boolean hasPhone = request.getPhone() != null && !request.getPhone().isBlank();
-        if (!hasEmail && !hasPhone) {
-            throw new IllegalArgumentException("Email or phone is required for portal login");
-        }
+        // Login email is auto-generated from first/last name when omitted.
     }
 
     private void syncHomeroomClasses(Teacher teacher, List<String> classIds) {

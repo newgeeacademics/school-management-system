@@ -25,4 +25,8 @@ public final class PersonNameUtil {
         }
         return full;
     }
+
+    public static boolean hasFirstAndLast(String firstName, String lastName) {
+        return !trim(firstName).isEmpty() && !trim(lastName).isEmpty();
+    }
 }
