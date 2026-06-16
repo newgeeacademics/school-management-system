@@ -1,9 +1,9 @@
 import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AppLogo } from '@/components/AppLogo';
 import { TrackingSignInForm } from '@/components/TrackingSignInForm';
 import { getTrackingSession } from '@/lib/auth';
-import { getSchoolAppOrigin } from '@/lib/school-app-url';
+import { getMainAppOrigin } from '@/lib/school-app-url';
+import logoSrc from '@/assets/logo/newgee-logo.png';
 
 import './auth-page.css';
 
@@ -28,7 +28,7 @@ function TrackingIllustration() {
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const schoolOrigin = getSchoolAppOrigin();
+  const mainOrigin = getMainAppOrigin();
 
   useEffect(() => {
     if (getTrackingSession()) navigate('/suivi', { replace: true });
@@ -37,14 +37,11 @@ export function LoginPage() {
   return (
     <div className='auth-page'>
       <section className='auth-page__panel'>
-        <header className='auth-page__top auth-page__top--split'>
-          <a href={schoolOrigin ? `${schoolOrigin}/` : '#'} className='no-underline'>
-            <AppLogo name='NewGee Transport' />
-          </a>
-        </header>
-
         <main className='auth-page__main'>
           <div className='auth-page__card'>
+            <a href={mainOrigin ? `${mainOrigin}/` : '#'} className='auth-page__brand-link auth-page__brand-link--hero'>
+              <img src={logoSrc} alt='NewGee' className='auth-page__logo auth-page__logo--hero' />
+            </a>
             <TrackingSignInForm variant='embedded' />
           </div>
         </main>
