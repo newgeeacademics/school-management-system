@@ -33,6 +33,7 @@ export const BACKEND_REQUIRED_MESSAGE =
 
 /** True when the app has a resolved API base URL (local dev default or env). */
 export function isBackendApiConfigured(): boolean {
+  if (import.meta.env.PROD && BASE_URL === '') return true;
   return Boolean(BASE_URL?.trim());
 }
 
