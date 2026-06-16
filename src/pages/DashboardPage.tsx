@@ -51,6 +51,7 @@ import {
   createStudentOnBackend,
   createTeacherOnBackend,
   createTransportOnBackend,
+  createDriverOnBackend,
   createUserOnBackend,
   deleteAnnouncementOnBackend,
   fetchCommunicationStatusOnBackend,
@@ -60,6 +61,7 @@ import {
   deleteParentOnBackend,
   deleteStudentOnBackend,
   deleteTeacherOnBackend,
+  deleteDriverOnBackend,
   deleteUserOnBackend,
   downloadStudentRosterDocx,
   fetchStudentIdCardOnBackend,
@@ -157,6 +159,7 @@ import {
   type NewStudentFormState,
   type NewTeacherFormState,
   type NewTransportRouteFormState,
+  type NewDriverFormState,
   type NewUserFormState,
   type AppUserRole,
   type ParentContact,
@@ -169,6 +172,7 @@ import {
   type StudentGrade,
   type Teacher,
   type TransportRoute,
+  type Driver,
 } from './dashboard/dashboardTypes';
 import { CommunicationsSection } from './dashboard/CommunicationsSection';
 import { CalendarSection } from './dashboard/CalendarSection';
@@ -826,14 +830,25 @@ export const DashboardPage: React.FC = () => {
     });
 
   const [transportRoutes, setTransportRoutes] = React.useState<TransportRoute[]>([]);
+  const [drivers, setDrivers] = React.useState<Driver[]>([]);
   const [newTransportRoute, setNewTransportRoute] =
     React.useState<NewTransportRouteFormState>({
       name: '',
+      driverId: '',
       driverName: '',
       departureTime: '',
       returnTime: '',
       note: '',
     });
+  const [newDriver, setNewDriver] = React.useState<NewDriverFormState>({
+    firstName: '',
+    lastName: '',
+    staffId: '',
+    licenseNumber: '',
+    email: '',
+    password: '',
+    phone: '',
+  });
 
   const current =
     (role && roleSectionOverrides[role]?.[activeSection]) ?? sectionConfig[activeSection];
@@ -866,6 +881,7 @@ export const DashboardPage: React.FC = () => {
       setSchedule,
       setCanteenMenuItems,
       setTransportRoutes,
+      setDrivers,
       setParents,
       setUsers,
       setAttendanceRecords,
@@ -1110,36 +1126,30 @@ export const DashboardPage: React.FC = () => {
     payload?: { waypoints?: { lat: number; lng: number; name: string }[]; routePolyline?: [number, number][] },
   ) => {
     e.preventDefault();
-    if (!newTransportRoute.name.trim() || !newTransportRoute.driverName.trim() || !newTransportRoute.departureTime.trim()) return;
+    const hasDriver = newTransportRoute.driverId.trim() || newTransportRoute.driverName.trim();
+    if (!newTransportRoute.name.trim() || !hasDriver || !newTransportRoute.departureTime.trim()) return;
     if (!requireBackend()) return;
-    const id = `tr-${Date.now()}`;
-    const route = {
-      id,
-      name: newTransportRoute.name.trim(),
-      driverName: newTransportRoute.driverName.trim(),
-      departureTime: newTransportRoute.departureTime.trim(),
-      returnTime: newTransportRoute.returnTime.trim() || undefined,
-      note: newTransportRoute.note.trim() || undefined,
-      waypoints: payload?.waypoints,
-      routePolyline: payload?.routePolyline,
-      studentIds: [] as string[],
-    };
     try {
-      await createTransportOnBackend({
-        name: route.name,
-        driverName: route.driverName,
-        departureTime: route.departureTime,
-        returnTime: route.returnTime,
-        note: route.note,
+      const created = await createTransportOnBackend({
+        name: newTransportRoute.name.trim(),
+        driverId: newTransportRoute.driverId.trim() || undefined,
+        driverName: newTransportRoute.driverName.trim() || undefined,
+        departureTime: newTransportRoute.departureTime.trim(),
+        returnTime: newTransportRoute.returnTime.trim() || undefined,
+        note: newTransportRoute.note.trim() || undefined,
+        waypoints: payload?.waypoints,
+        routePolyline: payload?.routePolyline,
       });
-      setTransportRoutes((prev) => [...prev, route]);
+      setTransportRoutes((prev) => [...prev, created]);
       setNewTransportRoute({
         name: '',
+        driverId: '',
         driverName: '',
         departureTime: '',
         returnTime: '',
         note: '',
       });
+      toast.success('Trajet enregistré');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -1147,12 +1157,61 @@ export const DashboardPage: React.FC = () => {
 
   const handleUpdateRouteStudents = async (routeId: string, studentIds: string[]) => {
     if (!requireBackend()) return;
-    if (!routeId || routeId.startsWith('tr-')) return;
+    if (!routeId || routeId.startsWith('tr-')) {
+      toast.error('Ce trajet doit être recréé : identifiant local invalide.');
+      return;
+    }
     try {
-      await updateTransportStudentsOnBackend(routeId, studentIds);
+      const updated = await updateTransportStudentsOnBackend(routeId, studentIds);
       setTransportRoutes((prev) =>
-        prev.map((r) => (r.id === routeId ? { ...r, studentIds } : r)),
+        prev.map((r) => (r.id === routeId ? updated : r)),
       );
+      toast.success('Élèves mis à jour');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
+  };
+
+  const handleCreateDriver = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDriver.firstName.trim() || !newDriver.lastName.trim()) return;
+    if (!newDriver.email.trim() && !newDriver.phone.trim()) {
+      toast.error('Email ou téléphone requis pour la connexion tracker');
+      return;
+    }
+    if (!requireBackend()) return;
+    try {
+      const created = await createDriverOnBackend({
+        firstName: newDriver.firstName.trim(),
+        lastName: newDriver.lastName.trim(),
+        staffId: newDriver.staffId.trim() || undefined,
+        licenseNumber: newDriver.licenseNumber.trim() || undefined,
+        email: newDriver.email.trim() || undefined,
+        password: newDriver.password.trim() || undefined,
+        phone: newDriver.phone.trim() || undefined,
+      });
+      setDrivers((prev) => [...prev, created]);
+      setNewDriver({
+        firstName: '',
+        lastName: '',
+        staffId: '',
+        licenseNumber: '',
+        email: '',
+        password: '',
+        phone: '',
+      });
+      toast.success('Chauffeur créé — il peut se connecter au tracker');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
+  };
+
+  const handleDeleteDriver = async (id: string) => {
+    if (!requireBackend()) return;
+    try {
+      await deleteDriverOnBackend(id);
+      setDrivers((prev) => prev.filter((d) => d.id !== id));
+      toast.success('Chauffeur supprimé');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -2781,10 +2840,15 @@ export const DashboardPage: React.FC = () => {
           {activeSection === 'transport' && (
             <TransportSection
               routes={transportRoutesForView}
+              drivers={drivers}
               newRoute={newTransportRoute}
               setNewRoute={setNewTransportRoute}
               onCreateRoute={handleCreateTransportRoute}
               onUpdateRouteStudents={handleUpdateRouteStudents}
+              newDriver={newDriver}
+              setNewDriver={setNewDriver}
+              onCreateDriver={handleCreateDriver}
+              onDeleteDriver={handleDeleteDriver}
               readOnly={role === 'parent' || role === 'student'}
               students={students}
               currentStudentId={role === 'student' ? currentStudentId : undefined}

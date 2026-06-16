@@ -27,4 +27,14 @@ public final class IdCardNumberUtil {
                 : "00000000";
         return "ENS-" + suffix;
     }
+
+    public static String resolveDriverStaffId(String requested, String driverId) {
+        if (requested != null && !requested.isBlank()) {
+            return requested.trim();
+        }
+        String suffix = driverId != null && driverId.length() >= 8
+                ? driverId.substring(0, 8).toUpperCase()
+                : "00000000";
+        return "DRV-" + suffix;
+    }
 }

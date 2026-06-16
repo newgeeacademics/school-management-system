@@ -11,8 +11,9 @@ public class TransportRouteRequest {
     @NotBlank(message = "Name is required")
     private String name;
 
-    @NotBlank(message = "Driver name is required")
-    private String driverName;
+  private String driverName;
+
+    private String driverId;
 
     @NotBlank(message = "Departure time is required")
     private String departureTime;

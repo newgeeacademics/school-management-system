@@ -1,5 +1,6 @@
 package com.classroom.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,6 +21,11 @@ public class TransportRoute {
 
     @Column(nullable = false)
     private String driverName;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "driver_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "appUser"})
+    private Driver driver;
 
     @Column(nullable = false)
     private String departureTime;

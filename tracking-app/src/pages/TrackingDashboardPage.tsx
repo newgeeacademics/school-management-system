@@ -66,6 +66,17 @@ export function TrackingDashboardPage() {
                     lng: msg.lng!,
                     recordedAt: msg.recordedAt ?? null,
                   },
+                  driverPosition: {
+                    lat: msg.lat!,
+                    lng: msg.lng!,
+                    recordedAt: msg.recordedAt ?? null,
+                  },
+                  students: route.students.map((s) => ({
+                    ...s,
+                    lat: msg.lat!,
+                    lng: msg.lng!,
+                    trackingStatus: 'ON_BUS',
+                  })),
                 }
               : route
           )
@@ -172,9 +183,7 @@ export function TrackingDashboardPage() {
             <AppLogo markClassName='app-logo__mark--compact' name='NewGee Transport' />
             <div>
               <h1 className='font-semibold'>Suivi Transport</h1>
-              <p className='text-xs text-muted-foreground'>
-                {session.name ?? session.email} · {session.role === 'parent' ? 'Parent' : session.role === 'teacher' ? 'Enseignant' : 'Chauffeur'}
-              </p>
+              <p className='text-xs text-muted-foreground'>{session.name ?? session.email}</p>
             </div>
           </div>
           <Button variant='outline' size='sm' onClick={handleLogout}>
@@ -219,6 +228,8 @@ export function TrackingDashboardPage() {
                     waypoints={selected.waypoints}
                     routePolyline={selected.routePolyline}
                     livePosition={selected.livePosition}
+                    driverPosition={selected.driverPosition}
+                    students={selected.students}
                     className='h-[480px] w-full rounded-xl border shadow-sm'
                   />
 

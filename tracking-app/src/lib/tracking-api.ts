@@ -11,6 +11,9 @@ export type LiveStudent = {
   id: string;
   name: string;
   className: string;
+  lat?: number | null;
+  lng?: number | null;
+  trackingStatus?: 'WAITING' | 'ON_BUS' | string | null;
 };
 
 export type LivePosition = {
@@ -31,6 +34,7 @@ export type LiveRoute = {
   routePolyline: number[][];
   students: LiveStudent[];
   livePosition: LivePosition | null;
+  driverPosition: LivePosition | null;
   tripStatus: string;
 };
 
