@@ -1,133 +1,56 @@
-import { useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import { Users, BookOpen, Navigation } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { InputPassword } from '@/components/InputPassword';
 import { AppLogo } from '@/components/AppLogo';
-import { cn } from '@/lib/utils';
-import { isBackendApiConfigured, loginWithEmail } from '@/lib/api';
-import { setTrackingSession, type TrackingRole } from '@/lib/auth';
+import { TrackingSignInForm } from '@/components/TrackingSignInForm';
+import { getTrackingSession } from '@/lib/auth';
+import { getSchoolAppOrigin } from '@/lib/school-app-url';
 
-const ROLES: { id: TrackingRole; label: string; icon: typeof Users }[] = [
-  { id: 'parent', label: 'Parent', icon: Users },
-  { id: 'teacher', label: 'Enseignant', icon: BookOpen },
-  { id: 'driver', label: 'Chauffeur', icon: Navigation },
-];
+import './auth-page.css';
 
-function backendToTrackingRole(
-  backendRole: string,
-  selected: TrackingRole
-): TrackingRole | null {
-  if (selected === 'driver') {
-    return ['ADMIN', 'STAFF', 'TEACHER'].includes(backendRole) ? 'driver' : null;
-  }
-  if (selected === 'parent' && backendRole === 'PARENT') return 'parent';
-  if (selected === 'teacher' && backendRole === 'TEACHER') return 'teacher';
-  return null;
+function TrackingIllustration() {
+  const heroImage = useMemo(
+    () =>
+      'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1800&q=80',
+    []
+  );
+
+  return (
+    <aside className='auth-page__visual' aria-hidden>
+      <img src={heroImage} alt='' />
+      <div className='auth-page__visual-overlay' />
+      <div className='auth-page__visual-copy'>
+        <h2>Transport scolaire en temps réel</h2>
+        <p>Suivez le trajet du bus et l&apos;arrivée de votre enfant, en toute sérénité.</p>
+      </div>
+    </aside>
+  );
 }
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const [role, setRole] = useState<TrackingRole>('parent');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [pending, setPending] = useState(false);
+  const schoolOrigin = getSchoolAppOrigin();
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || !password) {
-      toast.error('Email et mot de passe requis');
-      return;
-    }
-    if (!isBackendApiConfigured()) {
-      toast.error('API backend non configurée');
-      return;
-    }
-
-    setPending(true);
-    try {
-      const auth = await loginWithEmail(email.trim(), password);
-      const trackingRole = backendToTrackingRole(auth.role, role);
-      if (!trackingRole) {
-        toast.error('Ce compte ne correspond pas au profil sélectionné');
-        return;
-      }
-      setTrackingSession({
-        role: trackingRole,
-        email: auth.email,
-        name: auth.name,
-        userId: auth.id,
-        token: auth.token,
-        backendRole: auth.role,
-      });
-      navigate('/suivi', { replace: true });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Connexion impossible');
-    } finally {
-      setPending(false);
-    }
-  };
+  useEffect(() => {
+    if (getTrackingSession()) navigate('/suivi', { replace: true });
+  }, [navigate]);
 
   return (
-    <div className='min-h-svh bg-gradient-to-br from-orange-50 via-white to-slate-50 px-4 py-10'>
-      <div className='mx-auto max-w-md'>
-        <div className='mb-8 text-center'>
-          <AppLogo className='mx-auto mb-4 justify-center' name='NewGee Transport' />
-          <h1 className='text-2xl font-bold tracking-tight'>Suivi Transport</h1>
-          <p className='mt-2 text-sm text-muted-foreground'>
-            Suivez en direct le trajet du bus scolaire et la position de votre enfant.
-          </p>
-        </div>
+    <div className='auth-page'>
+      <section className='auth-page__panel'>
+        <header className='auth-page__top auth-page__top--split'>
+          <a href={schoolOrigin ? `${schoolOrigin}/` : '#'} className='no-underline'>
+            <AppLogo name='NewGee Transport' />
+          </a>
+        </header>
 
-        <form onSubmit={onSubmit} className='space-y-5 rounded-2xl border bg-card p-6 shadow-sm'>
-          <div className='grid grid-cols-3 gap-2'>
-            {ROLES.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type='button'
-                onClick={() => setRole(id)}
-                className={cn(
-                  'flex flex-col items-center gap-1 rounded-xl border px-2 py-3 text-xs font-medium transition-colors',
-                  role === id
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border bg-background text-muted-foreground hover:bg-muted'
-                )}
-              >
-                <Icon className='size-5' />
-                {label}
-              </button>
-            ))}
+        <main className='auth-page__main'>
+          <div className='auth-page__card'>
+            <TrackingSignInForm variant='embedded' />
           </div>
+        </main>
+      </section>
 
-          <div className='space-y-2'>
-            <Label htmlFor='email'>Email</Label>
-            <Input
-              id='email'
-              type='email'
-              autoComplete='username'
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          <div className='space-y-2'>
-            <Label htmlFor='password'>Mot de passe</Label>
-            <InputPassword
-              id='password'
-              autoComplete='current-password'
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          <Button type='submit' className='w-full' disabled={pending}>
-            {pending ? 'Connexion…' : 'Se connecter'}
-          </Button>
-        </form>
-      </div>
+      <TrackingIllustration />
     </div>
   );
 }
