@@ -190,6 +190,28 @@ export type StudentGrade = {
   score: number;
 };
 
+export type GradeModificationRequest = {
+  id: string;
+  evaluationId: string;
+  evaluationLabel: string;
+  courseName?: string;
+  studentId: string;
+  studentName: string;
+  classId?: string;
+  className?: string;
+  teacherId: string;
+  teacherName: string;
+  currentScore: number;
+  requestedScore: number;
+  maxScore?: number;
+  reason: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  adminNote?: string;
+  reviewedByName?: string;
+  createdAt?: string;
+  reviewedAt?: string;
+};
+
 export type PaymentReminder = {
   id: string;
   parentName: string;
@@ -331,7 +353,8 @@ export type NewSlotFormState = {
   classId: string;
   courseId: string;
   day: string;
-  time: string;
+  timeStart: string;
+  timeEnd: string;
   room: string;
 };
 

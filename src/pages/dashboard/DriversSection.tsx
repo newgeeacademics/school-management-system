@@ -2,6 +2,7 @@ import React from 'react';
 import { Car, Plus, Trash2 } from 'lucide-react';
 
 import { InputPassword } from '@/components/refine-ui/form/input-password';
+import { LoginEmailPreview } from '@/components/dashboard/LoginEmailPreview';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -63,17 +64,15 @@ export const DriversSection: React.FC<DriversSectionProps> = ({
               onChange={(e) => setNewDriver((d) => ({ ...d, licenseNumber: e.target.value }))}
             />
           </div>
-          <div className='grid gap-1'>
-            <Label htmlFor='driver-email'>Email (connexion tracker)</Label>
-            <Input
-              id='driver-email'
-              type='email'
-              value={newDriver.email}
-              onChange={(e) => setNewDriver((d) => ({ ...d, email: e.target.value }))}
+          <div className='grid gap-1 sm:col-span-2 lg:col-span-3'>
+            <LoginEmailPreview
+              firstName={newDriver.firstName}
+              lastName={newDriver.lastName}
+              role='STAFF'
             />
           </div>
           <div className='grid gap-1'>
-            <Label htmlFor='driver-phone'>Téléphone (connexion tracker)</Label>
+            <Label htmlFor='driver-phone'>Téléphone (optionnel)</Label>
             <Input
               id='driver-phone'
               value={newDriver.phone}
@@ -91,7 +90,7 @@ export const DriversSection: React.FC<DriversSectionProps> = ({
           </div>
           <div className='sm:col-span-2 lg:col-span-3'>
             <p className='text-[11px] text-muted-foreground mb-2'>
-              * Email ou téléphone obligatoire pour la connexion au tracker.
+              Le chauffeur pourra se connecter au tracker avec l&apos;identifiant généré ci-dessus.
             </p>
             <Button type='submit' size='sm'>
               <Plus className='size-3.5 mr-1' />
