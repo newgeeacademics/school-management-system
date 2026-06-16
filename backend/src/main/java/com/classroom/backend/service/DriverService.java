@@ -31,12 +31,12 @@ public class DriverService {
 
     @Transactional
     public Driver create(DriverRequest request) {
-        validatePortalContact(request);
         String fullName = PersonNameUtil.requireFullName(
                 request.getFirstName(), request.getLastName(), request.getName());
 
-        AppUser appUser = portalAccountService.createLinkedAccount(
-                fullName, request.getEmail(), request.getPhone(),
+        AppUser appUser = portalAccountService.createLinkedAccountForPerson(
+                request.getFirstName(), request.getLastName(), fullName,
+                request.getEmail(), request.getPhone(),
                 request.getPassword(), UserRole.STAFF);
 
         Driver driver = Driver.builder()
@@ -45,7 +45,7 @@ public class DriverService {
                 .lastName(PersonNameUtil.trim(request.getLastName()))
                 .staffId(IdCardNumberUtil.resolveDriverStaffId(request.getStaffId(), null))
                 .licenseNumber(trim(request.getLicenseNumber()))
-                .email(request.getEmail() != null ? request.getEmail().trim() : null)
+                .email(appUser != null ? appUser.getEmail() : null)
                 .phone(trim(request.getPhone()))
                 .appUser(appUser)
                 .build();

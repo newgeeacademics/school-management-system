@@ -2,6 +2,7 @@ import React from 'react';
 
 import { ClipboardList, MapPin } from 'lucide-react';
 
+import { SchoolCalendarGrid } from '@/components/calendar/SchoolCalendarGrid';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,11 +45,8 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({
   newEvent,
   setNewEvent,
   onCreateEvent,
-  eventTimePreset,
-  setEventTimePreset,
   eventLocationPreset,
   setEventLocationPreset,
-  eventTimePresets,
   eventLocationPresets,
   readOnly = false,
 }) => {
@@ -82,9 +80,10 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({
               />
             </div>
             <div className='grid gap-2'>
-              <Label htmlFor='event-date'>Date ou période</Label>
+              <Label htmlFor='event-date'>Date</Label>
               <Input
                 id='event-date'
+                type='date'
                 value={newEvent.date}
                 onChange={(e) =>
                   setNewEvent((ev) => ({
@@ -92,46 +91,22 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({
                     date: e.target.value,
                   }))
                 }
-                placeholder='Ex : 15 juin 2025, Du 2 au 6 avril...'
+                required
               />
             </div>
             <div className='grid gap-2'>
-              <Label>Heure (optionnel)</Label>
-              <Select
-                value={eventTimePreset}
-                onValueChange={(value) => {
-                  setEventTimePreset(value);
-                  if (value === 'Personnalisé') {
-                    setNewEvent((ev) => ({ ...ev, time: '' }));
-                  } else {
-                    setNewEvent((ev) => ({ ...ev, time: value }));
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Choisir un créneau (ou personnalisé)' />
-                </SelectTrigger>
-                <SelectContent>
-                  {eventTimePresets.map((preset) => (
-                    <SelectItem key={preset} value={preset}>
-                      {preset}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {eventTimePreset === 'Personnalisé' && (
-                <Input
-                  id='event-time'
-                  value={newEvent.time}
-                  onChange={(e) =>
-                    setNewEvent((ev) => ({
-                      ...ev,
-                      time: e.target.value,
-                    }))
-                  }
-                  placeholder='Ex : 18h00'
-                />
-              )}
+              <Label htmlFor='event-time'>Heure (optionnel)</Label>
+              <Input
+                id='event-time'
+                type='time'
+                value={newEvent.time}
+                onChange={(e) =>
+                  setNewEvent((ev) => ({
+                    ...ev,
+                    time: e.target.value,
+                  }))
+                }
+              />
             </div>
             <div className='grid gap-2'>
               <Label>Lieu (optionnel)</Label>
@@ -224,9 +199,16 @@ export const CalendarSection: React.FC<CalendarSectionProps> = ({
 
       <Card>
         <CardHeader>
-          <CardTitle className='text-sm font-medium'>
-            Calendrier synthétique
-          </CardTitle>
+          <CardTitle className='text-sm font-medium'>Calendrier scolaire</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SchoolCalendarGrid events={events} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className='text-sm font-medium'>Liste des évènements</CardTitle>
         </CardHeader>
         <CardContent className='space-y-3 text-sm'>
           {events.length === 0 ? (

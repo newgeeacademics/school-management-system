@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { Printer } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { collectScheduleTimeRows } from '@/lib/schedule-time';
 
 import type {
   ClassItem,
@@ -35,6 +38,71 @@ type ScheduleSectionProps = {
   readOnly?: boolean;
 };
 
+function ScheduleTimetableTable({
+  slotsForClass,
+  dayOptions,
+  timeRows,
+  getCourseName,
+}: {
+  slotsForClass: ScheduleItem[];
+  dayOptions: string[];
+  timeRows: string[];
+  getCourseName: (id?: string) => string;
+}) {
+  return (
+    <table className='w-full border-collapse text-[11px]'>
+      <thead className='bg-muted/60'>
+        <tr>
+          <th className='min-w-[90px] border-b border-border/80 px-2 py-1 text-left font-medium text-muted-foreground'>
+            Heure
+          </th>
+          {dayOptions.map((day) => (
+            <th
+              key={day}
+              className='min-w-[110px] border-b border-l border-border/80 px-2 py-1 text-left font-medium text-muted-foreground'
+            >
+              {day}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {timeRows.map((slotTime) => (
+          <tr key={slotTime} className='odd:bg-background'>
+            <td className='border-t border-border/60 px-2 py-1 font-medium text-foreground'>
+              {slotTime}
+            </td>
+            {dayOptions.map((day) => {
+              const cellSlot = slotsForClass.find((s) => s.day === day && s.time === slotTime);
+              return (
+                <td
+                  key={day}
+                  className='border-t border-l border-border/60 px-2 py-1 align-top'
+                >
+                  {cellSlot ? (
+                    <div className='space-y-0.5'>
+                      <p className='font-medium text-foreground'>
+                        {getCourseName(cellSlot.courseId)}
+                      </p>
+                      {cellSlot.room ? (
+                        <p className='text-[10px] text-muted-foreground'>
+                          Salle : {cellSlot.room}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <span className='text-[10px] text-muted-foreground'>—</span>
+                  )}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 export const ScheduleSection: React.FC<ScheduleSectionProps> = ({
   classes,
   courses,
@@ -48,173 +116,175 @@ export const ScheduleSection: React.FC<ScheduleSectionProps> = ({
   timeSlotOptions,
   readOnly = false,
 }) => {
+  const timeRows = React.useMemo(
+    () => collectScheduleTimeRows(schedule, timeSlotOptions),
+    [schedule, timeSlotOptions]
+  );
+
+  const printableClasses = React.useMemo(
+    () =>
+      classes.filter((classe) => schedule.some((slot) => slot.classId === classe.id)),
+    [classes, schedule]
+  );
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <section className='space-y-5'>
       {!readOnly && (
-      <Card>
-        <CardHeader>
-          <CardTitle className='text-sm font-medium'>
-            Ajouter un créneau à l’emploi du temps
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form
-            className='grid gap-3 md:grid-cols-2 text-xs'
-            onSubmit={onCreateSlot}
-          >
-            <div className='grid gap-2'>
-              <Label>Classe</Label>
-              <Select
-                value={newSlot.classId}
-                onValueChange={(value) =>
-                  setNewSlot((s) => ({ ...s, classId: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Sélectionner une classe' />
-                </SelectTrigger>
-                <SelectContent>
-                  {classes.map((classe) => (
-                    <SelectItem key={classe.id} value={classe.id}>
-                      {classe.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className='grid gap-2'>
-              <Label>Cours</Label>
-              <Select
-                value={newSlot.courseId}
-                onValueChange={(value) =>
-                  setNewSlot((s) => ({ ...s, courseId: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Associer un cours (optionnel)' />
-                </SelectTrigger>
-                <SelectContent>
-                  {courses.map((course) => (
-                    <SelectItem key={course.id} value={course.id}>
-                      {course.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className='grid gap-2'>
-              <Label>Jour</Label>
-              <Select
-                value={newSlot.day}
-                onValueChange={(value) =>
-                  setNewSlot((s) => ({ ...s, day: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Choisir un jour' />
-                </SelectTrigger>
-                <SelectContent>
-                  {dayOptions.map((day) => (
-                    <SelectItem key={day} value={day}>
-                      {day}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className='grid gap-2'>
-              <Label>Heure</Label>
-              <Select
-                value={newSlot.time}
-                onValueChange={(value) =>
-                  setNewSlot((s) => ({ ...s, time: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Choisir un créneau' />
-                </SelectTrigger>
-                <SelectContent>
-                  {timeSlotOptions.map((slot) => (
-                    <SelectItem key={slot} value={slot}>
-                      {slot}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className='grid gap-2 md:col-span-2'>
-              <Label>Salle (optionnel)</Label>
-              <Select
-                value={newSlot.room}
-                onValueChange={(value) =>
-                  setNewSlot((s) => ({ ...s, room: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Sélectionner une salle' />
-                </SelectTrigger>
-                <SelectContent>
-                  {rooms.map((room) => (
-                    <SelectItem key={room.id} value={room.name}>
-                      {room.name}
-                      {room.type ? ` • ${room.type}` : ''}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value='Autre (personnalisé)'>
-                    Autre (personnalisé)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {newSlot.room === 'Autre (personnalisé)' && (
+        <Card className='no-print'>
+          <CardHeader>
+            <CardTitle className='text-sm font-medium'>
+              Ajouter un créneau à l’emploi du temps
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form className='grid gap-3 md:grid-cols-2 text-xs' onSubmit={onCreateSlot}>
+              <div className='grid gap-2'>
+                <Label>Classe</Label>
+                <Select
+                  value={newSlot.classId}
+                  onValueChange={(value) => setNewSlot((s) => ({ ...s, classId: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder='Sélectionner une classe' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classes.map((classe) => (
+                      <SelectItem key={classe.id} value={classe.id}>
+                        {classe.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className='grid gap-2'>
+                <Label>Cours</Label>
+                <Select
+                  value={newSlot.courseId}
+                  onValueChange={(value) => setNewSlot((s) => ({ ...s, courseId: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder='Associer un cours (optionnel)' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courses.map((course) => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className='grid gap-2'>
+                <Label>Jour</Label>
+                <Select
+                  value={newSlot.day}
+                  onValueChange={(value) => setNewSlot((s) => ({ ...s, day: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder='Choisir un jour' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dayOptions.map((day) => (
+                      <SelectItem key={day} value={day}>
+                        {day}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className='grid gap-2'>
+                <Label>Heure de début</Label>
                 <Input
-                  id='slot-room'
-                  placeholder='Saisir le nom de la salle'
-                  onChange={(e) =>
-                    setNewSlot((s) => ({ ...s, room: e.target.value }))
-                  }
+                  type='time'
+                  value={newSlot.timeStart}
+                  onChange={(e) => setNewSlot((s) => ({ ...s, timeStart: e.target.value }))}
+                  required
                 />
-              )}
-              <p className='mt-1 text-[10px] text-muted-foreground'>
-                Pour ajouter une nouvelle salle à la liste, utilisez l’onglet
-                &quot;Salles&quot; dans la barre latérale.
-              </p>
-            </div>
-            <div className='md:col-span-2'>
-              <Button type='submit' size='sm'>
-                Enregistrer le créneau
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+              </div>
+              <div className='grid gap-2'>
+                <Label>Heure de fin</Label>
+                <Input
+                  type='time'
+                  value={newSlot.timeEnd}
+                  onChange={(e) => setNewSlot((s) => ({ ...s, timeEnd: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className='grid gap-2 md:col-span-2'>
+                <Label>Salle (optionnel)</Label>
+                <Select
+                  value={newSlot.room}
+                  onValueChange={(value) => setNewSlot((s) => ({ ...s, room: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder='Sélectionner une salle' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rooms.map((room) => (
+                      <SelectItem key={room.id} value={room.name}>
+                        {room.name}
+                        {room.type ? ` • ${room.type}` : ''}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value='Autre (personnalisé)'>Autre (personnalisé)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {newSlot.room === 'Autre (personnalisé)' && (
+                  <Input
+                    id='slot-room'
+                    placeholder='Saisir le nom de la salle'
+                    onChange={(e) => setNewSlot((s) => ({ ...s, room: e.target.value }))}
+                  />
+                )}
+                <p className='mt-1 text-[10px] text-muted-foreground'>
+                  Pour ajouter une nouvelle salle à la liste, utilisez l’onglet &quot;Salles&quot;
+                  dans la barre latérale.
+                </p>
+              </div>
+              <div className='md:col-span-2'>
+                <Button type='submit' size='sm'>
+                  Enregistrer le créneau
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className='text-sm font-medium'>
-            Aperçu de l’emploi du temps
-          </CardTitle>
+      <Card id='schedule-print-root' className='schedule-print-area'>
+        <CardHeader className='flex flex-row flex-wrap items-center justify-between gap-2'>
+          <CardTitle className='text-sm font-medium'>Aperçu de l’emploi du temps</CardTitle>
+          {printableClasses.length > 0 ? (
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              className='no-print h-8 gap-1 text-xs'
+              onClick={handlePrint}
+            >
+              <Printer className='size-3.5' />
+              Imprimer
+            </Button>
+          ) : null}
         </CardHeader>
         <CardContent className='space-y-6 text-xs'>
           {schedule.length === 0 ? (
             <p className='text-muted-foreground'>
-              Aucun créneau ajouté pour le moment. Ajoutez quelques créneaux
-              pour voir l’emploi du temps par classe.
+              Aucun créneau ajouté pour le moment. Ajoutez quelques créneaux pour voir l’emploi du
+              temps par classe.
             </p>
           ) : (
-            classes.map((classe) => {
-              const slotsForClass = schedule.filter(
-                (slot) => slot.classId === classe.id,
-              );
-              if (slotsForClass.length === 0) return null;
+            printableClasses.map((classe) => {
+              const slotsForClass = schedule.filter((slot) => slot.classId === classe.id);
 
               return (
-                <div key={classe.id} className='space-y-2'>
-                  <p className='text-sm font-semibold text-foreground'>
-                    {classe.name}
-                  </p>
-                  {/* Vue mobile : listes verticales, pas de défilement horizontal */}
-                  <div className='grid gap-2 md:hidden'>
+                <div key={classe.id} className='schedule-class-block space-y-2 break-inside-avoid'>
+                  <p className='text-sm font-semibold text-foreground'>{classe.name}</p>
+                  <div className='grid gap-2 md:hidden no-print'>
                     {slotsForClass.map((slot) => (
                       <div
                         key={slot.id}
@@ -226,71 +296,20 @@ export const ScheduleSection: React.FC<ScheduleSectionProps> = ({
                         <p className='text-[11px] text-muted-foreground'>
                           {slot.day} • {slot.time}
                         </p>
-                        {slot.room && (
-                          <p className='text-[11px] text-muted-foreground'>
-                            Salle : {slot.room}
-                          </p>
-                        )}
+                        {slot.room ? (
+                          <p className='text-[11px] text-muted-foreground'>Salle : {slot.room}</p>
+                        ) : null}
                       </div>
                     ))}
                   </div>
 
-                  {/* Vue desktop : tableau complet, avec scroll horizontal si besoin */}
-                  <div className='hidden md:block overflow-x-auto rounded-lg border border-border/70 bg-card'>
-                    <table className='w-full border-collapse text-[11px]'>
-                      <thead className='bg-muted/60'>
-                        <tr>
-                          <th className='min-w-[90px] border-b border-border/80 px-2 py-1 text-left font-medium text-muted-foreground'>
-                            Heure
-                          </th>
-                          {dayOptions.map((day) => (
-                            <th
-                              key={day}
-                              className='min-w-[110px] border-b border-l border-border/80 px-2 py-1 text-left font-medium text-muted-foreground'
-                            >
-                              {day}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {timeSlotOptions.map((slotTime) => (
-                          <tr key={slotTime} className='odd:bg-background'>
-                            <td className='border-t border-border/60 px-2 py-1 font-medium text-foreground'>
-                              {slotTime}
-                            </td>
-                            {dayOptions.map((day) => {
-                              const cellSlot = slotsForClass.find(
-                                (s) => s.day === day && s.time === slotTime,
-                              );
-                              return (
-                                <td
-                                  key={day}
-                                  className='border-t border-l border-border/60 px-2 py-1 align-top'
-                                >
-                                  {cellSlot ? (
-                                    <div className='space-y-0.5'>
-                                      <p className='font-medium text-foreground'>
-                                        {getCourseName(cellSlot.courseId)}
-                                      </p>
-                                      {cellSlot.room && (
-                                        <p className='text-[10px] text-muted-foreground'>
-                                          Salle : {cellSlot.room}
-                                        </p>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <span className='text-[10px] text-muted-foreground'>
-                                      —
-                                    </span>
-                                  )}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className='hidden overflow-x-auto rounded-lg border border-border/70 bg-card md:block'>
+                    <ScheduleTimetableTable
+                      slotsForClass={slotsForClass}
+                      dayOptions={dayOptions}
+                      timeRows={timeRows}
+                      getCourseName={getCourseName}
+                    />
                   </div>
                 </div>
               );
@@ -301,4 +320,3 @@ export const ScheduleSection: React.FC<ScheduleSectionProps> = ({
     </section>
   );
 };
-

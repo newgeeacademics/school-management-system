@@ -70,7 +70,7 @@ public class GradeController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<StudentGrade> createOrUpdateGrade(@Valid @RequestBody StudentGradeRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(gradeService.createOrUpdateGrade(request));
     }

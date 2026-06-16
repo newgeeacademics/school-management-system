@@ -213,7 +213,8 @@ public class PortalGradeService {
                 .orElseThrow(() -> new IllegalStateException("Évaluation introuvable."));
         scope.assertClassAccessible(evaluation.getClassItem().getId());
 
-        StudentGrade saved = gradeService.createOrUpdateGrade(request);
+        boolean allowUpdate = scope.user().getRole() == UserRole.ADMIN;
+        StudentGrade saved = gradeService.createOrUpdateGrade(request, allowUpdate);
         return toGradeDto(saved);
     }
 

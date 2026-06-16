@@ -18,17 +18,24 @@ public class PortalAccountService {
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailNotificationService emailNotificationService;
+    private final SchoolEmailService schoolEmailService;
 
-    /** Creates a portal login when email and/or phone is provided. */
+    /**
+     * Creates a portal account. Login email is auto-generated from first/last name when
+     * no email or phone is provided.
+     */
     @Transactional
-    public AppUser createLinkedAccount(
-            String name, String email, String phone, String password, UserRole role
+    public AppUser createLinkedAccountForPerson(
+            String firstName,
+            String lastName,
+            String name,
+            String email,
+            String phone,
+            String password,
+            UserRole role
     ) {
         boolean hasEmail = email != null && !email.isBlank();
         boolean hasPhone = phone != null && !phone.isBlank();
-        if (!hasEmail && !hasPhone) {
-            return null;
-        }
 
         String normalizedPhone = hasPhone ? PhoneAccountUtil.normalizePhone(phone) : null;
         if (normalizedPhone != null && !normalizedPhone.isBlank()
@@ -37,10 +44,14 @@ public class PortalAccountService {
         }
 
         String loginEmail;
+        boolean generatedEmail = false;
         if (hasEmail) {
             loginEmail = email.trim();
-        } else {
+        } else if (normalizedPhone != null && !normalizedPhone.isBlank()) {
             loginEmail = PhoneAccountUtil.syntheticEmailForPhone(normalizedPhone);
+        } else {
+            loginEmail = schoolEmailService.generateUniqueLoginEmail(firstName, lastName, role);
+            generatedEmail = true;
         }
 
         if (appUserRepository.existsByEmail(loginEmail)) {
@@ -57,11 +68,22 @@ public class PortalAccountService {
                 .build();
         AppUser saved = appUserRepository.save(user);
 
-        if (hasEmail) {
+        if (hasEmail || generatedEmail) {
             emailNotificationService.sendPortalCredentials(name, loginEmail, rawPassword, role);
         }
 
         return saved;
+    }
+
+    /** Creates a portal login when email and/or phone is provided. */
+    @Transactional
+    public AppUser createLinkedAccount(
+            String name, String email, String phone, String password, UserRole role
+    ) {
+        String[] parts = name != null ? name.trim().split("\\s+", 2) : new String[0];
+        String firstName = parts.length > 0 ? parts[0] : name;
+        String lastName = parts.length > 1 ? parts[1] : "";
+        return createLinkedAccountForPerson(firstName, lastName, name, email, phone, password, role);
     }
 
     /**
@@ -70,13 +92,15 @@ public class PortalAccountService {
      */
     @Transactional
     public AppUser findOrCreateParentAccount(
-            String name, String email, String phone, String password
+            String firstName,
+            String lastName,
+            String name,
+            String email,
+            String phone,
+            String password
     ) {
         boolean hasEmail = email != null && !email.isBlank();
         boolean hasPhone = phone != null && !phone.isBlank();
-        if (!hasEmail && !hasPhone) {
-            return null;
-        }
 
         String normalizedPhone = hasPhone ? PhoneAccountUtil.normalizePhone(phone) : null;
         if (normalizedPhone != null && !normalizedPhone.isBlank()) {
@@ -86,25 +110,28 @@ public class PortalAccountService {
                 if (existing.getRole() != UserRole.PARENT) {
                     throw new IllegalArgumentException("Ce téléphone est déjà utilisé par un autre type de compte");
                 }
-                existing.setName(PersonNameUtil.resolveFullName(null, null, name));
+                existing.setName(PersonNameUtil.resolveFullName(firstName, lastName, name));
                 appUserRepository.save(existing);
                 return existing;
             }
         }
 
-        String loginEmail = hasEmail ? email.trim() : PhoneAccountUtil.syntheticEmailForPhone(normalizedPhone);
-        var byEmail = appUserRepository.findByEmailIgnoreCase(loginEmail);
-        if (byEmail.isPresent()) {
-            AppUser existing = byEmail.get();
-            if (existing.getRole() != UserRole.PARENT) {
-                throw new IllegalArgumentException("Cet e-mail est déjà utilisé par un autre type de compte");
+        if (hasEmail) {
+            String loginEmail = email.trim();
+            var byEmail = appUserRepository.findByEmailIgnoreCase(loginEmail);
+            if (byEmail.isPresent()) {
+                AppUser existing = byEmail.get();
+                if (existing.getRole() != UserRole.PARENT) {
+                    throw new IllegalArgumentException("Cet e-mail est déjà utilisé par un autre type de compte");
+                }
+                existing.setName(PersonNameUtil.resolveFullName(firstName, lastName, name));
+                appUserRepository.save(existing);
+                return existing;
             }
-            existing.setName(PersonNameUtil.resolveFullName(null, null, name));
-            appUserRepository.save(existing);
-            return existing;
         }
 
-        return createLinkedAccount(name, email, phone, password, UserRole.PARENT);
+        return createLinkedAccountForPerson(
+                firstName, lastName, name, email, phone, password, UserRole.PARENT);
     }
 
     @Transactional

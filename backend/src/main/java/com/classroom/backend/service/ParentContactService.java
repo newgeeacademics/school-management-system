@@ -46,14 +46,15 @@ public class ParentContactService {
         }
 
         AppUser appUser = portalAccountService.findOrCreateParentAccount(
-                fullName, request.getEmail(), request.getPhone(), request.getPassword());
+                request.getFirstName(), request.getLastName(), fullName,
+                request.getEmail(), request.getPhone(), request.getPassword());
 
         ParentContact parent = ParentContact.builder()
                 .name(fullName)
                 .firstName(PersonNameUtil.trim(request.getFirstName()))
                 .lastName(PersonNameUtil.trim(request.getLastName()))
                 .phone(request.getPhone())
-                .email(request.getEmail() != null ? request.getEmail().trim() : null)
+                .email(appUser != null ? appUser.getEmail() : null)
                 .student(student)
                 .appUser(appUser)
                 .build();
@@ -84,10 +85,11 @@ public class ParentContactService {
             portalAccountService.syncLinkedAccount(
                     parent.getAppUser(), fullName, request.getEmail(),
                     request.getPhone(), request.getPassword());
-        } else if ((request.getEmail() != null && !request.getEmail().isBlank())
+        } else if (PersonNameUtil.hasFirstAndLast(request.getFirstName(), request.getLastName())
                 || (request.getPhone() != null && !request.getPhone().isBlank())) {
             AppUser appUser = portalAccountService.findOrCreateParentAccount(
-                    fullName, request.getEmail(), request.getPhone(), request.getPassword());
+                    request.getFirstName(), request.getLastName(), fullName,
+                    request.getEmail(), request.getPhone(), request.getPassword());
             parent.setAppUser(appUser);
         }
 

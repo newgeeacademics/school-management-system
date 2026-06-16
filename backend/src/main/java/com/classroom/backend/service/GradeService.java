@@ -85,6 +85,12 @@ public class GradeService {
 
     @Transactional
     public StudentGrade createOrUpdateGrade(StudentGradeRequest request) {
+        boolean allowUpdate = GradeModificationRequestService.isAdminRole();
+        return createOrUpdateGrade(request, allowUpdate);
+    }
+
+    @Transactional
+    public StudentGrade createOrUpdateGrade(StudentGradeRequest request, boolean allowUpdate) {
         Evaluation evaluation = evaluationRepository.findById(request.getEvaluationId())
                 .orElseThrow(() -> new RuntimeException("Evaluation not found"));
         Student student = studentRepository.findById(request.getStudentId())
@@ -95,6 +101,10 @@ public class GradeService {
 
         StudentGrade grade;
         if (existing.isPresent()) {
+            if (!allowUpdate) {
+                throw new IllegalStateException(
+                        "La modification d'une note existante nécessite l'approbation de l'administration.");
+            }
             grade = existing.get();
             grade.setScore(request.getScore());
         } else {
