@@ -23,7 +23,6 @@ import {
 import type { School } from '@/types';
 import type { SectionId } from './dashboardTypes';
 
-const LOCAL_SCHOOLS_KEY = 'newgee_local_schools';
 const BRANDING_STORAGE_KEY = 'newgee_school_branding_v1';
 
 export const SCHOOL_SETTINGS_IDS = [
@@ -65,39 +64,6 @@ const defaultBranding: BrandingPersisted = {
   fontHeading: 'Inter',
   fontBody: 'Inter',
 };
-
-function readLatestSchool(): Partial<School> | null {
-  try {
-    const raw = window.localStorage.getItem(LOCAL_SCHOOLS_KEY);
-    if (!raw) return null;
-    const list = JSON.parse(raw) as Partial<School>[];
-    if (!Array.isArray(list) || list.length === 0) return null;
-    return list[list.length - 1];
-  } catch {
-    return null;
-  }
-}
-
-function persistSchoolPatch(patch: Partial<School>) {
-  try {
-    const raw = window.localStorage.getItem(LOCAL_SCHOOLS_KEY) || '[]';
-    const list = JSON.parse(raw) as Partial<School>[];
-    if (!Array.isArray(list) || list.length === 0) {
-      const now = new Date().toISOString();
-      window.localStorage.setItem(
-        LOCAL_SCHOOLS_KEY,
-        JSON.stringify([{ id: `sch-${Date.now()}`, ...patch, createdAt: now, updatedAt: now }]),
-      );
-      return;
-    }
-    const last = { ...list[list.length - 1], ...patch, updatedAt: new Date().toISOString() };
-    list[list.length - 1] = last;
-    window.localStorage.setItem(LOCAL_SCHOOLS_KEY, JSON.stringify(list));
-  } catch (e) {
-    console.error(e);
-    throw e;
-  }
-}
 
 function readBranding(): BrandingPersisted {
   try {
@@ -156,13 +122,12 @@ export function SchoolSettingsContent({ section, onNavigate }: Props) {
   const [school, setSchool] = React.useState<Partial<School> | null>(null);
 
   React.useEffect(() => {
-    if (isBackendApiConfigured()) {
-      void fetchLatestSchoolFromBackend()
-        .then((loaded) => setSchool(loaded ?? readLatestSchool()))
-        .catch(() => setSchool(readLatestSchool()));
-    } else {
-      setSchool(readLatestSchool());
-    }
+    void fetchLatestSchoolFromBackend()
+      .then((loaded) => setSchool(loaded))
+      .catch(() => {
+        setSchool(null);
+        toast.error('Impossible de charger le profil école depuis le serveur.', { richColors: true });
+      });
   }, [cacheTick]);
 
   const linkRow = (label: string, target: SectionId, text: string) => (
@@ -182,12 +147,7 @@ export function SchoolSettingsContent({ section, onNavigate }: Props) {
           school={school}
           onSaved={() => {
             setCacheTick((n) => n + 1);
-            toast.success(
-              isBackendApiConfigured()
-                ? 'Profil enregistré sur le serveur.'
-                : 'Profil enregistré (mémoire locale).',
-              { richColors: true },
-            );
+            toast.success('Profil enregistré sur le serveur.', { richColors: true });
           }}
           linkRow={linkRow}
         />
@@ -325,11 +285,14 @@ function SchoolProfilePanel({
       internalNotes: form.internalNotes || undefined,
     };
     try {
-      if (isBackendApiConfigured()) {
-        await persistSchoolPatchOnBackend(patch);
-      } else {
-        persistSchoolPatch(patch);
+      if (!isBackendApiConfigured()) {
+        toast.error(
+          'Connexion au serveur requise pour enregistrer le profil école.',
+          { richColors: true }
+        );
+        return;
       }
+      await persistSchoolPatchOnBackend(patch);
       onSaved();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Enregistrement impossible', { richColors: true });

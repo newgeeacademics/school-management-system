@@ -20,7 +20,7 @@ export function UserPortalRedirectPage() {
       <div className='flex min-h-svh flex-col items-center justify-center gap-4 px-6 text-center'>
         <p className='text-lg font-semibold'>Portail familles non configuré</p>
         <p className='max-w-md text-sm text-muted-foreground'>
-          Définissez <strong>VITE_USER_PORTAL_URL</strong> sur Vercel, puis redéployez.
+          Définissez <strong>VITE_USER_PORTAL_URL</strong> sur Vercel (ex. <strong>https://portal.newgeeacademy.com</strong>), puis redéployez.
         </p>
         <Button asChild variant='outline'>
           <Link to='/login'>Retour</Link>

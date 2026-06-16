@@ -1,7 +1,9 @@
 package com.classroom.backend.controller;
 
 import com.classroom.backend.dto.request.TeacherRequest;
+import com.classroom.backend.dto.response.TeacherIdCardResponse;
 import com.classroom.backend.model.Teacher;
+import com.classroom.backend.service.TeacherIdCardService;
 import com.classroom.backend.service.TeacherService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import java.util.List;
 public class TeacherController {
 
     private final TeacherService teacherService;
+    private final TeacherIdCardService teacherIdCardService;
 
     @GetMapping
     public ResponseEntity<List<Teacher>> findAll() {
@@ -27,6 +30,11 @@ public class TeacherController {
     @GetMapping("/{id}")
     public ResponseEntity<Teacher> findById(@PathVariable String id) {
         return ResponseEntity.ok(teacherService.findById(id));
+    }
+
+    @GetMapping("/{id}/id-card")
+    public ResponseEntity<TeacherIdCardResponse> idCard(@PathVariable String id) {
+        return ResponseEntity.ok(teacherIdCardService.getIdCard(id));
     }
 
     @PostMapping

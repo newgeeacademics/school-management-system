@@ -235,7 +235,7 @@ export function persistSchoolProfileFromRegistration(args: {
 
 export async function fetchAndCacheSchoolProfile(schoolId: string): Promise<SchoolProfile | null> {
   const token = localStorage.getItem(ACCESS_TOKEN_KEY);
-  if (!BASE_URL || !token || !schoolId) return null;
+  if (!token || !schoolId) return null;
 
   try {
     const res = await fetch(`${BASE_URL}/api/schools/${schoolId}`, {

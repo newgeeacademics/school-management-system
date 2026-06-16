@@ -1,12 +1,11 @@
 import { ACCESS_TOKEN_KEY } from '@/constants';
 import { setStoredRole } from '@/lib/auth';
 
-/** After school registration, open dashboard on this app (same origin). */
 export function buildDashboardHandoffUrl(token: string): string {
   const url = new URL('/dashboard', window.location.origin);
   url.searchParams.set('token', token);
   url.searchParams.set('registered', '1');
-  return url.toString();
+  return url.pathname + url.search;
 }
 
 /** Accept JWT from ?token= on /login or /dashboard after registration. */
@@ -18,9 +17,12 @@ export function consumeRegistrationTokenFromUrl(): boolean {
   if (!token) return false;
 
   localStorage.setItem(ACCESS_TOKEN_KEY, token);
-  setStoredRole('admin');
+  if (!localStorage.getItem('user')) {
+    setStoredRole('admin');
+  }
 
   params.delete('token');
+  params.delete('registered');
   const query = params.toString();
   const next = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
   window.history.replaceState({}, '', next);

@@ -1,21 +1,26 @@
 package com.classroom.backend.dto.request;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class StudentRequest {
 
-    @NotBlank(message = "Name is required")
-    private String name;
+  private String name;
 
-    private String classId;
+  private String firstName;
 
-    @Email(message = "Invalid email format")
-    private String email;
+  private String lastName;
 
-    private String password;
+  private String classId;
 
-    private String phone;
+  /** Optional card number; generated from matricule when omitted. */
+  private String idCardNumber;
+
+  @Email(message = "Invalid email format")
+  private String email;
+
+  private String password;
+
+  private String phone;
 }

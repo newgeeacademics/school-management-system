@@ -4,14 +4,18 @@ import com.classroom.backend.dto.request.StudentRequest;
 import com.classroom.backend.dto.response.StudentIdCardResponse;
 import com.classroom.backend.model.Student;
 import com.classroom.backend.service.StudentIdCardService;
+import com.classroom.backend.service.StudentRosterDocumentService;
 import com.classroom.backend.service.StudentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -21,6 +25,7 @@ public class StudentController {
 
     private final StudentService studentService;
     private final StudentIdCardService studentIdCardService;
+    private final StudentRosterDocumentService studentRosterDocumentService;
 
     @GetMapping
     public ResponseEntity<List<Student>> findAll() {
@@ -40,6 +45,17 @@ public class StudentController {
     @GetMapping("/{id}/id-card")
     public ResponseEntity<StudentIdCardResponse> idCard(@PathVariable String id) {
         return ResponseEntity.ok(studentIdCardService.getIdCard(id));
+    }
+
+    @GetMapping("/export/roster.docx")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> exportRoster(@RequestParam(required = false) String classId) throws IOException {
+        byte[] doc = studentRosterDocumentService.exportRosterDocx(classId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"liste-eleves.docx\"")
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+                .body(doc);
     }
 
     @PostMapping

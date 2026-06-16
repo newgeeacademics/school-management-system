@@ -17,6 +17,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
+import { AppLogo } from '@/components/AppLogo';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import type { PortalRole } from '@/lib/auth';
@@ -89,11 +90,8 @@ export function PortalSidebar({
     >
       <div className='flex items-center justify-between gap-2 border-b border-sidebar-border px-4 py-4'>
         <div className='flex min-w-0 items-center gap-2.5'>
-          <div className='flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-sm font-bold text-primary'>
-            NF
-          </div>
+          <AppLogo markClassName='app-logo__mark--compact' name={productName} />
           <div className='min-w-0'>
-            <p className='truncate text-sm font-semibold leading-tight'>{productName}</p>
             <p className='truncate text-[11px] text-muted-foreground'>{roleLabel}</p>
           </div>
         </div>

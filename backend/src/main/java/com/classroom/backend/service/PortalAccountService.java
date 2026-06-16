@@ -5,6 +5,7 @@ import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.AppUserRepository;
 import com.classroom.backend.service.email.EmailNotificationService;
 import com.classroom.backend.util.PhoneAccountUtil;
+import com.classroom.backend.util.PersonNameUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -61,6 +62,49 @@ public class PortalAccountService {
         }
 
         return saved;
+    }
+
+    /**
+     * Reuses an existing PARENT portal account when email/phone matches,
+     * so one parent can be linked to multiple children.
+     */
+    @Transactional
+    public AppUser findOrCreateParentAccount(
+            String name, String email, String phone, String password
+    ) {
+        boolean hasEmail = email != null && !email.isBlank();
+        boolean hasPhone = phone != null && !phone.isBlank();
+        if (!hasEmail && !hasPhone) {
+            return null;
+        }
+
+        String normalizedPhone = hasPhone ? PhoneAccountUtil.normalizePhone(phone) : null;
+        if (normalizedPhone != null && !normalizedPhone.isBlank()) {
+            var byPhone = appUserRepository.findByPhone(normalizedPhone);
+            if (byPhone.isPresent()) {
+                AppUser existing = byPhone.get();
+                if (existing.getRole() != UserRole.PARENT) {
+                    throw new IllegalArgumentException("Ce téléphone est déjà utilisé par un autre type de compte");
+                }
+                existing.setName(PersonNameUtil.resolveFullName(null, null, name));
+                appUserRepository.save(existing);
+                return existing;
+            }
+        }
+
+        String loginEmail = hasEmail ? email.trim() : PhoneAccountUtil.syntheticEmailForPhone(normalizedPhone);
+        var byEmail = appUserRepository.findByEmailIgnoreCase(loginEmail);
+        if (byEmail.isPresent()) {
+            AppUser existing = byEmail.get();
+            if (existing.getRole() != UserRole.PARENT) {
+                throw new IllegalArgumentException("Cet e-mail est déjà utilisé par un autre type de compte");
+            }
+            existing.setName(PersonNameUtil.resolveFullName(null, null, name));
+            appUserRepository.save(existing);
+            return existing;
+        }
+
+        return createLinkedAccount(name, email, phone, password, UserRole.PARENT);
     }
 
     @Transactional

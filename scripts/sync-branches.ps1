@@ -1,4 +1,6 @@
-# Sync monorepo apps (it branch) to per-app Git branches for Vercel deploy.
+# Sync monorepo apps to per-app Git branches for Vercel deploy.
+# Root src/ (replaces deleted classroom-app/ folder): deploy branch `classroom-app`.
+# Develop in the monorepo, then run this script to publish root src/ to `classroom-app`.
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path $PSScriptRoot -Parent
 $WtRoot = Join-Path $env:TEMP "newgee-branch-sync"
@@ -16,7 +18,7 @@ function Copy-AppFiles {
 
 function Remove-Clutter {
     param([string]$Dir)
-    @("admin-app", "user-portal-app", "finance-app", "backend", "classroom-app", "render.yaml", "DEPLOYMENT.md", "scripts", "dist", "node_modules") | ForEach-Object {
+    @("admin-app", "user-portal-app", "finance-app", "tracking-app", "backend", "render.yaml", "DEPLOYMENT.md", "scripts", "dist", "node_modules") | ForEach-Object {
         $p = Join-Path $Dir $_
         if (Test-Path $p) { Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -33,19 +35,24 @@ New-Item -ItemType Directory -Path $WtRoot | Out-Null
 
 Push-Location $RepoRoot
 
-# --- main ---
-git worktree add (Join-Path $WtRoot "main") main
-Copy-AppFiles -Source $RepoRoot -Dest (Join-Path $WtRoot "main") -Files $AppFiles
-Copy-Item (Join-Path $RepoRoot ".gitignore") (Join-Path $WtRoot "main\.gitignore") -Force
-Copy-Item (Join-Path $RepoRoot "VERCEL.md") (Join-Path $WtRoot "main\VERCEL.md") -Force -ErrorAction SilentlyContinue
-Remove-Clutter (Join-Path $WtRoot "main")
-Push-Location (Join-Path $WtRoot "main")
+# --- classroom-app (root src/: landing, registration, /login, /dashboard) ---
+if (git show-ref --verify --quiet refs/heads/classroom-app) {
+    git worktree add (Join-Path $WtRoot "classroom-app") classroom-app
+} else {
+    git branch classroom-app main
+    git worktree add (Join-Path $WtRoot "classroom-app") classroom-app
+}
+Copy-AppFiles -Source $RepoRoot -Dest (Join-Path $WtRoot "classroom-app") -Files $AppFiles
+Copy-Item (Join-Path $RepoRoot ".gitignore") (Join-Path $WtRoot "classroom-app\.gitignore") -Force
+Copy-Item (Join-Path $RepoRoot "VERCEL.md") (Join-Path $WtRoot "classroom-app\VERCEL.md") -Force -ErrorAction SilentlyContinue
+Remove-Clutter (Join-Path $WtRoot "classroom-app")
+Push-Location (Join-Path $WtRoot "classroom-app")
 git add -A
 git diff --cached --quiet
 if ($LASTEXITCODE -ne 0) {
-    git commit -m "Sync main marketing app from monorepo (it branch)"
-    git push origin main
-} else { Write-Host "main: no changes" }
+    git commit -m "Sync classroom-app (root src) from monorepo"
+    git push -u origin classroom-app
+} else { Write-Host "classroom-app: no changes" }
 Pop-Location
 
 # --- admin ---
@@ -94,11 +101,35 @@ if ($LASTEXITCODE -ne 0) {
 } else { Write-Host "finance: no changes" }
 Pop-Location
 
+# --- tracking ---
+if (git show-ref --verify --quiet refs/heads/tracking) {
+    git worktree add (Join-Path $WtRoot "tracking") tracking
+} else {
+    git branch tracking feature/transport-tracking
+    git worktree add (Join-Path $WtRoot "tracking") tracking
+}
+$TrackingFiles = @(
+    "src", "public", "index.html", "package.json", "package-lock.json",
+    "vite.config.ts", "tsconfig.json", ".env.example", "vercel.json"
+)
+Copy-AppFiles -Source (Join-Path $RepoRoot "tracking-app") -Dest (Join-Path $WtRoot "tracking") -Files $TrackingFiles
+Copy-Item (Join-Path $RepoRoot ".gitignore") (Join-Path $WtRoot "tracking\.gitignore") -Force
+Remove-Clutter (Join-Path $WtRoot "tracking")
+Push-Location (Join-Path $WtRoot "tracking")
+git add -A
+git diff --cached --quiet
+if ($LASTEXITCODE -ne 0) {
+    git commit -m "Sync tracking app from monorepo (feature/transport-tracking)"
+    git push -u origin tracking
+} else { Write-Host "tracking: no changes" }
+Pop-Location
+
 # cleanup worktrees
-git worktree remove (Join-Path $WtRoot "main") --force
+git worktree remove (Join-Path $WtRoot "classroom-app") --force
 git worktree remove (Join-Path $WtRoot "admin") --force
 git worktree remove (Join-Path $WtRoot "user-portal") --force
 git worktree remove (Join-Path $WtRoot "finance") --force
+git worktree remove (Join-Path $WtRoot "tracking") --force
 Remove-Item $WtRoot -Recurse -Force -ErrorAction SilentlyContinue
 
 Pop-Location

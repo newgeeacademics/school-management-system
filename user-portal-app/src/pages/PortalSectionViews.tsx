@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import {
   Bus,
   CalendarDays,
+  ExternalLink,
   MessageCircle,
+  Navigation,
   School,
   Utensils,
 } from 'lucide-react';
@@ -17,6 +19,7 @@ import { PortalMessagesView } from '@/pages/PortalMessagesView';
 import { useTranslation } from '@/i18n';
 import { usePortalFeedContext } from '@/context/PortalFeedContext';
 import { getPortalSession } from '@/lib/auth';
+import { getTrackingAppOrigin } from '@/lib/school-app-url';
 import type { PortalSectionId } from '@/lib/portal-sections';
 
 function FeedSection({
@@ -234,8 +237,24 @@ export function PortalSectionView({ section }: { section: PortalSectionId }) {
   }
 
   if (section === 'transport') {
+    const trackingUrl = getTrackingAppOrigin();
+
     return (
       <FeedSection empty={t('portalHome.emptyTransport')} count={feed.transport.length}>
+        {trackingUrl ? (
+          <a
+            href={trackingUrl}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='mb-3 flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/10'
+          >
+            <span className='flex items-center gap-2'>
+              <Navigation className='size-4 shrink-0' aria-hidden />
+              {t('portalHome.openLiveTracking')}
+            </span>
+            <ExternalLink className='size-4 shrink-0 opacity-70' aria-hidden />
+          </a>
+        ) : null}
         {feed.transport.map((route) => (
           <div key={route.id} className='flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2'>
             <Bus className='mt-0.5 size-4 shrink-0 text-primary' aria-hidden />

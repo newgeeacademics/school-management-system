@@ -1,5 +1,5 @@
 import { BASE_URL } from '@/constants';
-import { isBackendApiConfigured } from '@/lib/school-registration-api';
+import { isBackendApiConfigured } from '@/lib/dashboard-backend';
 import { normalizeRegistrationNumber } from '@/lib/school-registration-number';
 
 export type RegistrationNumberAvailability = {

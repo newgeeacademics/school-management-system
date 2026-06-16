@@ -103,9 +103,12 @@ public class PortalService {
     }
 
     private void resolveParentScope(AppUser user, List<ClassItem> classes, List<Student> students) {
-        List<ParentContact> parents = parentContactRepository.findByAppUser_Id(user.getId())
-                .map(List::of)
-                .orElseGet(() -> parentContactRepository.findByEmailIgnoreCase(user.getEmail()));
+        List<ParentContact> parents = parentContactRepository.findAllByAppUser_Id(user.getId());
+        if (parents.isEmpty()) {
+            parents = parentContactRepository.findByAppUser_Id(user.getId())
+                    .map(List::of)
+                    .orElseGet(() -> parentContactRepository.findByEmailIgnoreCase(user.getEmail()));
+        }
 
         if (parents.isEmpty()) {
             throw new IllegalStateException(

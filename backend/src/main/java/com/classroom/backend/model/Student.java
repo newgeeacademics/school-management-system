@@ -15,8 +15,16 @@ public class Student {
     @Column(nullable = false)
     private String name;
 
+    private String firstName;
+
+    private String lastName;
+
     @Column(unique = true)
     private String matricule;
+
+    /** Optional physical card number; defaults to matricule when blank. */
+    @Column(unique = true)
+    private String idCardNumber;
 
     private String email;
 

@@ -13,5 +13,9 @@ public interface ParentContactRepository extends JpaRepository<ParentContact, St
 
     Optional<ParentContact> findByAppUser_Id(String appUserId);
 
+    List<ParentContact> findAllByAppUser_Id(String appUserId);
+
+    long countByAppUser_Id(String appUserId);
+
     List<ParentContact> findByEmailIgnoreCase(String email);
 }

@@ -15,6 +15,10 @@ public class ParentContact {
     @Column(nullable = false)
     private String name;
 
+    private String firstName;
+
+    private String lastName;
+
     private String phone;
     private String email;
 

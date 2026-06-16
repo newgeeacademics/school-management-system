@@ -55,9 +55,23 @@ export const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/web
 
 // Backend API — set VITE_API_URL / VITE_BACKEND_BASE_URL in .env
 // Local Spring Boot default: http://localhost:8080
-// Production (Render): https://classroom-backend.onrender.com
-export const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:8080';
-export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// Production (Render): https://school-management-system-gw9s.onrender.com
+export const DEFAULT_PRODUCTION_API_URL = 'https://school-management-system-gw9s.onrender.com';
+
+function resolveApiBaseUrl(): string {
+  const fromEnv =
+    import.meta.env.VITE_API_URL?.trim() || import.meta.env.VITE_BACKEND_BASE_URL?.trim();
+  if (fromEnv) return fromEnv;
+  if (import.meta.env.PROD) return DEFAULT_PRODUCTION_API_URL;
+  return 'http://localhost:8080';
+}
+
+export const isApiUrlFromEnv = Boolean(
+  import.meta.env.VITE_API_URL?.trim() || import.meta.env.VITE_BACKEND_BASE_URL?.trim()
+);
+
+export const BACKEND_BASE_URL = resolveApiBaseUrl();
+export const BASE_URL = BACKEND_BASE_URL;
 
 // Authentication Token Keys (dev only)
 export const ACCESS_TOKEN_KEY = import.meta.env.VITE_ACCESS_TOKEN_KEY || 'dev_access_token';

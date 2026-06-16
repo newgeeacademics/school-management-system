@@ -9,20 +9,25 @@ import java.util.List;
 @Data
 public class TeacherRequest {
 
-    @NotBlank(message = "Name is required")
-    private String name;
+  private String name;
 
-    @NotBlank(message = "Subject is required")
-    private String subject;
+  private String firstName;
 
-    @Email(message = "Invalid email format")
-    private String email;
+  private String lastName;
 
-    /** Portal password; defaults to changeme when email is set. */
-    private String password;
+  @NotBlank(message = "Subject is required")
+  private String subject;
 
-    private String phone;
+  /** Optional staff badge number; auto-generated when omitted. */
+  private String staffId;
 
-    /** Classes where this teacher is professeur principal (homeroom). */
-    private List<String> homeroomClassIds;
+  @Email(message = "Invalid email format")
+  private String email;
+
+  private String password;
+
+  private String phone;
+
+  /** Classes where this teacher is professeur principal (homeroom). */
+  private List<String> homeroomClassIds;
 }

@@ -1,11 +1,11 @@
 import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/i18n';
-import { AppLogo } from '@/components/AppLogo';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { UserPortalSignInForm } from '@/components/refine-ui/form/user-portal-sign-in-form';
 import { getPortalSession } from '@/lib/auth';
-import { getSchoolAppOrigin } from '@/lib/school-app-url';
+import { getMainAppOrigin } from '@/lib/school-app-url';
+import logoSrc from '@/assets/logo/newgee-logo.png';
 
 import './auth-page.css';
 
@@ -31,7 +31,7 @@ function UserPortalIllustrationSet() {
 
 export function UserPortalLoginPage() {
   const navigate = useNavigate();
-  const schoolOrigin = getSchoolAppOrigin();
+  const mainOrigin = getMainAppOrigin();
 
   useEffect(() => {
     if (getPortalSession()) navigate('/accueil', { replace: true });
@@ -40,15 +40,15 @@ export function UserPortalLoginPage() {
   return (
     <div className='auth-page'>
       <section className='auth-page__panel'>
-        <header className='auth-page__top auth-page__top--split'>
-          <a href={`${schoolOrigin}/`} className='no-underline'>
-            <AppLogo name='NewGee Familles' />
-          </a>
+        <div className='auth-page__lang-fab'>
           <LanguageSwitcher />
-        </header>
+        </div>
 
         <main className='auth-page__main'>
           <div className='auth-page__card'>
+            <a href={`${mainOrigin}/`} className='auth-page__brand-link auth-page__brand-link--hero'>
+              <img src={logoSrc} alt='NewGee' className='auth-page__logo auth-page__logo--hero' />
+            </a>
             <UserPortalSignInForm variant='embedded' />
           </div>
         </main>

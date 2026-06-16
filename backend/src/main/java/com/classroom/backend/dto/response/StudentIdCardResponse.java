@@ -6,10 +6,15 @@ import lombok.Data;
 @Data
 @Builder
 public class StudentIdCardResponse {
-    private String studentId;
-    private String matricule;
-    private String studentName;
-    private String className;
-    private String schoolName;
-    private String qrPayload;
+  private String studentId;
+  private String matricule;
+  private String idCardNumber;
+  private String firstName;
+  private String lastName;
+  private String studentName;
+  private String className;
+  private String schoolName;
+  private String schoolCity;
+  private String academicYear;
+  private String qrPayload;
 }

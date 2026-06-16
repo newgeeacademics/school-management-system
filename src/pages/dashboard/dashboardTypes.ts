@@ -41,7 +41,10 @@ export type Teacher = {
   id: string;
   initials: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   subject: string;
+  staffId?: string;
   email?: string;
   phone?: string;
 };
@@ -57,15 +60,20 @@ export type ClassItem = {
 export type Student = {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   classId?: string;
   email?: string;
   phone?: string;
   matricule?: string;
+  idCardNumber?: string;
 };
 
 export type ParentContact = {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   phone?: string;
   email?: string;
   studentId?: string;
@@ -198,15 +206,20 @@ export type NewClassFormState = {
 };
 
 export type NewTeacherFormState = {
-  name: string;
+  firstName: string;
+  lastName: string;
   subject: string;
+  staffId: string;
   email: string;
   password: string;
   phone: string;
+  homeroomClassIds: string[];
 };
 
 export type NewStudentFormState = {
-  name: string;
+  firstName: string;
+  lastName: string;
+  idCardNumber: string;
   classId: string;
   email: string;
   phone: string;
@@ -270,7 +283,8 @@ export type NewParentMessageFormState = {
 };
 
 export type NewParentFormState = {
-  name: string;
+  firstName: string;
+  lastName: string;
   phone: string;
   email: string;
   password: string;
@@ -372,9 +386,27 @@ export type NewUserFormState = {
 export type StudentIdCardData = {
   studentId: string;
   matricule: string;
+  idCardNumber: string;
+  firstName: string;
+  lastName: string;
   studentName: string;
   className: string;
   schoolName: string;
+  schoolCity?: string;
+  academicYear: string;
+  qrPayload: string;
+};
+
+export type TeacherIdCardData = {
+  teacherId: string;
+  staffId: string;
+  firstName: string;
+  lastName: string;
+  teacherName: string;
+  subject: string;
+  schoolName: string;
+  schoolCity?: string;
+  academicYear: string;
   qrPayload: string;
 };
 

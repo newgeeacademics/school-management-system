@@ -1,5 +1,5 @@
 import type React from 'react';
-import { BASE_URL, ACCESS_TOKEN_KEY } from '@/constants';
+import { BASE_URL, ACCESS_TOKEN_KEY, isApiUrlFromEnv } from '@/constants';
 import { parseApiErrorResponse, wrapFetchError } from '@/lib/api-error';
 import type { School } from '@/types';
 import type {
@@ -25,11 +25,22 @@ import type {
   StudentGrade,
   StudentIdCardData,
   Teacher,
+  TeacherIdCardData,
   TransportRoute,
 } from '@/pages/dashboard/dashboardTypes';
 
+export const BACKEND_REQUIRED_MESSAGE =
+  'Connexion au serveur requise. Démarrez le backend (port 8080) ou définissez VITE_API_URL puis redémarrez le front.';
+
+/** True when the app has a resolved API base URL (local dev default or env). */
 export function isBackendApiConfigured(): boolean {
-  return Boolean(import.meta.env.VITE_API_URL?.trim());
+  if (import.meta.env.PROD && BASE_URL === '') return true;
+  return Boolean(BASE_URL?.trim());
+}
+
+/** True only when VITE_API_URL / VITE_BACKEND_BASE_URL was set explicitly. */
+export function isBackendApiEnvConfigured(): boolean {
+  return isApiUrlFromEnv;
 }
 
 function getToken(): string | null {
@@ -87,7 +98,10 @@ export function mapTeacherFromApi(t: Record<string, unknown>): Teacher {
   return {
     id: String(t.id),
     name: String(t.name ?? ''),
+    firstName: t.firstName ? String(t.firstName) : undefined,
+    lastName: t.lastName ? String(t.lastName) : undefined,
     subject: String(t.subject ?? ''),
+    staffId: t.staffId ? String(t.staffId) : undefined,
     initials: String(t.initials ?? (String(t.name ?? '').slice(0, 2).toUpperCase() || 'ED')),
     email: t.email ? String(t.email) : appUser?.email ? String(appUser.email) : undefined,
     phone: t.phone ? String(t.phone) : undefined,
@@ -109,10 +123,13 @@ export function mapStudentFromApi(s: Record<string, unknown>): Student {
   return {
     id: String(s.id),
     name: String(s.name ?? ''),
+    firstName: s.firstName ? String(s.firstName) : undefined,
+    lastName: s.lastName ? String(s.lastName) : undefined,
     classId: relationId(s.classItem),
     email: s.email ? String(s.email) : appUser?.email ? String(appUser.email) : undefined,
     phone: s.phone ? String(s.phone) : appUser?.phone ? String(appUser.phone) : undefined,
     matricule: s.matricule ? String(s.matricule) : undefined,
+    idCardNumber: s.idCardNumber ? String(s.idCardNumber) : undefined,
   };
 }
 
@@ -120,6 +137,8 @@ export function mapParentFromApi(p: Record<string, unknown>): ParentContact {
   return {
     id: String(p.id),
     name: String(p.name ?? ''),
+    firstName: p.firstName ? String(p.firstName) : undefined,
+    lastName: p.lastName ? String(p.lastName) : undefined,
     phone: p.phone ? String(p.phone) : undefined,
     email: p.email ? String(p.email) : undefined,
     studentId: relationId(p.student),
@@ -640,20 +659,26 @@ export async function refreshUsersFromBackend(): Promise<AppUser[]> {
 }
 
 export async function createTeacherOnBackend(item: {
-  name: string;
+  firstName: string;
+  lastName: string;
   subject: string;
+  staffId?: string;
   email?: string;
   password?: string;
   phone?: string;
+  homeroomClassIds?: string[];
 }) {
   const data = await adminApiFetch<Record<string, unknown>>('/api/teachers', {
     method: 'POST',
     body: JSON.stringify({
-      name: item.name,
+      firstName: item.firstName.trim(),
+      lastName: item.lastName.trim(),
       subject: item.subject,
+      staffId: item.staffId?.trim() || undefined,
       email: item.email?.trim() || undefined,
       password: item.password?.trim() || undefined,
       phone: item.phone?.trim() || undefined,
+      homeroomClassIds: item.homeroomClassIds?.length ? item.homeroomClassIds : undefined,
     }),
   });
   return mapTeacherFromApi(data);
@@ -661,16 +686,28 @@ export async function createTeacherOnBackend(item: {
 
 export async function updateTeacherOnBackend(
   id: string,
-  item: { name: string; subject: string; email?: string; password?: string; phone?: string }
+  item: {
+    firstName: string;
+    lastName: string;
+    subject: string;
+    staffId?: string;
+    email?: string;
+    password?: string;
+    phone?: string;
+    homeroomClassIds?: string[];
+  }
 ) {
   const data = await adminApiFetch<Record<string, unknown>>(`/api/teachers/${id}`, {
     method: 'PUT',
     body: JSON.stringify({
-      name: item.name,
+      firstName: item.firstName.trim(),
+      lastName: item.lastName.trim(),
       subject: item.subject,
+      staffId: item.staffId?.trim() || undefined,
       email: item.email?.trim() || undefined,
       password: item.password?.trim() || undefined,
       phone: item.phone?.trim() || undefined,
+      homeroomClassIds: item.homeroomClassIds ?? [],
     }),
   });
   return mapTeacherFromApi(data);
@@ -681,7 +718,9 @@ export async function deleteTeacherOnBackend(id: string) {
 }
 
 export async function createStudentOnBackend(item: {
-  name: string;
+  firstName: string;
+  lastName: string;
+  idCardNumber?: string;
   classId?: string;
   email?: string;
   phone?: string;
@@ -690,7 +729,9 @@ export async function createStudentOnBackend(item: {
   const data = await adminApiFetch<Record<string, unknown>>('/api/students', {
     method: 'POST',
     body: JSON.stringify({
-      name: item.name,
+      firstName: item.firstName.trim(),
+      lastName: item.lastName.trim(),
+      idCardNumber: item.idCardNumber?.trim() || undefined,
       classId: item.classId || null,
       email: item.email?.trim() || undefined,
       phone: item.phone?.trim() || undefined,
@@ -702,12 +743,22 @@ export async function createStudentOnBackend(item: {
 
 export async function updateStudentOnBackend(
   id: string,
-  item: { name: string; classId?: string; email?: string; phone?: string; password?: string }
+  item: {
+    firstName: string;
+    lastName: string;
+    idCardNumber?: string;
+    classId?: string;
+    email?: string;
+    phone?: string;
+    password?: string;
+  }
 ) {
   const data = await adminApiFetch<Record<string, unknown>>(`/api/students/${id}`, {
     method: 'PUT',
     body: JSON.stringify({
-      name: item.name,
+      firstName: item.firstName.trim(),
+      lastName: item.lastName.trim(),
+      idCardNumber: item.idCardNumber?.trim() || undefined,
       classId: item.classId || null,
       email: item.email?.trim() || undefined,
       phone: item.phone?.trim() || undefined,
@@ -722,11 +773,54 @@ export async function fetchStudentIdCardOnBackend(studentId: string): Promise<St
   return {
     studentId: String(data.studentId ?? studentId),
     matricule: String(data.matricule ?? ''),
+    idCardNumber: String(data.idCardNumber ?? data.matricule ?? ''),
+    firstName: String(data.firstName ?? ''),
+    lastName: String(data.lastName ?? ''),
     studentName: String(data.studentName ?? ''),
     className: String(data.className ?? ''),
     schoolName: String(data.schoolName ?? ''),
+    schoolCity: data.schoolCity ? String(data.schoolCity) : undefined,
+    academicYear: String(data.academicYear ?? ''),
     qrPayload: String(data.qrPayload ?? ''),
   };
+}
+
+export async function fetchTeacherIdCardOnBackend(teacherId: string): Promise<TeacherIdCardData> {
+  const data = await adminApiFetch<Record<string, unknown>>(`/api/teachers/${teacherId}/id-card`);
+  return {
+    teacherId: String(data.teacherId ?? teacherId),
+    staffId: String(data.staffId ?? ''),
+    firstName: String(data.firstName ?? ''),
+    lastName: String(data.lastName ?? ''),
+    teacherName: String(data.teacherName ?? ''),
+    subject: String(data.subject ?? ''),
+    schoolName: String(data.schoolName ?? ''),
+    schoolCity: data.schoolCity ? String(data.schoolCity) : undefined,
+    academicYear: String(data.academicYear ?? ''),
+    qrPayload: String(data.qrPayload ?? ''),
+  };
+}
+
+export async function downloadStudentRosterDocx(classId?: string): Promise<void> {
+  const token = getToken();
+  const headers = new Headers();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  const query = classId ? `?classId=${encodeURIComponent(classId)}` : '';
+  try {
+    const res = await fetch(`${BASE_URL}/api/students/export/roster.docx${query}`, { headers });
+    if (!res.ok) {
+      throw new Error(await parseApiErrorResponse(res, 'Erreur export liste élèves'));
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = classId ? `liste-eleves-${classId}.docx` : 'liste-eleves.docx';
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    throw wrapFetchError(err, 'Erreur de communication avec le serveur');
+  }
 }
 
 export async function deleteStudentOnBackend(id: string) {
@@ -749,7 +843,8 @@ export async function createRoomOnBackend(item: { name: string; type: string; ca
 }
 
 export async function createParentOnBackend(item: {
-  name: string;
+  firstName: string;
+  lastName: string;
   phone?: string;
   email?: string;
   studentId?: string;
@@ -758,7 +853,8 @@ export async function createParentOnBackend(item: {
   const data = await adminApiFetch<Record<string, unknown>>('/api/parents', {
     method: 'POST',
     body: JSON.stringify({
-      name: item.name,
+      firstName: item.firstName.trim(),
+      lastName: item.lastName.trim(),
       phone: item.phone,
       email: item.email?.trim() || undefined,
       studentId: item.studentId || null,
@@ -770,12 +866,20 @@ export async function createParentOnBackend(item: {
 
 export async function updateParentOnBackend(
   id: string,
-  item: { name: string; phone?: string; email?: string; studentId?: string; password?: string }
+  item: {
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    email?: string;
+    studentId?: string;
+    password?: string;
+  }
 ) {
   const data = await adminApiFetch<Record<string, unknown>>(`/api/parents/${id}`, {
     method: 'PUT',
     body: JSON.stringify({
-      name: item.name,
+      firstName: item.firstName.trim(),
+      lastName: item.lastName.trim(),
       phone: item.phone,
       email: item.email?.trim() || undefined,
       studentId: item.studentId || null,
