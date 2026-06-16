@@ -24,8 +24,8 @@ app:
     # https://school-management-system-ivory-seven.vercel.app,https://newgee-admin.vercel.app,https://newgee-portal.vercel.app
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5179}
   public:
-    main-url: ${APP_MAIN_URL:https://school-management-system-ivory-seven.vercel.app}
-    portal-url: ${APP_PORTAL_URL:https://school-management-system-portal.vercel.app}
+    main-url: ${APP_MAIN_URL:https://www.newgeeacademy.com}
+    portal-url: ${APP_PORTAL_URL:https://portal.newgeeacademy.com}
   email:
     enabled: ${APP_EMAIL_ENABLED:true}
     from: ${APP_EMAIL_FROM:NewGee <contact@newgeeacademy.com>}
