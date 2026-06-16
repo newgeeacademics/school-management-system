@@ -281,6 +281,7 @@
     "admin": "Admin"
   },
   "school": {
+    "registerSchool": "Register my school",
     "registerTitle": "School registration",
     "registerDesc": "Enter your login details then your establishment information.",
     "continueBtn": "Continue",
