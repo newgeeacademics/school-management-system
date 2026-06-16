@@ -24,7 +24,7 @@ export function getUserPortalOrigin(): string {
   const portal = import.meta.env.VITE_USER_PORTAL_URL;
   if (portal?.trim()) return portal.replace(/\/$/, '');
 
-  if (import.meta.env.PROD) return '';
+  if (import.meta.env.PROD) return 'https://portal.newgeeacademy.com';
 
   return 'http://localhost:5174';
 }
