@@ -10,9 +10,12 @@ export function getDashboardUrl(): string {
   return '/dashboard';
 }
 
-function readEnvUrl(key: string, devFallback: string): string {
+const PRODUCTION_USER_PORTAL_URL = 'https://portal.newgeeacademy.com';
+
+function readEnvUrl(key: string, devFallback: string, prodFallback?: string): string {
   const value = import.meta.env[key as keyof ImportMetaEnv]?.trim();
   if (value) return value.replace(/\/$/, '');
+  if (import.meta.env.PROD && prodFallback) return prodFallback.replace(/\/$/, '');
   if (import.meta.env.PROD) {
     console.warn(`[NewGee] Missing ${key} — set it in Vercel environment variables and redeploy.`);
   }
@@ -21,7 +24,7 @@ function readEnvUrl(key: string, devFallback: string): string {
 
 /** User portal (students, parents, teachers) — separate Vercel project. */
 export function getUserPortalOrigin(): string {
-  return readEnvUrl('VITE_USER_PORTAL_URL', 'http://localhost:5174');
+  return readEnvUrl('VITE_USER_PORTAL_URL', 'http://localhost:5174', PRODUCTION_USER_PORTAL_URL);
 }
 
 export function getUserPortalLoginUrl(): string {

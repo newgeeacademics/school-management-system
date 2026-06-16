@@ -85,7 +85,7 @@ After the first deploy, note each Vercel URL. Redeploy after setting env vars (V
 | Key | Example |
 |-----|---------|
 | `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` |
-| `VITE_USER_PORTAL_URL` | `https://newgee-portal.vercel.app` |
+| `VITE_USER_PORTAL_URL` | `https://portal.newgeeacademy.com` |
 
 School registration → `POST /api/auth/register-school` → redirect to **`/dashboard?token=…`** on **this** main site.
 
@@ -106,7 +106,7 @@ If registration returns **403**, on **Render** set `APP_CORS_ALLOWED_ORIGINS` to
 |-----|---------|
 | `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` |
 | `VITE_MAIN_APP_URL` | `https://newgee-main.vercel.app` |
-| `VITE_USER_PORTAL_URL` | `https://newgee-portal.vercel.app` |
+| `VITE_USER_PORTAL_URL` | `https://portal.newgeeacademy.com` |
 
 ### User portal — branch `user-portal`
 
@@ -165,7 +165,7 @@ Env vars on Render:
 | `APP_CORS_ALLOWED_ORIGINS` | all 3 Vercel URLs + localhost (see below) |
 
 ```
-https://newgee-main.vercel.app,https://newgee-admin.vercel.app,https://newgee-portal.vercel.app,https://YOUR-FINANCE.vercel.app,http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176
+https://www.newgeeacademy.com,https://admin.newgeeacademy.com,https://portal.newgeeacademy.com,https://finance.newgeeacademy.com,http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176
 ```
 
 ---
@@ -176,7 +176,7 @@ https://newgee-main.vercel.app,https://newgee-admin.vercel.app,https://newgee-po
 curl https://school-management-system-gw9s.onrender.com/health
 curl -I https://newgee-main.vercel.app
 curl -I https://newgee-admin.vercel.app
-curl -I https://newgee-portal.vercel.app
+curl -I https://portal.newgeeacademy.com
 ```
 
 Main school console: `https://newgee-main.vercel.app/login` → account created at registration  
