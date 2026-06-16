@@ -84,12 +84,14 @@ After the first deploy, note each Vercel URL. Redeploy after setting env vars (V
 
 | Key | Example |
 |-----|---------|
-| `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` |
+| `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` — **not** `https://newgeeacademy.com` |
 | `VITE_USER_PORTAL_URL` | `https://portal.newgeeacademy.com` |
 
 School registration → `POST /api/auth/register-school` → redirect to **`/dashboard?token=…`** on **this** main site.
 
 **Do not** set `VITE_ADMIN_APP_URL` on the main project. Main uses its own `/login` and `/dashboard` (not the admin-app URLs).
+
+**Do not** set `VITE_API_URL` to `https://newgeeacademy.com` or `https://www.newgeeacademy.com` — that is the frontend, not the API. Use the **Render** URL above, or **delete** `VITE_API_URL` to use the built-in `/api` proxy on this project (`vercel.json` → Render).
 
 ### Fix: still sent to admin / `your-admin.vercel.app` on Vercel
 
@@ -104,7 +106,7 @@ If registration returns **403**, on **Render** set `APP_CORS_ALLOWED_ORIGINS` to
 
 | Key | Example |
 |-----|---------|
-| `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` |
+| `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` — **not** `https://newgeeacademy.com` |
 | `VITE_MAIN_APP_URL` | `https://newgee-main.vercel.app` |
 | `VITE_USER_PORTAL_URL` | `https://portal.newgeeacademy.com` |
 
@@ -112,14 +114,14 @@ If registration returns **403**, on **Render** set `APP_CORS_ALLOWED_ORIGINS` to
 
 | Key | Example |
 |-----|---------|
-| `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` |
+| `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` — **not** `https://newgeeacademy.com` |
 | `VITE_MAIN_APP_URL` | `https://newgee-main.vercel.app` (links to school `/login` on main, not admin-app) |
 
 ### Finance — branch `finance`
 
 | Key | Example |
 |-----|---------|
-| `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` |
+| `VITE_API_URL` | `https://school-management-system-gw9s.onrender.com` — **not** `https://newgeeacademy.com` |
 | `VITE_MAIN_APP_URL` | `https://school-management-system-ivory-seven.vercel.app` |
 
 **Required.** Without `VITE_API_URL`, login shows: *« VITE_API_URL n’est pas configuré sur ce déploiement Vercel (finance) »*.

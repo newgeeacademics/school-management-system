@@ -22,7 +22,7 @@ app:
   cors:
     # Comma-separated frontend origins (Vercel URLs). No spaces unless trimmed. Example:
     # https://school-management-system-ivory-seven.vercel.app,https://newgee-admin.vercel.app,https://newgee-portal.vercel.app
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5179}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:https://www.newgeeacademy.com,https://newgeeacademy.com,http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5179}
   public:
     main-url: ${APP_MAIN_URL:https://www.newgeeacademy.com}
     portal-url: ${APP_PORTAL_URL:https://portal.newgeeacademy.com}

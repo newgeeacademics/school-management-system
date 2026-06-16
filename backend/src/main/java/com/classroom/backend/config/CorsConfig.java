@@ -23,6 +23,8 @@ public class CorsConfig implements WebMvcConfigurer {
         List<String> patterns = new ArrayList<>();
         patterns.add("http://localhost:*");
         patterns.add("https://*.vercel.app");
+        patterns.add("https://newgeeacademy.com");
+        patterns.add("https://*.newgeeacademy.com");
         if (allowedOrigins != null && !allowedOrigins.isBlank()) {
             Arrays.stream(allowedOrigins.split(","))
                     .map(String::trim)
