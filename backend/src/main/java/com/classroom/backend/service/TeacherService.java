@@ -2,8 +2,10 @@ package com.classroom.backend.service;
 
 import com.classroom.backend.dto.request.TeacherRequest;
 import com.classroom.backend.model.AppUser;
+import com.classroom.backend.model.ClassItem;
 import com.classroom.backend.model.Teacher;
 import com.classroom.backend.model.enums.UserRole;
+import com.classroom.backend.repository.ClassItemRepository;
 import com.classroom.backend.repository.TeacherRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 public class TeacherService {
 
     private final TeacherRepository teacherRepository;
+    private final ClassItemRepository classItemRepository;
     private final PortalAccountService portalAccountService;
 
     public List<Teacher> findAll() {
@@ -31,6 +34,8 @@ public class TeacherService {
 
     @Transactional
     public Teacher create(TeacherRequest request) {
+        validatePortalContact(request);
+
         AppUser appUser = portalAccountService.createLinkedAccount(
                 request.getName(), request.getEmail(), request.getPhone(),
                 request.getPassword(), UserRole.TEACHER);
@@ -44,7 +49,9 @@ public class TeacherService {
                 .appUser(appUser)
                 .build();
 
-        return teacherRepository.save(teacher);
+        teacher = teacherRepository.save(teacher);
+        syncHomeroomClasses(teacher, request.getHomeroomClassIds());
+        return teacher;
     }
 
     @Transactional
@@ -68,15 +75,48 @@ public class TeacherService {
             teacher.setAppUser(appUser);
         }
 
-        return teacherRepository.save(teacher);
+        teacher = teacherRepository.save(teacher);
+        if (request.getHomeroomClassIds() != null) {
+            syncHomeroomClasses(teacher, request.getHomeroomClassIds());
+        }
+        return teacher;
     }
 
     @Transactional
     public void delete(String id) {
         Teacher teacher = findById(id);
+        syncHomeroomClasses(teacher, List.of());
         AppUser linked = teacher.getAppUser();
         teacherRepository.delete(teacher);
         portalAccountService.deleteLinkedAccount(linked);
+    }
+
+    private void validatePortalContact(TeacherRequest request) {
+        boolean hasEmail = request.getEmail() != null && !request.getEmail().isBlank();
+        boolean hasPhone = request.getPhone() != null && !request.getPhone().isBlank();
+        if (!hasEmail && !hasPhone) {
+            throw new IllegalArgumentException("Email or phone is required for portal login");
+        }
+    }
+
+    private void syncHomeroomClasses(Teacher teacher, List<String> classIds) {
+        List<String> ids = classIds != null ? classIds : List.of();
+        List<ClassItem> currentlyAssigned = classItemRepository.findByHomeroomTeacherId(teacher.getId());
+        for (ClassItem clazz : currentlyAssigned) {
+            if (!ids.contains(clazz.getId())) {
+                clazz.setHomeroomTeacher(null);
+                classItemRepository.save(clazz);
+            }
+        }
+        for (String classId : ids) {
+            if (classId == null || classId.isBlank()) {
+                continue;
+            }
+            classItemRepository.findById(classId).ifPresent(clazz -> {
+                clazz.setHomeroomTeacher(teacher);
+                classItemRepository.save(clazz);
+            });
+        }
     }
 
     private String trimPhone(String phone) {

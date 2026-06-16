@@ -45,6 +45,9 @@ public class AuthService {
         user = appUserRepository.save(user);
 
         School school = schoolService.create(request.getSchool());
+        user.setSchoolId(school.getId());
+        user = appUserRepository.save(user);
+
         String token = issueToken(user.getEmail(), request.getPassword());
 
         emailNotificationService.sendSchoolWelcome(user.getName(), user.getEmail());
@@ -95,6 +98,7 @@ public class AuthService {
                 .name(user.getName())
                 .email(user.getEmail())
                 .role(user.getRole())
+                .schoolId(user.getSchoolId())
                 .build();
     }
 

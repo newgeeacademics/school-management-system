@@ -4,6 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class TeacherRequest {
 
@@ -20,4 +22,7 @@ public class TeacherRequest {
     private String password;
 
     private String phone;
+
+    /** Classes where this teacher is professeur principal (homeroom). */
+    private List<String> homeroomClassIds;
 }
