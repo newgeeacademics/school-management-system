@@ -278,3 +278,32 @@ body.landing-mobile-menu-open .landing__header {
     }
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .schedule-print-area,
+  .schedule-print-area * {
+    visibility: visible;
+  }
+
+  .schedule-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none;
+    box-shadow: none;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .schedule-class-block {
+    page-break-inside: avoid;
+    margin-bottom: 1.5rem;
+  }
+}

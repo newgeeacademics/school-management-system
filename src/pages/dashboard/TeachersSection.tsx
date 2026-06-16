@@ -2,6 +2,7 @@ import React from 'react';
 import { CreditCard, Plus, Users } from 'lucide-react';
 
 import { EntityCrudActions } from '@/components/dashboard/EntityCrudActions';
+import { LoginEmailPreview } from '@/components/dashboard/LoginEmailPreview';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -197,7 +198,8 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
             <div>
               <CardTitle className='text-base'>Ajouter un enseignant</CardTitle>
               <CardDescription className='text-xs'>
-                Créez le profil, le compte portail (email ou téléphone) et assignez les classes ici — sans quitter cette page.
+                Créez le profil, le compte portail (identifiant généré automatiquement) et assignez les
+                classes ici — sans quitter cette page.
               </CardDescription>
             </div>
           </div>
@@ -266,18 +268,15 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                   />
                 )}
               </div>
-              <div className='grid gap-2'>
-                <Label htmlFor='teacher-email'>Email (connexion portail)</Label>
-                <Input
-                  id='teacher-email'
-                  type='email'
-                  value={newTeacher.email}
-                  onChange={(e) => setNewTeacher((t) => ({ ...t, email: e.target.value }))}
-                  placeholder='prof@ecole.fr'
+              <div className='grid gap-2 sm:col-span-2'>
+                <LoginEmailPreview
+                  firstName={newTeacher.firstName}
+                  lastName={newTeacher.lastName}
+                  role='TEACHER'
                 />
               </div>
               <div className='grid gap-2'>
-                <Label htmlFor='teacher-phone'>Téléphone (connexion / annuaire)</Label>
+                <Label htmlFor='teacher-phone'>Téléphone (annuaire, optionnel)</Label>
                 <Input
                   id='teacher-phone'
                   type='tel'

@@ -12,12 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { GradeModificationRequestsPanel } from '@/pages/dashboard/GradeModificationRequestsPanel';
 
 import type {
   ClassItem,
   Course,
   Evaluation,
   EvaluationPeriod,
+  GradeModificationRequest,
   NewEvaluationFormState,
   Student,
   StudentGrade,
@@ -29,10 +31,20 @@ type GradesSectionProps = {
   students: Student[];
   evaluations: Evaluation[];
   grades: StudentGrade[];
+  gradeModificationRequests: GradeModificationRequest[];
+  isAdmin: boolean;
   newEvaluation: NewEvaluationFormState;
   setNewEvaluation: React.Dispatch<React.SetStateAction<NewEvaluationFormState>>;
   onCreateEvaluation: (e: React.FormEvent) => void;
   onUpdateGrade: (evaluationId: string, studentId: string, score: number | '') => void;
+  onSubmitGradeModificationRequest: (payload: {
+    evaluationId: string;
+    studentId: string;
+    requestedScore: number;
+    reason: string;
+  }) => void | Promise<void>;
+  onApproveGradeModificationRequest: (id: string, adminNote?: string) => void | Promise<void>;
+  onRejectGradeModificationRequest: (id: string, adminNote?: string) => void | Promise<void>;
 };
 
 const PERIOD_OPTIONS: EvaluationPeriod[] = [
@@ -47,14 +59,29 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
   students,
   evaluations,
   grades,
+  gradeModificationRequests,
+  isAdmin,
   newEvaluation,
   setNewEvaluation,
   onCreateEvaluation,
   onUpdateGrade,
+  onSubmitGradeModificationRequest,
+  onApproveGradeModificationRequest,
+  onRejectGradeModificationRequest,
 }) => {
   const [selectedClassId, setSelectedClassId] = React.useState<string>('');
   const [selectedPeriod, setSelectedPeriod] =
     React.useState<EvaluationPeriod>('Trimestre 1');
+  const [modDialog, setModDialog] = React.useState<{
+    evaluationId: string;
+    studentId: string;
+    studentName: string;
+    evaluationLabel: string;
+    maxScore: number;
+    currentScore: number;
+    requestedScore: number;
+    reason: string;
+  } | null>(null);
 
   const classStudents = React.useMemo(
     () => students.filter((s) => s.classId === selectedClassId),
@@ -91,6 +118,56 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
     return typeof g?.score === 'number' ? g.score : '';
   };
 
+  const hasPendingRequest = (evaluationId: string, studentId: string) =>
+    gradeModificationRequests.some(
+      (r) =>
+        r.status === 'PENDING' &&
+        r.evaluationId === evaluationId &&
+        r.studentId === studentId,
+    );
+
+  const handleGradeInput = (
+    ev: Evaluation,
+    student: Student,
+    raw: string,
+    previousScore: number | '',
+  ) => {
+    if (!raw) {
+      if (isAdmin) onUpdateGrade(ev.id, student.id, '');
+      return;
+    }
+    const num = Number(raw);
+    if (Number.isNaN(num)) return;
+
+    if (!isAdmin && previousScore !== '' && num !== previousScore) {
+      setModDialog({
+        evaluationId: ev.id,
+        studentId: student.id,
+        studentName: student.name,
+        evaluationLabel: ev.label,
+        maxScore: ev.maxScore,
+        currentScore: previousScore,
+        requestedScore: num,
+        reason: '',
+      });
+      return;
+    }
+
+    onUpdateGrade(ev.id, student.id, num);
+  };
+
+  const submitModificationRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!modDialog || !modDialog.reason.trim()) return;
+    await onSubmitGradeModificationRequest({
+      evaluationId: modDialog.evaluationId,
+      studentId: modDialog.studentId,
+      requestedScore: modDialog.requestedScore,
+      reason: modDialog.reason.trim(),
+    });
+    setModDialog(null);
+  };
+
   const computeStudentAverage = (studentId: string): number | null => {
     const evals = classEvaluations;
     if (!evals.length) return null;
@@ -125,6 +202,72 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
 
   return (
     <section className='space-y-5'>
+      <GradeModificationRequestsPanel
+        requests={gradeModificationRequests}
+        isAdmin={isAdmin}
+        onApprove={onApproveGradeModificationRequest}
+        onReject={onRejectGradeModificationRequest}
+      />
+
+      {modDialog && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4'>
+          <Card className='w-full max-w-md'>
+            <CardHeader>
+              <CardTitle className='text-sm'>Demande de modification de note</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form className='space-y-3 text-xs' onSubmit={(e) => void submitModificationRequest(e)}>
+                <p>
+                  <span className='font-medium'>{modDialog.studentName}</span> ·{' '}
+                  {modDialog.evaluationLabel}
+                </p>
+                <p className='text-muted-foreground'>
+                  Note actuelle : <strong>{modDialog.currentScore}/{modDialog.maxScore}</strong>
+                </p>
+                <div className='grid gap-1'>
+                  <Label htmlFor='mod-score'>Nouvelle note demandée *</Label>
+                  <Input
+                    id='mod-score'
+                    type='number'
+                    min={0}
+                    max={modDialog.maxScore}
+                    step={0.25}
+                    value={modDialog.requestedScore}
+                    onChange={(e) =>
+                      setModDialog((d) =>
+                        d ? { ...d, requestedScore: Number(e.target.value) } : d,
+                      )
+                    }
+                    required
+                  />
+                </div>
+                <div className='grid gap-1'>
+                  <Label htmlFor='mod-reason'>Motif *</Label>
+                  <textarea
+                    id='mod-reason'
+                    className='min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs'
+                    value={modDialog.reason}
+                    onChange={(e) =>
+                      setModDialog((d) => (d ? { ...d, reason: e.target.value } : d))
+                    }
+                    placeholder='Expliquez pourquoi cette note doit être modifiée…'
+                    required
+                  />
+                </div>
+                <div className='flex justify-end gap-2'>
+                  <Button type='button' variant='outline' size='sm' onClick={() => setModDialog(null)}>
+                    Annuler
+                  </Button>
+                  <Button type='submit' size='sm' disabled={!modDialog.reason.trim()}>
+                    Envoyer à l&apos;administration
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <div className='grid gap-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)]'>
         <Card>
           <CardHeader>
@@ -412,27 +555,53 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
                               <span className='font-medium'>{student.name}</span>
                             </div>
                           </td>
-                          {classEvaluations.map((ev) => (
+                          {classEvaluations.map((ev) => {
+                            const current = getGrade(ev.id, student.id);
+                            const pending = hasPendingRequest(ev.id, student.id);
+                            return (
                             <td key={ev.id} className='border-b px-1.5 py-1'>
+                              <div className='flex flex-col gap-0.5'>
                               <Input
+                                key={`${ev.id}-${student.id}-${current}-${pending}`}
                                 type='number'
                                 min={0}
                                 max={ev.maxScore}
                                 className='h-7 px-1 text-[11px]'
-                                value={getGrade(ev.id, student.id)}
-                                onChange={(e) => {
-                                  const raw = e.target.value;
-                                  if (!raw) {
-                                    onUpdateGrade(ev.id, student.id, '');
-                                    return;
+                                defaultValue={current === '' ? undefined : current}
+                                readOnly={!isAdmin && current !== ''}
+                                title={
+                                  !isAdmin && current !== ''
+                                    ? 'Cliquez pour demander une modification à l\'administration'
+                                    : undefined
+                                }
+                                onClick={() => {
+                                  if (!isAdmin && current !== '' && !pending) {
+                                    setModDialog({
+                                      evaluationId: ev.id,
+                                      studentId: student.id,
+                                      studentName: student.name,
+                                      evaluationLabel: ev.label,
+                                      maxScore: ev.maxScore,
+                                      currentScore: current,
+                                      requestedScore: current,
+                                      reason: '',
+                                    });
                                   }
-                                  const num = Number(raw);
-                                  if (Number.isNaN(num)) return;
-                                  onUpdateGrade(ev.id, student.id, num);
+                                }}
+                                onChange={(e) => {
+                                  if (!isAdmin && current !== '') return;
+                                  const raw = e.target.value;
+                                  handleGradeInput(ev, student, raw, current);
                                 }}
                               />
+                              {pending && (
+                                <Badge variant='outline' className='text-[9px] px-1 py-0 w-fit'>
+                                  En attente
+                                </Badge>
+                              )}
+                              </div>
                             </td>
-                          ))}
+                          );})}
                           <td className='border-b px-2 py-1'>
                             {student.avg != null ? (
                               <span
@@ -455,8 +624,9 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
                 </table>
               </div>
               <p className='text-[11px] text-muted-foreground'>
-                Les moyennes et rangs sont calculés côté interface uniquement, en
-                attendant la connexion au backend des bulletins.
+                {isAdmin
+                  ? 'En tant qu\'administration, vous pouvez modifier les notes directement. Les demandes des enseignants apparaissent ci-dessus.'
+                  : 'La saisie initiale est directe. Pour modifier une note déjà enregistrée, cliquez sur la cellule et envoyez une demande à l\'administration.'}
               </p>
             </>
           )}

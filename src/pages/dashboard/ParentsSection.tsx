@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { InputPassword } from '@/components/refine-ui/form/input-password';
+import { LoginEmailPreview } from '@/components/dashboard/LoginEmailPreview';
 import { EntityCrudActions, NONE_SELECT_VALUE } from '@/components/dashboard/EntityCrudActions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -100,8 +101,8 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
         </CardHeader>
         <CardContent>
           <p className='mb-3 text-[11px] text-muted-foreground'>
-            Liez le parent à un ou plusieurs enfants (même compte portail réutilisé). Email ou
-            téléphone + mot de passe = connexion portail famille.
+            Liez le parent à un élève. L&apos;identifiant de connexion portail est généré automatiquement
+            à partir du prénom et du nom.
           </p>
           <form
             className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
@@ -133,13 +134,11 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
                 onChange={(e) => setNewParent((p) => ({ ...p, phone: e.target.value }))}
               />
             </div>
-            <div className='grid gap-2'>
-              <Label htmlFor='parent-email'>Email (connexion)</Label>
-              <Input
-                id='parent-email'
-                type='email'
-                value={newParent.email}
-                onChange={(e) => setNewParent((p) => ({ ...p, email: e.target.value }))}
+            <div className='grid gap-2 md:col-span-2 lg:col-span-3'>
+              <LoginEmailPreview
+                firstName={newParent.firstName}
+                lastName={newParent.lastName}
+                role='PARENT'
               />
             </div>
             <div className='grid gap-2'>

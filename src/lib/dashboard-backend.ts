@@ -28,6 +28,7 @@ import type {
   TeacherIdCardData,
   Driver,
   TransportRoute,
+  GradeModificationRequest,
 } from '@/pages/dashboard/dashboardTypes';
 
 export const BACKEND_REQUIRED_MESSAGE =
@@ -1269,6 +1270,83 @@ export async function createOrUpdateGradeOnBackend(item: {
     method: 'POST',
     body: JSON.stringify(item),
   });
+}
+
+export function mapGradeModificationRequestFromApi(
+  row: Record<string, unknown>,
+): GradeModificationRequest {
+  return {
+    id: String(row.id),
+    evaluationId: String(row.evaluationId ?? ''),
+    evaluationLabel: String(row.evaluationLabel ?? ''),
+    courseName: row.courseName ? String(row.courseName) : undefined,
+    studentId: String(row.studentId ?? ''),
+    studentName: String(row.studentName ?? ''),
+    classId: row.classId ? String(row.classId) : undefined,
+    className: row.className ? String(row.className) : undefined,
+    teacherId: String(row.teacherId ?? ''),
+    teacherName: String(row.teacherName ?? ''),
+    currentScore: Number(row.currentScore ?? 0),
+    requestedScore: Number(row.requestedScore ?? 0),
+    maxScore: row.maxScore != null ? Number(row.maxScore) : undefined,
+    reason: String(row.reason ?? ''),
+    status: String(row.status ?? 'PENDING') as GradeModificationRequest['status'],
+    adminNote: row.adminNote ? String(row.adminNote) : undefined,
+    reviewedByName: row.reviewedByName ? String(row.reviewedByName) : undefined,
+    createdAt: row.createdAt ? String(row.createdAt) : undefined,
+    reviewedAt: row.reviewedAt ? String(row.reviewedAt) : undefined,
+  };
+}
+
+export async function fetchGradeModificationRequests(
+  status?: string,
+): Promise<GradeModificationRequest[]> {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+  const rows = await adminApiFetch<Record<string, unknown>[]>(
+    `/api/grades/modification-requests${qs}`,
+  );
+  return rows.map(mapGradeModificationRequestFromApi);
+}
+
+export async function submitGradeModificationRequestOnBackend(item: {
+  evaluationId: string;
+  studentId: string;
+  requestedScore: number;
+  reason: string;
+}) {
+  const data = await adminApiFetch<Record<string, unknown>>('/api/grades/modification-requests', {
+    method: 'POST',
+    body: JSON.stringify(item),
+  });
+  return mapGradeModificationRequestFromApi(data);
+}
+
+export async function approveGradeModificationRequestOnBackend(
+  id: string,
+  adminNote?: string,
+) {
+  const data = await adminApiFetch<Record<string, unknown>>(
+    `/api/grades/modification-requests/${id}/approve`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ adminNote: adminNote?.trim() || undefined }),
+    },
+  );
+  return mapGradeModificationRequestFromApi(data);
+}
+
+export async function rejectGradeModificationRequestOnBackend(
+  id: string,
+  adminNote?: string,
+) {
+  const data = await adminApiFetch<Record<string, unknown>>(
+    `/api/grades/modification-requests/${id}/reject`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ adminNote: adminNote?.trim() || undefined }),
+    },
+  );
+  return mapGradeModificationRequestFromApi(data);
 }
 
 export async function createAttendanceOnBackend(item: {

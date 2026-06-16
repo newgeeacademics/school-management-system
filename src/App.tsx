@@ -8,6 +8,7 @@ import { PlansPage } from './pages/PlansPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { IdCardScanPage } from './pages/IdCardScanPage';
 import { UserPortalRedirectPage } from './pages/UserPortalRedirectPage';
 import { EnvConfigBanner } from '@/components/EnvConfigBanner';
 import { RegistrationHandoff } from '@/components/RegistrationHandoff';
@@ -28,6 +29,7 @@ export const App: React.FC = () => {
           <Route path='/dashboard' element={<DashboardPage />} />
           <Route path='/register' element={<RegisterPage />} />
           <Route path='/connexion' element={<UserPortalRedirectPage />} />
+          <Route path='/carte/:type/:id' element={<IdCardScanPage />} />
           <Route path='*' element={<Navigate to='/' replace />} />
         </Routes>
       </BrowserRouter>
