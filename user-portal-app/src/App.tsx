@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { UserPortalLoginPage } from '@/pages/UserPortalLoginPage';
+import { IdCardScanPage } from '@/pages/IdCardScanPage';
 import { PortalHomePage } from '@/pages/PortalHomePage';
 import { PortalClassHubView } from '@/pages/PortalClassHubView';
 import { PortalLayout } from '@/pages/PortalLayout';
@@ -14,6 +15,7 @@ export function App() {
         <Routes>
           <Route path='/' element={<Navigate to='/connexion' replace />} />
           <Route path='/connexion' element={<UserPortalLoginPage />} />
+          <Route path='/carte/:type/:id' element={<IdCardScanPage />} />
           <Route
             path='/accueil'
             element={

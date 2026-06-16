@@ -1,5 +1,6 @@
 package com.classroom.backend.service;
 
+import com.classroom.backend.dto.response.PublicStudentCardResponse;
 import com.classroom.backend.dto.response.StudentIdCardResponse;
 import com.classroom.backend.model.ClassItem;
 import com.classroom.backend.model.ParentContact;
@@ -72,6 +73,49 @@ public class StudentIdCardService {
                 .academicYear(AcademicYearUtil.currentLabel())
                 .qrPayload(qrPayload)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public PublicStudentCardResponse getPublicStudentCard(String studentId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Student not found: " + studentId));
+
+        ClassItem clazz = student.getClassItem();
+        School school = schoolRepository.findAll().stream().findFirst().orElse(null);
+        RosterRowDetails roster = rosterDetailsFor(student);
+
+        String firstName = PersonNameUtil.trim(student.getFirstName());
+        String lastName = PersonNameUtil.trim(student.getLastName());
+        if (firstName.isEmpty() && lastName.isEmpty() && student.getName() != null) {
+            String[] parts = student.getName().trim().split("\\s+", 2);
+            firstName = parts.length > 0 ? parts[0] : student.getName();
+            lastName = parts.length > 1 ? parts[1] : "";
+        }
+
+        return PublicStudentCardResponse.builder()
+                .studentId(student.getId())
+                .matricule(student.getMatricule())
+                .idCardNumber(student.getIdCardNumber())
+                .firstName(firstName)
+                .lastName(lastName)
+                .studentName(student.getName())
+                .className(clazz != null ? clazz.getName() : null)
+                .classLevel(clazz != null ? clazz.getLevel() : null)
+                .schoolName(school != null ? school.getName() : "Établissement scolaire")
+                .schoolCity(school != null ? emptyToNull(PersonNameUtil.trim(school.getCity())) : null)
+                .schoolAddress(school != null ? emptyToNull(PersonNameUtil.trim(school.getAddress())) : null)
+                .schoolPhone(school != null ? emptyToNull(PersonNameUtil.trim(school.getMainPhone())) : null)
+                .schoolEmail(school != null ? emptyToNull(PersonNameUtil.trim(school.getOfficialEmail())) : null)
+                .headName(school != null ? emptyToNull(PersonNameUtil.trim(school.getHeadName())) : null)
+                .academicYear(AcademicYearUtil.currentLabel())
+                .homeroomTeacherName(emptyToNull(roster.homeroomTeacherName()))
+                .parentName(emptyToNull(roster.parentName()))
+                .parentPhone(emptyToNull(roster.parentPhone()))
+                .build();
+    }
+
+    private static String emptyToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     /** Parent + homeroom teacher details for roster export (not printed on the physical card). */

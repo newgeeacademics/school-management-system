@@ -1,7 +1,7 @@
 package com.classroom.backend.controller;
 
-import com.classroom.backend.dto.response.StudentIdCardResponse;
-import com.classroom.backend.dto.response.TeacherIdCardResponse;
+import com.classroom.backend.dto.response.PublicStudentCardResponse;
+import com.classroom.backend.dto.response.PublicTeacherCardResponse;
 import com.classroom.backend.service.StudentIdCardService;
 import com.classroom.backend.service.TeacherIdCardService;
 import lombok.RequiredArgsConstructor;
@@ -20,16 +20,12 @@ public class PublicIdCardController {
     private final TeacherIdCardService teacherIdCardService;
 
     @GetMapping("/students/{id}")
-    public ResponseEntity<StudentIdCardResponse> studentCard(@PathVariable String id) {
-        StudentIdCardResponse card = studentIdCardService.getIdCard(id);
-        card.setQrPayload(null);
-        return ResponseEntity.ok(card);
+    public ResponseEntity<PublicStudentCardResponse> studentCard(@PathVariable String id) {
+        return ResponseEntity.ok(studentIdCardService.getPublicStudentCard(id));
     }
 
     @GetMapping("/teachers/{id}")
-    public ResponseEntity<TeacherIdCardResponse> teacherCard(@PathVariable String id) {
-        TeacherIdCardResponse card = teacherIdCardService.getIdCard(id);
-        card.setQrPayload(null);
-        return ResponseEntity.ok(card);
+    public ResponseEntity<PublicTeacherCardResponse> teacherCard(@PathVariable String id) {
+        return ResponseEntity.ok(teacherIdCardService.getPublicTeacherCard(id));
     }
 }
