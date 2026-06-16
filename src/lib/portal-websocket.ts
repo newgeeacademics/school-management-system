@@ -5,6 +5,12 @@ export type PortalWsMessage = {
   type: string;
   section?: string;
   message?: string;
+  id?: string;
+  senderUserId?: string;
+  senderName?: string;
+  senderRole?: string;
+  body?: string;
+  sentAt?: string;
 };
 
 export function getPortalWebSocketUrl(token: string): string {
@@ -16,6 +22,7 @@ export function getPortalWebSocketUrl(token: string): string {
 export type PortalWebSocketClient = {
   sendNavigate: (section: PortalSectionId) => void;
   sendPing: () => void;
+  sendChat: (body: string) => void;
   close: () => void;
 };
 
@@ -65,6 +72,11 @@ export function connectPortalWebSocket(
   return {
     sendNavigate: (section) => send({ type: 'NAVIGATE', section }),
     sendPing: () => send({ type: 'PING', section: 'overview' }),
+    sendChat: (body) => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'CHAT', section: 'messages', body }));
+      }
+    },
     close: () => {
       if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
         socket.close();

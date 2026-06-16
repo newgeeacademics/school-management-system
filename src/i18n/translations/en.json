@@ -167,7 +167,28 @@
     "send": "Send",
     "sending": "Sending…",
     "sent": "Message sent.",
-    "sendError": "Send failed."
+    "sendError": "Send failed.",
+    "tabOfficial": "Official messages"
+  },
+  "portalChat": {
+    "tabLive": "Live chat",
+    "title": "School lounge",
+    "subtitle": "Quick messages with teachers, parents, and students.",
+    "loading": "Loading chat…",
+    "loadError": "Could not load chat.",
+    "empty": "No messages yet. Say hello!",
+    "placeholder": "Write a message…",
+    "send": "Send",
+    "sendError": "Could not send message.",
+    "live": "Live",
+    "offline": "Offline",
+    "connected": "Connected in real time",
+    "disconnected": "Reconnecting… messages still send via the server",
+    "role": {
+      "TEACHER": "Teacher",
+      "PARENT": "Parent",
+      "STUDENT": "Student"
+    }
   },
   "portalDirectory": {
     "loadError": "Could not load directory.",
