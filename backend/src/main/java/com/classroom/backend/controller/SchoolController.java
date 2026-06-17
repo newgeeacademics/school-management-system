@@ -28,14 +28,24 @@ public class SchoolController {
         return ResponseEntity.ok(schoolService.findAll());
     }
 
+    @GetMapping("/login-id-preview")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> loginIdPreview(
+            @RequestParam String firstName,
+            @RequestParam String lastName) {
+        return ResponseEntity.ok(Map.of(
+                "loginId", schoolEmailService.previewLoginId(firstName, lastName)));
+    }
+
+    /** @deprecated use /login-id-preview */
     @GetMapping("/login-email-preview")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, String>> loginEmailPreview(
             @RequestParam String firstName,
             @RequestParam String lastName,
-            @RequestParam UserRole role) {
-        return ResponseEntity.ok(Map.of(
-                "email", schoolEmailService.previewLoginEmail(firstName, lastName, role)));
+            @RequestParam(required = false) UserRole role) {
+        String loginId = schoolEmailService.previewLoginId(firstName, lastName);
+        return ResponseEntity.ok(Map.of("email", loginId, "loginId", loginId));
     }
 
     @GetMapping("/{id}")

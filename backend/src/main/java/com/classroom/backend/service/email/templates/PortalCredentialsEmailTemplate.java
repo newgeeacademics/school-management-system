@@ -11,13 +11,21 @@ public final class PortalCredentialsEmailTemplate {
         return "Vos identifiants portail";
     }
 
-    public static String text(String displayName, String email, String password, String roleLabel, String loginUrl) {
+    public static String text(
+            String displayName,
+            String loginId,
+            String contactEmail,
+            String password,
+            String roleLabel,
+            String loginUrl
+    ) {
         return String.join(
                 "\n\n",
                 "Bonjour " + safe(displayName, "") + ",",
                 "Votre compte NewGee a été créé.",
                 "Rôle : " + safe(roleLabel, ""),
-                "Email : " + safe(email, ""),
+                "Identifiant de connexion : " + safe(loginId, ""),
+                "E-mail de contact : " + safe(contactEmail, ""),
                 "Mot de passe : " + safe(password, ""),
                 "Connexion : " + safe(loginUrl, ""),
                 "Changez votre mot de passe après la première connexion.",
@@ -27,7 +35,8 @@ public final class PortalCredentialsEmailTemplate {
 
     public static String html(
             String displayName,
-            String email,
+            String loginId,
+            String contactEmail,
             String password,
             String roleLabel,
             String loginUrl,
@@ -37,14 +46,15 @@ public final class PortalCredentialsEmailTemplate {
                 "email/portal-credentials.html",
                 Map.of(
                         "displayName", escapeHtml(displayName),
-                        "email", escapeHtml(email),
+                        "loginId", escapeHtml(loginId),
+                        "contactEmail", escapeHtml(contactEmail),
                         "password", escapeHtml(password),
                         "roleLabel", escapeHtml(roleLabel),
                         "loginUrl", escapeHtmlAttr(loginUrl),
                         "logoUrl", escapeHtmlAttr(logoUrl),
                         "year", String.valueOf(Year.now().getValue())
                 ),
-                "<html><body><p>Bonjour {{displayName}}</p><p>Email: {{email}}</p><p>Mot de passe: {{password}}</p></body></html>"
+                "<html><body><p>Bonjour {{displayName}}</p><p>Identifiant: {{loginId}}</p></body></html>"
         );
     }
 

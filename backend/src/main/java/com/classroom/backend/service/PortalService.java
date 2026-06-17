@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 public class PortalService {
 
     private final AppUserRepository appUserRepository;
+    private final AccountIdentifierService accountIdentifierService;
     private final TeacherRepository teacherRepository;
     private final StudentRepository studentRepository;
     private final ParentContactRepository parentContactRepository;
@@ -70,8 +71,7 @@ public class PortalService {
         if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
             throw new IllegalStateException("Not authenticated");
         }
-        return appUserRepository.findByEmail(auth.getName())
-                .orElseThrow(() -> new IllegalStateException("User not found"));
+        return accountIdentifierService.requireByPrincipalName(auth.getName());
     }
 
     private void resolveTeacherScope(AppUser user, List<ClassItem> classes, List<Student> students) {

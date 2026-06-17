@@ -1,6 +1,7 @@
 package com.classroom.backend.service.email;
 
 import com.classroom.backend.model.enums.UserRole;
+import com.classroom.backend.service.email.EmailNotificationService;
 import com.classroom.backend.service.email.templates.PortalCredentialsEmailTemplate;
 import com.classroom.backend.service.email.templates.WelcomeEmailTemplate;
 import lombok.RequiredArgsConstructor;
@@ -37,29 +38,38 @@ public class EmailNotificationService {
         }
     }
 
-    public void sendPortalCredentials(String displayName, String email, String rawPassword, UserRole role) {
-        if (email == null || email.isBlank() || !emailService.isConfigured()) {
+    public void sendPortalCredentials(
+            String displayName,
+            String contactEmail,
+            String loginId,
+            String rawPassword,
+            UserRole role
+    ) {
+        if (contactEmail == null || contactEmail.isBlank() || !emailService.isConfigured()) {
             return;
         }
         String loginUrl = normalizePortalUrl() + "/connexion";
         String roleLabel = roleLabel(role);
         String subject = PortalCredentialsEmailTemplate.subject();
+        String resolvedLoginId = loginId != null && !loginId.isBlank() ? loginId.trim() : contactEmail.trim();
         String html = PortalCredentialsEmailTemplate.html(
                 displayName,
-                email.trim(),
+                resolvedLoginId,
+                contactEmail.trim(),
                 rawPassword,
                 roleLabel,
                 loginUrl,
                 emailService.resolveEmailLogoUrl()
         );
         try {
-            emailService.sendHtmlEmail(email.trim(), subject, html);
+            emailService.sendHtmlEmail(contactEmail.trim(), subject, html);
         } catch (Exception e) {
-            log.warn("Portal credentials email failed for {}", email, e);
+            log.warn("Portal credentials email failed for {}", contactEmail, e);
             emailService.sendSimpleEmail(
-                    email.trim(),
+                    contactEmail.trim(),
                     subject,
-                    PortalCredentialsEmailTemplate.text(displayName, email, rawPassword, roleLabel, loginUrl)
+                    PortalCredentialsEmailTemplate.text(
+                            displayName, resolvedLoginId, contactEmail, rawPassword, roleLabel, loginUrl)
             );
         }
     }

@@ -396,6 +396,7 @@ export type NewEvaluationFormState = {
 };
 
 export type NewPaymentReminderFormState = {
+  parentContactId: string;
   parentName: string;
   studentName: string;
   amount: string;
@@ -404,6 +405,7 @@ export type NewPaymentReminderFormState = {
 };
 
 export type NewPaymentReceiptFormState = {
+  parentContactId: string;
   parentName: string;
   studentName: string;
   amount: string;

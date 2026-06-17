@@ -2,7 +2,7 @@ import React from 'react';
 import { Car, Plus, Trash2 } from 'lucide-react';
 
 import { InputPassword } from '@/components/refine-ui/form/input-password';
-import { LoginEmailPreview } from '@/components/dashboard/LoginEmailPreview';
+import { LoginIdPreview } from '@/components/dashboard/LoginIdPreview';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -65,11 +65,7 @@ export const DriversSection: React.FC<DriversSectionProps> = ({
             />
           </div>
           <div className='grid gap-1 sm:col-span-2 lg:col-span-3'>
-            <LoginEmailPreview
-              firstName={newDriver.firstName}
-              lastName={newDriver.lastName}
-              role='STAFF'
-            />
+            <LoginIdPreview firstName={newDriver.firstName} lastName={newDriver.lastName} />
           </div>
           <div className='grid gap-1'>
             <Label htmlFor='driver-phone'>Téléphone (optionnel)</Label>

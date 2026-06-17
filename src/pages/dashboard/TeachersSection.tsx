@@ -2,7 +2,7 @@ import React from 'react';
 import { CreditCard, Plus, Users } from 'lucide-react';
 
 import { EntityCrudActions } from '@/components/dashboard/EntityCrudActions';
-import { LoginEmailPreview } from '@/components/dashboard/LoginEmailPreview';
+import { LoginIdPreview } from '@/components/dashboard/LoginIdPreview';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -269,11 +269,18 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                 )}
               </div>
               <div className='grid gap-2 sm:col-span-2'>
-                <LoginEmailPreview
-                  firstName={newTeacher.firstName}
-                  lastName={newTeacher.lastName}
-                  role='TEACHER'
+                <Label htmlFor='teacher-email'>E-mail de contact *</Label>
+                <Input
+                  id='teacher-email'
+                  type='email'
+                  value={newTeacher.email}
+                  onChange={(e) => setNewTeacher((t) => ({ ...t, email: e.target.value }))}
+                  placeholder='enseignant@exemple.com'
+                  required
                 />
+              </div>
+              <div className='grid gap-2 sm:col-span-2'>
+                <LoginIdPreview firstName={newTeacher.firstName} lastName={newTeacher.lastName} />
               </div>
               <div className='grid gap-2'>
                 <Label htmlFor='teacher-phone'>Téléphone (annuaire, optionnel)</Label>
@@ -307,7 +314,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
             </div>
 
             <p className='text-[11px] text-muted-foreground'>
-              * Email <strong>ou</strong> téléphone obligatoire pour la connexion portail. Mot de passe vide → <strong>changeme</strong>.
+              * E-mail de contact obligatoire (identifiants envoyés par e-mail). Mot de passe vide → <strong>changeme</strong>.
             </p>
 
             <Button type='submit' className='gap-2'>

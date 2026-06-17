@@ -12,7 +12,6 @@ import com.classroom.backend.service.email.EmailNotificationService;
 import com.classroom.backend.util.PhoneAccountUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,6 +28,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final SchoolService schoolService;
     private final EmailNotificationService emailNotificationService;
+    private final AccountIdentifierService accountIdentifierService;
 
     @Transactional
     public AuthResponse registerSchool(RegisterSchoolRequest request) {
@@ -81,40 +81,23 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        String loginEmail = resolveExistingAccountEmail(request.getEmail());
+        AppUser user = accountIdentifierService.requireBySignInIdentifier(request.getEmail());
+        String principal = accountIdentifierService.canonicalPrincipalName(user);
 
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginEmail, request.getPassword())
+                new UsernamePasswordAuthenticationToken(principal, request.getPassword())
         );
 
         String token = jwtTokenProvider.generateToken(authentication);
-
-        AppUser user = appUserRepository.findByEmail(loginEmail)
-                .orElseThrow(() -> new BadCredentialsException("Identifiants invalides"));
 
         return AuthResponse.builder()
                 .token(token)
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
+                .loginId(user.getLoginId())
                 .role(user.getRole())
                 .schoolId(user.getSchoolId())
                 .build();
-    }
-
-    private String resolveExistingAccountEmail(String identifier) {
-        if (identifier == null || identifier.isBlank()) {
-            throw new BadCredentialsException("Identifiants invalides");
-        }
-        String trimmed = identifier.trim();
-        if (PhoneAccountUtil.looksLikePhone(trimmed)) {
-            String phone = PhoneAccountUtil.normalizePhone(trimmed);
-            return appUserRepository.findByPhone(phone)
-                    .map(AppUser::getEmail)
-                    .orElseThrow(() -> new BadCredentialsException("Identifiants invalides"));
-        }
-        return appUserRepository.findByEmailIgnoreCase(trimmed)
-                .map(AppUser::getEmail)
-                .orElseThrow(() -> new BadCredentialsException("Identifiants invalides"));
     }
 }

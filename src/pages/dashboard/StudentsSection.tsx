@@ -3,7 +3,7 @@ import React from 'react';
 import { CreditCard, FileDown } from 'lucide-react';
 
 import { InputPassword } from '@/components/refine-ui/form/input-password';
-import { LoginEmailPreview } from '@/components/dashboard/LoginEmailPreview';
+import { LoginIdPreview } from '@/components/dashboard/LoginIdPreview';
 import { EntityCrudActions, NONE_SELECT_VALUE } from '@/components/dashboard/EntityCrudActions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -113,9 +113,8 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
           </CardHeader>
           <CardContent>
             <p className='mb-3 text-[11px] text-muted-foreground'>
-              Prénom et nom séparés. L&apos;identifiant de connexion portail est généré automatiquement
-              (ex. sermem1@eleve.nom-ecole.domaine). Le matricule et le numéro de carte sont générés
-              automatiquement si non renseignés.
+              Prénom et nom séparés. Saisissez l&apos;e-mail de contact (parent ou élève) ; l&apos;identifiant
+              de connexion (ex. sermem1) est généré automatiquement et envoyé par e-mail.
             </p>
             <form
               className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
@@ -183,12 +182,19 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
                   placeholder='+225…'
                 />
               </div>
-              <div className='grid gap-2 md:col-span-2 lg:col-span-3'>
-                <LoginEmailPreview
-                  firstName={newStudent.firstName}
-                  lastName={newStudent.lastName}
-                  role='STUDENT'
+              <div className='grid gap-2'>
+                <Label htmlFor='student-email'>E-mail de contact *</Label>
+                <Input
+                  id='student-email'
+                  type='email'
+                  value={newStudent.email}
+                  onChange={(e) => setNewStudent((s) => ({ ...s, email: e.target.value }))}
+                  placeholder='parent@exemple.com'
+                  required
                 />
+              </div>
+              <div className='grid gap-2 md:col-span-2 lg:col-span-3'>
+                <LoginIdPreview firstName={newStudent.firstName} lastName={newStudent.lastName} />
               </div>
               <div className='grid gap-2'>
                 <Label>Mot de passe</Label>

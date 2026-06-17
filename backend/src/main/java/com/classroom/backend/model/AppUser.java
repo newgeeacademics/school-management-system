@@ -20,6 +20,10 @@ public class AppUser {
     @Column(nullable = false, unique = true)
     private String email;
 
+    /** Short portal sign-in id (e.g. sermem1). Contact email is stored separately in {@link #email}. */
+    @Column(name = "login_id", unique = true)
+    private String loginId;
+
     @Column(unique = true)
     private String phone;
 
