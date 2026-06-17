@@ -124,12 +124,39 @@ if ($LASTEXITCODE -ne 0) {
 } else { Write-Host "tracking: no changes" }
 Pop-Location
 
+# --- user-portal-mobile (Flutter app at repo root on branch user-portal-mobile) ---
+if (git show-ref --verify --quiet refs/heads/user-portal-mobile) {
+    git worktree add (Join-Path $WtRoot "user-portal-mobile") user-portal-mobile
+} else {
+    git branch user-portal-mobile feature/transport-tracking
+    git worktree add (Join-Path $WtRoot "user-portal-mobile") user-portal-mobile
+}
+$MobileFiles = @(
+    "lib", "android", "ios", "windows", "linux", "macos", "web", "test",
+    "pubspec.yaml", "pubspec.lock", "analysis_options.yaml", "README.md",
+    ".metadata", ".gitignore", "package.json"
+)
+Copy-AppFiles -Source (Join-Path $RepoRoot "user-portal-mobile") -Dest (Join-Path $WtRoot "user-portal-mobile") -Files $MobileFiles
+@("admin-app", "user-portal-app", "finance-app", "tracking-app", "user-portal-mobile", "backend", "src", "render.yaml", "DEPLOYMENT.md", "scripts", "dist", "node_modules", "package-lock.json", "vite.config.ts") | ForEach-Object {
+    $p = Join-Path (Join-Path $WtRoot "user-portal-mobile") $_
+    if (Test-Path $p) { Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue }
+}
+Push-Location (Join-Path $WtRoot "user-portal-mobile")
+git add -A
+git diff --cached --quiet
+if ($LASTEXITCODE -ne 0) {
+    git commit -m "Sync user portal mobile app from monorepo"
+    git push -u origin user-portal-mobile
+} else { Write-Host "user-portal-mobile: no changes" }
+Pop-Location
+
 # cleanup worktrees
 git worktree remove (Join-Path $WtRoot "classroom-app") --force
 git worktree remove (Join-Path $WtRoot "admin") --force
 git worktree remove (Join-Path $WtRoot "user-portal") --force
 git worktree remove (Join-Path $WtRoot "finance") --force
 git worktree remove (Join-Path $WtRoot "tracking") --force
+git worktree remove (Join-Path $WtRoot "user-portal-mobile") --force
 Remove-Item $WtRoot -Recurse -Force -ErrorAction SilentlyContinue
 
 Pop-Location
