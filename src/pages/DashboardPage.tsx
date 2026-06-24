@@ -1001,8 +1001,8 @@ export const DashboardPage: React.FC = () => {
     if (!newParent.firstName.trim() || !newParent.lastName.trim()) {
       return;
     }
-    if (!newParent.email.trim()) {
-      toast.error("L'e-mail de contact est requis.");
+    if (!newParent.email.trim() && !newParent.phone.trim()) {
+      toast.error("L'e-mail ou le téléphone de contact est requis.");
       return;
     }
     const payload = {
@@ -1381,8 +1381,8 @@ export const DashboardPage: React.FC = () => {
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTeacher.firstName.trim() || !newTeacher.lastName.trim()) return;
-    if (!newTeacher.email.trim()) {
-      toast.error("L'e-mail de contact est requis.");
+    if (!newTeacher.email.trim() && !newTeacher.phone.trim()) {
+      toast.error("L'e-mail ou le téléphone de contact est requis.");
       return;
     }
     const payload = {
@@ -1476,8 +1476,8 @@ export const DashboardPage: React.FC = () => {
     if (!newStudent.firstName.trim() || !newStudent.lastName.trim()) {
       return;
     }
-    if (!newStudent.email.trim()) {
-      toast.error("L'e-mail de contact est requis.");
+    if (!newStudent.email.trim() && !newStudent.phone.trim()) {
+      toast.error("L'e-mail ou le téléphone de contact est requis.");
       return;
     }
     const payload = {

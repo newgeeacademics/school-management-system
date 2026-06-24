@@ -269,21 +269,24 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                 )}
               </div>
               <div className='grid gap-2 sm:col-span-2'>
-                <Label htmlFor='teacher-email'>E-mail de contact *</Label>
+                <Label htmlFor='teacher-email'>E-mail de contact</Label>
                 <Input
                   id='teacher-email'
                   type='email'
                   value={newTeacher.email}
                   onChange={(e) => setNewTeacher((t) => ({ ...t, email: e.target.value }))}
                   placeholder='enseignant@exemple.com'
-                  required
                 />
+                <p className='text-[10px] text-muted-foreground'>
+                  E-mail ou téléphone requis pour le compte portail. Connexion avec l&apos;identifiant
+                  généré ci-dessous.
+                </p>
               </div>
               <div className='grid gap-2 sm:col-span-2'>
                 <LoginIdPreview firstName={newTeacher.firstName} lastName={newTeacher.lastName} />
               </div>
               <div className='grid gap-2'>
-                <Label htmlFor='teacher-phone'>Téléphone (annuaire, optionnel)</Label>
+                <Label htmlFor='teacher-phone'>Téléphone de contact</Label>
                 <Input
                   id='teacher-phone'
                   type='tel'
