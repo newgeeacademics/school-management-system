@@ -13,7 +13,7 @@ import type {
   PaymentReminder,
   SetStateAction,
   Student,
-  UserRole,
+  AppUserRole,
 } from './dashboardTypes';
 
 type PaymentsSectionProps = {
@@ -21,7 +21,7 @@ type PaymentsSectionProps = {
   amountPaid: number;
   currency?: string;
   isAdmin?: boolean;
-  viewerRole?: UserRole;
+  viewerRole?: AppUserRole;
   parents?: ParentContact[];
   students?: Student[];
   linkedParentContacts?: ParentContact[];
@@ -53,17 +53,18 @@ function parentContactLabel(parent: ParentContact, students: Student[]) {
   return child ? `${parent.name} – ${child}` : parent.name;
 }
 
-function applyParentContact(
+function applyParentContact<T extends { parentContactId: string; parentName: string; studentName: string }>(
   parentContactId: string,
   parents: ParentContact[],
   students: Student[],
-  base: { parentName: string; studentName: string }
-) {
+  base: T
+): T {
   const contact = parents.find((p) => p.id === parentContactId);
   if (!contact) {
     return { ...base, parentContactId };
   }
   return {
+    ...base,
     parentContactId,
     parentName: contact.name,
     studentName: resolveStudentName(students, contact.studentId),
