@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:newgee_portal/features/home/portal_drawer.dart';
+import 'package:newgee_portal/features/home/more_sections_sheet.dart';
+import 'package:newgee_portal/features/home/portal_bottom_nav.dart';
+import 'package:newgee_portal/features/sections/announcements_screen.dart';
+import 'package:newgee_portal/features/sections/attendance_screen.dart';
+import 'package:newgee_portal/features/sections/calendar_screen.dart';
+import 'package:newgee_portal/features/sections/classes_screen.dart';
+import 'package:newgee_portal/features/sections/directory_screen.dart';
 import 'package:newgee_portal/features/sections/feed_section_screen.dart';
+import 'package:newgee_portal/features/sections/fees_screen.dart';
+import 'package:newgee_portal/features/sections/grades_screen.dart';
+import 'package:newgee_portal/features/sections/messages_screen.dart';
+import 'package:newgee_portal/features/sections/notifications_screen.dart';
 import 'package:newgee_portal/features/sections/overview_screen.dart';
-import 'package:newgee_portal/features/sections/placeholder_section_screen.dart';
+import 'package:newgee_portal/features/sections/transport_screen.dart';
+import 'package:newgee_portal/models/portal_role.dart';
 import 'package:newgee_portal/models/portal_section.dart';
+import 'package:newgee_portal/models/portal_session.dart';
 import 'package:newgee_portal/services/auth_service.dart';
+import 'package:newgee_portal/services/notifications_service.dart';
 import 'package:newgee_portal/services/portal_feed_service.dart';
+import 'package:newgee_portal/theme/app_theme.dart';
+import 'package:newgee_portal/widgets/app_logo.dart';
+import 'package:newgee_portal/widgets/notification_badge_icon.dart';
 import 'package:provider/provider.dart';
 
 class HomeShell extends StatefulWidget {
@@ -16,8 +32,9 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> {
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
   PortalSectionId _activeSection = PortalSectionId.overview;
+  int _bottomIndex = 0;
+  int _sectionKey = 0;
 
   @override
   void initState() {
@@ -27,107 +44,249 @@ class _HomeShellState extends State<HomeShell> {
     });
   }
 
-  void _selectSection(PortalSectionId section) {
-    setState(() => _activeSection = section);
-    Navigator.of(context).pop();
+  void _selectSection(PortalSectionId section, {bool fromMore = false}) {
+    final role = context.read<AuthService>().session!.role;
+    setState(() {
+      _activeSection = section;
+      _sectionKey++;
+      _bottomIndex = fromMore
+          ? bottomNavForRole(role).length - 1
+          : bottomNavIndexForSection(section, role);
+    });
+  }
+
+  Future<void> _onBottomNavTap(int index, PortalRole role) async {
+    final items = bottomNavForRole(role);
+    final item = items[index];
+
+    if (item.section == null) {
+      final picked = await showMoreSectionsSheet(context);
+      if (picked != null && mounted) {
+        _selectSection(picked, fromMore: true);
+      }
+      return;
+    }
+
+    _selectSection(item.section!);
+  }
+
+  Future<void> _refresh() async {
+    final session = context.read<AuthService>().session;
+    final feedService = context.read<PortalFeedService>();
+    final notificationsService = context.read<NotificationsService>();
+
+    await feedService.reload();
+    if (session != null && roleHasNotifications(session.role)) {
+      await notificationsService.reload();
+    }
+    if (mounted) setState(() => _sectionKey++);
   }
 
   Future<void> _logout() async {
+    await context.read<NotificationsService>().deactivate();
     context.read<PortalFeedService>().reset();
     await context.read<AuthService>().logout();
   }
 
-  bool _isFeedSection(PortalSectionId section) {
-    return switch (section) {
-      PortalSectionId.classes ||
+  Widget _buildSection(PortalSession session) {
+    final feed = context.watch<PortalFeedService>().feed;
+    final key = ValueKey('${_activeSection.name}-$_sectionKey');
+
+    return switch (_activeSection) {
+      PortalSectionId.overview => OverviewScreen(
+          key: key,
+          role: session.role,
+          userName: session.displayName,
+          onNavigate: _selectSection,
+        ),
+      PortalSectionId.classes => ClassesScreen(key: key, feed: feed),
       PortalSectionId.students ||
       PortalSectionId.schools ||
       PortalSectionId.schedule ||
-      PortalSectionId.calendar ||
-      PortalSectionId.grades ||
-      PortalSectionId.canteen ||
-      PortalSectionId.transport =>
-        true,
-      _ => false,
+      PortalSectionId.canteen =>
+        FeedSectionScreen(key: key, section: _activeSection, feed: feed),
+      PortalSectionId.calendar => CalendarScreen(key: key, feed: feed),
+      PortalSectionId.transport => TransportScreen(key: key, feed: feed),
+      PortalSectionId.grades => GradesScreen(key: key),
+      PortalSectionId.presence => AttendanceScreen(
+          key: key,
+          variant: AttendanceVariant.presence,
+        ),
+      PortalSectionId.absences => AttendanceScreen(
+          key: key,
+          variant: AttendanceVariant.absences,
+        ),
+      PortalSectionId.notifications => NotificationsScreen(key: key),
+      PortalSectionId.directory => DirectoryScreen(key: key),
+      PortalSectionId.announcements => AnnouncementsScreen(key: key),
+      PortalSectionId.fees => FeesScreen(key: key),
+      PortalSectionId.messages => MessagesScreen(key: key),
     };
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthService>();
     final feedService = context.watch<PortalFeedService>();
-    final session = auth.session!;
+    final session = context.watch<AuthService>().session!;
+    final notifications = context.watch<NotificationsService>();
     final meta = sectionMeta(_activeSection);
+    final bottomItems = bottomNavForRole(session.role);
+    final showNotificationsBell = roleHasNotifications(session.role);
 
     return Scaffold(
-      key: _scaffoldKey,
-      drawer: PortalDrawer(
-        session: session,
-        activeSection: _activeSection,
-        onSectionSelected: _selectSection,
-        onLogout: _logout,
-      ),
+      backgroundColor: const Color(0xFFF1F5F9),
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        titleSpacing: 16,
+        title: Row(
           children: [
-            Text(
-              'ESPACE FAMILLE',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    letterSpacing: 1.4,
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w600,
+            const AppLogo(height: 28),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    sectionLabel(_activeSection, session.role),
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                    ),
                   ),
+                  Text(
+                    meta.description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF64748B),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            Text(sectionLabel(_activeSection, session.role)),
           ],
         ),
         actions: [
+          if (showNotificationsBell)
+            IconButton(
+              tooltip: 'Notifications',
+              onPressed: () => _selectSection(PortalSectionId.notifications),
+              icon: NotificationBadgeIcon(
+                icon: Icons.notifications_outlined,
+                count: notifications.unreadCount,
+              ),
+            ),
           IconButton(
             tooltip: 'Actualiser',
-            onPressed: feedService.loading ? null : feedService.reload,
+            onPressed: feedService.loading ? null : _refresh,
             icon: feedService.loading
                 ? const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.refresh),
+                : const Icon(Icons.refresh_rounded),
           ),
+          PopupMenuButton<String>(
+            icon: CircleAvatar(
+              radius: 16,
+              backgroundColor: AppTheme.primary.withValues(alpha: 0.12),
+              child: Text(
+                session.displayName.isNotEmpty
+                    ? session.displayName[0].toUpperCase()
+                    : '?',
+                style: const TextStyle(
+                  color: AppTheme.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            onSelected: (value) {
+              if (value == 'logout') _logout();
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                enabled: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      session.displayName,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      session.email,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, size: 18),
+                    SizedBox(width: 8),
+                    Text('Déconnexion'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (feedService.error != null)
             MaterialBanner(
+              backgroundColor: const Color(0xFFFFF7ED),
               content: Text(feedService.error!),
               actions: [
-                TextButton(
-                  onPressed: feedService.reload,
-                  child: const Text('Réessayer'),
-                ),
+                TextButton(onPressed: _refresh, child: const Text('Réessayer')),
               ],
             ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Text(
-              meta.description,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF64748B),
-                  ),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: _buildSection(session),
             ),
           ),
-          Expanded(
-            child: _activeSection == PortalSectionId.overview
-                ? OverviewScreen(role: session.role)
-                : _isFeedSection(_activeSection)
-                    ? FeedSectionScreen(
-                        section: _activeSection,
-                        feed: feedService.feed,
-                      )
-                    : PlaceholderSectionScreen(section: _activeSection),
-          ),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _bottomIndex,
+        onDestinationSelected: (i) => _onBottomNavTap(i, session.role),
+        destinations: [
+          for (final item in bottomItems)
+            NavigationDestination(
+              icon: item.section == PortalSectionId.notifications &&
+                      showNotificationsBell
+                  ? NotificationBadgeIcon(
+                      icon: item.icon,
+                      count: notifications.unreadCount,
+                      iconColor: const Color(0xFF64748B),
+                    )
+                  : Icon(item.icon),
+              selectedIcon: item.section == PortalSectionId.notifications &&
+                      showNotificationsBell
+                  ? NotificationBadgeIcon(
+                      icon: item.activeIcon,
+                      count: notifications.unreadCount,
+                      iconColor: AppTheme.primary,
+                    )
+                  : Icon(item.activeIcon),
+              label: item.label,
+            ),
         ],
       ),
     );

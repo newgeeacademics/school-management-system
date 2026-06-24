@@ -18,34 +18,47 @@ public class ClassService {
 
     private final ClassItemRepository classItemRepository;
     private final TeacherRepository teacherRepository;
+    private final SchoolContextService schoolContextService;
 
     public List<ClassItem> findAll() {
-        return classItemRepository.findAll();
+        return schoolContextService.getCurrentSchoolId()
+                .map(classItemRepository::findBySchoolId)
+                .orElseGet(classItemRepository::findAll);
     }
 
     public ClassItem findById(String id) {
-        return classItemRepository.findById(id)
+        ClassItem classItem = classItemRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Class not found: " + id));
+        schoolContextService.assertSchoolAccess(classItem.getSchoolId());
+        return classItem;
     }
 
     public List<ClassItem> findByLevel(String level) {
-        return classItemRepository.findByLevel(level);
+        return findAll().stream()
+                .filter(c -> level != null && level.equalsIgnoreCase(c.getLevel()))
+                .toList();
     }
 
     @Transactional
     public ClassItem create(ClassItemRequest request) {
+        String schoolId = schoolContextService.getCurrentSchoolId().orElse(null);
+
         Teacher homeroomTeacher = null;
         if (request.getHomeroomTeacherId() != null && !request.getHomeroomTeacherId().isBlank()) {
             homeroomTeacher = teacherRepository.findById(request.getHomeroomTeacherId())
                     .orElse(null);
+            if (homeroomTeacher != null) {
+                schoolContextService.assertSchoolAccess(homeroomTeacher.getSchoolId());
+            }
         }
 
         ClassItem classItem = ClassItem.builder()
                 .name(ClassCodeGenerator.ensureUniqueClassName(
-                        request.getName(), classItemRepository.findAll()))
+                        request.getName(), findAll()))
                 .level(request.getLevel())
                 .studentsCount(request.getStudentsCount())
                 .homeroomTeacher(homeroomTeacher)
+                .schoolId(schoolId)
                 .build();
 
         return classItemRepository.save(classItem);
@@ -55,12 +68,15 @@ public class ClassService {
     public ClassItem update(String id, ClassItemRequest request) {
         ClassItem classItem = findById(id);
         classItem.setName(ClassCodeGenerator.ensureUniqueClassName(
-                request.getName(), classItemRepository.findAll(), id));
+                request.getName(), findAll(), id));
         classItem.setLevel(request.getLevel());
         classItem.setStudentsCount(request.getStudentsCount());
 
         if (request.getHomeroomTeacherId() != null && !request.getHomeroomTeacherId().isBlank()) {
             Teacher teacher = teacherRepository.findById(request.getHomeroomTeacherId()).orElse(null);
+            if (teacher != null) {
+                schoolContextService.assertSchoolAccess(teacher.getSchoolId());
+            }
             classItem.setHomeroomTeacher(teacher);
         } else {
             classItem.setHomeroomTeacher(null);
@@ -71,6 +87,7 @@ public class ClassService {
 
     @Transactional
     public void delete(String id) {
+        findById(id);
         classItemRepository.deleteById(id);
     }
 }

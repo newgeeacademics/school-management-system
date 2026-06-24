@@ -262,7 +262,14 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
                       <>
                         <p className='text-sm font-medium'>{parent.name}</p>
                         <p className='text-[11px] text-muted-foreground'>
-                          Tél. : {parent.phone || '—'} · Email : {parent.email || '—'}
+                          {parent.loginId ? (
+                            <>
+                              Connexion : <span className='font-mono'>{parent.loginId}</span>
+                              {parent.phone ? ` · Tél. : ${parent.phone}` : ''}
+                            </>
+                          ) : (
+                            <>Tél. : {parent.phone || '—'} · Email : {parent.email || '—'}</>
+                          )}
                         </p>
                         <p className='text-[11px] text-muted-foreground'>
                           Enfant : {getStudentName(parent.studentId)}

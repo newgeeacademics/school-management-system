@@ -409,7 +409,11 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                           <div className='min-w-0 flex-1'>
                             <p className='font-medium leading-tight'>{teacher.name}</p>
                             <p className='text-xs text-muted-foreground'>{teacher.subject}</p>
-                            {teacher.email ? (
+                            {teacher.loginId ? (
+                              <p className='mt-0.5 truncate text-[11px] text-muted-foreground'>
+                                Connexion : <span className='font-mono'>{teacher.loginId}</span>
+                              </p>
+                            ) : teacher.email ? (
                               <p className='mt-0.5 truncate text-[11px] text-muted-foreground'>{teacher.email}</p>
                             ) : null}
                             {teacher.phone ? (

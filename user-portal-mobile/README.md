@@ -28,6 +28,12 @@ Override for production or physical devices:
 flutter run --dart-define=API_URL=https://school-management-system-gw9s.onrender.com
 ```
 
+Optional tracking app link for transport section:
+
+```bash
+flutter run --dart-define=TRACKING_APP_URL=https://your-tracking-app.vercel.app
+```
+
 ## Test accounts
 
 | Email | Password | Role |
@@ -36,30 +42,37 @@ flutter run --dart-define=API_URL=https://school-management-system-gw9s.onrender
 | parent@classroom.com | parent123 | Parent |
 | teacher@classroom.com | teacher123 | Teacher |
 
-## What's implemented
+## Implemented sections
 
-- JWT login (`POST /api/auth/login`) with secure session storage
-- Role-based navigation (mirrors `user-portal-app/src/lib/portal-sections.ts`)
-- Dashboard overview with summary cards
-- Feed-driven sections: classes, students, schools, schedule, calendar, grades, canteen, transport
-- Placeholder screens for attendance, messages, fees, and other advanced features
+All user-portal sections are wired to the backend:
+
+| Section | API |
+|---------|-----|
+| Overview | `GET /api/portal/feed`, notifications count |
+| Classes (teacher) | Feed + class hub: roll call, homework, grades |
+| Students / Schools / Schedule / Canteen | `GET /api/portal/feed` |
+| Calendar / Transport | Feed events & routes |
+| Grades | `GET/POST /api/portal/grades*` |
+| Presence / Absences | `GET /api/portal/attendance` |
+| Notifications | `GET /api/portal/notifications` |
+| Directory | `GET /api/portal/directory` (tel/mailto) |
+| Announcements | `GET /api/portal/announcements` |
+| Fees | `GET /api/portal/fees` |
+| Messages | Official inbox + live chat (`/api/portal/messages`, `/api/portal/chat/*`) |
+
+Teacher class hub supports roll call save, homework CRUD, and embedded grades.
 
 ## Project structure
 
 ```
 lib/
-├── core/           # API client, constants
-├── models/         # Session, feed, portal sections
-├── services/       # Auth + portal feed
-├── features/       # Login, home shell, section screens
-├── theme/          # Material theme (teal, matching web portal)
+├── core/              # API client, constants
+├── models/            # Feed, session, portal API models
+├── services/          # Auth, feed, portal API
+├── features/
+│   ├── auth/          # Login
+│   ├── home/          # Shell + drawer
+│   ├── sections/      # All portal sections
+│   └── class_hub/     # Teacher class management
 └── widgets/
 ```
-
-## Next steps
-
-- Dedicated screens: grades detail, attendance, messages/chat, fees, announcements
-- WebSocket live refresh (`/ws/portal`)
-- Teacher class hub (roll call, homework)
-- i18n (EN/FR) parity with web portal
-- Deep links for ID card scan (`/carte/:type/:id`)

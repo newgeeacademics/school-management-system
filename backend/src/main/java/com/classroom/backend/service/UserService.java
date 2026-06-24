@@ -16,18 +16,25 @@ public class UserService {
 
     private final AppUserRepository appUserRepository;
     private final PortalAccountService portalAccountService;
+    private final SchoolContextService schoolContextService;
 
     public List<AppUser> findAll() {
-        return appUserRepository.findAll();
+        return schoolContextService.getCurrentSchoolId()
+                .map(appUserRepository::findBySchoolId)
+                .orElseGet(appUserRepository::findAll);
     }
 
     public AppUser findById(String id) {
-        return appUserRepository.findById(id)
+        AppUser user = appUserRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found: " + id));
+        schoolContextService.assertSchoolAccess(user.getSchoolId());
+        return user;
     }
 
     public List<AppUser> findByRole(UserRole role) {
-        return appUserRepository.findByRole(role);
+        return findAll().stream()
+                .filter(u -> u.getRole() == role)
+                .toList();
     }
 
     @Transactional
@@ -56,6 +63,7 @@ public class UserService {
 
     @Transactional
     public void delete(String id) {
+        findById(id);
         appUserRepository.deleteById(id);
     }
 }

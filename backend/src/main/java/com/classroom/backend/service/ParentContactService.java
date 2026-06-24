@@ -4,7 +4,6 @@ import com.classroom.backend.dto.request.ParentContactRequest;
 import com.classroom.backend.model.AppUser;
 import com.classroom.backend.model.ParentContact;
 import com.classroom.backend.model.Student;
-import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.ParentContactRepository;
 import com.classroom.backend.repository.StudentRepository;
 import com.classroom.backend.util.PersonNameUtil;
@@ -21,18 +20,25 @@ public class ParentContactService {
     private final ParentContactRepository parentContactRepository;
     private final StudentRepository studentRepository;
     private final PortalAccountService portalAccountService;
+    private final SchoolContextService schoolContextService;
 
     public List<ParentContact> findAll() {
-        return parentContactRepository.findAll();
+        return schoolContextService.getCurrentSchoolId()
+                .map(parentContactRepository::findBySchoolId)
+                .orElseGet(parentContactRepository::findAll);
     }
 
     public ParentContact findById(String id) {
-        return parentContactRepository.findById(id)
+        ParentContact parent = parentContactRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Parent contact not found: " + id));
+        schoolContextService.assertSchoolAccess(parent.getSchoolId());
+        return parent;
     }
 
     public List<ParentContact> findByStudentId(String studentId) {
-        return parentContactRepository.findByStudentId(studentId);
+        return findAll().stream()
+                .filter(p -> p.getStudent() != null && studentId.equals(p.getStudent().getId()))
+                .toList();
     }
 
     @Transactional
@@ -41,8 +47,15 @@ public class ParentContactService {
                 request.getFirstName(), request.getLastName(), request.getName());
 
         Student student = null;
+        String schoolId = schoolContextService.getCurrentSchoolId().orElse(null);
         if (request.getStudentId() != null && !request.getStudentId().isBlank()) {
             student = studentRepository.findById(request.getStudentId()).orElse(null);
+            if (student != null) {
+                schoolContextService.assertSchoolAccess(student.getSchoolId());
+                if (schoolId == null && student.getSchoolId() != null) {
+                    schoolId = student.getSchoolId();
+                }
+            }
         }
 
         AppUser appUser = portalAccountService.findOrCreateParentAccount(
@@ -57,6 +70,7 @@ public class ParentContactService {
                 .email(appUser != null ? appUser.getEmail() : null)
                 .student(student)
                 .appUser(appUser)
+                .schoolId(schoolId)
                 .build();
 
         return parentContactRepository.save(parent);
@@ -76,6 +90,9 @@ public class ParentContactService {
 
         if (request.getStudentId() != null && !request.getStudentId().isBlank()) {
             Student student = studentRepository.findById(request.getStudentId()).orElse(null);
+            if (student != null) {
+                schoolContextService.assertSchoolAccess(student.getSchoolId());
+            }
             parent.setStudent(student);
         } else {
             parent.setStudent(null);

@@ -16,4 +16,6 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     Optional<Student> findByEmailIgnoreCase(String email);
 
     long countByMatriculeStartingWith(String prefix);
+
+    List<Student> findBySchoolId(String schoolId);
 }

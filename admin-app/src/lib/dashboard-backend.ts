@@ -84,13 +84,16 @@ function relationId(value: unknown): string | undefined {
 
 export function mapTeacherFromApi(t: Record<string, unknown>): Teacher {
   const appUser = t.appUser as Record<string, unknown> | undefined;
+  const contactEmail = t.email ? String(t.email) : appUser?.email ? String(appUser.email) : undefined;
+  const synthetic = contactEmail?.toLowerCase().includes('@portal.classroom');
   return {
     id: String(t.id),
     name: String(t.name ?? ''),
     subject: String(t.subject ?? ''),
     initials: String(t.initials ?? (String(t.name ?? '').slice(0, 2).toUpperCase() || 'ED')),
-    email: t.email ? String(t.email) : appUser?.email ? String(appUser.email) : undefined,
+    email: contactEmail && !synthetic ? contactEmail : undefined,
     phone: t.phone ? String(t.phone) : undefined,
+    loginId: appUser?.loginId ? String(appUser.loginId) : undefined,
   };
 }
 

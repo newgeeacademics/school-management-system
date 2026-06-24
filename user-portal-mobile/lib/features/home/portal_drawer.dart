@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:newgee_portal/models/portal_role.dart';
 import 'package:newgee_portal/models/portal_section.dart';
 import 'package:newgee_portal/models/portal_session.dart';
+import 'package:newgee_portal/services/notifications_service.dart';
 import 'package:newgee_portal/theme/app_theme.dart';
+import 'package:newgee_portal/widgets/app_logo.dart';
+import 'package:newgee_portal/widgets/notification_badge_icon.dart';
 import 'package:newgee_portal/widgets/section_icon.dart';
+import 'package:provider/provider.dart';
 
 class PortalDrawer extends StatelessWidget {
   const PortalDrawer({
@@ -24,6 +28,7 @@ class PortalDrawer extends StatelessWidget {
     final theme = Theme.of(context);
     final groups = navGroupsForRole(session.role);
     final visible = sectionsForRole(session.role).toSet();
+    final unreadCount = context.watch<NotificationsService>().unreadCount;
 
     return Drawer(
       child: SafeArea(
@@ -35,14 +40,8 @@ class PortalDrawer extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'NewGee',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
+                  const Center(child: AppLogo(height: 36)),
+                  const SizedBox(height: 12),
                   Text(
                     session.displayName,
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -81,6 +80,9 @@ class PortalDrawer extends StatelessWidget {
                           selected: activeSection == sectionId,
                           icon: sectionIcon(sectionId),
                           label: sectionLabel(sectionId, session.role),
+                          badgeCount: sectionId == PortalSectionId.notifications
+                              ? unreadCount
+                              : 0,
                           onTap: () => onSectionSelected(sectionId),
                         ),
                   ],
@@ -106,12 +108,14 @@ class _DrawerTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   final bool selected;
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +124,11 @@ class _DrawerTile extends StatelessWidget {
       selected: selected,
       selectedTileColor:
           theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
-      leading: Icon(icon, color: selected ? AppTheme.primary : null),
+      leading: NotificationBadgeIcon(
+        icon: icon,
+        count: badgeCount,
+        iconColor: selected ? AppTheme.primary : null,
+      ),
       title: Text(
         label,
         style: TextStyle(

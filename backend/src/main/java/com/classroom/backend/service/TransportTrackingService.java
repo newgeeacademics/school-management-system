@@ -293,9 +293,10 @@ public class TransportTrackingService {
                 }
             }
             case PARENT -> {
-                List<ParentContact> contacts = parentContactRepository.findByAppUser_Id(user.getId())
-                        .map(List::of)
-                        .orElseGet(() -> parentContactRepository.findByEmailIgnoreCase(user.getEmail()));
+                List<ParentContact> contacts = parentContactRepository.findAllByAppUser_Id(user.getId());
+                if (contacts.isEmpty()) {
+                    contacts = parentContactRepository.findByEmailIgnoreCase(user.getEmail());
+                }
                 for (ParentContact contact : contacts) {
                     if (contact.getStudent() != null) {
                         students.add(contact.getStudent());

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -10,6 +11,8 @@ class ApiClient {
   ApiClient({FlutterSecureStorage? storage})
       : _storage = storage ?? const FlutterSecureStorage();
 
+  static const Duration _timeout = Duration(seconds: 20);
+
   final FlutterSecureStorage _storage;
 
   bool get isConfigured => baseUrl.isNotEmpty;
@@ -20,6 +23,27 @@ class ApiClient {
       _storage.write(key: accessTokenKey, value: token);
 
   Future<void> clearAccessToken() => _storage.delete(key: accessTokenKey);
+
+  Future<bool> checkHealth() async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/health'),
+            headers: const {'Accept': 'application/json'},
+          )
+          .timeout(_timeout);
+      if (response.statusCode != 200) return false;
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map) {
+        return decoded['status']?.toString().toUpperCase() == 'UP';
+      }
+      return true;
+    } on SocketException {
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<T> fetch<T>(
     String path, {
@@ -37,24 +61,37 @@ class ApiClient {
     };
 
     final encodedBody = body != null ? jsonEncode(body) : null;
-    final response = await _send(method, uri, headers, encodedBody);
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      if (response.statusCode == 204 || response.body.isEmpty) {
-        return null as T;
-      }
-      return jsonDecode(response.body) as T;
-    }
-
-    String message = 'Request failed (${response.statusCode})';
     try {
-      final decoded = jsonDecode(response.body);
-      if (decoded is Map && decoded['error'] != null) {
-        message = decoded['error'].toString();
-      }
-    } catch (_) {}
+      final response = await _send(method, uri, headers, encodedBody)
+          .timeout(_timeout);
 
-    throw ApiException(message, status: response.statusCode);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        if (response.statusCode == 204 || response.body.isEmpty) {
+          return null as T;
+        }
+        return jsonDecode(response.body) as T;
+      }
+
+      String message = 'Request failed (${response.statusCode})';
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map && decoded['error'] != null) {
+          message = decoded['error'].toString();
+        }
+      } catch (_) {}
+
+      throw ApiException(message, status: response.statusCode);
+    } on SocketException {
+      throw ApiException(
+        'Impossible de joindre le serveur. Vérifiez votre connexion internet.',
+      );
+    } on HttpException {
+      throw ApiException('Erreur réseau lors de la communication avec le serveur.');
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Connexion impossible. Réessayez dans un instant.');
+    }
   }
 
   Future<http.Response> _send(

@@ -166,23 +166,20 @@ const _parentSections = [
 List<PortalSectionId> sectionsForRole(PortalRole role) {
   if (role == PortalRole.parent) return _parentSections;
 
-  final ids = portalSections.map((s) => s.id).where(
-        (id) =>
-            id != PortalSectionId.presence &&
-            id != PortalSectionId.absences &&
-            id != PortalSectionId.notifications,
-      );
-
   if (role == PortalRole.student) {
-    return ids
-        .where(
-          (id) =>
-              id != PortalSectionId.students && id != PortalSectionId.classes,
-        )
-        .toList();
+    return portalSections.map((s) => s.id).where((id) {
+      return id != PortalSectionId.presence &&
+          id != PortalSectionId.absences &&
+          id != PortalSectionId.students &&
+          id != PortalSectionId.classes;
+    }).toList();
   }
 
-  return ids.toList();
+  return portalSections.map((s) => s.id).where((id) {
+    return id != PortalSectionId.presence &&
+        id != PortalSectionId.absences &&
+        id != PortalSectionId.notifications;
+  }).toList();
 }
 
 List<({String label, List<PortalSectionId> sections})> navGroupsForRole(
@@ -273,6 +270,7 @@ List<({String label, List<PortalSectionId> sections})> navGroupsForRole(
       sections: [
         PortalSectionId.announcements,
         PortalSectionId.directory,
+        PortalSectionId.notifications,
         PortalSectionId.messages,
         PortalSectionId.canteen,
         PortalSectionId.transport,

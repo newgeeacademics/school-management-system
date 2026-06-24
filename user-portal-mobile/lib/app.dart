@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:newgee_portal/features/auth/login_screen.dart';
 import 'package:newgee_portal/features/home/home_shell.dart';
 import 'package:newgee_portal/services/auth_service.dart';
+import 'package:newgee_portal/services/local_notification_service.dart';
+import 'package:newgee_portal/services/notifications_service.dart';
 import 'package:newgee_portal/services/portal_feed_service.dart';
 import 'package:newgee_portal/theme/app_theme.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +19,8 @@ class NewGeePortalApp extends StatefulWidget {
 class _NewGeePortalAppState extends State<NewGeePortalApp> {
   late final AuthService _authService;
   late final PortalFeedService _feedService;
+  late final LocalNotificationService _localNotificationService;
+  late final NotificationsService _notificationsService;
   late final GoRouter _router;
 
   @override
@@ -24,6 +28,13 @@ class _NewGeePortalAppState extends State<NewGeePortalApp> {
     super.initState();
     _authService = AuthService();
     _feedService = PortalFeedService(_authService.api);
+    _localNotificationService = LocalNotificationService();
+    _notificationsService = NotificationsService(
+      api: _authService.api,
+      localNotifications: _localNotificationService,
+    );
+
+    _authService.addListener(_onAuthChanged);
 
     _router = GoRouter(
       initialLocation: '/login',
@@ -50,14 +61,25 @@ class _NewGeePortalAppState extends State<NewGeePortalApp> {
       ],
     );
 
-    _authService.initialize();
+    _authService.initialize().then((_) => _onAuthChanged());
+  }
+
+  void _onAuthChanged() {
+    final session = _authService.session;
+    if (session != null) {
+      _notificationsService.activate(session.role);
+    } else {
+      _notificationsService.deactivate();
+    }
   }
 
   @override
   void dispose() {
+    _authService.removeListener(_onAuthChanged);
     _router.dispose();
     _authService.dispose();
     _feedService.dispose();
+    _notificationsService.dispose();
     super.dispose();
   }
 
@@ -67,6 +89,7 @@ class _NewGeePortalAppState extends State<NewGeePortalApp> {
       providers: [
         ChangeNotifierProvider.value(value: _authService),
         ChangeNotifierProvider.value(value: _feedService),
+        ChangeNotifierProvider.value(value: _notificationsService),
       ],
       child: MaterialApp.router(
         title: 'NewGee',

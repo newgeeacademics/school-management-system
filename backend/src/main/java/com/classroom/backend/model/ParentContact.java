@@ -29,4 +29,7 @@ public class ParentContact {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "app_user_id")
     private AppUser appUser;
+
+    @Column(name = "school_id")
+    private String schoolId;
 }

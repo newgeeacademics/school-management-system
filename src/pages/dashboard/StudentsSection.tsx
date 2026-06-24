@@ -114,7 +114,7 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
           <CardContent>
             <p className='mb-3 text-[11px] text-muted-foreground'>
               Prénom et nom séparés. Saisissez l&apos;e-mail de contact (parent ou élève) ; l&apos;identifiant
-              de connexion (ex. sermem1) est généré automatiquement et envoyé par e-mail.
+              de connexion  est généré automatiquement et envoyé par e-mail.
             </p>
             <form
               className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
@@ -340,9 +340,15 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
                             N° carte : {student.idCardNumber}
                           </p>
                         )}
-                        {(student.email || student.phone) && (
+                        {(student.loginId || student.email || student.phone) && (
                           <p className='text-[11px] text-muted-foreground'>
-                            {student.email ?? student.phone}
+                            {student.loginId ? (
+                              <>
+                                Connexion : <span className='font-mono'>{student.loginId}</span>
+                              </>
+                            ) : (
+                              student.email ?? student.phone
+                            )}
                           </p>
                         )}
                         {!readOnly && onPrintIdCard && (

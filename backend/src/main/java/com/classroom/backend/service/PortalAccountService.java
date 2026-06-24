@@ -20,6 +20,7 @@ public class PortalAccountService {
     private final EmailNotificationService emailNotificationService;
     private final SchoolEmailService schoolEmailService;
     private final AccountIdentifierService accountIdentifierService;
+    private final SchoolContextService schoolContextService;
 
     /**
      * Creates a portal account with a short login id (e.g. sermem1) and a real contact email
@@ -75,6 +76,7 @@ public class PortalAccountService {
                 .phone(normalizedPhone)
                 .password(passwordEncoder.encode(rawPassword))
                 .role(role)
+                .schoolId(schoolContextService.getCurrentSchoolId().orElse(null))
                 .build();
         AppUser saved = appUserRepository.save(user);
 
