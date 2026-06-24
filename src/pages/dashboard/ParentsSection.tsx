@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { InputPassword } from '@/components/refine-ui/form/input-password';
-import { LoginEmailPreview } from '@/components/dashboard/LoginEmailPreview';
+import { LoginIdPreview } from '@/components/dashboard/LoginIdPreview';
 import { EntityCrudActions, NONE_SELECT_VALUE } from '@/components/dashboard/EntityCrudActions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -134,12 +134,19 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
                 onChange={(e) => setNewParent((p) => ({ ...p, phone: e.target.value }))}
               />
             </div>
-            <div className='grid gap-2 md:col-span-2 lg:col-span-3'>
-              <LoginEmailPreview
-                firstName={newParent.firstName}
-                lastName={newParent.lastName}
-                role='PARENT'
+            <div className='grid gap-2'>
+              <Label htmlFor='parent-email'>E-mail de contact *</Label>
+              <Input
+                id='parent-email'
+                type='email'
+                value={newParent.email}
+                onChange={(e) => setNewParent((p) => ({ ...p, email: e.target.value }))}
+                placeholder='parent@exemple.com'
+                required
               />
+            </div>
+            <div className='grid gap-2 md:col-span-2 lg:col-span-3'>
+              <LoginIdPreview firstName={newParent.firstName} lastName={newParent.lastName} />
             </div>
             <div className='grid gap-2'>
               <Label htmlFor='parent-password'>Mot de passe</Label>
@@ -255,7 +262,14 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
                       <>
                         <p className='text-sm font-medium'>{parent.name}</p>
                         <p className='text-[11px] text-muted-foreground'>
-                          Tél. : {parent.phone || '—'} · Email : {parent.email || '—'}
+                          {parent.loginId ? (
+                            <>
+                              Connexion : <span className='font-mono'>{parent.loginId}</span>
+                              {parent.phone ? ` · Tél. : ${parent.phone}` : ''}
+                            </>
+                          ) : (
+                            <>Tél. : {parent.phone || '—'} · Email : {parent.email || '—'}</>
+                          )}
                         </p>
                         <p className='text-[11px] text-muted-foreground'>
                           Enfant : {getStudentName(parent.studentId)}

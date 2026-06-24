@@ -25,6 +25,7 @@ public class RoleAccessService {
 
     private final RoleModuleAccessRepository repository;
     private final AppUserRepository appUserRepository;
+    private final AccountIdentifierService accountIdentifierService;
 
     @Transactional
     public void ensureDefaults() {
@@ -111,8 +112,8 @@ public class RoleAccessService {
         if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
             throw new IllegalStateException("Not authenticated");
         }
-        return appUserRepository.findByEmail(auth.getName())
-                .or(() -> appUserRepository.findByPhone(auth.getName()))
+        return accountIdentifierService.findByPrincipalName(auth.getName())
+                .or(() -> accountIdentifierService.findBySignInIdentifier(auth.getName()))
                 .orElseThrow(() -> new IllegalStateException("User not found"));
     }
 

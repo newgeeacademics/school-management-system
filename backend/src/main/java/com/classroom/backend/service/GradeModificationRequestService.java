@@ -28,6 +28,7 @@ public class GradeModificationRequestService {
     private final StudentRepository studentRepository;
     private final TeacherRepository teacherRepository;
     private final AppUserRepository appUserRepository;
+    private final AccountIdentifierService accountIdentifierService;
     private final GradeService gradeService;
 
     @Transactional(readOnly = true)
@@ -189,8 +190,7 @@ public class GradeModificationRequestService {
         if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
             throw new IllegalStateException("Not authenticated");
         }
-        return appUserRepository.findByEmail(auth.getName())
-                .orElseThrow(() -> new IllegalStateException("User not found"));
+        return accountIdentifierService.requireByPrincipalName(auth.getName());
     }
 
     public static boolean isAdminRole() {

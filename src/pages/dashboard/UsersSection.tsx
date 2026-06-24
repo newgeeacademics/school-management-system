@@ -231,7 +231,13 @@ export const UsersSection: React.FC<UsersSectionProps> = ({
                           <div className='min-w-0'>
                             <p className='text-sm font-medium truncate'>{user.name}</p>
                             <p className='text-[11px] text-muted-foreground truncate'>
-                              {user.email || user.phone || '—'}
+                              {user.loginId ? (
+                                <>
+                                  Connexion : <span className='font-mono'>{user.loginId}</span>
+                                </>
+                              ) : (
+                                user.email || user.phone || '—'
+                              )}
                             </p>
                             <Badge variant='secondary' className='mt-0.5 text-[10px]'>
                               {ROLE_LABELS[user.role]}

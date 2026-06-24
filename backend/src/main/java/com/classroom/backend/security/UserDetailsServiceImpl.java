@@ -1,7 +1,7 @@
 package com.classroom.backend.security;
 
 import com.classroom.backend.model.AppUser;
-import com.classroom.backend.repository.AppUserRepository;
+import com.classroom.backend.service.AccountIdentifierService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -16,15 +16,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private final AppUserRepository appUserRepository;
+    private final AccountIdentifierService accountIdentifierService;
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        AppUser appUser = appUserRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+    public UserDetails loadUserByUsername(String principal) throws UsernameNotFoundException {
+        AppUser appUser = accountIdentifierService.findByPrincipalName(principal)
+                .or(() -> accountIdentifierService.findBySignInIdentifier(principal))
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + principal));
+
+        String username = accountIdentifierService.canonicalPrincipalName(appUser);
 
         return new User(
-                appUser.getEmail(),
+                username,
                 appUser.getPassword(),
                 List.of(new SimpleGrantedAuthority("ROLE_" + appUser.getRole().name()))
         );

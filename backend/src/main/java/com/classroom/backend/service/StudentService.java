@@ -23,18 +23,25 @@ public class StudentService {
     private final StudentRepository studentRepository;
     private final ClassItemRepository classItemRepository;
     private final PortalAccountService portalAccountService;
+    private final SchoolContextService schoolContextService;
 
     public List<Student> findAll() {
-        return studentRepository.findAll();
+        return schoolContextService.getCurrentSchoolId()
+                .map(studentRepository::findBySchoolId)
+                .orElseGet(studentRepository::findAll);
     }
 
     public Student findById(String id) {
-        return studentRepository.findById(id)
+        Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Student not found: " + id));
+        schoolContextService.assertSchoolAccess(student.getSchoolId());
+        return student;
     }
 
     public List<Student> findByClassId(String classId) {
-        return studentRepository.findByClassItemId(classId);
+        return findAll().stream()
+                .filter(s -> s.getClassItem() != null && classId.equals(s.getClassItem().getId()))
+                .toList();
     }
 
     @Transactional
@@ -43,8 +50,15 @@ public class StudentService {
                 request.getFirstName(), request.getLastName(), request.getName());
 
         ClassItem classItem = null;
+        String schoolId = schoolContextService.getCurrentSchoolId().orElse(null);
         if (request.getClassId() != null && !request.getClassId().isBlank()) {
             classItem = classItemRepository.findById(request.getClassId()).orElse(null);
+            if (classItem != null) {
+                schoolContextService.assertSchoolAccess(classItem.getSchoolId());
+                if (schoolId == null && classItem.getSchoolId() != null) {
+                    schoolId = classItem.getSchoolId();
+                }
+            }
         }
 
         AppUser appUser = portalAccountService.createLinkedAccountForPerson(
@@ -64,6 +78,7 @@ public class StudentService {
                 .email(appUser != null ? appUser.getEmail() : null)
                 .classItem(classItem)
                 .appUser(appUser)
+                .schoolId(schoolId)
                 .build();
 
         if (student.getIdCardNumber() == null || student.getIdCardNumber().isBlank()) {
@@ -90,6 +105,9 @@ public class StudentService {
 
         if (request.getClassId() != null && !request.getClassId().isBlank()) {
             ClassItem classItem = classItemRepository.findById(request.getClassId()).orElse(null);
+            if (classItem != null) {
+                schoolContextService.assertSchoolAccess(classItem.getSchoolId());
+            }
             student.setClassItem(classItem);
         } else {
             student.setClassItem(null);

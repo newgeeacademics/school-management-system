@@ -24,20 +24,27 @@ public class TeacherService {
     private final TeacherRepository teacherRepository;
     private final ClassItemRepository classItemRepository;
     private final PortalAccountService portalAccountService;
+    private final SchoolContextService schoolContextService;
 
     public List<Teacher> findAll() {
-        return teacherRepository.findAll();
+        return schoolContextService.getCurrentSchoolId()
+                .map(teacherRepository::findBySchoolId)
+                .orElseGet(teacherRepository::findAll);
     }
 
     public Teacher findById(String id) {
-        return teacherRepository.findById(id)
+        Teacher teacher = teacherRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Teacher not found: " + id));
+        schoolContextService.assertSchoolAccess(teacher.getSchoolId());
+        return teacher;
     }
 
     @Transactional
     public Teacher create(TeacherRequest request) {
         String fullName = PersonNameUtil.requireFullName(
                 request.getFirstName(), request.getLastName(), request.getName());
+
+        String schoolId = schoolContextService.getCurrentSchoolId().orElse(null);
 
         AppUser appUser = portalAccountService.createLinkedAccountForPerson(
                 request.getFirstName(), request.getLastName(), fullName,
@@ -54,6 +61,7 @@ public class TeacherService {
                 .email(appUser != null ? appUser.getEmail() : null)
                 .phone(trimPhone(request.getPhone()))
                 .appUser(appUser)
+                .schoolId(schoolId)
                 .build();
 
         teacher = teacherRepository.save(teacher);
@@ -118,10 +126,6 @@ public class TeacherService {
         portalAccountService.deleteLinkedAccount(linked);
     }
 
-    private void validatePortalContact(TeacherRequest request) {
-        // Login email is auto-generated from first/last name when omitted.
-    }
-
     private void syncHomeroomClasses(Teacher teacher, List<String> classIds) {
         List<String> ids = classIds != null ? classIds : List.of();
         List<ClassItem> currentlyAssigned = classItemRepository.findByHomeroomTeacherId(teacher.getId());
@@ -136,6 +140,7 @@ public class TeacherService {
                 continue;
             }
             classItemRepository.findById(classId).ifPresent(clazz -> {
+                schoolContextService.assertSchoolAccess(clazz.getSchoolId());
                 clazz.setHomeroomTeacher(teacher);
                 classItemRepository.save(clazz);
             });

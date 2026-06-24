@@ -10,6 +10,7 @@
     "dev:portal": "npm --prefix user-portal-app run dev",
     "dev:finance": "npm --prefix finance-app run dev",
     "dev:tracking": "npm --prefix tracking-app run dev",
+    "dev:mobile": "npm --prefix user-portal-mobile run start",
     "build": "tsc && vite build",
     "build:admin": "npm --prefix admin-app run build",
     "build:portal": "npm --prefix user-portal-app run build",

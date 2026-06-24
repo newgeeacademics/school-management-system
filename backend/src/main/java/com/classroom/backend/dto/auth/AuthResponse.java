@@ -14,6 +14,8 @@ public class AuthResponse {
     private String name;
     private String email;
     private UserRole role;
+    /** Short portal login id when different from contact email. */
+    private String loginId;
     /** Set when registering a school in one step. */
     private String schoolId;
 }

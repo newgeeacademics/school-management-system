@@ -26,6 +26,7 @@ public class PortalChatService {
     private final PortalChatMessageRepository chatMessageRepository;
     private final PortalScopeResolver scopeResolver;
     private final AppUserRepository appUserRepository;
+    private final AccountIdentifierService accountIdentifierService;
     private final PortalRealtimeBroadcaster broadcaster;
 
     @Transactional(readOnly = true)
@@ -44,8 +45,9 @@ public class PortalChatService {
     }
 
     @Transactional
-    public PortalChatMessageDto sendMessageFromEmail(String email, String body) {
-        AppUser user = appUserRepository.findByEmail(email)
+    public PortalChatMessageDto sendMessageFromEmail(String principal, String body) {
+        AppUser user = accountIdentifierService.findByPrincipalName(principal)
+                .or(() -> accountIdentifierService.findBySignInIdentifier(principal))
                 .orElseThrow(() -> new IllegalStateException("User not found"));
         assertPortalRole(user.getRole());
         return sendMessageFromUser(user, body);

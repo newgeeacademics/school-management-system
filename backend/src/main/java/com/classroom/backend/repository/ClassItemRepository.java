@@ -10,4 +10,5 @@ import java.util.List;
 public interface ClassItemRepository extends JpaRepository<ClassItem, String> {
     List<ClassItem> findByLevel(String level);
     List<ClassItem> findByHomeroomTeacherId(String teacherId);
+    List<ClassItem> findBySchoolId(String schoolId);
 }

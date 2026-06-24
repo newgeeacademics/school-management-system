@@ -7,6 +7,7 @@ export type PortalRole = 'student' | 'parent' | 'teacher';
 export type PortalSession = {
   role: PortalRole;
   email: string;
+  loginId?: string;
   name?: string;
   userId?: string;
   token?: string;
@@ -27,6 +28,7 @@ export function getPortalSession(): PortalSession | null {
       return {
         role: data.role,
         email: data.email ?? data.emailHint ?? '',
+        loginId: data.loginId,
         name: data.name,
         userId: data.userId,
         token: data.token,

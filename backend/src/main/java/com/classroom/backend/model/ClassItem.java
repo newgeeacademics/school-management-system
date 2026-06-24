@@ -24,4 +24,7 @@ public class ClassItem {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "homeroom_teacher_id")
     private Teacher homeroomTeacher;
+
+    @Column(name = "school_id")
+    private String schoolId;
 }
