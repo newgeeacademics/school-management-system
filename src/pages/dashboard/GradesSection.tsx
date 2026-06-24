@@ -53,6 +53,23 @@ const PERIOD_OPTIONS: EvaluationPeriod[] = [
   'Trimestre 3',
 ];
 
+function computeClassRank(
+  studentIndex: number,
+  rows: { avg: number | null }[],
+): number | null {
+  const avg = rows[studentIndex]?.avg;
+  if (avg == null) return null;
+  let rank = 1;
+  for (const row of rows) {
+    if (row.avg != null && row.avg > avg) rank++;
+  }
+  return rank;
+}
+
+function formatClassRank(rank: number): string {
+  return rank === 1 ? '1er' : `${rank}e`;
+}
+
 export const GradesSection: React.FC<GradesSectionProps> = ({
   classes,
   courses,
@@ -530,6 +547,7 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
                         </th>
                       ))}
                       <th className='border-b px-2 py-1 text-left'>Moyenne /20</th>
+                      <th className='border-b px-2 py-1 text-left'>Rang</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -537,7 +555,7 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
                       <tr>
                         <td
                           className='border-b px-2 py-2 text-[11px] text-muted-foreground'
-                          colSpan={classEvaluations.length + 2}
+                          colSpan={classEvaluations.length + 3}
                         >
                           Aucun élève n&apos;est encore rattaché à cette classe.
                           Ajoutez des élèves dans la section &laquo; Élèves &raquo;
@@ -545,15 +563,12 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
                         </td>
                       </tr>
                     ) : (
-                      sortedStudents.map((student, index) => (
+                      sortedStudents.map((student, index) => {
+                        const rank = computeClassRank(index, sortedStudents);
+                        return (
                         <tr key={student.id} className='hover:bg-muted/40'>
                           <td className='border-b px-2 py-1'>
-                            <div className='flex items-center gap-1.5'>
-                              <span className='text-[10px] text-muted-foreground'>
-                                {index + 1}
-                              </span>
-                              <span className='font-medium'>{student.name}</span>
-                            </div>
+                            <span className='font-medium'>{student.name}</span>
                           </td>
                           {classEvaluations.map((ev) => {
                             const current = getGrade(ev.id, student.id);
@@ -617,16 +632,28 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
                               <span className='text-muted-foreground'>—</span>
                             )}
                           </td>
+                          <td className='border-b px-2 py-1'>
+                            {rank != null ? (
+                              <Badge
+                                variant={rank <= 3 ? 'default' : 'secondary'}
+                                className='text-[10px] font-semibold'
+                              >
+                                {formatClassRank(rank)}
+                              </Badge>
+                            ) : (
+                              <span className='text-muted-foreground'>—</span>
+                            )}
+                          </td>
                         </tr>
-                      ))
+                      );})
                     )}
                   </tbody>
                 </table>
               </div>
               <p className='text-[11px] text-muted-foreground'>
                 {isAdmin
-                  ? 'En tant qu\'administration, vous pouvez modifier les notes directement. Les demandes des enseignants apparaissent ci-dessus.'
-                  : 'La saisie initiale est directe. Pour modifier une note déjà enregistrée, cliquez sur la cellule et envoyez une demande à l\'administration.'}
+                  ? 'En tant qu\'administration, vous pouvez modifier les notes directement. Les demandes des enseignants apparaissent ci-dessus. Le rang est calculé sur la moyenne pondérée de la période (ex-aequo : même rang pour une moyenne identique).'
+                  : 'La saisie initiale est directe. Pour modifier une note déjà enregistrée, cliquez sur la cellule et envoyez une demande à l\'administration. Le rang de classe est affiché selon la moyenne de la période sélectionnée.'}
               </p>
             </>
           )}
