@@ -47,7 +47,7 @@ public class TeacherService {
         String schoolId = schoolContextService.getCurrentSchoolId().orElse(null);
 
         AppUser appUser = portalAccountService.createLinkedAccountForPerson(
-                request.getFirstName(), request.getLastName(), fullName,
+                resolveFirstName(request), resolveLastName(request), fullName,
                 request.getEmail(), request.getPhone(),
                 request.getPassword(), UserRole.TEACHER);
 
@@ -98,10 +98,9 @@ public class TeacherService {
                     teacher.getAppUser(), fullName, request.getEmail(),
                     request.getPhone(), request.getPassword());
         } else if ((request.getEmail() != null && !request.getEmail().isBlank())
-                || (request.getPhone() != null && !request.getPhone().isBlank())
-                || PersonNameUtil.hasFirstAndLast(request.getFirstName(), request.getLastName())) {
+                || (request.getPhone() != null && !request.getPhone().isBlank())) {
             AppUser appUser = portalAccountService.createLinkedAccountForPerson(
-                    request.getFirstName(), request.getLastName(), fullName,
+                    resolveFirstName(request), resolveLastName(request), fullName,
                     request.getEmail(), request.getPhone(),
                     request.getPassword(), UserRole.TEACHER);
             teacher.setAppUser(appUser);
@@ -156,5 +155,29 @@ public class TeacherService {
         return Arrays.stream(name.trim().split("\\s+"))
                 .map(part -> part.substring(0, 1).toUpperCase())
                 .collect(Collectors.joining());
+    }
+
+    private String resolveFirstName(TeacherRequest request) {
+        String first = PersonNameUtil.trim(request.getFirstName());
+        if (!first.isEmpty()) {
+            return first;
+        }
+        if (request.getName() == null || request.getName().isBlank()) {
+            return "";
+        }
+        String[] parts = request.getName().trim().split("\\s+", 2);
+        return parts[0];
+    }
+
+    private String resolveLastName(TeacherRequest request) {
+        String last = PersonNameUtil.trim(request.getLastName());
+        if (!last.isEmpty()) {
+            return last;
+        }
+        if (request.getName() == null || request.getName().isBlank()) {
+            return "";
+        }
+        String[] parts = request.getName().trim().split("\\s+", 2);
+        return parts.length > 1 ? parts[1] : "";
     }
 }
