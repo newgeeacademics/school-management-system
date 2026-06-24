@@ -95,8 +95,20 @@ function relationId(value: unknown): string | undefined {
   return undefined;
 }
 
+function appUserLoginId(entity: Record<string, unknown>): string | undefined {
+  const appUser = entity.appUser as Record<string, unknown> | undefined;
+  if (appUser?.loginId) return String(appUser.loginId);
+  return undefined;
+}
+
+function isSyntheticPortalEmail(email?: string): boolean {
+  if (!email) return false;
+  return email.toLowerCase().includes('@portal.classroom');
+}
+
 export function mapTeacherFromApi(t: Record<string, unknown>): Teacher {
   const appUser = t.appUser as Record<string, unknown> | undefined;
+  const contactEmail = t.email ? String(t.email) : appUser?.email ? String(appUser.email) : undefined;
   return {
     id: String(t.id),
     name: String(t.name ?? ''),
@@ -105,8 +117,9 @@ export function mapTeacherFromApi(t: Record<string, unknown>): Teacher {
     subject: String(t.subject ?? ''),
     staffId: t.staffId ? String(t.staffId) : undefined,
     initials: String(t.initials ?? (String(t.name ?? '').slice(0, 2).toUpperCase() || 'ED')),
-    email: t.email ? String(t.email) : appUser?.email ? String(appUser.email) : undefined,
+    email: contactEmail && !isSyntheticPortalEmail(contactEmail) ? contactEmail : undefined,
     phone: t.phone ? String(t.phone) : undefined,
+    loginId: appUserLoginId(t),
   };
 }
 
@@ -180,28 +193,32 @@ export function mapClassFromApi(c: Record<string, unknown>): ClassItem {
 
 export function mapStudentFromApi(s: Record<string, unknown>): Student {
   const appUser = s.appUser as Record<string, unknown> | undefined;
+  const contactEmail = s.email ? String(s.email) : appUser?.email ? String(appUser.email) : undefined;
   return {
     id: String(s.id),
     name: String(s.name ?? ''),
     firstName: s.firstName ? String(s.firstName) : undefined,
     lastName: s.lastName ? String(s.lastName) : undefined,
     classId: relationId(s.classItem),
-    email: s.email ? String(s.email) : appUser?.email ? String(appUser.email) : undefined,
+    email: contactEmail && !isSyntheticPortalEmail(contactEmail) ? contactEmail : undefined,
     phone: s.phone ? String(s.phone) : appUser?.phone ? String(appUser.phone) : undefined,
     matricule: s.matricule ? String(s.matricule) : undefined,
     idCardNumber: s.idCardNumber ? String(s.idCardNumber) : undefined,
+    loginId: appUserLoginId(s),
   };
 }
 
 export function mapParentFromApi(p: Record<string, unknown>): ParentContact {
+  const contactEmail = p.email ? String(p.email) : undefined;
   return {
     id: String(p.id),
     name: String(p.name ?? ''),
     firstName: p.firstName ? String(p.firstName) : undefined,
     lastName: p.lastName ? String(p.lastName) : undefined,
     phone: p.phone ? String(p.phone) : undefined,
-    email: p.email ? String(p.email) : undefined,
+    email: contactEmail && !isSyntheticPortalEmail(contactEmail) ? contactEmail : undefined,
     studentId: relationId(p.student),
+    loginId: appUserLoginId(p),
   };
 }
 
@@ -234,12 +251,14 @@ const FEE_CATEGORY_FROM_API: Record<string, FeeCategory> = {
 };
 
 export function mapUserFromApi(u: Record<string, unknown>): AppUser {
+  const contactEmail = u.email ? String(u.email) : '';
   return {
     id: String(u.id),
     name: String(u.name ?? ''),
-    email: String(u.email ?? ''),
+    email: contactEmail && !isSyntheticPortalEmail(contactEmail) ? contactEmail : '',
     phone: u.phone ? String(u.phone) : undefined,
     role: USER_ROLE_FROM_API[String(u.role)] ?? 'teacher',
+    loginId: u.loginId ? String(u.loginId) : undefined,
   };
 }
 

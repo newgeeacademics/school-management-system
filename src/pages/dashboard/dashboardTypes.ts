@@ -47,6 +47,7 @@ export type Teacher = {
   staffId?: string;
   email?: string;
   phone?: string;
+  loginId?: string;
 };
 
 export type Driver = {
@@ -78,6 +79,7 @@ export type Student = {
   phone?: string;
   matricule?: string;
   idCardNumber?: string;
+  loginId?: string;
 };
 
 export type ParentContact = {
@@ -88,6 +90,7 @@ export type ParentContact = {
   phone?: string;
   email?: string;
   studentId?: string;
+  loginId?: string;
 };
 
 export type Course = {
@@ -396,6 +399,7 @@ export type NewEvaluationFormState = {
 };
 
 export type NewPaymentReminderFormState = {
+  parentContactId: string;
   parentName: string;
   studentName: string;
   amount: string;
@@ -404,6 +408,7 @@ export type NewPaymentReminderFormState = {
 };
 
 export type NewPaymentReceiptFormState = {
+  parentContactId: string;
   parentName: string;
   studentName: string;
   amount: string;
@@ -419,6 +424,7 @@ export type AppUser = {
   email: string;
   phone?: string;
   role: AppUserRole;
+  loginId?: string;
 };
 
 export type NewUserFormState = {

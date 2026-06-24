@@ -803,16 +803,68 @@ export const DashboardPage: React.FC = () => {
 
   const [paymentReminders, setPaymentReminders] = React.useState<PaymentReminder[]>([]);
   const [paymentReceipts, setPaymentReceipts] = React.useState<PaymentReceipt[]>([]);
+  const [selectedParentContactId, setSelectedParentContactId] = React.useState('');
+
+  const linkedParentContacts = React.useMemo(() => {
+    if (role !== 'parent' || !sessionUser) return [];
+    const email = sessionUser.email?.trim().toLowerCase();
+    const name = sessionUser.name?.trim().toLowerCase();
+    return parents.filter((parent) => {
+      const parentEmail = parent.email?.trim().toLowerCase();
+      const parentName = parent.name?.trim().toLowerCase();
+      return (email && parentEmail && parentEmail === email) || (name && parentName && parentName === name);
+    });
+  }, [role, sessionUser, parents]);
+
+  const activeParentContact = React.useMemo(() => {
+    if (linkedParentContacts.length === 0) return null;
+    return (
+      linkedParentContacts.find((parent) => parent.id === selectedParentContactId) ??
+      linkedParentContacts[0]
+    );
+  }, [linkedParentContacts, selectedParentContactId]);
+
+  React.useEffect(() => {
+    if (linkedParentContacts.length === 0) {
+      setSelectedParentContactId('');
+      return;
+    }
+    if (!linkedParentContacts.some((parent) => parent.id === selectedParentContactId)) {
+      setSelectedParentContactId(linkedParentContacts[0].id);
+    }
+  }, [linkedParentContacts, selectedParentContactId]);
+
+  const paymentRecordsForViewer = React.useMemo(() => {
+    if (role !== 'parent' || !activeParentContact) {
+      return { reminders: paymentReminders, receipts: paymentReceipts };
+    }
+    const childName = students.find((student) => student.id === activeParentContact.studentId)?.name;
+    const parentName = activeParentContact.name.trim().toLowerCase();
+    const matchesFamily = (parentNameValue: string, studentNameValue?: string) => {
+      if (parentNameValue.trim().toLowerCase() !== parentName) return false;
+      if (!childName || !studentNameValue) return true;
+      return studentNameValue.trim() === childName;
+    };
+    return {
+      reminders: paymentReminders.filter((reminder) =>
+        matchesFamily(reminder.parentName, reminder.studentName)
+      ),
+      receipts: paymentReceipts.filter((receipt) =>
+        matchesFamily(receipt.parentName, receipt.studentName)
+      ),
+    };
+  }, [role, activeParentContact, paymentReminders, paymentReceipts, students]);
 
   const parentFeesTotal = React.useMemo(
-    () => paymentReminders.reduce((sum, r) => sum + (r.amount || 0), 0),
-    [paymentReminders],
+    () => paymentRecordsForViewer.reminders.reduce((sum, r) => sum + (r.amount || 0), 0),
+    [paymentRecordsForViewer.reminders],
   );
   const parentFeesPaid = React.useMemo(
-    () => paymentReceipts.reduce((sum, r) => sum + (r.amount || 0), 0),
-    [paymentReceipts],
+    () => paymentRecordsForViewer.receipts.reduce((sum, r) => sum + (r.amount || 0), 0),
+    [paymentRecordsForViewer.receipts],
   );
   const [newReminder, setNewReminder] = React.useState<NewPaymentReminderFormState>({
+    parentContactId: '',
     parentName: '',
     studentName: '',
     amount: '',
@@ -820,6 +872,7 @@ export const DashboardPage: React.FC = () => {
     note: '',
   });
   const [newReceipt, setNewReceipt] = React.useState<NewPaymentReceiptFormState>({
+    parentContactId: '',
     parentName: '',
     studentName: '',
     amount: '',
@@ -948,6 +1001,10 @@ export const DashboardPage: React.FC = () => {
     if (!newParent.firstName.trim() || !newParent.lastName.trim()) {
       return;
     }
+    if (!newParent.email.trim()) {
+      toast.error("L'e-mail de contact est requis.");
+      return;
+    }
     const payload = {
       firstName: newParent.firstName.trim(),
       lastName: newParent.lastName.trim(),
@@ -1057,12 +1114,21 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateReminder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newReminder.parentName.trim() || !newReminder.amount.trim()) return;
+    const selectedParent = newReminder.parentContactId
+      ? parents.find((parent) => parent.id === newReminder.parentContactId)
+      : undefined;
+    const parentName = (newReminder.parentName || selectedParent?.name || '').trim();
+    const studentName =
+      newReminder.studentName.trim() ||
+      (selectedParent?.studentId
+        ? students.find((student) => student.id === selectedParent.studentId)?.name
+        : undefined);
+    if (!parentName || !newReminder.amount.trim()) return;
     if (!requireBackend()) return;
     const reminder = {
       id: `rem-${Date.now()}`,
-      parentName: newReminder.parentName.trim(),
-      studentName: newReminder.studentName.trim() || undefined,
+      parentName,
+      studentName: studentName || undefined,
       amount: Number(newReminder.amount || 0),
       dueDate: newReminder.dueDate,
       status: 'Envoyé' as const,
@@ -1076,6 +1142,7 @@ export const DashboardPage: React.FC = () => {
       });
       setPaymentReminders((prev) => [...prev, reminder]);
       setNewReminder({
+        parentContactId: '',
         parentName: '',
         studentName: '',
         amount: '',
@@ -1089,14 +1156,23 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateReceipt = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newReceipt.parentName.trim() || !newReceipt.amount.trim()) return;
+    const selectedParent = newReceipt.parentContactId
+      ? parents.find((parent) => parent.id === newReceipt.parentContactId)
+      : undefined;
+    const parentName = (newReceipt.parentName || selectedParent?.name || '').trim();
+    const studentName =
+      newReceipt.studentName.trim() ||
+      (selectedParent?.studentId
+        ? students.find((student) => student.id === selectedParent.studentId)?.name
+        : undefined);
+    if (!parentName || !newReceipt.amount.trim()) return;
     if (!requireBackend()) return;
     const reference =
       newReceipt.reference.trim() || `RECU-${new Date().getFullYear()}-${Date.now()}`;
     const receipt = {
       id: `rec-${Date.now()}`,
-      parentName: newReceipt.parentName.trim(),
-      studentName: newReceipt.studentName.trim() || undefined,
+      parentName,
+      studentName: studentName || undefined,
       amount: Number(newReceipt.amount || 0),
       date: newReceipt.date || new Date().toISOString().slice(0, 10),
       reference,
@@ -1105,6 +1181,7 @@ export const DashboardPage: React.FC = () => {
       await createPaymentReceiptOnBackend(receipt);
       setPaymentReceipts((prev) => [...prev, receipt]);
       setNewReceipt({
+        parentContactId: '',
         parentName: '',
         studentName: '',
         amount: '',
@@ -1304,6 +1381,10 @@ export const DashboardPage: React.FC = () => {
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTeacher.firstName.trim() || !newTeacher.lastName.trim()) return;
+    if (!newTeacher.email.trim()) {
+      toast.error("L'e-mail de contact est requis.");
+      return;
+    }
     const payload = {
       firstName: newTeacher.firstName.trim(),
       lastName: newTeacher.lastName.trim(),
@@ -1393,6 +1474,10 @@ export const DashboardPage: React.FC = () => {
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newStudent.firstName.trim() || !newStudent.lastName.trim()) {
+      return;
+    }
+    if (!newStudent.email.trim()) {
+      toast.error("L'e-mail de contact est requis.");
       return;
     }
     const payload = {
@@ -2709,8 +2794,8 @@ export const DashboardPage: React.FC = () => {
               onNavigate={setActiveSection}
               totalDue={parentFeesTotal}
               amountPaid={parentFeesPaid}
-              remindersCount={paymentReminders.length}
-              receipts={paymentReceipts}
+              remindersCount={paymentRecordsForViewer.reminders.length}
+              receipts={paymentRecordsForViewer.receipts}
               transportRoutes={transportRoutes}
             />
           )}
@@ -2868,8 +2953,14 @@ export const DashboardPage: React.FC = () => {
               totalDue={parentFeesTotal}
               amountPaid={parentFeesPaid}
               isAdmin={role === 'admin'}
-              reminders={paymentReminders}
-              receipts={paymentReceipts}
+              viewerRole={role ?? undefined}
+              parents={parents}
+              students={students}
+              linkedParentContacts={linkedParentContacts}
+              selectedParentContactId={selectedParentContactId}
+              onParentContactChange={setSelectedParentContactId}
+              reminders={paymentRecordsForViewer.reminders}
+              receipts={paymentRecordsForViewer.receipts}
               newReminder={newReminder}
               setNewReminder={setNewReminder}
               onCreateReminder={handleCreateReminder}

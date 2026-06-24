@@ -8,9 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import type {
   NewPaymentReceiptFormState,
   NewPaymentReminderFormState,
+  ParentContact,
   PaymentReceipt,
   PaymentReminder,
   SetStateAction,
+  Student,
+  UserRole,
 } from './dashboardTypes';
 
 type PaymentsSectionProps = {
@@ -18,6 +21,12 @@ type PaymentsSectionProps = {
   amountPaid: number;
   currency?: string;
   isAdmin?: boolean;
+  viewerRole?: UserRole;
+  parents?: ParentContact[];
+  students?: Student[];
+  linkedParentContacts?: ParentContact[];
+  selectedParentContactId?: string;
+  onParentContactChange?: (parentContactId: string) => void;
   reminders?: PaymentReminder[];
   receipts?: PaymentReceipt[];
   newReminder?: NewPaymentReminderFormState;
@@ -28,14 +37,50 @@ type PaymentsSectionProps = {
   onCreateReceipt?: (e: React.FormEvent) => void;
 };
 
+const selectClass =
+  'flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+
 const formatAmount = (value: number, currency: string) =>
   `${value.toLocaleString('fr-FR')} ${currency}`;
+
+function resolveStudentName(students: Student[], studentId?: string) {
+  if (!studentId) return '';
+  return students.find((s) => s.id === studentId)?.name ?? '';
+}
+
+function parentContactLabel(parent: ParentContact, students: Student[]) {
+  const child = resolveStudentName(students, parent.studentId);
+  return child ? `${parent.name} – ${child}` : parent.name;
+}
+
+function applyParentContact(
+  parentContactId: string,
+  parents: ParentContact[],
+  students: Student[],
+  base: { parentName: string; studentName: string }
+) {
+  const contact = parents.find((p) => p.id === parentContactId);
+  if (!contact) {
+    return { ...base, parentContactId };
+  }
+  return {
+    parentContactId,
+    parentName: contact.name,
+    studentName: resolveStudentName(students, contact.studentId),
+  };
+}
 
 export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
   totalDue,
   amountPaid,
   currency = 'XOF',
   isAdmin = false,
+  viewerRole,
+  parents = [],
+  students = [],
+  linkedParentContacts = [],
+  selectedParentContactId = '',
+  onParentContactChange,
   reminders = [],
   receipts = [],
   newReminder,
@@ -46,12 +91,34 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
   onCreateReceipt,
 }) => {
   const remaining = Math.max(0, totalDue - amountPaid);
+  const showFamilyPicker =
+    viewerRole === 'parent' && linkedParentContacts.length > 1 && onParentContactChange;
 
   return (
     <section className='space-y-5'>
       <p className='text-sm text-muted-foreground'>
-        Résumé de vos frais scolaires pour l&apos;année en cours.
+        {viewerRole === 'parent'
+          ? 'Résumé des frais scolaires pour votre famille.'
+          : "Résumé des frais scolaires pour l'année en cours."}
       </p>
+
+      {showFamilyPicker ? (
+        <div className='max-w-md'>
+          <Label htmlFor='payments-family'>Enfant / compte parent</Label>
+          <select
+            id='payments-family'
+            className={`${selectClass} mt-1`}
+            value={selectedParentContactId}
+            onChange={(e) => onParentContactChange(e.target.value)}
+          >
+            {linkedParentContacts.map((parent) => (
+              <option key={parent.id} value={parent.id}>
+                {parentContactLabel(parent, students)}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
 
       <div className='grid gap-4 md:grid-cols-3'>
         <Card>
@@ -113,15 +180,36 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
             >
               <div className='grid gap-2'>
                 <Label htmlFor='reminder-parent'>Parent</Label>
-                <Input
-                  id='reminder-parent'
-                  value={newReminder.parentName}
-                  onChange={(e) =>
-                    setNewReminder((r) => ({ ...r, parentName: e.target.value }))
-                  }
-                  placeholder='Nom du parent'
-                  required
-                />
+                {parents.length > 0 ? (
+                  <select
+                    id='reminder-parent'
+                    className={selectClass}
+                    value={newReminder.parentContactId}
+                    onChange={(e) =>
+                      setNewReminder((r) =>
+                        applyParentContact(e.target.value, parents, students, r)
+                      )
+                    }
+                    required
+                  >
+                    <option value=''>Choisir un parent</option>
+                    {parents.map((parent) => (
+                      <option key={parent.id} value={parent.id}>
+                        {parentContactLabel(parent, students)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <Input
+                    id='reminder-parent'
+                    value={newReminder.parentName}
+                    onChange={(e) =>
+                      setNewReminder((r) => ({ ...r, parentName: e.target.value }))
+                    }
+                    placeholder='Nom du parent'
+                    required
+                  />
+                )}
               </div>
               <div className='grid gap-2'>
                 <Label htmlFor='reminder-student'>Enfant</Label>
@@ -132,6 +220,7 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
                     setNewReminder((r) => ({ ...r, studentName: e.target.value }))
                   }
                   placeholder={`Nom de l'élève (optionnel)`}
+                  readOnly={Boolean(newReminder.parentContactId)}
                 />
               </div>
               <div className='grid gap-2'>
@@ -199,15 +288,36 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
             >
               <div className='grid gap-2'>
                 <Label htmlFor='receipt-parent'>Parent</Label>
-                <Input
-                  id='receipt-parent'
-                  value={newReceipt.parentName}
-                  onChange={(e) =>
-                    setNewReceipt((r) => ({ ...r, parentName: e.target.value }))
-                  }
-                  placeholder='Nom du parent'
-                  required
-                />
+                {parents.length > 0 ? (
+                  <select
+                    id='receipt-parent'
+                    className={selectClass}
+                    value={newReceipt.parentContactId}
+                    onChange={(e) =>
+                      setNewReceipt((r) =>
+                        applyParentContact(e.target.value, parents, students, r)
+                      )
+                    }
+                    required
+                  >
+                    <option value=''>Choisir un parent</option>
+                    {parents.map((parent) => (
+                      <option key={parent.id} value={parent.id}>
+                        {parentContactLabel(parent, students)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <Input
+                    id='receipt-parent'
+                    value={newReceipt.parentName}
+                    onChange={(e) =>
+                      setNewReceipt((r) => ({ ...r, parentName: e.target.value }))
+                    }
+                    placeholder='Nom du parent'
+                    required
+                  />
+                )}
               </div>
               <div className='grid gap-2'>
                 <Label htmlFor='receipt-student'>Enfant</Label>
@@ -218,6 +328,7 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
                     setNewReceipt((r) => ({ ...r, studentName: e.target.value }))
                   }
                   placeholder={`Nom de l'élève (optionnel)`}
+                  readOnly={Boolean(newReceipt.parentContactId)}
                 />
               </div>
               <div className='grid gap-2'>
