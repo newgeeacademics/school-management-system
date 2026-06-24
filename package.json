@@ -11,6 +11,7 @@
     "dev:finance": "npm --prefix finance-app run dev",
     "dev:tracking": "npm --prefix tracking-app run dev",
     "dev:mobile": "npm --prefix user-portal-mobile run start",
+    "clean:db": "powershell -ExecutionPolicy Bypass -File ./scripts/clean-database.ps1",
     "build": "tsc && vite build",
     "build:admin": "npm --prefix admin-app run build",
     "build:portal": "npm --prefix user-portal-app run build",

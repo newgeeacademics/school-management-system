@@ -118,8 +118,7 @@ public class StudentService {
                     student.getAppUser(), fullName, request.getEmail(),
                     request.getPhone(), request.getPassword());
         } else if ((request.getEmail() != null && !request.getEmail().isBlank())
-                || (request.getPhone() != null && !request.getPhone().isBlank())
-                || PersonNameUtil.hasFirstAndLast(request.getFirstName(), request.getLastName())) {
+                || (request.getPhone() != null && !request.getPhone().isBlank())) {
             AppUser appUser = portalAccountService.createLinkedAccountForPerson(
                     request.getFirstName(), request.getLastName(), fullName,
                     request.getEmail(), request.getPhone(),

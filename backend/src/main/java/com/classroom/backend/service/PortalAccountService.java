@@ -39,9 +39,9 @@ public class PortalAccountService {
         boolean hasEmail = email != null && !email.isBlank();
         boolean hasPhone = phone != null && !phone.isBlank();
 
-        if (requiresContactEmail(role) && !hasEmail) {
+        if (requiresPortalAccount(role) && !hasEmail && !hasPhone) {
             throw new IllegalArgumentException(
-                    "L'e-mail de contact est requis pour créer ce compte portail.");
+                    "L'e-mail ou le téléphone de contact est requis pour créer ce compte portail.");
         }
         if (hasEmail && !isRealContactEmail(email)) {
             throw new IllegalArgumentException("Adresse e-mail de contact invalide.");
@@ -194,7 +194,7 @@ public class PortalAccountService {
         return user.getEmail();
     }
 
-    private static boolean requiresContactEmail(UserRole role) {
+    private static boolean requiresPortalAccount(UserRole role) {
         return role == UserRole.STUDENT || role == UserRole.TEACHER || role == UserRole.PARENT;
     }
 
