@@ -40,6 +40,10 @@ app:
   uploads:
     evaluation-dir: uploads/evaluations
 
+  # Set APP_SEED_ENABLED=true to load demo school/users on empty database (dev only).
+  seed:
+    enabled: ${APP_SEED_ENABLED:false}
+
   jwt:
     secret: classroom-secret-key-change-in-production-min-256-bits-long-key-here
     expiration-ms: 86400000  # 24 hours
