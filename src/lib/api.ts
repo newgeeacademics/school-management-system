@@ -51,12 +51,18 @@ export type AuthResponse = {
   id: string;
   name: string;
   email: string;
+  loginId?: string | null;
   role: 'ADMIN' | 'TEACHER' | 'PARENT' | 'STUDENT';
 };
 
-export async function loginWithEmail(email: string, password: string): Promise<AuthResponse> {
+export async function loginWithIdentifier(identifier: string, password: string): Promise<AuthResponse> {
   return apiFetch<AuthResponse>('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email: identifier, password }),
   });
+}
+
+/** @deprecated Use loginWithIdentifier */
+export async function loginWithEmail(email: string, password: string): Promise<AuthResponse> {
+  return loginWithIdentifier(email, password);
 }

@@ -8,7 +8,7 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { getAdminLoginUrl } from '@/lib/school-app-url';
 import { setPortalSession } from '@/lib/auth';
-import { loginWithEmail, isBackendApiConfigured } from '@/lib/api';
+import { loginWithIdentifier, isBackendApiConfigured } from '@/lib/api';
 import { backendRoleToPortal } from '@/lib/portal-role';
 
 export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 'embedded' }) {
@@ -25,8 +25,8 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
     e.preventDefault();
     setIsPending(true);
 
-    const email = usernameOrEmail.trim();
-    if (!email || !password) {
+    const identifier = usernameOrEmail.trim();
+    if (!identifier || !password) {
       toast.error(t('auth.enterPassword'), { richColors: true });
       setIsPending(false);
       return;
@@ -39,7 +39,7 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
         return;
       }
 
-      const auth = await loginWithEmail(email, password);
+      const auth = await loginWithIdentifier(identifier, password);
       const portalRole = backendRoleToPortal(auth.role);
       if (!portalRole) {
         toast.error(t('userPortal.adminAccountDenied'), { richColors: true });
@@ -50,10 +50,11 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
       setPortalSession({
         role: portalRole,
         email: auth.email,
+        loginId: auth.loginId ?? undefined,
         name: auth.name,
         userId: auth.id,
         token: auth.token,
-        emailHint: auth.email,
+        emailHint: auth.loginId ?? auth.email,
       });
 
       toast.success(t('userPortal.welcomeToast'), { richColors: true });
