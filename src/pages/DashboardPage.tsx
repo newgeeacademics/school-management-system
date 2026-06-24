@@ -1197,16 +1197,14 @@ export const DashboardPage: React.FC = () => {
     e.preventDefault();
     if (!newCanteenItem.dish.trim() || !newCanteenItem.day) return;
     if (!requireBackend()) return;
-    const item = {
-      id: `cant-${Date.now()}`,
-      day: newCanteenItem.day,
-      mealType: newCanteenItem.mealType,
-      dish: newCanteenItem.dish.trim(),
-      note: newCanteenItem.note.trim() || undefined,
-    };
     try {
-      await createCanteenOnBackend(item);
-      setCanteenMenuItems((prev) => [...prev, item]);
+      const created = await createCanteenOnBackend({
+        day: newCanteenItem.day,
+        mealType: newCanteenItem.mealType,
+        dish: newCanteenItem.dish.trim(),
+        note: newCanteenItem.note.trim() || undefined,
+      });
+      setCanteenMenuItems((prev) => [...prev, created]);
       setNewCanteenItem({
         day: '',
         mealType: 'Déjeuner',
@@ -1758,19 +1756,13 @@ export const DashboardPage: React.FC = () => {
     const matiereName = getMatiereName(newCourse.matiereId);
     const name =
       newCourse.name.trim() || (matiereName !== '—' ? matiereName : 'Cours sans nom');
-    const course = {
-      id: `co-${Date.now()}`,
-      name,
-      matiereId: newCourse.matiereId,
-      level: newCourse.level.trim() || 'Niveau non défini',
-    };
     try {
-      await createCourseOnBackend({
-        name: course.name,
-        matiereId: course.matiereId,
-        level: course.level,
+      const created = await createCourseOnBackend({
+        name,
+        matiereId: newCourse.matiereId,
+        level: newCourse.level.trim() || 'Niveau non défini',
       });
-      setCourses((prev) => [...prev, course]);
+      setCourses((prev) => [...prev, created]);
       setNewCourse({ name: '', matiereId: '', level: '' });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
@@ -1781,10 +1773,9 @@ export const DashboardPage: React.FC = () => {
     e.preventDefault();
     if (!newMatiere.name.trim()) return;
     if (!requireBackend()) return;
-    const matiere = { id: `mat-${Date.now()}`, name: newMatiere.name.trim() };
     try {
-      await createMatiereOnBackend(matiere.name);
-      setMatieres((prev) => [...prev, matiere]);
+      const created = await createMatiereOnBackend(newMatiere.name.trim());
+      setMatieres((prev) => [...prev, created]);
       setNewMatiere({ name: '' });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
@@ -1795,23 +1786,15 @@ export const DashboardPage: React.FC = () => {
     e.preventDefault();
     if (!newEvent.label.trim()) return;
     if (!requireBackend()) return;
-    const event = {
-      id: `ev-${Date.now()}`,
-      label: newEvent.label.trim(),
-      date: newEvent.date.trim() || 'Date à définir',
-      time: newEvent.time.trim() || undefined,
-      location: newEvent.location.trim() || undefined,
-      type: newEvent.type,
-    };
     try {
-      await createEventOnBackend({
-        label: event.label,
-        date: event.date,
-        time: event.time,
-        location: event.location,
-        type: event.type,
+      const created = await createEventOnBackend({
+        label: newEvent.label.trim(),
+        date: newEvent.date.trim() || 'Date à définir',
+        time: newEvent.time.trim() || undefined,
+        location: newEvent.location.trim() || undefined,
+        type: newEvent.type,
       });
-      setEvents((prev) => [...prev, event]);
+      setEvents((prev) => [...prev, created]);
       setNewEvent({
         label: '',
         date: '',
@@ -1830,23 +1813,15 @@ export const DashboardPage: React.FC = () => {
     const timeLabel = formatTimeRange(newSlot.timeStart, newSlot.timeEnd);
     if (!timeLabel) return;
     if (!requireBackend()) return;
-    const slot = {
-      id: `sl-${Date.now()}`,
-      classId: newSlot.classId,
-      courseId: newSlot.courseId || undefined,
-      day: newSlot.day,
-      time: timeLabel,
-      room: newSlot.room || undefined,
-    };
     try {
-      await createScheduleOnBackend({
-        classId: slot.classId,
-        courseId: slot.courseId,
-        day: slot.day,
-        time: slot.time,
-        room: slot.room,
+      const created = await createScheduleOnBackend({
+        classId: newSlot.classId,
+        courseId: newSlot.courseId || undefined,
+        day: newSlot.day,
+        time: timeLabel,
+        room: newSlot.room || undefined,
       });
-      setSchedule((prev) => [...prev, slot]);
+      setSchedule((prev) => [...prev, created]);
       setNewSlot({
         classId: '',
         courseId: '',
@@ -1864,19 +1839,13 @@ export const DashboardPage: React.FC = () => {
     e.preventDefault();
     if (!newRoom.name.trim()) return;
     if (!requireBackend()) return;
-    const room = {
-      id: `r-${Date.now()}`,
-      name: newRoom.name.trim(),
-      type: newRoom.type || 'Salle de classe',
-      capacity: newRoom.capacity ? Number(newRoom.capacity) : undefined,
-    };
     try {
-      await createRoomOnBackend({
-        name: room.name,
-        type: room.type,
-        capacity: room.capacity,
+      const created = await createRoomOnBackend({
+        name: newRoom.name.trim(),
+        type: newRoom.type || 'Salle de classe',
+        capacity: newRoom.capacity ? Number(newRoom.capacity) : undefined,
       });
-      setRooms((prev) => [...prev, room]);
+      setRooms((prev) => [...prev, created]);
       setNewRoom({
         name: '',
         type: '',
@@ -1893,20 +1862,18 @@ export const DashboardPage: React.FC = () => {
     if (!requireBackend()) return;
     const coef = Number(newEvaluation.coefficient || '1') || 1;
     const maxScore = Number(newEvaluation.maxScore || '20') || 20;
-    const evaluation = {
-      id: `ev-${Date.now()}`,
-      classId: newEvaluation.classId,
-      courseId: newEvaluation.courseId,
-      label: newEvaluation.label.trim(),
-      date: newEvaluation.date || new Date().toISOString().slice(0, 10),
-      period: newEvaluation.period,
-      type: newEvaluation.type,
-      coefficient: coef,
-      maxScore,
-    };
     try {
-      await createEvaluationOnBackend(evaluation);
-      setEvaluations((prev) => [...prev, evaluation]);
+      const created = await createEvaluationOnBackend({
+        classId: newEvaluation.classId,
+        courseId: newEvaluation.courseId,
+        label: newEvaluation.label.trim(),
+        date: newEvaluation.date || new Date().toISOString().slice(0, 10),
+        period: newEvaluation.period,
+        type: newEvaluation.type,
+        coefficient: coef,
+        maxScore,
+      });
+      setEvaluations((prev) => [...prev, created]);
       setNewEvaluation({
         classId: '',
         courseId: '',
