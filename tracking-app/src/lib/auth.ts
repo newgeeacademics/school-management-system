@@ -7,6 +7,7 @@ export type TrackingRole = 'parent' | 'teacher' | 'driver';
 export type TrackingSession = {
   role: TrackingRole;
   email: string;
+  loginId?: string;
   name?: string;
   userId?: string;
   token?: string;
@@ -27,6 +28,7 @@ export function getTrackingSession(): TrackingSession | null {
       return {
         role: data.role,
         email: data.email ?? '',
+        loginId: data.loginId,
         name: data.name,
         userId: data.userId,
         token: data.token,
