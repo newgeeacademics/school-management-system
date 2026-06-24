@@ -5,6 +5,7 @@ import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -22,8 +23,14 @@ public class DataSeeder implements CommandLineRunner {
     private final ClassItemRepository classItemRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${app.seed.enabled:false}")
+    private boolean seedEnabled;
+
     @Override
     public void run(String... args) {
+        if (!seedEnabled) {
+            return;
+        }
         if (appUserRepository.count() == 0) {
             log.info("Seeding default school and portal users...");
 

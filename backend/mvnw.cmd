@@ -56,6 +56,8 @@ goto fail
 
 :execute
 @REM Setup the command line
+set MAVEN_PROJECTBASEDIR=%~dp0
+set MAVEN_PROJECTBASEDIR=%MAVEN_PROJECTBASEDIR:~0,-1%
 
 set CLASSWORLDS_CONF="%~dp0\.mvn\wrapper\maven-wrapper.jar"
 
@@ -65,7 +67,7 @@ echo Downloading Maven Wrapper...
 powershell -Command "(New-Object Net.WebClient).DownloadFile('%WRAPPER_URL%', '%WRAPPER_JAR%')"
 
 :runMaven
-"%JAVA_EXE%" %JVM_CONFIG_MAVEN_PROPS% %MAVEN_OPTS% -cp %WRAPPER_JAR% org.apache.maven.wrapper.MavenWrapperMain %*
+"%JAVA_EXE%" %JVM_CONFIG_MAVEN_PROPS% %MAVEN_OPTS% "-Dmaven.multiModuleProjectDirectory=%MAVEN_PROJECTBASEDIR%" -cp %WRAPPER_JAR% org.apache.maven.wrapper.MavenWrapperMain %*
 if ERRORLEVEL 1 goto error
 goto end
 
