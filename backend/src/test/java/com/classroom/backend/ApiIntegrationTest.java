@@ -362,6 +362,16 @@ class ApiIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("[\"" + studentId + "\"]"))
                 .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/transport/" + transportId + "/students")
+                        .header("Authorization", authHeader())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[]"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/transport/" + transportId).header("Authorization", authHeader()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.students").isEmpty());
     }
 
     @Test

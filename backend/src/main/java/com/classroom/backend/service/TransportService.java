@@ -75,8 +75,10 @@ public class TransportService {
         }
 
         if (request.getStudentIds() != null) {
-            List<Student> students = studentRepository.findAllById(request.getStudentIds());
-            route.setStudents(students);
+            route.getStudents().clear();
+            if (!request.getStudentIds().isEmpty()) {
+                route.getStudents().addAll(studentRepository.findAllById(request.getStudentIds()));
+            }
         }
 
         return transportRouteRepository.save(route);
@@ -119,8 +121,14 @@ public class TransportService {
     @Transactional
     public TransportRoute updateStudents(String id, List<String> studentIds) {
         TransportRoute route = findById(id);
-        List<Student> students = studentRepository.findAllById(studentIds);
-        route.setStudents(students);
+        List<String> ids = studentIds != null ? studentIds : List.of();
+
+        // Mutate the managed collection in place so Hibernate deletes join-table rows.
+        route.getStudents().clear();
+        if (!ids.isEmpty()) {
+            route.getStudents().addAll(studentRepository.findAllById(ids));
+        }
+
         return transportRouteRepository.save(route);
     }
 
