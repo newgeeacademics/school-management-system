@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { cn } from '@/lib/utils';
-import { isBackendApiConfigured, loginWithEmail } from '@/lib/api';
+import { isBackendApiConfigured, loginWithIdentifier } from '@/lib/api';
 import { getSchoolLoginUrl, getUserPortalOrigin } from '@/lib/school-app-url';
 import { setTrackingSession } from '@/lib/auth';
 import { backendRoleToTracking } from '@/lib/tracking-role';
@@ -24,8 +24,8 @@ export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' 
     e.preventDefault();
     setIsPending(true);
 
-    const email = usernameOrEmail.trim();
-    if (!email || !password) {
+    const identifier = usernameOrEmail.trim();
+    if (!identifier || !password) {
       toast.error('Veuillez saisir votre identifiant et votre mot de passe.', { richColors: true });
       setIsPending(false);
       return;
@@ -38,7 +38,7 @@ export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' 
         return;
       }
 
-      const auth = await loginWithEmail(email, password);
+      const auth = await loginWithIdentifier(identifier, password);
       const trackingRole = backendRoleToTracking(auth.role);
       if (!trackingRole) {
         toast.error(
@@ -52,6 +52,7 @@ export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' 
       setTrackingSession({
         role: trackingRole,
         email: auth.email,
+        loginId: auth.loginId ?? undefined,
         name: auth.name,
         userId: auth.id,
         token: auth.token,
@@ -92,7 +93,7 @@ export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' 
               <Input
                 id='tracking-login-email'
                 type='text'
-                placeholder='email@exemple.com'
+                placeholder='identifiant ou email'
                 value={usernameOrEmail}
                 onChange={(e) => setUsernameOrEmail(e.target.value)}
                 autoComplete='username'
