@@ -13,4 +13,6 @@ public interface TransportRouteRepository extends JpaRepository<TransportRoute, 
 
     @Query("SELECT tr FROM TransportRoute tr JOIN tr.students s WHERE s.id = :studentId")
     List<TransportRoute> findByStudentId(@Param("studentId") String studentId);
+
+    List<TransportRoute> findByDriver_Id(String driverId);
 }

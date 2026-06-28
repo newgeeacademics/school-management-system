@@ -4,7 +4,9 @@ import com.classroom.backend.dto.request.DriverRequest;
 import com.classroom.backend.model.AppUser;
 import com.classroom.backend.model.Driver;
 import com.classroom.backend.model.enums.UserRole;
+import com.classroom.backend.model.TransportRoute;
 import com.classroom.backend.repository.DriverRepository;
+import com.classroom.backend.repository.TransportRouteRepository;
 import com.classroom.backend.util.IdCardNumberUtil;
 import com.classroom.backend.util.PersonNameUtil;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import java.util.List;
 public class DriverService {
 
     private final DriverRepository driverRepository;
+    private final TransportRouteRepository transportRouteRepository;
     private final PortalAccountService portalAccountService;
 
     public List<Driver> findAll() {
@@ -48,7 +51,9 @@ public class DriverService {
                 .name(fullName)
                 .firstName(PersonNameUtil.trim(request.getFirstName()))
                 .lastName(PersonNameUtil.trim(request.getLastName()))
-                .staffId(IdCardNumberUtil.resolveDriverStaffId(request.getStaffId(), null))
+                .staffId(request.getStaffId() != null && !request.getStaffId().isBlank()
+                        ? request.getStaffId().trim()
+                        : null)
                 .licenseNumber(trim(request.getLicenseNumber()))
                 .email(appUser != null ? appUser.getEmail() : null)
                 .phone(trim(request.getPhone()))
@@ -100,9 +105,21 @@ public class DriverService {
     @Transactional
     public void delete(String id) {
         Driver driver = findById(id);
+        unlinkTransportRoutes(driver.getId());
         AppUser linked = driver.getAppUser();
         driverRepository.delete(driver);
         portalAccountService.deleteLinkedAccount(linked);
+    }
+
+    /** Clears driver_id on routes so FK does not block deletion; driver_name is kept on the route. */
+    private void unlinkTransportRoutes(String driverId) {
+        List<TransportRoute> routes = transportRouteRepository.findByDriver_Id(driverId);
+        for (TransportRoute route : routes) {
+            route.setDriver(null);
+        }
+        if (!routes.isEmpty()) {
+            transportRouteRepository.saveAll(routes);
+        }
     }
 
     private String trim(String value) {
