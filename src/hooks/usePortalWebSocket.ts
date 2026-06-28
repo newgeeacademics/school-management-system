@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPortalSession } from '@/lib/auth';
 import { isBackendApiConfigured } from '@/lib/api';
-import { pathFromSection, type PortalSectionId } from '@/lib/portal-sections';
+import { isSectionAllowedForRole, pathFromSection, type PortalSectionId } from '@/lib/portal-sections';
 import {
   connectPortalWebSocket,
   type PortalWebSocketClient,
@@ -29,6 +29,9 @@ export function usePortalWebSocket({ onRefresh, onChatMessage }: Options = {}) {
       const section = (msg.section?.toLowerCase() ?? 'all') as PortalSectionId | 'all';
 
       if (type === 'NAVIGATE' && msg.section) {
+        const sectionId = msg.section.toLowerCase() as PortalSectionId;
+        const role = session?.role;
+        if (role && !isSectionAllowedForRole(sectionId, role)) return;
         navigate(pathFromSection(msg.section));
         return;
       }
@@ -43,7 +46,7 @@ export function usePortalWebSocket({ onRefresh, onChatMessage }: Options = {}) {
         if (chat) onChatMessage?.(chat);
       }
     },
-    [navigate, onRefresh, onChatMessage]
+    [navigate, onRefresh, onChatMessage, session?.role]
   );
 
   useEffect(() => {
@@ -70,10 +73,12 @@ export function usePortalWebSocket({ onRefresh, onChatMessage }: Options = {}) {
 
   const navigateSection = useCallback(
     (section: PortalSectionId) => {
+      const role = session?.role;
+      if (role && !isSectionAllowedForRole(section, role)) return;
       navigate(pathFromSection(section));
       clientRef.current?.sendNavigate(section);
     },
-    [navigate]
+    [navigate, session?.role]
   );
 
   const sendChat = useCallback((body: string) => {
