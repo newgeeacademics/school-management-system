@@ -6,7 +6,6 @@ import { clearPortalSession, getPortalSession } from '@/lib/auth';
 import { getSchoolAppOrigin } from '@/lib/school-app-url';
 import { useTranslation } from '@/i18n';
 import { PortalFeedProvider, usePortalFeedContext } from '@/context/PortalFeedContext';
-import { PortalRoleSectionGuard } from '@/components/PortalRoleSectionGuard';
 import { sectionFromPath, sectionLabelKey, sectionMeta, sectionsForRole } from '@/lib/portal-sections';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -34,7 +33,6 @@ function PortalLayoutInner() {
   };
 
   return (
-    <PortalRoleSectionGuard>
     <div className='portal-dashboard flex h-svh w-full overflow-hidden bg-background'>
       {isMobile && mobileNavOpen ? (
         <button
@@ -172,7 +170,6 @@ function PortalLayoutInner() {
         </main>
       </div>
     </div>
-    </PortalRoleSectionGuard>
   );
 }
 
