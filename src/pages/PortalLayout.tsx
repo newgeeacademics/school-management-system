@@ -6,6 +6,7 @@ import { clearPortalSession, getPortalSession } from '@/lib/auth';
 import { getSchoolAppOrigin } from '@/lib/school-app-url';
 import { useTranslation } from '@/i18n';
 import { PortalFeedProvider, usePortalFeedContext } from '@/context/PortalFeedContext';
+import { PortalRoleSectionGuard } from '@/components/PortalRoleSectionGuard';
 import { sectionFromPath, sectionLabelKey, sectionMeta, sectionsForRole } from '@/lib/portal-sections';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -33,6 +34,7 @@ function PortalLayoutInner() {
   };
 
   return (
+    <PortalRoleSectionGuard>
     <div className='portal-dashboard flex h-svh w-full overflow-hidden bg-background'>
       {isMobile && mobileNavOpen ? (
         <button
@@ -75,8 +77,8 @@ function PortalLayoutInner() {
       )}
 
       <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
-        <header className='sticky top-0 z-30 border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80'>
-          <div className='flex items-start gap-3 px-4 py-3 md:px-6 md:py-4'>
+        <header className='sticky top-0 z-30 border-b border-border/60 bg-card/80 backdrop-blur-md supports-[backdrop-filter]:bg-card/70'>
+          <div className='flex items-center gap-3 px-4 py-3 md:px-8 md:py-4'>
             {isMobile ? (
               <Button
                 type='button'
@@ -90,14 +92,27 @@ function PortalLayoutInner() {
               </Button>
             ) : null}
 
-            <div className='min-w-0 flex-1 space-y-0.5'>
-              <p className='text-[10px] font-semibold uppercase tracking-[0.18em] text-primary'>
-                {t('portalHome.homeTitle')}
-              </p>
-              <h1 className='text-lg font-semibold leading-tight text-foreground md:text-xl'>
+            <div className='min-w-0 flex-1'>
+              <div className='flex flex-wrap items-center gap-2'>
+                <p className='text-[10px] font-semibold uppercase tracking-[0.2em] text-primary'>
+                  {t('portalHome.homeTitle')}
+                </p>
+                <span className='rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium capitalize text-primary'>
+                  {session.role === 'parent'
+                    ? t('portalHome.roleParent')
+                    : session.role === 'teacher'
+                      ? t('portalHome.roleTeacher')
+                      : t('portalHome.roleStudent')}
+                </span>
+              </div>
+              <h1 className='mt-1 text-xl font-semibold tracking-tight text-foreground md:text-2xl'>
                 {t(sectionLabelKey(activeSection, session.role))}
               </h1>
-              <p className='text-xs text-muted-foreground'>{t(meta.descKey)}</p>
+              <p className='mt-0.5 text-xs text-muted-foreground md:text-sm'>
+                {session.role === 'parent' && activeSection === 'grades'
+                  ? t('portalHome.descParentGrades')
+                  : t(meta.descKey)}
+              </p>
             </div>
 
             <div className='flex shrink-0 flex-col items-end gap-2'>
@@ -135,7 +150,8 @@ function PortalLayoutInner() {
           </div>
         </header>
 
-        <main className='flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 md:px-8 md:py-8'>
+        <main className='portal-main flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 md:px-8 md:py-8'>
+          <div className='mx-auto w-full max-w-5xl flex min-h-0 flex-1 flex-col gap-6'>
           {error ? (
             <p className='rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700'>{error}</p>
           ) : null}
@@ -146,15 +162,17 @@ function PortalLayoutInner() {
             <p className='text-center text-xs text-muted-foreground'>{t('portalHome.comingSoon')}</p>
           ) : null}
 
-          <footer className='mt-auto border-t border-border pt-6 text-center text-xs text-muted-foreground'>
+          <footer className='mt-auto border-t border-border/60 pt-6 text-center text-xs text-muted-foreground'>
             <p>{t('portalHome.footerDistinct')}</p>
             <a href={`${schoolOrigin}/`} className='mt-2 inline-block font-medium text-primary hover:underline'>
               {t('portalHome.schoolWebsiteLink')}
             </a>
           </footer>
+          </div>
         </main>
       </div>
     </div>
+    </PortalRoleSectionGuard>
   );
 }
 

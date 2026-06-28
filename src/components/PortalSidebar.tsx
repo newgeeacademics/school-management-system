@@ -83,42 +83,49 @@ export function PortalSidebar({
   return (
     <aside
       className={cn(
-        'flex h-svh w-64 shrink-0 flex-col border-sidebar-border bg-sidebar text-sidebar-foreground',
-        mobile ? 'border-r' : 'hidden border-r md:flex md:h-svh'
+        'portal-sidebar flex h-svh w-[17rem] shrink-0 flex-col border-r border-sidebar-border/80 bg-sidebar text-sidebar-foreground shadow-sm',
+        mobile ? '' : 'hidden md:flex md:h-svh'
       )}
       aria-label={t('portalHome.navLabel')}
     >
-      <div className='flex items-center justify-between gap-2 border-b border-sidebar-border px-4 py-4'>
-        <div className='flex min-w-0 items-center gap-2.5'>
-          <AppLogo markClassName='app-logo__mark--compact' name={productName} />
+      <div className='border-b border-sidebar-border/80 px-5 py-5'>
+        <div className='flex items-start justify-between gap-2'>
           <div className='min-w-0'>
+            <AppLogo markClassName='app-logo__mark--compact' name={productName} />
             {userName ? (
-              <p className='truncate text-[11px] font-medium text-foreground'>{userName}</p>
+              <p className='mt-3 truncate text-sm font-semibold text-foreground'>{userName}</p>
             ) : (
-              <p className='truncate text-[11px] text-muted-foreground'>{productName}</p>
+              <p className='mt-3 truncate text-sm text-muted-foreground'>{productName}</p>
             )}
+            <p className='mt-0.5 text-[11px] text-muted-foreground capitalize'>
+              {role === 'parent'
+                ? t('portalHome.roleParent')
+                : role === 'teacher'
+                  ? t('portalHome.roleTeacher')
+                  : t('portalHome.roleStudent')}
+            </p>
           </div>
+          {mobile ? (
+            <Button type='button' variant='ghost' size='icon' className='size-8 shrink-0' onClick={onCloseMobile}>
+              <X className='size-4' aria-hidden />
+              <span className='sr-only'>{t('portalHome.closeMenu')}</span>
+            </Button>
+          ) : null}
         </div>
-        {mobile ? (
-          <Button type='button' variant='ghost' size='icon' className='size-8 shrink-0' onClick={onCloseMobile}>
-            <X className='size-4' aria-hidden />
-            <span className='sr-only'>{t('portalHome.closeMenu')}</span>
-          </Button>
-        ) : null}
       </div>
 
-      <nav className='flex-1 overflow-y-auto px-2 py-3'>
+      <nav className='flex-1 overflow-y-auto px-3 py-4'>
         {navGroups.map((group) => {
           const items = PORTAL_SECTIONS.filter(
             (s) => group.sectionIds.includes(s.id) && visibleSections.includes(s.id)
           );
           if (items.length === 0) return null;
           return (
-            <div key={group.labelKey} className='mb-4'>
-              <p className='mb-1 px-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground'>
+            <div key={group.labelKey} className='mb-5'>
+              <p className='mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80'>
                 {t(group.labelKey)}
               </p>
-              <ul className='space-y-0.5'>
+              <ul className='space-y-1'>
                 {items.map(({ id }) => {
                   const Icon = SECTION_ICONS[id];
                   const active = activeSection === id;
@@ -128,14 +135,14 @@ export function PortalSidebar({
                         type='button'
                         onClick={() => handleNav(id)}
                         className={cn(
-                          'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
+                          'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all',
                           active
-                            ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
-                            : 'text-sidebar-foreground hover:bg-sidebar-accent/60'
+                            ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+                            : 'text-sidebar-foreground hover:bg-sidebar-accent/80'
                         )}
                       >
-                        <Icon className='size-4 shrink-0 opacity-80' aria-hidden />
-                        <span className='truncate'>{t(sectionLabelKey(id, role))}</span>
+                        <Icon className={cn('size-4 shrink-0', active ? 'opacity-100' : 'opacity-70')} aria-hidden />
+                        <span className='truncate font-medium'>{t(sectionLabelKey(id, role))}</span>
                       </button>
                     </li>
                   );
@@ -146,15 +153,12 @@ export function PortalSidebar({
         })}
       </nav>
 
-      <div className='border-t border-sidebar-border p-3'>
-        {userName ? (
-          <p className='mb-2 truncate px-1 text-xs font-medium text-foreground'>{userName}</p>
-        ) : null}
+      <div className='border-t border-sidebar-border/80 p-4'>
         <Button
           type='button'
           variant='ghost'
           size='sm'
-          className='w-full justify-start gap-2 text-xs text-muted-foreground hover:text-foreground'
+          className='w-full justify-start gap-2 rounded-xl text-xs text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground'
           onClick={onLogout}
         >
           <LogOut className='size-3.5' aria-hidden />

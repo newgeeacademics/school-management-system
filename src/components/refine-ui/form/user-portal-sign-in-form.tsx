@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { getAdminLoginUrl } from '@/lib/school-app-url';
 import { setPortalSession } from '@/lib/auth';
 import { loginWithIdentifier, isBackendApiConfigured } from '@/lib/api';
-import { backendRoleToPortal } from '@/lib/portal-role';
+import { backendRoleToPortal, defaultPortalPath } from '@/lib/portal-role';
 
 export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 'embedded' }) {
   const navigate = useNavigate();
@@ -60,7 +60,7 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
       toast.success(t('userPortal.welcomeToast'), { richColors: true });
       setUsernameOrEmail('');
       setPassword('');
-      navigate('/accueil', { replace: true });
+      navigate(defaultPortalPath(portalRole), { replace: true });
     } catch (err) {
       const message =
         err && typeof err === 'object' && 'message' in err

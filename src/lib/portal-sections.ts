@@ -61,7 +61,27 @@ export const PARENT_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId[
   { labelKey: 'portalHome.navGroupChild', sectionIds: ['overview', 'students'] },
   { labelKey: 'portalHome.navGroupAttendance', sectionIds: ['presence', 'absences'] },
   { labelKey: 'portalHome.navGroupSchool', sectionIds: ['schedule', 'calendar', 'grades'] },
-  { labelKey: 'portalHome.navGroupLife', sectionIds: ['announcements', 'fees', 'directory', 'notifications', 'canteen', 'transport', 'messages'] },
+  {
+    labelKey: 'portalHome.navGroupLife',
+    sectionIds: ['announcements', 'fees', 'directory', 'notifications', 'canteen', 'transport', 'messages'],
+  },
+];
+
+const PARENT_SECTIONS: PortalSectionId[] = [
+  'overview',
+  'students',
+  'presence',
+  'absences',
+  'schedule',
+  'calendar',
+  'grades',
+  'notifications',
+  'canteen',
+  'transport',
+  'messages',
+  'directory',
+  'announcements',
+  'fees',
 ];
 
 export function sectionMeta(section: PortalSectionId) {
@@ -85,24 +105,7 @@ export function navGroupsForRole(role: PortalRole) {
   return PORTAL_NAV_GROUPS;
 }
 
-const PARENT_SECTIONS: PortalSectionId[] = [
-  'overview',
-  'students',
-  'presence',
-  'absences',
-  'schedule',
-  'calendar',
-  'grades',
-  'notifications',
-  'canteen',
-  'transport',
-  'messages',
-  'directory',
-  'announcements',
-  'fees',
-];
-
-/** Parent: child, attendance, notifications. Student: no students list. Teacher: full admin-lite nav. */
+/** Parent: child, attendance, school life. Student: no students list. Teacher: full admin-lite nav. */
 export function sectionsForRole(role: PortalRole): PortalSectionId[] {
   if (role === 'parent') return PARENT_SECTIONS;
   const ids = PORTAL_SECTIONS.map((s) => s.id).filter(
@@ -114,8 +117,13 @@ export function sectionsForRole(role: PortalRole): PortalSectionId[] {
   return ids;
 }
 
-/** Parent-facing label for the students section. */
+/** Parent-facing labels for selected sections. */
 export function sectionLabelKey(section: PortalSectionId, role: PortalRole): string {
   if (role === 'parent' && section === 'students') return 'portalHome.navMyChild';
+  if (role === 'parent' && section === 'grades') return 'portalHome.navParentGrades';
   return sectionMeta(section).labelKey;
+}
+
+export function isSectionAllowedForRole(section: PortalSectionId, role: PortalRole): boolean {
+  return sectionsForRole(role).includes(section);
 }
