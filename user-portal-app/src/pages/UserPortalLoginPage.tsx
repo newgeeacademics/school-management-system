@@ -4,6 +4,7 @@ import { useTranslation } from '@/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { UserPortalSignInForm } from '@/components/refine-ui/form/user-portal-sign-in-form';
 import { getPortalSession } from '@/lib/auth';
+import { defaultPortalPath } from '@/lib/portal-role';
 import { getMainAppOrigin } from '@/lib/school-app-url';
 import logoSrc from '@/assets/logo/newgee-logo.png';
 
@@ -34,7 +35,8 @@ export function UserPortalLoginPage() {
   const mainOrigin = getMainAppOrigin();
 
   useEffect(() => {
-    if (getPortalSession()) navigate('/accueil', { replace: true });
+    const session = getPortalSession();
+    if (session) navigate(defaultPortalPath(session.role), { replace: true });
   }, [navigate]);
 
   return (
