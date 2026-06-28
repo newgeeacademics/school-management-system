@@ -1270,6 +1270,10 @@ export const DashboardPage: React.FC = () => {
   const handleCreateDriver = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDriver.firstName.trim() || !newDriver.lastName.trim()) return;
+    if (!newDriver.email.trim() && !newDriver.phone.trim()) {
+      toast.error('E-mail ou téléphone requis pour le compte tracker.');
+      return;
+    }
     if (!requireBackend()) return;
     try {
       const created = await createDriverOnBackend({

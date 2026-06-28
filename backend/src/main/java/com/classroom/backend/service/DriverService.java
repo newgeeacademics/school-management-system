@@ -34,10 +34,15 @@ public class DriverService {
         String fullName = PersonNameUtil.requireFullName(
                 request.getFirstName(), request.getLastName(), request.getName());
 
-        AppUser appUser = portalAccountService.createLinkedAccountForPerson(
-                request.getFirstName(), request.getLastName(), fullName,
-                request.getEmail(), request.getPhone(),
-                request.getPassword(), UserRole.STAFF);
+        AppUser appUser = null;
+        boolean hasEmail = request.getEmail() != null && !request.getEmail().isBlank();
+        boolean hasPhone = request.getPhone() != null && !request.getPhone().isBlank();
+        if (hasEmail || hasPhone) {
+            appUser = portalAccountService.createLinkedAccountForPerson(
+                    request.getFirstName(), request.getLastName(), fullName,
+                    request.getEmail(), request.getPhone(),
+                    request.getPassword(), UserRole.STAFF);
+        }
 
         Driver driver = Driver.builder()
                 .name(fullName)
@@ -98,14 +103,6 @@ public class DriverService {
         AppUser linked = driver.getAppUser();
         driverRepository.delete(driver);
         portalAccountService.deleteLinkedAccount(linked);
-    }
-
-    private void validatePortalContact(DriverRequest request) {
-        boolean hasEmail = request.getEmail() != null && !request.getEmail().isBlank();
-        boolean hasPhone = request.getPhone() != null && !request.getPhone().isBlank();
-        if (!hasEmail && !hasPhone) {
-            throw new IllegalArgumentException("Email or phone is required for tracker login");
-        }
     }
 
     private String trim(String value) {
