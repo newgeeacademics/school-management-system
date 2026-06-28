@@ -25,6 +25,8 @@ export const DriversSection: React.FC<DriversSectionProps> = ({
   onCreateDriver,
   onDeleteDriver,
 }) => {
+  const hasContact = Boolean(newDriver.email.trim() || newDriver.phone.trim());
+
   return (
     <Card>
       <CardHeader>
@@ -65,14 +67,30 @@ export const DriversSection: React.FC<DriversSectionProps> = ({
             />
           </div>
           <div className='grid gap-1 sm:col-span-2 lg:col-span-3'>
+            <Label htmlFor='driver-email'>E-mail de contact</Label>
+            <Input
+              id='driver-email'
+              type='email'
+              value={newDriver.email}
+              onChange={(e) => setNewDriver((d) => ({ ...d, email: e.target.value }))}
+              placeholder='chauffeur@exemple.com'
+            />
+            <p className='text-[10px] text-muted-foreground'>
+              E-mail ou téléphone requis pour le compte tracker. Connexion avec l&apos;identifiant
+              généré ci-dessous.
+            </p>
+          </div>
+          <div className='grid gap-1 sm:col-span-2 lg:col-span-3'>
             <LoginIdPreview firstName={newDriver.firstName} lastName={newDriver.lastName} />
           </div>
           <div className='grid gap-1'>
-            <Label htmlFor='driver-phone'>Téléphone (optionnel)</Label>
+            <Label htmlFor='driver-phone'>Téléphone de contact</Label>
             <Input
               id='driver-phone'
+              type='tel'
               value={newDriver.phone}
               onChange={(e) => setNewDriver((d) => ({ ...d, phone: e.target.value }))}
+              placeholder='+225 07 00 00 00 00'
             />
           </div>
           <div className='grid gap-1'>
@@ -85,13 +103,15 @@ export const DriversSection: React.FC<DriversSectionProps> = ({
             />
           </div>
           <div className='sm:col-span-2 lg:col-span-3'>
-            <p className='text-[11px] text-muted-foreground mb-2'>
-              Le chauffeur pourra se connecter au tracker avec l&apos;identifiant généré ci-dessus.
-            </p>
-            <Button type='submit' size='sm'>
+            <Button type='submit' size='sm' disabled={!hasContact}>
               <Plus className='size-3.5 mr-1' />
               Ajouter le chauffeur
             </Button>
+            {!hasContact ? (
+              <p className='mt-2 text-[11px] text-amber-600 dark:text-amber-500'>
+                Renseignez un e-mail ou un numéro de téléphone pour activer la connexion au tracker.
+              </p>
+            ) : null}
           </div>
         </form>
 
