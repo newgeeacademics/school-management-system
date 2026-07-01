@@ -23,9 +23,7 @@ public class ParentContactService {
     private final SchoolContextService schoolContextService;
 
     public List<ParentContact> findAll() {
-        return schoolContextService.getCurrentSchoolId()
-                .map(parentContactRepository::findBySchoolId)
-                .orElseGet(parentContactRepository::findAll);
+        return schoolContextService.findAllForCurrentSchool(parentContactRepository::findBySchoolId);
     }
 
     public ParentContact findById(String id) {
@@ -47,14 +45,14 @@ public class ParentContactService {
                 request.getFirstName(), request.getLastName(), request.getName());
 
         Student student = null;
-        String schoolId = schoolContextService.getCurrentSchoolId().orElse(null);
+        String schoolId = schoolContextService.requireCurrentSchoolId();
         if (request.getStudentId() != null && !request.getStudentId().isBlank()) {
             student = studentRepository.findById(request.getStudentId()).orElse(null);
             if (student != null) {
-                schoolContextService.assertSchoolAccess(student.getSchoolId());
-                if (schoolId == null && student.getSchoolId() != null) {
-                    schoolId = student.getSchoolId();
-                }
+                schoolContextService.assertSameSchool(
+                        student.getSchoolId(),
+                        schoolId,
+                        "Cet élève n'appartient pas à votre établissement.");
             }
         }
 

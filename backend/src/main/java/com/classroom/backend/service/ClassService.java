@@ -21,9 +21,7 @@ public class ClassService {
     private final SchoolContextService schoolContextService;
 
     public List<ClassItem> findAll() {
-        return schoolContextService.getCurrentSchoolId()
-                .map(classItemRepository::findBySchoolId)
-                .orElseGet(classItemRepository::findAll);
+        return schoolContextService.findAllForCurrentSchool(classItemRepository::findBySchoolId);
     }
 
     public ClassItem findById(String id) {
@@ -41,14 +39,17 @@ public class ClassService {
 
     @Transactional
     public ClassItem create(ClassItemRequest request) {
-        String schoolId = schoolContextService.getCurrentSchoolId().orElse(null);
+        String schoolId = schoolContextService.requireCurrentSchoolId();
 
         Teacher homeroomTeacher = null;
         if (request.getHomeroomTeacherId() != null && !request.getHomeroomTeacherId().isBlank()) {
             homeroomTeacher = teacherRepository.findById(request.getHomeroomTeacherId())
                     .orElse(null);
             if (homeroomTeacher != null) {
-                schoolContextService.assertSchoolAccess(homeroomTeacher.getSchoolId());
+                schoolContextService.assertSameSchool(
+                        homeroomTeacher.getSchoolId(),
+                        schoolId,
+                        "Le professeur principal doit appartenir à votre établissement.");
             }
         }
 
@@ -75,7 +76,10 @@ public class ClassService {
         if (request.getHomeroomTeacherId() != null && !request.getHomeroomTeacherId().isBlank()) {
             Teacher teacher = teacherRepository.findById(request.getHomeroomTeacherId()).orElse(null);
             if (teacher != null) {
-                schoolContextService.assertSchoolAccess(teacher.getSchoolId());
+                schoolContextService.assertSameSchool(
+                        teacher.getSchoolId(),
+                        classItem.getSchoolId(),
+                        "Le professeur principal doit appartenir à l'établissement de cette classe.");
             }
             classItem.setHomeroomTeacher(teacher);
         } else {

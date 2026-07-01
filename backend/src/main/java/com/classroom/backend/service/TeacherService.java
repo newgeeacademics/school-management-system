@@ -27,9 +27,7 @@ public class TeacherService {
     private final TeacherStaffIdService teacherStaffIdService;
 
     public List<Teacher> findAll() {
-        return schoolContextService.getCurrentSchoolId()
-                .map(teacherRepository::findBySchoolId)
-                .orElseGet(teacherRepository::findAll);
+        return schoolContextService.findAllForCurrentSchool(teacherRepository::findBySchoolId);
     }
 
     public Teacher findById(String id) {
@@ -44,7 +42,7 @@ public class TeacherService {
         String fullName = PersonNameUtil.requireFullName(
                 request.getFirstName(), request.getLastName(), request.getName());
 
-        String schoolId = schoolContextService.getCurrentSchoolId().orElse(null);
+        String schoolId = schoolContextService.requireCurrentSchoolId();
 
         AppUser appUser = portalAccountService.createLinkedAccountForPerson(
                 resolveFirstName(request), resolveLastName(request), fullName,
@@ -147,6 +145,10 @@ public class TeacherService {
             }
             classItemRepository.findById(classId).ifPresent(clazz -> {
                 schoolContextService.assertSchoolAccess(clazz.getSchoolId());
+                schoolContextService.assertSameSchool(
+                        teacher.getSchoolId(),
+                        clazz.getSchoolId(),
+                        "Ce professeur n'appartient pas à l'établissement de cette classe.");
                 clazz.setHomeroomTeacher(teacher);
                 classItemRepository.save(clazz);
             });

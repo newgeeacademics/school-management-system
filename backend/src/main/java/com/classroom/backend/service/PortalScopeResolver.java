@@ -102,6 +102,11 @@ public class PortalScopeResolver {
                         "Aucun profil enseignant lié à ce compte. Recréez l'enseignant depuis le tableau de bord avec email et mot de passe."));
 
         List<ClassItem> homeroom = classItemRepository.findByHomeroomTeacherId(teacher.getId());
+        if (teacher.getSchoolId() != null && !teacher.getSchoolId().isBlank()) {
+            homeroom = homeroom.stream()
+                    .filter(clazz -> teacher.getSchoolId().equals(clazz.getSchoolId()))
+                    .toList();
+        }
         classes.addAll(homeroom);
 
         for (ClassItem clazz : homeroom) {
