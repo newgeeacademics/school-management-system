@@ -26,9 +26,7 @@ public class StudentService {
     private final SchoolContextService schoolContextService;
 
     public List<Student> findAll() {
-        return schoolContextService.getCurrentSchoolId()
-                .map(studentRepository::findBySchoolId)
-                .orElseGet(studentRepository::findAll);
+        return schoolContextService.findAllForCurrentSchool(studentRepository::findBySchoolId);
     }
 
     public Student findById(String id) {
@@ -50,14 +48,14 @@ public class StudentService {
                 request.getFirstName(), request.getLastName(), request.getName());
 
         ClassItem classItem = null;
-        String schoolId = schoolContextService.getCurrentSchoolId().orElse(null);
+        String schoolId = schoolContextService.requireCurrentSchoolId();
         if (request.getClassId() != null && !request.getClassId().isBlank()) {
             classItem = classItemRepository.findById(request.getClassId()).orElse(null);
             if (classItem != null) {
-                schoolContextService.assertSchoolAccess(classItem.getSchoolId());
-                if (schoolId == null && classItem.getSchoolId() != null) {
-                    schoolId = classItem.getSchoolId();
-                }
+                schoolContextService.assertSameSchool(
+                        classItem.getSchoolId(),
+                        schoolId,
+                        "Cette classe n'appartient pas à votre établissement.");
             }
         }
 

@@ -31,7 +31,7 @@ public class TeacherIdCardService {
             teacher = teacherRepository.save(teacher);
         }
 
-        School school = schoolRepository.findAll().stream().findFirst().orElse(null);
+        School school = resolveSchoolForTeacher(teacher);
         String schoolName = school != null ? school.getName() : "Établissement scolaire";
         String schoolCity = school != null ? PersonNameUtil.trim(school.getCity()) : "";
 
@@ -64,7 +64,7 @@ public class TeacherIdCardService {
         Teacher teacher = teacherRepository.findById(teacherId)
                 .orElseThrow(() -> new RuntimeException("Teacher not found: " + teacherId));
 
-        School school = schoolRepository.findAll().stream().findFirst().orElse(null);
+        School school = resolveSchoolForTeacher(teacher);
 
         String firstName = PersonNameUtil.trim(teacher.getFirstName());
         String lastName = PersonNameUtil.trim(teacher.getLastName());
@@ -93,5 +93,12 @@ public class TeacherIdCardService {
 
     private static String emptyToNull(String value) {
         return value == null || value.isBlank() ? null : value;
+    }
+
+    private School resolveSchoolForTeacher(Teacher teacher) {
+        if (teacher.getSchoolId() == null || teacher.getSchoolId().isBlank()) {
+            return null;
+        }
+        return schoolRepository.findById(teacher.getSchoolId()).orElse(null);
     }
 }

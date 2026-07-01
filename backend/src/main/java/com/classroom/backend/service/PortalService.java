@@ -38,9 +38,10 @@ public class PortalService {
 
         List<ClassItem> classes = new ArrayList<>();
         List<Student> students = new ArrayList<>();
+        Teacher scopedTeacher = null;
 
         switch (role) {
-            case TEACHER -> resolveTeacherScope(user, classes, students);
+            case TEACHER -> scopedTeacher = resolveTeacherScope(user, classes, students);
             case STUDENT -> resolveStudentScope(user, classes, students);
             case PARENT -> resolveParentScope(user, classes, students);
             default -> throw new IllegalArgumentException("Portal access is not available for role: " + role);
@@ -53,7 +54,7 @@ public class PortalService {
                 .collect(Collectors.toMap(ClassItem::getId, ClassItem::getName, (a, b) -> a));
 
         List<PortalScheduleDto> schedule = role == UserRole.TEACHER
-                ? filterScheduleForTeacher(resolveTeacherProfile(user))
+                ? filterScheduleForTeacher(scopedTeacher)
                 : filterSchedule(classIds);
 
         return PortalFeedResponse.builder()
@@ -66,9 +67,30 @@ public class PortalService {
                 .canteen(canteenMenuItemRepository.findAll().stream().map(this::toCanteenDto).toList())
                 .transport(filterTransport(studentIds))
                 .events(calendarEventRepository.findAll().stream().map(this::toEventDto).toList())
-                .schools(schoolRepository.findAll().stream().map(this::toSchoolDto).toList())
+                .schools(resolveSchoolsForPortal(scopedTeacher, classes, students))
                 .build();
     }
+
+    private List<PortalSchoolDto> resolveSchoolsForPortal(
+            Teacher teacher, List<ClassItem> classes, List<Student> students) {
+        Set<String> schoolIds = new LinkedHashSet<>();
+        if (teacher != null && teacher.getSchoolId() != null && !teacher.getSchoolId().isBlank()) {
+            schoolIds.add(teacher.getSchoolId());
+        }
+        for (ClassItem clazz : classes) {
+            if (clazz.getSchoolId() != null && !clazz.getSchoolId().isBlank()) {
+                schoolIds.add(clazz.getSchoolId());
+            }
+        }
+        for (Student student : students) {
+            if (student.getSchoolId() != null && !student.getSchoolId().isBlank()) {
+                schoolIds.add(student.getSchoolId());
+            }
+        }
+        if (schoolIds.isEmpty()) {
+            return List.of();
+        }
+        return schoolRepository.findAllById(schoolIds).stream().map(this::toSchoolDto).toList();
 
     private AppUser resolveCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -85,10 +107,15 @@ public class PortalService {
                         "Aucun profil enseignant lié à ce compte. Recréez l'enseignant depuis le tableau de bord avec email et mot de passe."));
     }
 
-    private void resolveTeacherScope(AppUser user, List<ClassItem> classes, List<Student> students) {
+    private Teacher resolveTeacherScope(AppUser user, List<ClassItem> classes, List<Student> students) {
         Teacher teacher = resolveTeacherProfile(user);
 
         List<ClassItem> homeroom = classItemRepository.findByHomeroomTeacherId(teacher.getId());
+        if (teacher.getSchoolId() != null && !teacher.getSchoolId().isBlank()) {
+            homeroom = homeroom.stream()
+                    .filter(clazz -> teacher.getSchoolId().equals(clazz.getSchoolId()))
+                    .toList();
+        }
         classes.addAll(homeroom);
 
         for (ClassItem clazz : homeroom) {
@@ -96,6 +123,7 @@ public class PortalService {
         }
 
         students.sort(Comparator.comparing(Student::getName, String.CASE_INSENSITIVE_ORDER));
+        return teacher;
     }
 
     private void resolveStudentScope(AppUser user, List<ClassItem> classes, List<Student> students) {
