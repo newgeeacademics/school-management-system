@@ -13,4 +13,6 @@ public interface BusTripRepository extends JpaRepository<BusTrip, String> {
             String routeId, BusTripStatus status);
 
     List<BusTrip> findByTransportRoute_IdInAndStatus(List<String> routeIds, BusTripStatus status);
+
+    long countByStatus(BusTripStatus status);
 }

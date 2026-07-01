@@ -1,0 +1,81 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "tags": ["-lintignore"],
+  "ignore": ["**/style.css"],
+  "ignoreBinaries": ["powershell"],
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": ["autoprefixer", "postcss"],
+  "ignoreIssues": {
+    "**/components/ui/**": ["exports"],
+    "**/constants/index.ts": ["duplicates", "exports", "types"],
+    "user-portal-app/src/lib/portal-sections.ts": ["duplicates", "exports"],
+    "src/types/**": ["types"],
+    "admin-app/src/types/**": ["types"],
+    "admin-app/src/lib/**": ["exports"],
+    "finance-app/src/lib/**": ["exports", "types"],
+    "src/lib/**": ["exports", "types"],
+    "src/pages/dashboard/**": ["exports"],
+    "tracking-app/src/lib/**": ["exports"],
+    "user-portal-app/src/lib/**": ["exports"],
+    "user-portal-app/src/pages/**": ["exports"],
+    "admin-app/src/pages/dashboard/**": ["exports", "types"]
+  },
+  "workspaces": {
+    ".": {
+      "ignore": [
+        "src/components/dashboard/LoginEmailPreview.tsx",
+        "src/hooks/useLoginEmailPreview.ts",
+        "src/lib/dijkstra.ts",
+        "src/lib/public-id-card.ts"
+      ]
+    },
+    "admin-app": {
+      "ignore": [
+        "src/components/refine-ui/form/map-location-picker.tsx",
+        "src/components/refine-ui/layout/language-switcher.tsx",
+        "src/components/ui/dropdown-menu.tsx",
+        "src/lib/dijkstra.ts"
+      ],
+      "ignoreDependencies": ["@radix-ui/react-dropdown-menu"]
+    },
+    "finance-app": {
+      "ignore": [
+        "src/pages/dashboard/**",
+        "src/pages/DashboardPage.tsx",
+        "src/pages/UserPortalRedirectPage.tsx",
+        "src/lib/dashboard-backend.ts",
+        "src/lib/dijkstra.ts",
+        "src/lib/osrm.ts",
+        "src/lib/schema.ts",
+        "src/lib/transportGraph.ts",
+        "src/lib/app-urls.ts",
+        "src/lib/auth-handoff.ts",
+        "src/lib/class-name-utils.ts",
+        "src/types/index.ts",
+        "src/components/**/EntityCrudActions.tsx",
+        "src/components/refine-ui/**",
+        "src/components/RegistrationHandoff.tsx",
+        "src/components/RouteMap.tsx",
+        "src/components/SetRoleFromQuery.tsx",
+        "src/components/UserPortalSidebarLink.tsx",
+        "src/components/ui/avatar.tsx",
+        "src/components/ui/dropdown-menu.tsx",
+        "src/components/ui/sheet.tsx",
+        "src/components/ui/sidebar.tsx",
+        "src/components/ui/skeleton.tsx",
+        "src/hooks/use-mobile.ts"
+      ],
+      "ignoreDependencies": [
+        "@radix-ui/react-avatar",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-dropdown-menu",
+        "react-leaflet",
+        "zod"
+      ]
+    },
+    "user-portal-app": {
+      "ignoreDependencies": ["qrcode.react"]
+    },
+    "tracking-app": {}
+  }
+}

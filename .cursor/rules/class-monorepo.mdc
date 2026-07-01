@@ -1,0 +1,29 @@
+---
+description: CLASS monorepo guardrails — keep Ponytail aligned with this project
+alwaysApply: true
+---
+
+# CLASS monorepo
+
+Ponytail still applies, but **reuse project conventions** instead of inventing new ones.
+
+## Layout
+
+| Area | Path | Deploy branch |
+|------|------|---------------|
+| School dashboard | `src/` | `classroom-app` |
+| Admin | `admin-app/` | `admin` |
+| User portal | `user-portal-app/` | `user-portal` |
+| Tracking | `tracking-app/` | `tracking` |
+| Finance | `finance-app/` | `finance` |
+| API | `backend/` | `it` (Render) |
+
+## When coding here
+
+- **Match the folder you're in** — imports, i18n (`fr.json` / `en.json`), API clients, component style.
+- **React apps:** use existing shadcn/ui components (`Button`, `Input`, etc.) and existing layout patterns.
+- **Backend:** extend existing services/repositories; respect `@PreAuthorize`, school scoping, and JPA patterns.
+- **Portal roles:** parents = read-only grades; teachers manage grades; don't widen scope silently.
+- **SQL maintenance:** add scripts under `scripts/` with preview queries and safe `BEGIN`/`COMMIT` blocks.
+- **Git:** commit or push only when the user asks.
+- **Question-only tasks:** answer or review — no unsolicited refactors or extra files.

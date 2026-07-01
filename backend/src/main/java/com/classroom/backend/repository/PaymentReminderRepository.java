@@ -11,4 +11,5 @@ import java.util.List;
 public interface PaymentReminderRepository extends JpaRepository<PaymentReminder, String> {
     List<PaymentReminder> findByStatus(PaymentStatus status);
     List<PaymentReminder> findByParentName(String parentName);
+    long countByStatus(PaymentStatus status);
 }

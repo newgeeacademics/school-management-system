@@ -65,6 +65,13 @@ app:
   brevo:
     api-key: ${BREVO_API_KEY:}
 
+  reports:
+    daily:
+      enabled: ${APP_DAILY_REPORT_ENABLED:false}
+      recipient: ${APP_DAILY_REPORT_RECIPIENT:newgeeacademics@gmail.com}
+      cron: "0 0 0 * * *"
+      zone: GMT
+
 spring.mail.host: ${MAIL_HOST:}
 spring.mail.port: ${MAIL_PORT:587}
 spring.mail.username: ${MAIL_USERNAME:}

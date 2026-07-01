@@ -121,7 +121,24 @@
     "navAnnouncements": "Announcements",
     "navFees": "Fee schedule",
     "descAnnouncements": "Official school announcements.",
-    "descFees": "Fees and due dates (tuition, canteen, transport)."
+    "descFees": "Fees and due dates (tuition, canteen, transport).",
+    "navMore": "More",
+    "moreSectionsTitle": "More",
+    "moreSectionsHint": "All portal sections",
+    "quickAccess": "Quick access",
+    "overviewTitle": "Overview",
+    "welcomeHello": "Hello, {{name}}!",
+    "welcomeParent": "Follow your child's school life at a glance.",
+    "welcomeDefault": "Find your classes, grades, and news here.",
+    "overviewChildren": "Children",
+    "overviewCourses": "Classes",
+    "retry": "Retry"
+  },
+  "portalSchedule": {
+    "colTime": "Time",
+    "teacherHint": "Your personal timetable — only the classes you teach.",
+    "unassignedCourse": "Class",
+    "roomLabel": "Room {{room}}"
   },
   "portalAnnouncements": {
     "loading": "Loading announcements…",

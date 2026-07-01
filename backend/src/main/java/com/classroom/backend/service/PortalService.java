@@ -52,12 +52,16 @@ public class PortalService {
         Map<String, String> classNames = classes.stream()
                 .collect(Collectors.toMap(ClassItem::getId, ClassItem::getName, (a, b) -> a));
 
+        List<PortalScheduleDto> schedule = role == UserRole.TEACHER
+                ? filterScheduleForTeacher(resolveTeacherProfile(user))
+                : filterSchedule(classIds);
+
         return PortalFeedResponse.builder()
                 .role(role.name())
                 .profileName(user.getName())
                 .classes(classes.stream().map(this::toClassDto).toList())
                 .students(students.stream().map(s -> toStudentDto(s, classNames)).toList())
-                .schedule(filterSchedule(classIds))
+                .schedule(schedule)
                 .grades(filterGrades(studentIds))
                 .canteen(canteenMenuItemRepository.findAll().stream().map(this::toCanteenDto).toList())
                 .transport(filterTransport(studentIds))
@@ -74,11 +78,15 @@ public class PortalService {
         return accountIdentifierService.requireByPrincipalName(auth.getName());
     }
 
-    private void resolveTeacherScope(AppUser user, List<ClassItem> classes, List<Student> students) {
-        Teacher teacher = teacherRepository.findByAppUser_Id(user.getId())
+    private Teacher resolveTeacherProfile(AppUser user) {
+        return teacherRepository.findByAppUser_Id(user.getId())
                 .or(() -> teacherRepository.findByEmailIgnoreCase(user.getEmail()))
                 .orElseThrow(() -> new IllegalStateException(
                         "Aucun profil enseignant lié à ce compte. Recréez l'enseignant depuis le tableau de bord avec email et mot de passe."));
+    }
+
+    private void resolveTeacherScope(AppUser user, List<ClassItem> classes, List<Student> students) {
+        Teacher teacher = resolveTeacherProfile(user);
 
         List<ClassItem> homeroom = classItemRepository.findByHomeroomTeacherId(teacher.getId());
         classes.addAll(homeroom);
@@ -131,21 +139,113 @@ public class PortalService {
         }
     }
 
+    private static final List<String> DAY_ORDER = List.of(
+            "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche");
+
     private List<PortalScheduleDto> filterSchedule(Set<String> classIds) {
         if (classIds.isEmpty()) {
             return List.of();
         }
         return scheduleItemRepository.findAll().stream()
                 .filter(item -> item.getClassItem() != null && classIds.contains(item.getClassItem().getId()))
-                .map(item -> PortalScheduleDto.builder()
-                        .id(item.getId())
-                        .day(item.getDay())
-                        .time(item.getTime())
-                        .room(item.getRoom())
-                        .className(item.getClassItem().getName())
-                        .courseName(item.getCourse() != null ? item.getCourse().getName() : null)
-                        .build())
+                .map(this::toScheduleDto)
+                .sorted(this::compareSchedule)
                 .toList();
+    }
+
+    private List<PortalScheduleDto> filterScheduleForTeacher(Teacher teacher) {
+        return scheduleItemRepository.findAll().stream()
+                .filter(item -> scheduleItemBelongsToTeacher(item, teacher))
+                .map(this::toScheduleDto)
+                .sorted(this::compareSchedule)
+                .toList();
+    }
+
+    private boolean scheduleItemBelongsToTeacher(ScheduleItem item, Teacher teacher) {
+        if (item.getTeacher() != null) {
+            return teacher.getId().equals(item.getTeacher().getId());
+        }
+        return courseMatchesTeacherSubject(item.getCourse(), teacher.getSubject());
+    }
+
+    private boolean courseMatchesTeacherSubject(Course course, String teacherSubject) {
+        if (course == null || teacherSubject == null || teacherSubject.isBlank()) {
+            return false;
+        }
+        String subjectKey = normalizeSubjectKey(teacherSubject);
+        if (course.getMatiere() != null) {
+            String matiereKey = normalizeSubjectKey(course.getMatiere().getName());
+            if (subjectsMatch(subjectKey, matiereKey)) {
+                return true;
+            }
+        }
+        return subjectsMatch(subjectKey, normalizeSubjectKey(course.getName()));
+    }
+
+    private boolean subjectsMatch(String left, String right) {
+        if (left.isEmpty() || right.isEmpty()) {
+            return false;
+        }
+        return left.equals(right) || left.contains(right) || right.contains(left);
+    }
+
+    private String normalizeSubjectKey(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.trim()
+                .toLowerCase(Locale.ROOT)
+                .replace('é', 'e')
+                .replace('è', 'e')
+                .replace('ê', 'e')
+                .replace('ë', 'e')
+                .replace('à', 'a')
+                .replace('â', 'a')
+                .replace('ù', 'u')
+                .replace('û', 'u')
+                .replace('ô', 'o')
+                .replace('î', 'i')
+                .replace('ï', 'i')
+                .replace('ç', 'c');
+    }
+
+    private PortalScheduleDto toScheduleDto(ScheduleItem item) {
+        return PortalScheduleDto.builder()
+                .id(item.getId())
+                .day(item.getDay())
+                .time(item.getTime())
+                .room(item.getRoom())
+                .className(item.getClassItem() != null ? item.getClassItem().getName() : null)
+                .courseName(item.getCourse() != null ? item.getCourse().getName() : null)
+                .build();
+    }
+
+    private int compareSchedule(PortalScheduleDto a, PortalScheduleDto b) {
+        int dayCmp = Integer.compare(dayIndex(a.getDay()), dayIndex(b.getDay()));
+        if (dayCmp != 0) {
+            return dayCmp;
+        }
+        return timeSortKey(a.getTime()).compareTo(timeSortKey(b.getTime()));
+    }
+
+    private int dayIndex(String day) {
+        if (day == null) {
+            return 999;
+        }
+        int idx = DAY_ORDER.indexOf(day.trim());
+        return idx >= 0 ? idx : 999;
+    }
+
+    private String timeSortKey(String time) {
+        if (time == null || time.isBlank()) {
+            return "99:99";
+        }
+        String normalized = time.trim().replace('h', ':');
+        if (normalized.matches("\\d{1,2}:\\d{2}")) {
+            String[] parts = normalized.split(":");
+            return String.format("%02d:%02d", Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+        }
+        return normalized;
     }
 
     private List<PortalGradeDto> filterGrades(Set<String> studentIds) {
