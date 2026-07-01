@@ -45,11 +45,14 @@ export const PORTAL_SECTIONS: {
 export const TEACHER_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId[] }[] = [
   { labelKey: 'portalHome.navGroupSpace', sectionIds: ['overview', 'classes', 'students'] },
   { labelKey: 'portalHome.navGroupSchool', sectionIds: ['schedule', 'calendar', 'grades'] },
-  { labelKey: 'portalHome.navGroupLife', sectionIds: ['messages', 'canteen', 'transport', 'schools'] },
+  {
+    labelKey: 'portalHome.navGroupLife',
+    sectionIds: ['announcements', 'directory', 'messages', 'fees', 'canteen', 'transport', 'schools'],
+  },
 ];
 
-export const PORTAL_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId[] }[] = [
-  { labelKey: 'portalHome.navGroupSpace', sectionIds: ['overview', 'classes', 'students'] },
+export const STUDENT_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId[] }[] = [
+  { labelKey: 'portalHome.navGroupSpace', sectionIds: ['overview'] },
   { labelKey: 'portalHome.navGroupSchool', sectionIds: ['schedule', 'calendar', 'grades'] },
   {
     labelKey: 'portalHome.navGroupLife',
@@ -57,33 +60,17 @@ export const PORTAL_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId[
   },
 ];
 
+export const PORTAL_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId[] }[] = STUDENT_NAV_GROUPS;
+
 export const PARENT_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId[] }[] = [
   { labelKey: 'portalHome.navGroupChild', sectionIds: ['overview', 'students'] },
   { labelKey: 'portalHome.navGroupAttendance', sectionIds: ['presence', 'absences'] },
   { labelKey: 'portalHome.navGroupSchool', sectionIds: ['schedule', 'calendar', 'grades'] },
-  { labelKey: 'portalHome.navGroupLife', sectionIds: ['announcements', 'fees', 'directory', 'notifications', 'canteen', 'transport', 'messages'] },
+  {
+    labelKey: 'portalHome.navGroupLife',
+    sectionIds: ['announcements', 'fees', 'directory', 'notifications', 'canteen', 'transport', 'messages'],
+  },
 ];
-
-export function sectionMeta(section: PortalSectionId) {
-  return PORTAL_SECTIONS.find((s) => s.id === section) ?? PORTAL_SECTIONS[0];
-}
-
-export function sectionFromPath(pathname: string): PortalSectionId {
-  if (pathname.startsWith('/accueil/classes')) return 'classes';
-  const match = PORTAL_SECTIONS.find((s) => s.path === pathname);
-  return match?.id ?? 'overview';
-}
-
-export function pathFromSection(section: string): string {
-  const match = PORTAL_SECTIONS.find((s) => s.id === section);
-  return match?.path ?? '/accueil';
-}
-
-export function navGroupsForRole(role: PortalRole) {
-  if (role === 'parent') return PARENT_NAV_GROUPS;
-  if (role === 'teacher') return TEACHER_NAV_GROUPS;
-  return PORTAL_NAV_GROUPS;
-}
 
 const PARENT_SECTIONS: PortalSectionId[] = [
   'overview',
@@ -102,20 +89,45 @@ const PARENT_SECTIONS: PortalSectionId[] = [
   'fees',
 ];
 
-/** Parent: child, attendance, notifications. Student: no students list. Teacher: full admin-lite nav. */
-export function sectionsForRole(role: PortalRole): PortalSectionId[] {
-  if (role === 'parent') return PARENT_SECTIONS;
-  const ids = PORTAL_SECTIONS.map((s) => s.id).filter(
-    (id) => id !== 'presence' && id !== 'absences' && id !== 'notifications'
-  );
-  if (role === 'student') {
-    return ids.filter((id) => id !== 'students' && id !== 'classes');
-  }
-  return ids;
+function uniqueSections(ids: PortalSectionId[]): PortalSectionId[] {
+  return [...new Set(ids)];
 }
 
-/** Parent-facing label for the students section. */
+export function sectionMeta(section: PortalSectionId) {
+  return PORTAL_SECTIONS.find((s) => s.id === section) ?? PORTAL_SECTIONS[0];
+}
+
+export function sectionFromPath(pathname: string): PortalSectionId {
+  if (pathname.startsWith('/accueil/classes')) return 'classes';
+  const normalized = pathname.replace(/\/+$/, '') || '/accueil';
+  const match = PORTAL_SECTIONS.find((s) => s.path === normalized);
+  return match?.id ?? 'overview';
+}
+
+export function pathFromSection(section: string): string {
+  const match = PORTAL_SECTIONS.find((s) => s.id === section);
+  return match?.path ?? '/accueil';
+}
+
+export function navGroupsForRole(role: PortalRole) {
+  if (role === 'parent') return PARENT_NAV_GROUPS;
+  if (role === 'teacher') return TEACHER_NAV_GROUPS;
+  return STUDENT_NAV_GROUPS;
+}
+
+/** Sections a role may open — derived from sidebar nav so menu and routing stay in sync. */
+export function sectionsForRole(role: PortalRole): PortalSectionId[] {
+  if (role === 'parent') return PARENT_SECTIONS;
+  return uniqueSections(navGroupsForRole(role).flatMap((group) => group.sectionIds));
+}
+
+/** Parent-facing labels for selected sections. */
 export function sectionLabelKey(section: PortalSectionId, role: PortalRole): string {
   if (role === 'parent' && section === 'students') return 'portalHome.navMyChild';
+  if (role === 'parent' && section === 'grades') return 'portalHome.navParentGrades';
   return sectionMeta(section).labelKey;
+}
+
+export function isSectionAllowedForRole(section: PortalSectionId, role: PortalRole): boolean {
+  return sectionsForRole(role).includes(section);
 }

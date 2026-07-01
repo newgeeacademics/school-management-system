@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from '@/i18n';
 import { getPortalSession } from '@/lib/auth';
+import { canManageGrades } from '@/lib/portal-role';
 import {
   DEFAULT_EVAL_TYPE_OPTIONS,
   DEFAULT_PERIOD_OPTIONS,
@@ -78,7 +79,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
       setData(detail);
       if (!fixedClassId && !classId && detail.classId) setClassId(detail.classId);
       if (!studentId && detail.studentId) setStudentId(detail.studentId);
-      if (detail.canEdit) {
+      if (detail.canEdit && session?.role === 'teacher') {
         try {
           const requests = await fetchPortalGradeModificationRequests();
           setModRequests(requests);
@@ -100,14 +101,22 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
     if (fixedClassId) setClassId(fixedClassId);
   }, [fixedClassId]);
 
+  const isParent = session?.role === 'parent';
+
+  useEffect(() => {
+    if (isParent && data?.students.length === 1 && !studentId) {
+      setStudentId(data.students[0].id);
+    }
+  }, [data?.students, isParent, studentId]);
+
   useEffect(() => {
     void reload();
   }, [reload]);
 
   const canEdit = data?.canEdit ?? false;
-  const isParent = session?.role === 'parent';
+  const canManage = canManageGrades(session?.role, canEdit);
   const showStudentPicker = isParent && (data?.students.length ?? 0) > 1;
-  const showClassPicker = !fixedClassId && canEdit && (data?.classes.length ?? 0) > 1;
+  const showClassPicker = !fixedClassId && canManage && (data?.classes.length ?? 0) > 1;
   const gradingScale = data?.gradingConfig?.gradingScale ?? 20;
   const periodOptions = data?.gradingConfig?.evaluationPeriods?.length
     ? data.gradingConfig.evaluationPeriods
@@ -128,6 +137,25 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
     }));
   }, [data]);
 
+  const displayStudents = useMemo(() => {
+    if (!data) return [];
+    if (isParent && studentId) {
+      return data.students.filter((s) => s.id === studentId);
+    }
+    if (isParent && data.students.length === 1) {
+      return data.students;
+    }
+    if (isParent) return [];
+    return data.students;
+  }, [data, isParent, studentId]);
+
+  const parentBulletinRows = useMemo(() => {
+    if (!isParent) return bulletinRows;
+    if (studentId) return bulletinRows.filter((r) => r.studentId === studentId);
+    if (bulletinRows.length === 1) return bulletinRows;
+    return bulletinRows;
+  }, [bulletinRows, isParent, studentId]);
+
   useEffect(() => {
     if (data?.gradingConfig?.gradingScale) {
       setNewEval((p) => ({ ...p, maxScore: data.gradingConfig!.gradingScale }));
@@ -139,7 +167,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
 
   const handleCreateEvaluation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!classId || !newEval.courseId || !newEval.label.trim()) return;
+    if (!canManage || !classId || !newEval.courseId || !newEval.label.trim()) return;
     setSaving(true);
     setError(null);
     try {
@@ -163,7 +191,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
   };
 
   const handleUploadDocument = async (evaluationId: string, file: File) => {
-    if (!canEdit) return;
+    if (!canManage) return;
     setSaving(true);
     setError(null);
     try {
@@ -185,7 +213,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
     evaluationLabel: string,
     maxScore: number,
   ) => {
-    if (!canEdit) return;
+    if (!canManage) return;
     const trimmed = raw.trim();
     if (trimmed === '') return;
     const score = Number(trimmed);
@@ -300,14 +328,21 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
         </div>
       ) : null}
 
-      {canEdit ? (
-        <p className='text-xs text-muted-foreground rounded-lg border border-dashed px-3 py-2'>
+      {canManage ? (
+        <p className='text-xs text-muted-foreground rounded-xl border border-dashed border-border/80 bg-card px-4 py-3'>
           La saisie initiale est directe. Pour modifier une note déjà enregistrée, changez la valeur
           puis envoyez une demande à l&apos;administration.
         </p>
       ) : null}
 
-      <div className='flex flex-wrap items-end gap-3'>
+      {isParent ? (
+        <div className='rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/5 via-card to-card p-4 shadow-sm'>
+          <p className='text-sm font-medium text-foreground'>{t('portalGrades.parentIntro')}</p>
+          <p className='mt-1 text-xs text-muted-foreground'>{t('portalGrades.readOnlyHint')}</p>
+        </div>
+      ) : null}
+
+      <div className='flex flex-wrap items-end gap-3 rounded-2xl border border-border/80 bg-card p-4 shadow-sm'>
         {showClassPicker ? (
           <div className='min-w-[10rem] flex-1'>
             <Label htmlFor='grades-class'>{t('portalGrades.classLabel')}</Label>
@@ -381,8 +416,14 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
         <p className='rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700'>{error}</p>
       ) : null}
 
-      {!canEdit && tab === 'marks' ? (
+      {!canManage && tab === 'marks' && !isParent ? (
         <p className='text-xs text-muted-foreground'>{t('portalGrades.readOnlyHint')}</p>
+      ) : null}
+
+      {isParent && showStudentPicker && !studentId ? (
+        <p className='rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-xs text-amber-900'>
+          {t('portalGrades.chooseStudentFirst')}
+        </p>
       ) : null}
 
       {tab === 'bulletin' ? (
@@ -391,22 +432,24 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
             <GraduationCap className='size-4 text-primary' aria-hidden />
             {t('portalGrades.bulletinTitle')}
           </h2>
-          {bulletinRows.length === 0 ? (
+          {parentBulletinRows.length === 0 ? (
             <p className='mt-3 text-xs italic text-muted-foreground'>{t('portalGrades.emptyBulletin')}</p>
           ) : (
             <div className='mt-3 overflow-x-auto'>
               <table className='w-full min-w-[20rem] text-sm'>
                 <thead>
                   <tr className='border-b border-border text-left text-xs text-muted-foreground'>
-                    {canEdit ? <th className='py-2 pr-3'>{t('portalGrades.colStudent')}</th> : null}
+                    {isParent || canManage ? (
+                      <th className='py-2 pr-3'>{t('portalGrades.colStudent')}</th>
+                    ) : null}
                     <th className='py-2 pr-3'>{t('portalGrades.colAverage')}</th>
-                    {canEdit ? <th className='py-2'>{t('portalGrades.colRank')}</th> : null}
+                    {(canManage || isParent) ? <th className='py-2'>{t('portalGrades.colRank')}</th> : null}
                   </tr>
                 </thead>
                 <tbody>
-                  {bulletinRows.map((row) => (
+                  {parentBulletinRows.map((row) => (
                     <tr key={row.studentId} className='border-b border-border/60'>
-                      {canEdit ? (
+                      {isParent || canManage ? (
                         <td className='py-2 pr-3 font-medium text-foreground'>{row.studentName}</td>
                       ) : null}
                       <td className='py-2 pr-3'>
@@ -418,7 +461,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
                           '—'
                         )}
                       </td>
-                      {canEdit ? (
+                      {canManage || isParent ? (
                         <td className='py-2 text-muted-foreground'>{row.rank ?? '—'}</td>
                       ) : null}
                     </tr>
@@ -430,7 +473,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
         </section>
       ) : null}
 
-      {tab === 'marks' && canEdit ? (
+      {tab === 'marks' && canManage ? (
         <form onSubmit={handleCreateEvaluation} className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
           <h2 className='flex items-center gap-2 text-sm font-semibold text-foreground'>
             <Plus className='size-4 text-primary' aria-hidden />
@@ -529,14 +572,20 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
           <h2 className='text-sm font-semibold text-foreground'>{t('portalGrades.marksTitle')}</h2>
           {!data?.evaluations.length ? (
             <p className='mt-3 text-xs italic text-muted-foreground'>{t('portalGrades.emptyMarks')}</p>
-          ) : !data.students.length ? (
-            <p className='mt-3 text-xs italic text-muted-foreground'>{t('portalGrades.noStudents')}</p>
+          ) : !displayStudents.length ? (
+            <p className='mt-3 text-xs italic text-muted-foreground'>
+              {isParent && showStudentPicker && !studentId
+                ? t('portalGrades.chooseStudentFirst')
+                : t('portalGrades.noStudents')}
+            </p>
           ) : (
             <div className='mt-3 overflow-x-auto'>
               <table className='w-full min-w-[28rem] text-sm'>
                 <thead>
                   <tr className='border-b border-border text-left text-xs text-muted-foreground'>
-                    <th className='py-2 pr-3'>{t('portalGrades.colStudent')}</th>
+                    {!isParent || displayStudents.length > 1 ? (
+                      <th className='py-2 pr-3'>{t('portalGrades.colStudent')}</th>
+                    ) : null}
                     {data.evaluations.map((ev) => (
                       <th key={ev.id} className='min-w-[7rem] py-2 pr-2 align-top'>
                         <span className='block font-medium text-foreground'>{ev.label}</span>
@@ -544,7 +593,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
                           {ev.courseName} · {ev.type} · /{ev.maxScore}
                         </span>
                         <div className='mt-1 flex flex-wrap gap-1'>
-                          {canEdit ? (
+                          {canManage ? (
                             <label className='inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[10px] hover:bg-muted'>
                               <Upload className='size-3' aria-hidden />
                               {ev.hasDocument ? t('portalGrades.replaceDoc') : t('portalGrades.uploadDoc')}
@@ -580,7 +629,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
                   </tr>
                 </thead>
                 <tbody>
-                  {data.students.map((student) => {
+                  {displayStudents.map((student) => {
                     const avg = computeStudentAverage(
                       data.evaluations,
                       data.grades,
@@ -589,13 +638,15 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
                     );
                     return (
                       <tr key={student.id} className='border-b border-border/60'>
-                        <td className='py-2 pr-3 font-medium text-foreground'>{student.name}</td>
+                        {!isParent || displayStudents.length > 1 ? (
+                          <td className='py-2 pr-3 font-medium text-foreground'>{student.name}</td>
+                        ) : null}
                         {data.evaluations.map((ev) => {
                           const score = getGradeScore(data.grades, ev.id, student.id);
                           const pending = hasPendingRequest(ev.id, student.id);
                           return (
                             <td key={ev.id} className='py-2 pr-2'>
-                              {canEdit ? (
+                              {canManage ? (
                                 <div className='space-y-1'>
                                 <Input
                                   type='number'

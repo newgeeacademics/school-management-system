@@ -25,4 +25,5 @@ public interface AppUserRepository extends JpaRepository<AppUser, String> {
     boolean existsByPhone(String phone);
     List<AppUser> findByRole(UserRole role);
     List<AppUser> findBySchoolId(String schoolId);
+    long countByRole(UserRole role);
 }

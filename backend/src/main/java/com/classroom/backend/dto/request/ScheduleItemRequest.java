@@ -11,6 +11,8 @@ public class ScheduleItemRequest {
 
     private String courseId;
 
+    private String teacherId;
+
     @NotBlank(message = "Day is required")
     private String day;
 

@@ -4,9 +4,11 @@ import com.classroom.backend.dto.request.ScheduleItemRequest;
 import com.classroom.backend.model.ClassItem;
 import com.classroom.backend.model.Course;
 import com.classroom.backend.model.ScheduleItem;
+import com.classroom.backend.model.Teacher;
 import com.classroom.backend.repository.ClassItemRepository;
 import com.classroom.backend.repository.CourseRepository;
 import com.classroom.backend.repository.ScheduleItemRepository;
+import com.classroom.backend.repository.TeacherRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ public class ScheduleService {
     private final ScheduleItemRepository scheduleItemRepository;
     private final ClassItemRepository classItemRepository;
     private final CourseRepository courseRepository;
+    private final TeacherRepository teacherRepository;
 
     public List<ScheduleItem> findAll() {
         return scheduleItemRepository.findAll();
@@ -51,6 +54,7 @@ public class ScheduleService {
         ScheduleItem item = ScheduleItem.builder()
                 .classItem(classItem)
                 .course(course)
+                .teacher(resolveTeacher(request.getTeacherId()))
                 .day(request.getDay())
                 .time(request.getTime())
                 .room(request.getRoom())
@@ -74,6 +78,8 @@ public class ScheduleService {
             item.setCourse(null);
         }
 
+        item.setTeacher(resolveTeacher(request.getTeacherId()));
+
         item.setDay(request.getDay());
         item.setTime(request.getTime());
         item.setRoom(request.getRoom());
@@ -84,5 +90,12 @@ public class ScheduleService {
     @Transactional
     public void delete(String id) {
         scheduleItemRepository.deleteById(id);
+    }
+
+    private Teacher resolveTeacher(String teacherId) {
+        if (teacherId == null || teacherId.isBlank()) {
+            return null;
+        }
+        return teacherRepository.findById(teacherId).orElse(null);
     }
 }

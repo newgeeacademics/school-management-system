@@ -20,6 +20,10 @@ public class ScheduleItem {
     @JoinColumn(name = "course_id")
     private Course course;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "teacher_id")
+    private Teacher teacher;
+
     @Column(name = "schedule_day", nullable = false)
     private String day;
 
