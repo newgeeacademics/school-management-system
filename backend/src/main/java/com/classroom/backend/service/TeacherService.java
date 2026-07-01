@@ -7,7 +7,6 @@ import com.classroom.backend.model.Teacher;
 import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.ClassItemRepository;
 import com.classroom.backend.repository.TeacherRepository;
-import com.classroom.backend.util.IdCardNumberUtil;
 import com.classroom.backend.util.PersonNameUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +24,7 @@ public class TeacherService {
     private final ClassItemRepository classItemRepository;
     private final PortalAccountService portalAccountService;
     private final SchoolContextService schoolContextService;
+    private final TeacherStaffIdService teacherStaffIdService;
 
     public List<Teacher> findAll() {
         return schoolContextService.getCurrentSchoolId()
@@ -51,15 +51,18 @@ public class TeacherService {
                 request.getEmail(), request.getPhone(),
                 request.getPassword(), UserRole.TEACHER);
 
+        String requestedStaffId = request.getStaffId() != null && !request.getStaffId().isBlank()
+                ? request.getStaffId().trim()
+                : null;
+        teacherStaffIdService.assertStaffIdAvailable(requestedStaffId, null);
+
         Teacher teacher = Teacher.builder()
                 .name(fullName)
                 .firstName(PersonNameUtil.trim(request.getFirstName()))
                 .lastName(PersonNameUtil.trim(request.getLastName()))
                 .initials(generateInitials(fullName))
                 .subject(request.getSubject())
-                .staffId(request.getStaffId() != null && !request.getStaffId().isBlank()
-                        ? request.getStaffId().trim()
-                        : null)
+                .staffId(requestedStaffId)
                 .email(appUser != null ? appUser.getEmail() : null)
                 .phone(trimPhone(request.getPhone()))
                 .appUser(appUser)
@@ -68,7 +71,7 @@ public class TeacherService {
 
         teacher = teacherRepository.save(teacher);
         if (teacher.getStaffId() == null || teacher.getStaffId().isBlank()) {
-            teacher.setStaffId(IdCardNumberUtil.resolveTeacherStaffId(null, teacher.getId()));
+            teacher.setStaffId(teacherStaffIdService.allocateNextStaffId());
             teacher = teacherRepository.save(teacher);
         }
         syncHomeroomClasses(teacher, request.getHomeroomClassIds());
@@ -90,9 +93,11 @@ public class TeacherService {
         teacher.setPhone(trimPhone(request.getPhone()));
 
         if (request.getStaffId() != null && !request.getStaffId().isBlank()) {
-            teacher.setStaffId(request.getStaffId().trim());
+            String staffId = request.getStaffId().trim();
+            teacherStaffIdService.assertStaffIdAvailable(staffId, teacher.getId());
+            teacher.setStaffId(staffId);
         } else if (teacher.getStaffId() == null || teacher.getStaffId().isBlank()) {
-            teacher.setStaffId(IdCardNumberUtil.resolveTeacherStaffId(null, teacher.getId()));
+            teacher.setStaffId(teacherStaffIdService.allocateNextStaffId());
         }
 
         if (teacher.getAppUser() != null) {
