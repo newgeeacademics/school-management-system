@@ -42,6 +42,10 @@ public class TeacherService {
         String fullName = PersonNameUtil.requireFullName(
                 request.getFirstName(), request.getLastName(), request.getName());
 
+        if (request.getPhone() == null || request.getPhone().isBlank()) {
+            throw new IllegalArgumentException("Le téléphone mobile est obligatoire.");
+        }
+
         String schoolId = schoolContextService.requireCurrentSchoolId();
 
         AppUser appUser = portalAccountService.createLinkedAccountForPerson(

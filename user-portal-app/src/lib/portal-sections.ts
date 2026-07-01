@@ -47,7 +47,7 @@ export const TEACHER_NAV_GROUPS: { labelKey: string; sectionIds: PortalSectionId
   { labelKey: 'portalHome.navGroupSchool', sectionIds: ['schedule', 'calendar', 'grades'] },
   {
     labelKey: 'portalHome.navGroupLife',
-    sectionIds: ['announcements', 'directory', 'messages', 'fees', 'canteen', 'transport', 'schools'],
+    sectionIds: ['announcements', 'messages', 'canteen', 'transport', 'schools'],
   },
 ];
 

@@ -1383,8 +1383,8 @@ export const DashboardPage: React.FC = () => {
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTeacher.firstName.trim() || !newTeacher.lastName.trim()) return;
-    if (!newTeacher.email.trim() && !newTeacher.phone.trim()) {
-      toast.error("L'e-mail ou le téléphone de contact est requis.");
+    if (!newTeacher.phone.trim()) {
+      toast.error('Le téléphone mobile est obligatoire.');
       return;
     }
     const payload = {
