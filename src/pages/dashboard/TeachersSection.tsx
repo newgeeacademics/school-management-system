@@ -278,21 +278,21 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                   placeholder='enseignant@exemple.com'
                 />
                 <p className='text-[10px] text-muted-foreground'>
-                  E-mail ou téléphone requis pour le compte portail. Connexion avec l&apos;identifiant
-                  généré ci-dessous.
+                  Optionnel. Connexion portail avec l&apos;identifiant généré et le téléphone mobile.
                 </p>
               </div>
               <div className='grid gap-2 sm:col-span-2'>
                 <LoginIdPreview firstName={newTeacher.firstName} lastName={newTeacher.lastName} />
               </div>
               <div className='grid gap-2'>
-                <Label htmlFor='teacher-phone'>Téléphone de contact</Label>
+                <Label htmlFor='teacher-phone'>Téléphone mobile *</Label>
                 <Input
                   id='teacher-phone'
                   type='tel'
                   value={newTeacher.phone}
                   onChange={(e) => setNewTeacher((t) => ({ ...t, phone: e.target.value }))}
                   placeholder='+225 07 00 00 00 00'
+                  required
                 />
               </div>
               <div className='grid gap-2'>
@@ -317,7 +317,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
             </div>
 
             <p className='text-[11px] text-muted-foreground'>
-              * E-mail de contact obligatoire (identifiants envoyés par e-mail). Mot de passe vide → <strong>changeme</strong>.
+              * Téléphone mobile obligatoire pour le compte portail. Mot de passe vide → <strong>changeme</strong>.
             </p>
 
             <Button type='submit' className='gap-2'>
