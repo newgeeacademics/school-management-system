@@ -121,7 +121,24 @@
     "navAnnouncements": "Annonces",
     "navFees": "Échéancier",
     "descAnnouncements": "Annonces officielles de l’établissement.",
-    "descFees": "Tarifs et dates d’échéance (scolarité, cantine, transport)."
+    "descFees": "Tarifs et dates d’échéance (scolarité, cantine, transport).",
+    "navMore": "Plus",
+    "moreSectionsTitle": "Plus",
+    "moreSectionsHint": "Toutes les sections du portail",
+    "quickAccess": "Accès rapide",
+    "overviewTitle": "Vue d’ensemble",
+    "welcomeHello": "Bonjour, {{name}} !",
+    "welcomeParent": "Suivez la scolarité de votre enfant en un coup d’œil.",
+    "welcomeDefault": "Retrouvez vos cours, notes et actualités ici.",
+    "overviewChildren": "Enfants",
+    "overviewCourses": "Cours",
+    "retry": "Réessayer"
+  },
+  "portalSchedule": {
+    "colTime": "Heure",
+    "teacherHint": "Votre emploi du temps personnel — uniquement les cours que vous enseignez.",
+    "unassignedCourse": "Cours",
+    "roomLabel": "Salle {{room}}"
   },
   "portalAnnouncements": {
     "loading": "Chargement des annonces…",
