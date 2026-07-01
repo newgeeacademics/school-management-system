@@ -24,49 +24,21 @@ const FEATURE_ROWS = [
 type PlanId = (typeof PLAN_IDS)[number];
 type FeatureRow = (typeof FEATURE_ROWS)[number];
 
-function planFeatureValue(plan: PlanId, feature: FeatureRow): boolean | string {
-  const matrix: Record<PlanId, Record<FeatureRow, boolean | string>> = {
-    starter: {
-      students: '50',
-      teachers: '5',
-      classes: true,
-      grades: true,
-      schedule: true,
-      attendance: true,
-      payments: false,
-      canteen: false,
-      transport: false,
-      portal: true,
-      support: 'email',
-    },
-    standard: {
-      students: '300',
-      teachers: '30',
-      classes: true,
-      grades: true,
-      schedule: true,
-      attendance: true,
-      payments: true,
-      canteen: true,
-      transport: false,
-      portal: true,
-      support: 'priority',
-    },
-    establishment: {
-      students: 'unlimited',
-      teachers: 'unlimited',
-      classes: true,
-      grades: true,
-      schedule: true,
-      attendance: true,
-      payments: true,
-      canteen: true,
-      transport: true,
-      portal: true,
-      support: 'dedicated',
-    },
+function planFeatureValue(_plan: PlanId, feature: FeatureRow): boolean | string {
+  const fullAccess: Record<FeatureRow, boolean | string> = {
+    students: 'unlimited',
+    teachers: 'unlimited',
+    classes: true,
+    grades: true,
+    schedule: true,
+    attendance: true,
+    payments: true,
+    canteen: true,
+    transport: true,
+    portal: true,
+    support: 'dedicated',
   };
-  return matrix[plan][feature];
+  return fullAccess[feature];
 }
 
 export const PlansPage: React.FC = () => {
@@ -104,7 +76,7 @@ export const PlansPage: React.FC = () => {
                   <p className='landing__plan-tagline'>{t(`plans.${planId}Tagline`)}</p>
                   <p className='landing__plan-price'>
                     {t(`plans.${planId}Price`)}
-                    {planId !== 'establishment' && <span className='landing__plan-period'>{t('plans.perMonth')}</span>}
+                    <span className='landing__plan-period'>{t('plans.perStudent')}</span>
                   </p>
                   <p className='landing__plan-limit'>{t(`plans.${planId}Limit`)}</p>
                   <ul className='landing__plan-features'>
@@ -118,20 +90,10 @@ export const PlansPage: React.FC = () => {
                       );
                     })}
                   </ul>
-                  {planId === 'establishment' ? (
-                    <a
-                      className='landing__btn landing__btn--ghost landing__plan-cta'
-                      href='mailto:contact@newgeeacademy.com?subject=NewGee%20-%20Offre%20%C3%89tablissement'
-                    >
-                      {t(`plans.${planId}Cta`)}
-                      <ArrowRight size={16} />
-                    </a>
-                  ) : (
-                    <Link className='landing__btn landing__btn--primary landing__plan-cta' to='/register'>
+                  <Link className='landing__btn landing__btn--primary landing__plan-cta' to='/register'>
                       {t(`plans.${planId}Cta`)}
                       <ArrowRight size={16} />
                     </Link>
-                  )}
                 </article>
               ))}
             </div>

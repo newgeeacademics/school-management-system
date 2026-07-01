@@ -288,7 +288,7 @@ export const LandingPage = () => {
                   <p className='landing__plan-tagline'>{t(`plans.${planId}Tagline`)}</p>
                   <p className='landing__plan-price'>
                     {t(`plans.${planId}Price`)}
-                    {planId !== 'establishment' && <span className='landing__plan-period'>{t('plans.perMonth')}</span>}
+                    <span className='landing__plan-period'>{t('plans.perStudent')}</span>
                   </p>
                   <p className='landing__plan-limit'>{t(`plans.${planId}Limit`)}</p>
                   <ul className='landing__plan-highlights'>
