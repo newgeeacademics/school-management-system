@@ -7,7 +7,6 @@ import com.classroom.backend.model.Teacher;
 import com.classroom.backend.repository.SchoolRepository;
 import com.classroom.backend.repository.TeacherRepository;
 import com.classroom.backend.util.AcademicYearUtil;
-import com.classroom.backend.util.IdCardNumberUtil;
 import com.classroom.backend.util.PersonNameUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +19,7 @@ public class TeacherIdCardService {
     private final TeacherRepository teacherRepository;
     private final SchoolRepository schoolRepository;
     private final PublicAppUrlService publicAppUrlService;
+    private final TeacherStaffIdService teacherStaffIdService;
 
     @Transactional
     public TeacherIdCardResponse getIdCard(String teacherId) {
@@ -27,7 +27,7 @@ public class TeacherIdCardService {
                 .orElseThrow(() -> new RuntimeException("Teacher not found: " + teacherId));
 
         if (teacher.getStaffId() == null || teacher.getStaffId().isBlank()) {
-            teacher.setStaffId(IdCardNumberUtil.resolveTeacherStaffId(null, teacher.getId()));
+            teacher.setStaffId(teacherStaffIdService.allocateNextStaffId());
             teacher = teacherRepository.save(teacher);
         }
 
