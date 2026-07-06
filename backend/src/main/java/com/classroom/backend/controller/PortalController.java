@@ -27,7 +27,7 @@ import com.classroom.backend.model.enums.AttendanceStatus;
 import com.classroom.backend.model.Announcement;
 import com.classroom.backend.model.FeeInstallment;
 import com.classroom.backend.service.AnnouncementService;
-import com.classroom.backend.service.FeeInstallmentService;
+import com.classroom.backend.service.PortalFeeService;
 import com.classroom.backend.service.PortalAttendanceService;
 import com.classroom.backend.service.PortalClassHubService;
 import com.classroom.backend.service.PortalGradeService;
@@ -60,7 +60,7 @@ public class PortalController {
     private final PortalNotificationService portalNotificationService;
     private final PortalClassHubService portalClassHubService;
     private final AnnouncementService announcementService;
-    private final FeeInstallmentService feeInstallmentService;
+    private final PortalFeeService portalFeeService;
     private final SchoolCommunicationService schoolCommunicationService;
     private final PortalChatService portalChatService;
 
@@ -212,11 +212,11 @@ public class PortalController {
         );
     }
 
-    /** Fee schedule (échéancier) for families. */
+    /** Fee schedule (échéancier) for parents and students. */
     @GetMapping("/fees")
     public ResponseEntity<List<FeeInstallment>> fees(
-            @RequestParam(required = false, defaultValue = "2025-2026") String academicYear
+            @RequestParam(required = false) String academicYear
     ) {
-        return ResponseEntity.ok(feeInstallmentService.findByYear(academicYear));
+        return ResponseEntity.ok(portalFeeService.feesForCurrentUser(academicYear));
     }
 }

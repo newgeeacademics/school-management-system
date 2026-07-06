@@ -36,8 +36,8 @@ export type BottomNavItem = {
 const PARENT_BOTTOM: BottomNavItem[] = [
   { labelKey: 'portalHome.navOverview', icon: Home, activeIcon: Home, section: 'overview' },
   { labelKey: 'portalHome.cardGrades', icon: GraduationCap, activeIcon: GraduationCap, section: 'grades' },
-  { labelKey: 'portalHome.cardMessages', icon: MessageCircle, activeIcon: MessageCircle, section: 'messages' },
-  { labelKey: 'portalHome.navNotifications', icon: Bell, activeIcon: Bell, section: 'notifications' },
+  { labelKey: 'portalHome.navFees', icon: Wallet, activeIcon: Wallet, section: 'fees' },
+  { labelKey: 'portalHome.navPresence', icon: CheckCircle2, activeIcon: CheckCircle2, section: 'presence' },
   { labelKey: 'portalHome.navMore', icon: Grid2x2, activeIcon: Grid2x2 },
 ];
 
