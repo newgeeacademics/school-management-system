@@ -68,7 +68,7 @@
     "closeMenu": "Fermer le menu",
     "cardClasses": "Mes classes",
     "cardStudents": "Élèves",
-    "emptyClasses": "Aucune classe assignée. Sur le tableau de bord établissement, assignez cet enseignant comme professeur principal d’une classe.",
+    "emptyClasses": "Aucune classe accessible. Assignez cet enseignant comme professeur principal ou sur l'emploi du temps (matière / créneau).",
     "emptyStudents": "Aucun élève à afficher.",
     "classLabel": "Classe",
     "noClass": "Classe non renseignée",
@@ -152,7 +152,7 @@
   },
   "portalClassHub": {
     "listIntro": "Sélectionnez une classe pour faire l’appel, saisir les notes ou publier des devoirs.",
-    "emptyClasses": "Aucune classe assignée. L’administrateur doit vous désigner comme professeur principal.",
+    "emptyClasses": "Aucune classe accessible. Demandez à l'administration de vous assigner comme professeur principal ou sur l'emploi du temps.",
     "students": "élèves",
     "openClass": "Gérer cette classe →",
     "backToList": "Toutes les classes",

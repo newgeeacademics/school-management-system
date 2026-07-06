@@ -16,6 +16,8 @@ public interface TeacherRepository extends JpaRepository<Teacher, String> {
 
     Optional<Teacher> findByEmailIgnoreCase(String email);
 
+    Optional<Teacher> findByPhone(String phone);
+
     List<Teacher> findBySchoolId(String schoolId);
 
     boolean existsByStaffId(String staffId);
