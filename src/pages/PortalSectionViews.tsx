@@ -13,8 +13,10 @@ import {
   UserCircle2,
   Utensils,
   Users,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
+import { fetchPortalFees } from '@/lib/portal-fees';
 import { fetchPortalNotifications } from '@/lib/portal-notifications';
 import { PromoBanner } from '@/components/PromoBanner';
 import { PortalAttendanceView } from '@/pages/PortalAttendanceView';
@@ -62,6 +64,7 @@ export function PortalOverviewView() {
   const session = getPortalSession();
   const isParent = session?.role === 'parent';
   const [notificationsCount, setNotificationsCount] = useState(0);
+  const [feesCount, setFeesCount] = useState(0);
 
   useEffect(() => {
     if (!isParent || !usesBackend) {
@@ -81,6 +84,24 @@ export function PortalOverviewView() {
     };
   }, [isParent, usesBackend]);
 
+  useEffect(() => {
+    if (!isParent || !usesBackend) {
+      setFeesCount(0);
+      return;
+    }
+    let cancelled = false;
+    void fetchPortalFees()
+      .then((data) => {
+        if (!cancelled) setFeesCount(data.length);
+      })
+      .catch(() => {
+        if (!cancelled) setFeesCount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isParent, usesBackend]);
+
   const displayName = session?.name ?? session?.emailHint ?? '';
   const firstName = displayName.split(' ')[0] || displayName;
 
@@ -88,8 +109,8 @@ export function PortalOverviewView() {
     ? [
         { label: t('portalHome.navMyChild'), icon: UserCircle2, section: 'students' as const },
         { label: t('portalHome.cardGrades'), icon: GraduationCap, section: 'grades' as const },
+        { label: t('portalHome.navFees'), icon: Wallet, section: 'fees' as const },
         { label: t('portalHome.navPresence'), icon: CheckCircle2, section: 'presence' as const },
-        { label: t('portalHome.cardMessages'), icon: MessageCircle, section: 'messages' as const },
       ]
     : [
         { label: t('portalHome.cardSchedule'), icon: CalendarDays, section: 'schedule' as const },
@@ -107,7 +128,7 @@ export function PortalOverviewView() {
   }> = isParent
     ? [
         { label: t('portalHome.overviewChildren'), value: feed.students.length, icon: Users, section: 'students' as const },
-        { label: t('portalHome.overviewCourses'), value: feed.schedule.length, icon: CalendarDays, section: 'schedule' as const },
+        { label: t('portalHome.navFees'), value: feesCount, icon: Wallet, section: 'fees' as const },
         { label: t('portalHome.cardGrades'), value: feed.grades.length, icon: GraduationCap, section: 'grades' as const },
         {
           label: t('portalHome.navNotifications'),
