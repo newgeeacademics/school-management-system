@@ -6,8 +6,6 @@ import com.classroom.backend.model.*;
 import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,12 +16,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PortalService {
 
-    private final AppUserRepository appUserRepository;
-    private final AccountIdentifierService accountIdentifierService;
-    private final TeacherRepository teacherRepository;
-    private final StudentRepository studentRepository;
-    private final ParentContactRepository parentContactRepository;
-    private final ClassItemRepository classItemRepository;
+    private final PortalScopeResolver portalScopeResolver;
+    private final TeacherClassScopeService teacherClassScopeService;
     private final ScheduleItemRepository scheduleItemRepository;
     private final StudentGradeRepository studentGradeRepository;
     private final CanteenMenuItemRepository canteenMenuItemRepository;
@@ -33,19 +27,14 @@ public class PortalService {
 
     @Transactional(readOnly = true)
     public PortalFeedResponse getFeedForCurrentUser() {
-        AppUser user = resolveCurrentUser();
-        UserRole role = user.getRole();
-
-        List<ClassItem> classes = new ArrayList<>();
-        List<Student> students = new ArrayList<>();
-        Teacher scopedTeacher = null;
-
-        switch (role) {
-            case TEACHER -> scopedTeacher = resolveTeacherScope(user, classes, students);
-            case STUDENT -> resolveStudentScope(user, classes, students);
-            case PARENT -> resolveParentScope(user, classes, students);
-            default -> throw new IllegalArgumentException("Portal access is not available for role: " + role);
-        }
+        PortalScopeResolver.PortalScope scope = portalScopeResolver.resolveForCurrentUser();
+        AppUser user = scope.user();
+        UserRole role = scope.role();
+        List<ClassItem> classes = scope.classes();
+        List<Student> students = scope.students();
+        Teacher scopedTeacher = role == UserRole.TEACHER
+                ? teacherClassScopeService.requireTeacherForUser(user)
+                : null;
 
         Set<String> classIds = classes.stream().map(ClassItem::getId).collect(Collectors.toSet());
         Set<String> studentIds = students.stream().map(Student::getId).collect(Collectors.toSet());
@@ -91,80 +80,6 @@ public class PortalService {
             return List.of();
         }
         return schoolRepository.findAllById(schoolIds).stream().map(this::toSchoolDto).toList();
-
-    private AppUser resolveCurrentUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
-            throw new IllegalStateException("Not authenticated");
-        }
-        return accountIdentifierService.requireByPrincipalName(auth.getName());
-    }
-
-    private Teacher resolveTeacherProfile(AppUser user) {
-        return teacherRepository.findByAppUser_Id(user.getId())
-                .or(() -> teacherRepository.findByEmailIgnoreCase(user.getEmail()))
-                .orElseThrow(() -> new IllegalStateException(
-                        "Aucun profil enseignant lié à ce compte. Recréez l'enseignant depuis le tableau de bord avec email et mot de passe."));
-    }
-
-    private Teacher resolveTeacherScope(AppUser user, List<ClassItem> classes, List<Student> students) {
-        Teacher teacher = resolveTeacherProfile(user);
-
-        List<ClassItem> homeroom = classItemRepository.findByHomeroomTeacherId(teacher.getId());
-        if (teacher.getSchoolId() != null && !teacher.getSchoolId().isBlank()) {
-            homeroom = homeroom.stream()
-                    .filter(clazz -> teacher.getSchoolId().equals(clazz.getSchoolId()))
-                    .toList();
-        }
-        classes.addAll(homeroom);
-
-        for (ClassItem clazz : homeroom) {
-            students.addAll(studentRepository.findByClassItemId(clazz.getId()));
-        }
-
-        students.sort(Comparator.comparing(Student::getName, String.CASE_INSENSITIVE_ORDER));
-        return teacher;
-    }
-
-    private void resolveStudentScope(AppUser user, List<ClassItem> classes, List<Student> students) {
-        Student student = studentRepository.findByAppUser_Id(user.getId())
-                .or(() -> studentRepository.findByEmailIgnoreCase(user.getEmail()))
-                .orElseThrow(() -> new IllegalStateException(
-                        "Aucun profil élève lié à ce compte. Recréez l'élève depuis le tableau de bord avec email et mot de passe."));
-
-        students.add(student);
-        if (student.getClassItem() != null) {
-            classes.add(student.getClassItem());
-        }
-    }
-
-    private void resolveParentScope(AppUser user, List<ClassItem> classes, List<Student> students) {
-        List<ParentContact> parents = parentContactRepository.findAllByAppUser_Id(user.getId());
-        if (parents.isEmpty()) {
-            parents = parentContactRepository.findByAppUser_Id(user.getId())
-                    .map(List::of)
-                    .orElseGet(() -> parentContactRepository.findByEmailIgnoreCase(user.getEmail()));
-        }
-
-        if (parents.isEmpty()) {
-            throw new IllegalStateException(
-                    "Aucun profil parent lié à ce compte. Recréez le parent depuis le tableau de bord avec email et mot de passe.");
-        }
-
-        Set<String> seenStudents = new HashSet<>();
-        Set<String> seenClasses = new HashSet<>();
-
-        for (ParentContact parent : parents) {
-            Student child = parent.getStudent();
-            if (child == null || !seenStudents.add(child.getId())) {
-                continue;
-            }
-            students.add(child);
-            ClassItem clazz = child.getClassItem();
-            if (clazz != null && seenClasses.add(clazz.getId())) {
-                classes.add(clazz);
-            }
-        }
     }
 
     private static final List<String> DAY_ORDER = List.of(
@@ -183,58 +98,10 @@ public class PortalService {
 
     private List<PortalScheduleDto> filterScheduleForTeacher(Teacher teacher) {
         return scheduleItemRepository.findAll().stream()
-                .filter(item -> scheduleItemBelongsToTeacher(item, teacher))
+                .filter(item -> teacherClassScopeService.scheduleItemBelongsToTeacher(item, teacher))
                 .map(this::toScheduleDto)
                 .sorted(this::compareSchedule)
                 .toList();
-    }
-
-    private boolean scheduleItemBelongsToTeacher(ScheduleItem item, Teacher teacher) {
-        if (item.getTeacher() != null) {
-            return teacher.getId().equals(item.getTeacher().getId());
-        }
-        return courseMatchesTeacherSubject(item.getCourse(), teacher.getSubject());
-    }
-
-    private boolean courseMatchesTeacherSubject(Course course, String teacherSubject) {
-        if (course == null || teacherSubject == null || teacherSubject.isBlank()) {
-            return false;
-        }
-        String subjectKey = normalizeSubjectKey(teacherSubject);
-        if (course.getMatiere() != null) {
-            String matiereKey = normalizeSubjectKey(course.getMatiere().getName());
-            if (subjectsMatch(subjectKey, matiereKey)) {
-                return true;
-            }
-        }
-        return subjectsMatch(subjectKey, normalizeSubjectKey(course.getName()));
-    }
-
-    private boolean subjectsMatch(String left, String right) {
-        if (left.isEmpty() || right.isEmpty()) {
-            return false;
-        }
-        return left.equals(right) || left.contains(right) || right.contains(left);
-    }
-
-    private String normalizeSubjectKey(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value.trim()
-                .toLowerCase(Locale.ROOT)
-                .replace('é', 'e')
-                .replace('è', 'e')
-                .replace('ê', 'e')
-                .replace('ë', 'e')
-                .replace('à', 'a')
-                .replace('â', 'a')
-                .replace('ù', 'u')
-                .replace('û', 'u')
-                .replace('ô', 'o')
-                .replace('î', 'i')
-                .replace('ï', 'i')
-                .replace('ç', 'c');
     }
 
     private PortalScheduleDto toScheduleDto(ScheduleItem item) {

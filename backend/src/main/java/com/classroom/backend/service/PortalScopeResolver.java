@@ -15,12 +15,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PortalScopeResolver {
 
-    private final AppUserRepository appUserRepository;
     private final AccountIdentifierService accountIdentifierService;
-    private final TeacherRepository teacherRepository;
+    private final TeacherClassScopeService teacherClassScopeService;
     private final StudentRepository studentRepository;
     private final ParentContactRepository parentContactRepository;
-    private final ClassItemRepository classItemRepository;
 
     public record PortalScope(
             AppUser user,
@@ -64,10 +62,7 @@ public class PortalScopeResolver {
         if (user.getRole() != UserRole.TEACHER) {
             throw new IllegalStateException("Seuls les enseignants peuvent effectuer cette action.");
         }
-        return teacherRepository.findByAppUser_Id(user.getId())
-                .or(() -> teacherRepository.findByEmailIgnoreCase(user.getEmail()))
-                .orElseThrow(() -> new IllegalStateException(
-                        "Aucun profil enseignant lié à ce compte."));
+        return teacherClassScopeService.requireTeacherForUser(user);
     }
 
     public PortalScope resolveForCurrentUser() {
@@ -96,24 +91,10 @@ public class PortalScopeResolver {
     }
 
     private void resolveTeacherScope(AppUser user, List<ClassItem> classes, List<Student> students) {
-        Teacher teacher = teacherRepository.findByAppUser_Id(user.getId())
-                .or(() -> teacherRepository.findByEmailIgnoreCase(user.getEmail()))
-                .orElseThrow(() -> new IllegalStateException(
-                        "Aucun profil enseignant lié à ce compte. Recréez l'enseignant depuis le tableau de bord avec email et mot de passe."));
-
-        List<ClassItem> homeroom = classItemRepository.findByHomeroomTeacherId(teacher.getId());
-        if (teacher.getSchoolId() != null && !teacher.getSchoolId().isBlank()) {
-            homeroom = homeroom.stream()
-                    .filter(clazz -> teacher.getSchoolId().equals(clazz.getSchoolId()))
-                    .toList();
-        }
-        classes.addAll(homeroom);
-
-        for (ClassItem clazz : homeroom) {
-            students.addAll(studentRepository.findByClassItemId(clazz.getId()));
-        }
-
-        students.sort(Comparator.comparing(Student::getName, String.CASE_INSENSITIVE_ORDER));
+        Teacher teacher = teacherClassScopeService.requireTeacherForUser(user);
+        List<ClassItem> teacherClasses = teacherClassScopeService.classesForTeacher(teacher);
+        classes.addAll(teacherClasses);
+        students.addAll(teacherClassScopeService.studentsForClasses(teacherClasses));
     }
 
     private void resolveStudentScope(AppUser user, List<ClassItem> classes, List<Student> students) {

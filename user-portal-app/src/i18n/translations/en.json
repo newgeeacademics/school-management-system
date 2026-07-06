@@ -68,7 +68,7 @@
     "closeMenu": "Close menu",
     "cardClasses": "My classes",
     "cardStudents": "Students",
-    "emptyClasses": "No class assigned. On the school dashboard, set this teacher as homeroom teacher of a class.",
+    "emptyClasses": "No accessible classes. Assign this teacher as homeroom teacher or on the timetable (subject / slot).",
     "emptyStudents": "No students to show.",
     "classLabel": "Class",
     "noClass": "No class assigned",
@@ -152,7 +152,7 @@
   },
   "portalClassHub": {
     "listIntro": "Select a class to take attendance, enter grades or publish homework.",
-    "emptyClasses": "No class assigned. An administrator must set you as homeroom teacher.",
+    "emptyClasses": "No accessible class. Ask your school to assign you as homeroom teacher or on the timetable.",
     "students": "students",
     "openClass": "Manage this class →",
     "backToList": "All classes",
