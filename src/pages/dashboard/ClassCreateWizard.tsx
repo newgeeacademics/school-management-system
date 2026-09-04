@@ -13,12 +13,14 @@ import {
 import { buildClassNameOptions } from '@/lib/class-name-utils';
 
 import type { ClassItem, Teacher } from './dashboardTypes';
+import { CapacityUsageHint } from './BillingSection';
 import {
   CreateWizardShell,
   WizardSummary,
   WizardSummaryRow,
   type WizardStepMeta,
 } from './CreateWizardShell';
+import { checkPlannedCapacity } from '@/lib/school-capacity';
 
 const STEPS: WizardStepMeta[] = [
   { title: 'Niveau', subtitle: 'Choisissez le niveau scolaire de la classe.' },
@@ -51,6 +53,8 @@ type ClassCreateWizardProps = {
   classes: ClassItem[];
   teachers: Teacher[];
   levelOptions: string[];
+  licensedStudentCount?: number | null;
+  onGoToBilling?: () => void;
   onSubmit: (payload: ClassCreatePayload) => Promise<void>;
   getTeacherName: (id?: string) => string;
 };
@@ -59,6 +63,8 @@ export function ClassCreateWizard({
   classes,
   teachers,
   levelOptions,
+  licensedStudentCount,
+  onGoToBilling,
   onSubmit,
   getTeacherName,
 }: ClassCreateWizardProps) {
@@ -71,20 +77,30 @@ export function ClassCreateWizard({
     [form.level, classes],
   );
 
+  const capacityCheck = React.useMemo(
+    () =>
+      checkPlannedCapacity(
+        licensedStudentCount,
+        classes,
+        Number(form.studentsCount || 0),
+      ),
+    [licensedStudentCount, classes, form.studentsCount],
+  );
+
   const canContinue = React.useCallback(
     (currentStep: number) => {
       switch (currentStep) {
         case 1:
           return Boolean(form.level.trim());
         case 2:
-          return Boolean(form.name.trim());
+          return Boolean(form.name.trim()) && !capacityCheck.isOver;
         case 3:
-          return Boolean(form.name.trim() && form.level.trim());
+          return Boolean(form.name.trim() && form.level.trim()) && !capacityCheck.isOver;
         default:
           return false;
       }
     },
-    [form],
+    [form, capacityCheck.isOver],
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,6 +185,12 @@ export function ClassCreateWizard({
               onChange={(e) => setForm((f) => ({ ...f, studentsCount: e.target.value }))}
             />
           </div>
+          <CapacityUsageHint
+            licensedStudentCount={licensedStudentCount}
+            classes={classes}
+            newClassCount={Number(form.studentsCount || 0)}
+            onGoToBilling={onGoToBilling}
+          />
           <div className='grid gap-2 max-w-md'>
             <Label>Professeur principal</Label>
             <Select
@@ -201,6 +223,12 @@ export function ClassCreateWizard({
           <WizardSummaryRow label='Niveau' value={form.level} />
           <WizardSummaryRow label='Nom' value={form.name} />
           <WizardSummaryRow label='Effectif indicatif' value={form.studentsCount} />
+          <CapacityUsageHint
+            licensedStudentCount={licensedStudentCount}
+            classes={classes}
+            newClassCount={Number(form.studentsCount || 0)}
+            onGoToBilling={onGoToBilling}
+          />
           <WizardSummaryRow
             label='Prof. principal'
             value={

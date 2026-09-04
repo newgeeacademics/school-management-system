@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { LogOut, MapPin, Radio, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
 import { AppLogo } from '@/components/AppLogo';
 import { TrackingMap } from '@/components/TrackingMap';
 import {
@@ -192,6 +193,8 @@ export function TrackingDashboardPage() {
           </Button>
         </div>
       </header>
+
+      <PushNotificationPrompt enabled={session.role === 'parent' || session.role === 'teacher'} />
 
       <main className='mx-auto max-w-6xl space-y-4 px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6'>
         {loading ? (

@@ -35,6 +35,7 @@ public class TransportTrackingService {
     private final DriverRepository driverRepository;
     private final ObjectMapper objectMapper;
     private final PortalRealtimeBroadcaster realtimeBroadcaster;
+    private final PortalPushNotifier portalPushNotifier;
 
     @Transactional(readOnly = true)
     public List<LiveTrackingResponse> getLiveRoutesForCurrentUser() {
@@ -105,6 +106,10 @@ public class TransportTrackingService {
                 .build();
         busTripRepository.save(trip);
 
+        notifyRouteFamilies(route, "Bus en route",
+                "Le trajet « " + route.getName() + " » a démarré. Suivez la position en direct.",
+                "trip-start-" + route.getId());
+
         return toLiveResponse(route, Set.of());
     }
 
@@ -148,7 +153,24 @@ public class TransportTrackingService {
                     busTripRepository.save(trip);
                 });
 
+        notifyRouteFamilies(route, "Trajet terminé",
+                "Le bus « " + route.getName() + " » a terminé son trajet.",
+                "trip-stop-" + route.getId());
+
         return toLiveResponse(route, Set.of());
+    }
+
+    private void notifyRouteFamilies(TransportRoute route, String title, String body, String tag) {
+        if (route.getStudents() == null || route.getStudents().isEmpty()) {
+            return;
+        }
+        portalPushNotifier.notifyStudentsOnRoute(
+                route.getStudents(),
+                title,
+                body,
+                "/",
+                tag
+        );
     }
 
     private LiveTrackingResponse toLiveResponse(TransportRoute route, Set<String> scopedStudentIds) {

@@ -22,6 +22,7 @@ public class AttendanceService {
     private final AttendanceRecordRepository attendanceRecordRepository;
     private final StudentRepository studentRepository;
     private final ClassItemRepository classItemRepository;
+    private final PortalPushNotifier portalPushNotifier;
 
     public List<AttendanceRecord> findAll() {
         return attendanceRecordRepository.findAll();
@@ -61,7 +62,9 @@ public class AttendanceService {
                 .status(request.getStatus())
                 .build();
 
-        return attendanceRecordRepository.save(record);
+        AttendanceRecord saved = attendanceRecordRepository.save(record);
+        maybePushAttendance(saved, student);
+        return saved;
     }
 
     @Transactional
@@ -79,7 +82,25 @@ public class AttendanceService {
             record.setClassItem(classItem);
         }
 
-        return attendanceRecordRepository.save(record);
+        AttendanceRecord saved = attendanceRecordRepository.save(record);
+        maybePushAttendance(saved, student);
+        return saved;
+    }
+
+    private void maybePushAttendance(AttendanceRecord record, Student student) {
+        if (record.getStatus() != AttendanceStatus.ABSENT && record.getStatus() != AttendanceStatus.RETARD) {
+            return;
+        }
+        String title = record.getStatus() == AttendanceStatus.ABSENT ? "Absence signalée" : "Retard signalé";
+        String statusLabel = record.getStatus() == AttendanceStatus.ABSENT ? "absent" : "en retard";
+        String body = student.getName() + " — " + statusLabel + " le " + record.getDate();
+        portalPushNotifier.notifyStudentFamily(
+                student,
+                title,
+                body,
+                "/accueil/notifications",
+                "att-" + record.getId()
+        );
     }
 
     @Transactional

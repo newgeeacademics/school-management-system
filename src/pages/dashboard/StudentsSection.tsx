@@ -22,6 +22,8 @@ type StudentsSectionProps = {
   students: Student[];
   classes: ClassItem[];
   defaultPhoneCountry?: string;
+  licensedStudentCount?: number | null;
+  onGoToBilling?: () => void;
   onCreateStudent: (payload: StudentCreatePayload) => Promise<void>;
   onUpdateStudent: (
     id: string,
@@ -56,6 +58,8 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
   students,
   classes,
   defaultPhoneCountry,
+  licensedStudentCount,
+  onGoToBilling,
   onCreateStudent,
   onUpdateStudent,
   onDeleteStudent,
@@ -110,6 +114,9 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
             <StudentCreateWizard
               classes={classes}
               defaultPhoneCountry={defaultPhoneCountry}
+              licensedStudentCount={licensedStudentCount}
+              enrolledCount={students.length}
+              onGoToBilling={onGoToBilling}
               onSubmit={onCreateStudent}
               getClassName={getClassName}
             />

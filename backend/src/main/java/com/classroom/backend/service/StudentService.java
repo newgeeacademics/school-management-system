@@ -27,6 +27,7 @@ public class StudentService {
     private final SchoolContextService schoolContextService;
     private final EmailNotificationService emailNotificationService;
     private final SchoolLookupService schoolLookupService;
+    private final SchoolCapacityService schoolCapacityService;
 
     public List<Student> findAll() {
         return schoolContextService.findAllForCurrentSchool(studentRepository::findBySchoolId);
@@ -52,6 +53,7 @@ public class StudentService {
 
         ClassItem classItem = null;
         String schoolId = schoolContextService.requireCurrentSchoolId();
+        schoolCapacityService.assertCanEnrollStudent(schoolId);
         if (request.getClassId() != null && !request.getClassId().isBlank()) {
             classItem = classItemRepository.findById(request.getClassId()).orElse(null);
             if (classItem != null) {

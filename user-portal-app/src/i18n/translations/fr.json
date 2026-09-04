@@ -63,7 +63,13 @@
     "resetPasswordInvalidLink": "Lien invalide ou expiré. Demandez un nouveau lien depuis la page de connexion.",
     "resetPasswordTooShort": "Le mot de passe doit contenir au moins 6 caractères.",
     "resetPasswordMismatch": "Les mots de passe ne correspondent pas.",
-    "resetPasswordError": "Impossible de réinitialiser le mot de passe."
+    "resetPasswordError": "Impossible de réinitialiser le mot de passe.",
+    "pushPrompt": "Activez les notifications pour recevoir absences, notes et rappels de paiement sur cet appareil.",
+    "pushEnable": "Activer",
+    "pushEnabling": "Activation…",
+    "pushEnabled": "Notifications activées",
+    "pushEnableFailed": "Impossible d'activer les notifications",
+    "pushDismiss": "Plus tard"
   },
   "portalHome": {
     "productName": "NewGee Portail",

@@ -14,10 +14,14 @@ import {
 
 import type { ClassItem, Teacher } from './dashboardTypes';
 import { ClassCreateWizard, type ClassCreatePayload } from './ClassCreateWizard';
+import { checkPlannedCapacity, sumClassPlannedEnrollment } from '@/lib/school-capacity';
+import { toast } from 'sonner';
 
 type ClassesSectionProps = {
   classes: ClassItem[];
   teachers: Teacher[];
+  licensedStudentCount?: number | null;
+  onGoToBilling?: () => void;
   onCreateClass: (payload: ClassCreatePayload) => Promise<void>;
   onUpdateClass: (
     id: string,
@@ -31,6 +35,8 @@ type ClassesSectionProps = {
 export const ClassesSection: React.FC<ClassesSectionProps> = ({
   classes,
   teachers,
+  licensedStudentCount,
+  onGoToBilling,
   onCreateClass,
   onUpdateClass,
   onDeleteClass,
@@ -57,11 +63,25 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
 
   const saveEdit = () => {
     if (!editingId || !draft.name.trim()) return;
+    const studentsCount = Number(draft.studentsCount || 0);
+    const check = checkPlannedCapacity(
+      licensedStudentCount,
+      classes,
+      studentsCount,
+      editingId,
+    );
+    if (check.isOver) {
+      toast.error(
+        `Effectif planifié dépassé (+${check.overBy}). Augmentez votre abonnement dans Facturation.`,
+        { richColors: true },
+      );
+      return;
+    }
     void Promise.resolve(
       onUpdateClass(editingId, {
         name: draft.name.trim(),
         level: draft.level.trim() || 'Niveau non défini',
-        studentsCount: Number(draft.studentsCount || 0),
+        studentsCount,
         homeroomTeacherId:
           draft.homeroomTeacherId && draft.homeroomTeacherId !== NONE_SELECT_VALUE
             ? draft.homeroomTeacherId
@@ -82,6 +102,8 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
               classes={classes}
               teachers={teachers}
               levelOptions={levelOptions}
+              licensedStudentCount={licensedStudentCount}
+              onGoToBilling={onGoToBilling}
               onSubmit={onCreateClass}
               getTeacherName={getTeacherName}
             />
@@ -102,6 +124,14 @@ export const ClassesSection: React.FC<ClassesSectionProps> = ({
                 {classes.filter((c) => c.homeroomTeacherId).length}
               </span>
             </p>
+            {licensedStudentCount != null && licensedStudentCount > 0 ? (
+              <p>
+                Effectif planifié :{' '}
+                <span className='font-medium text-foreground'>
+                  {sumClassPlannedEnrollment(classes)} / {licensedStudentCount}
+                </span>
+              </p>
+            ) : null}
           </CardContent>
         </Card>
       </div>

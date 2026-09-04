@@ -22,6 +22,7 @@ public class PaymentService {
 
     private final PaymentReminderRepository reminderRepository;
     private final PaymentReceiptRepository receiptRepository;
+    private final PortalPushNotifier portalPushNotifier;
 
     // --- Reminders ---
 
@@ -43,7 +44,16 @@ public class PaymentService {
                 .dueDate(request.getDueDate())
                 .status(PaymentStatus.ENVOYE)
                 .build();
-        return reminderRepository.save(reminder);
+        PaymentReminder saved = reminderRepository.save(reminder);
+        portalPushNotifier.notifyParentByName(
+                saved.getParentName(),
+                "Rappel de paiement",
+                (saved.getStudentName() != null ? saved.getStudentName() + " — " : "")
+                        + saved.getAmount() + " FCFA avant le " + saved.getDueDate(),
+                "/accueil/notifications",
+                "pay-" + saved.getId()
+        );
+        return saved;
     }
 
     @Transactional

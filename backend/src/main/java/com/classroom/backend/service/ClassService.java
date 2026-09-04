@@ -19,6 +19,7 @@ public class ClassService {
     private final ClassItemRepository classItemRepository;
     private final TeacherRepository teacherRepository;
     private final SchoolContextService schoolContextService;
+    private final SchoolCapacityService schoolCapacityService;
 
     public List<ClassItem> findAll() {
         return schoolContextService.findAllForCurrentSchool(classItemRepository::findBySchoolId);
@@ -53,11 +54,14 @@ public class ClassService {
             }
         }
 
+        int studentsCount = request.getStudentsCount() != null ? request.getStudentsCount() : 0;
+        schoolCapacityService.assertPlannedEnrollmentWithinCapacity(schoolId, null, studentsCount);
+
         ClassItem classItem = ClassItem.builder()
                 .name(ClassCodeGenerator.ensureUniqueClassName(
                         request.getName(), findAll()))
                 .level(request.getLevel())
-                .studentsCount(request.getStudentsCount())
+                .studentsCount(studentsCount)
                 .homeroomTeacher(homeroomTeacher)
                 .schoolId(schoolId)
                 .build();
@@ -71,7 +75,10 @@ public class ClassService {
         classItem.setName(ClassCodeGenerator.ensureUniqueClassName(
                 request.getName(), findAll(), id));
         classItem.setLevel(request.getLevel());
-        classItem.setStudentsCount(request.getStudentsCount());
+        int studentsCount = request.getStudentsCount() != null ? request.getStudentsCount() : 0;
+        schoolCapacityService.assertPlannedEnrollmentWithinCapacity(
+                classItem.getSchoolId(), classItem.getId(), studentsCount);
+        classItem.setStudentsCount(studentsCount);
 
         if (request.getHomeroomTeacherId() != null && !request.getHomeroomTeacherId().isBlank()) {
             Teacher teacher = teacherRepository.findById(request.getHomeroomTeacherId()).orElse(null);

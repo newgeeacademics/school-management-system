@@ -37,6 +37,7 @@ import {
   createDriverOnBackend,
   createUserOnBackend,
   deleteAnnouncementOnBackend,
+  fetchLatestSchoolFromBackend,
   fetchCommunicationStatusOnBackend,
   sendParentMessageOnBackend,
   deleteClassOnBackend,
@@ -147,6 +148,7 @@ import { StudentIdCardModal } from './dashboard/StudentIdCardModal';
 import { TeacherIdCardModal } from './dashboard/TeacherIdCardModal';
 import { CanteenSection } from './dashboard/CanteenSection';
 import { ClassesSection } from './dashboard/ClassesSection';
+import { BillingSection } from './dashboard/BillingSection';
 import { CoursesSection } from './dashboard/CoursesSection';
 import { MatieresSection } from './dashboard/MatieresSection';
 import { OverviewSection } from './dashboard/OverviewSection';
@@ -522,6 +524,7 @@ export const DashboardPage: React.FC = () => {
   const [schoolProfile, setSchoolProfile] = React.useState<SchoolProfile | null>(() =>
     getSchoolProfile()
   );
+  const [licensedStudentCount, setLicensedStudentCount] = React.useState<number | null>(null);
   const schoolTypes = React.useMemo(
     () => schoolTypesFromProfile(schoolProfile) as SchoolType[],
     [schoolProfile]
@@ -562,6 +565,23 @@ export const DashboardPage: React.FC = () => {
       cancelled = true;
     };
   }, []);
+
+  React.useEffect(() => {
+    if (!backendSync || role !== 'admin') return;
+    let cancelled = false;
+    void fetchLatestSchoolFromBackend()
+      .then((school) => {
+        if (!cancelled) {
+          setLicensedStudentCount(school?.studentCount ?? null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLicensedStudentCount(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [backendSync, role]);
   const [newEvent, setNewEvent] =
     React.useState<NewEventFormState>({
     label: '',
@@ -1898,6 +1918,8 @@ export const DashboardPage: React.FC = () => {
             <ClassesSection
               classes={classes}
               teachers={teachers}
+              licensedStudentCount={licensedStudentCount}
+              onGoToBilling={() => setActiveSection('billing')}
               onCreateClass={handleCreateClass}
               onUpdateClass={handleUpdateClass}
               onDeleteClass={handleDeleteClass}
@@ -1927,6 +1949,8 @@ export const DashboardPage: React.FC = () => {
               students={students}
               classes={classes}
               defaultPhoneCountry={schoolProfile?.country}
+              licensedStudentCount={licensedStudentCount}
+              onGoToBilling={() => setActiveSection('billing')}
               onCreateStudent={handleCreateStudent}
               onUpdateStudent={handleUpdateStudent}
               onDeleteStudent={handleDeleteStudent}
@@ -2169,15 +2193,12 @@ export const DashboardPage: React.FC = () => {
           )}
 
           {activeSection === 'billing' && (
-            <Card className='max-w-xl'>
-              <CardHeader>
-                <CardTitle className='text-base'>Facturation plateforme</CardTitle>
-                <CardDescription>
-                  Abonnement à l’application, factures et moyens de paiement — distinct des frais de scolarité gérés
-                  dans Finances.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <BillingSection
+              licensedStudentCount={licensedStudentCount}
+              classes={classes}
+              enrolledCount={students.length}
+              onCapacityUpdated={setLicensedStudentCount}
+            />
           )}
 
           {activeSection === 'reports' && (

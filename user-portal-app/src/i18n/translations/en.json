@@ -63,7 +63,13 @@
     "resetPasswordInvalidLink": "Invalid or expired link. Request a new one from the sign-in page.",
     "resetPasswordTooShort": "Password must be at least 6 characters.",
     "resetPasswordMismatch": "Passwords do not match.",
-    "resetPasswordError": "Could not reset the password."
+    "resetPasswordError": "Could not reset the password.",
+    "pushPrompt": "Enable notifications to receive absences, grades, and payment reminders on this device.",
+    "pushEnable": "Enable",
+    "pushEnabling": "Enabling…",
+    "pushEnabled": "Notifications enabled",
+    "pushEnableFailed": "Could not enable notifications",
+    "pushDismiss": "Later"
   },
   "portalHome": {
     "productName": "NewGee Portal",
