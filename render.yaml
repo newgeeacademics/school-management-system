@@ -39,3 +39,5 @@ services:
         value: NewGee <contact@newgeeacademy.com>
       - key: APP_EMAIL_SUBJECT_PREFIX
         value: "[NewGee]"
+      - key: APP_EMAIL_LOGO_URL
+        value: https://school-management-system-ivory-seven.vercel.app/newgee-logo.png

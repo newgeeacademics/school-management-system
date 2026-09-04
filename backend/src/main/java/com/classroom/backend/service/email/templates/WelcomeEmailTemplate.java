@@ -34,6 +34,8 @@ public final class WelcomeEmailTemplate {
                         "displayName", name,
                         "appUrl", href,
                         "logoUrl", logo,
+                        "preheader", escapeHtmlAttr(EmailTemplateUtil.preheader(
+                                "Votre établissement est inscrit sur NewGee.")),
                         "year", String.valueOf(Year.now().getValue())
                 ),
                 "<html><body><p>Bienvenue " + name + "</p><p><a href=\"" + href + "\">Ouvrir NewGee</a></p></body></html>"
@@ -52,7 +54,7 @@ public final class WelcomeEmailTemplate {
         if (logoUrl != null && !logoUrl.trim().isBlank()) {
             return logoUrl.trim();
         }
-        return baseNoSlash + "/favicon.ico";
+        return baseNoSlash + "/newgee-logo.png";
     }
 
     private static String safe(String value, String fallback) {

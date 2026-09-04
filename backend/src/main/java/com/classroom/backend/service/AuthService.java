@@ -12,6 +12,7 @@ import com.classroom.backend.service.email.EmailNotificationService;
 import com.classroom.backend.util.PhoneAccountUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,6 +30,7 @@ public class AuthService {
     private final SchoolService schoolService;
     private final EmailNotificationService emailNotificationService;
     private final AccountIdentifierService accountIdentifierService;
+    private final UserEmailAuthService userEmailAuthService;
 
     @Transactional
     public AuthResponse registerSchool(RegisterSchoolRequest request) {
@@ -41,6 +43,7 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(UserRole.ADMIN)
+                .emailVerified(false)
                 .build();
         user = appUserRepository.save(user);
 
@@ -51,6 +54,7 @@ public class AuthService {
         String token = issueToken(user.getEmail(), request.getPassword());
 
         emailNotificationService.sendSchoolWelcome(user.getName(), user.getEmail());
+        userEmailAuthService.sendVerificationEmail(user);
 
         String officialEmail = request.getSchool().getOfficialEmail();
         if (officialEmail != null
@@ -70,6 +74,7 @@ public class AuthService {
                 .email(user.getEmail())
                 .role(user.getRole())
                 .schoolId(school.getId())
+                .emailVerified(user.isEmailVerified())
                 .build();
     }
 
@@ -83,6 +88,25 @@ public class AuthService {
     public AuthResponse login(LoginRequest request) {
         AppUser user = accountIdentifierService.requireBySignInIdentifier(request.getEmail());
         String principal = accountIdentifierService.canonicalPrincipalName(user);
+
+        if (user.isPasswordSetupRequired()) {
+            String setupToken = userEmailAuthService.issuePasswordSetupToken(user);
+            return AuthResponse.builder()
+                    .passwordSetupRequired(true)
+                    .setupToken(setupToken)
+                    .id(user.getId())
+                    .name(user.getName())
+                    .email(user.getEmail())
+                    .loginId(user.getLoginId())
+                    .role(user.getRole())
+                    .schoolId(user.getSchoolId())
+                    .emailVerified(user.isEmailVerified())
+                    .build();
+        }
+
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new BadCredentialsException("Mot de passe requis.");
+        }
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(principal, request.getPassword())
@@ -98,6 +122,29 @@ public class AuthService {
                 .loginId(user.getLoginId())
                 .role(user.getRole())
                 .schoolId(user.getSchoolId())
+                .emailVerified(user.isEmailVerified())
+                .passwordSetupRequired(false)
+                .build();
+    }
+
+    @Transactional
+    public AuthResponse completeInitialPasswordSetup(String setupToken, String newPassword) {
+        AppUser user = userEmailAuthService.completeInitialPasswordSetup(setupToken, newPassword);
+        String principal = accountIdentifierService.canonicalPrincipalName(user);
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(principal, newPassword)
+        );
+        String token = jwtTokenProvider.generateToken(authentication);
+        return AuthResponse.builder()
+                .token(token)
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .loginId(user.getLoginId())
+                .role(user.getRole())
+                .schoolId(user.getSchoolId())
+                .emailVerified(user.isEmailVerified())
+                .passwordSetupRequired(false)
                 .build();
     }
 }

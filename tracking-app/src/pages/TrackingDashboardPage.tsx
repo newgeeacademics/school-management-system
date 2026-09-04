@@ -176,24 +176,24 @@ export function TrackingDashboardPage() {
   const isLive = selected?.tripStatus === 'ACTIVE' && selected?.livePosition != null;
 
   return (
-    <div className='min-h-svh bg-background'>
-      <header className='border-b bg-card'>
-        <div className='mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4'>
-          <div className='flex items-center gap-3'>
+    <div className='min-h-svh bg-background safe-pb'>
+      <header className='safe-pt border-b bg-card'>
+        <div className='mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-4 sm:py-4'>
+          <div className='flex min-w-0 items-center gap-2 sm:gap-3'>
             <AppLogo markClassName='app-logo__mark--compact' name='NewGee Transport' />
-            <div>
-              <h1 className='font-semibold'>Suivi Transport</h1>
-              <p className='text-xs text-muted-foreground'>{session.name ?? session.email}</p>
+            <div className='min-w-0'>
+              <h1 className='truncate text-base font-semibold sm:text-lg'>Suivi Transport</h1>
+              <p className='truncate text-xs text-muted-foreground'>{session.name ?? session.email}</p>
             </div>
           </div>
-          <Button variant='outline' size='sm' onClick={handleLogout}>
+          <Button variant='outline' size='sm' className='touch-target shrink-0' onClick={handleLogout}>
             <LogOut className='size-4' />
-            Déconnexion
+            <span className='hidden sm:inline'>Déconnexion</span>
           </Button>
         </div>
       </header>
 
-      <main className='mx-auto max-w-6xl space-y-6 px-4 py-6'>
+      <main className='mx-auto max-w-6xl space-y-4 px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6'>
         {loading ? (
           <p className='text-sm text-muted-foreground'>Chargement des trajets…</p>
         ) : routes.length === 0 ? (
@@ -207,12 +207,13 @@ export function TrackingDashboardPage() {
         ) : (
           <>
             {routes.length > 1 && (
-              <div className='flex flex-wrap gap-2'>
+              <div className='-mx-1 flex gap-2 overflow-x-auto px-1 pb-1'>
                 {routes.map((route) => (
                   <Button
                     key={route.routeId}
                     variant={selected?.routeId === route.routeId ? 'default' : 'outline'}
                     size='sm'
+                    className='shrink-0 touch-target'
                     onClick={() => setSelectedId(route.routeId)}
                   >
                     {route.routeName}
@@ -223,14 +224,14 @@ export function TrackingDashboardPage() {
 
             {selected && (
               <>
-                <div className='grid gap-4 lg:grid-cols-[1fr_320px]'>
+                <div className='grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]'>
                   <TrackingMap
                     waypoints={selected.waypoints}
                     routePolyline={selected.routePolyline}
                     livePosition={selected.livePosition}
                     driverPosition={selected.driverPosition}
                     students={selected.students}
-                    className='h-[480px] w-full rounded-xl border shadow-sm'
+                    className='h-[min(52svh,420px)] w-full rounded-xl border shadow-sm sm:h-[420px] lg:h-[480px]'
                   />
 
                   <aside className='space-y-4'>
@@ -287,18 +288,24 @@ export function TrackingDashboardPage() {
                     {canDrive(session) && (
                       <div className='rounded-xl border bg-card p-4'>
                         <h3 className='mb-3 text-sm font-semibold'>Mode chauffeur</h3>
-                        <div className='flex flex-wrap gap-2'>
-                          <Button size='sm' onClick={() => void handleStartTrip()}>
+                        <div className='grid grid-cols-1 gap-2 sm:flex sm:flex-wrap'>
+                          <Button size='sm' className='w-full sm:w-auto touch-target' onClick={() => void handleStartTrip()}>
                             Démarrer le trajet
                           </Button>
                           <Button
                             size='sm'
                             variant={driverMode ? 'default' : 'outline'}
+                            className='w-full sm:w-auto touch-target'
                             onClick={() => setDriverMode((v) => !v)}
                           >
                             {driverMode ? 'GPS actif' : 'Partager ma position'}
                           </Button>
-                          <Button size='sm' variant='destructive' onClick={() => void handleStopTrip()}>
+                          <Button
+                            size='sm'
+                            variant='destructive'
+                            className='w-full sm:w-auto touch-target'
+                            onClick={() => void handleStopTrip()}
+                          >
                             Terminer
                           </Button>
                         </div>

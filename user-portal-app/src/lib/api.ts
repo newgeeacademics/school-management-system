@@ -53,12 +53,41 @@ export type AuthResponse = {
   email: string;
   loginId?: string | null;
   role: 'ADMIN' | 'TEACHER' | 'PARENT' | 'STUDENT';
+  passwordSetupRequired?: boolean;
+  setupToken?: string;
 };
 
-export async function loginWithIdentifier(identifier: string, password: string): Promise<AuthResponse> {
+export async function loginWithIdentifier(identifier: string, password?: string): Promise<AuthResponse> {
   return apiFetch<AuthResponse>('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email: identifier, password }),
+    body: JSON.stringify({ email: identifier, password: password ?? '' }),
+  });
+}
+
+export async function setupInitialPassword(
+  setupToken: string,
+  newPassword: string,
+): Promise<AuthResponse> {
+  return apiFetch<AuthResponse>('/api/auth/setup-initial-password', {
+    method: 'POST',
+    body: JSON.stringify({ setupToken, newPassword: newPassword }),
+  });
+}
+
+export async function requestPasswordReset(identifier: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>('/api/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email: identifier.trim() }),
+  });
+}
+
+export async function resetPasswordWithToken(
+  token: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>('/api/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, newPassword }),
   });
 }
 

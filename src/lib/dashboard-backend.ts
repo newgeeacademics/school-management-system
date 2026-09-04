@@ -1,6 +1,7 @@
 import type React from 'react';
 import { BASE_URL, ACCESS_TOKEN_KEY, isApiUrlFromEnv } from '@/constants';
 import { parseApiErrorResponse, wrapFetchError } from '@/lib/api-error';
+import { getStoredUser } from '@/lib/auth';
 import type { School } from '@/types';
 import type {
   AppUser,
@@ -557,19 +558,35 @@ export async function loadDashboardFromBackend(setters: DashboardBackendSetters)
   setters.setAnnouncements?.(announcements.map(mapAnnouncementFromApi));
 }
 
+function mapApiSchoolType(raw: unknown): string {
+  const key = String(raw ?? '').toUpperCase();
+  const labels: Record<string, string> = {
+    MATERNELLE: 'maternelle',
+    PRIMAIRE: 'primaire',
+    COLLEGE: 'collège',
+    LYCEE: 'lycée',
+    UNIVERSITE: 'université',
+  };
+  return labels[key] ?? String(raw ?? '');
+}
+
+function splitCsvList(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.map(String).filter(Boolean);
+  if (typeof raw === 'string' && raw.trim()) {
+    return raw.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 export function mapSchoolFromApi(row: Record<string, unknown>): Partial<School> {
   const gps = String(row.gps ?? '');
   const parts = gps.includes(',') ? gps.split(',').map((s) => s.trim()) : ['', ''];
-  const seriesRaw = row.series;
-  const series =
-    typeof seriesRaw === 'string' && seriesRaw
-      ? seriesRaw.split(/[,;]/).map((s) => s.trim()).filter(Boolean)
-      : [];
+  const logoRemote = String(row.logoFileName ?? '').trim();
 
   return {
     id: String(row.id),
     name: String(row.name ?? ''),
-    type: String(row.type ?? ''),
+    type: mapApiSchoolType(row.type),
     system: String(row.system ?? ''),
     country: String(row.country ?? ''),
     city: String(row.city ?? ''),
@@ -584,9 +601,11 @@ export function mapSchoolFromApi(row: Record<string, unknown>): Partial<School> 
     website: String(row.website ?? ''),
     studentCount: row.studentCount != null ? Number(row.studentCount) : null,
     teacherCount: row.teacherCount != null ? Number(row.teacherCount) : null,
-    series,
-    logoUrl: '',
-    logoCldPubId: '',
+    series: splitCsvList(row.series),
+    registrationNumber: String(row.registrationNumber ?? ''),
+    languagesOffered: splitCsvList(row.languagesOffered),
+    logoUrl: logoRemote,
+    logoCldPubId: logoRemote,
     createdAt: row.createdAt ? String(row.createdAt) : new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -611,15 +630,25 @@ function schoolPatchToRequest(patch: Partial<School>): Record<string, unknown> {
     studentCount: patch.studentCount ?? undefined,
     teacherCount: patch.teacherCount ?? undefined,
     series: Array.isArray(patch.series) ? patch.series.join(', ') : undefined,
+    registrationNumber: patch.registrationNumber || undefined,
+    languagesOffered: Array.isArray(patch.languagesOffered)
+      ? patch.languagesOffered.join(', ')
+      : undefined,
+    logoFileName: patch.logoUrl?.trim() || undefined,
   };
 }
 
 export async function fetchLatestSchoolFromBackend(): Promise<Partial<School> | null> {
   const schools = await adminApiFetch<Record<string, unknown>[]>('/api/schools');
   if (!schools.length) return null;
-  const latest = schools[schools.length - 1];
-  cachedSchoolId = String(latest.id);
-  return mapSchoolFromApi(latest);
+
+  const sessionSchoolId = getStoredUser()?.schoolId;
+  const match = sessionSchoolId
+    ? schools.find((s) => String(s.id) === sessionSchoolId) ?? schools[schools.length - 1]
+    : schools[schools.length - 1];
+
+  cachedSchoolId = String(match.id);
+  return mapSchoolFromApi(match);
 }
 
 export async function persistSchoolPatchOnBackend(patch: Partial<School>): Promise<void> {

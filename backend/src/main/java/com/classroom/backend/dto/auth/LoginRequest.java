@@ -10,6 +10,6 @@ public class LoginRequest {
     @NotBlank(message = "Email or phone is required")
     private String email;
 
-    @NotBlank(message = "Password is required")
+    /** Optional when the account still requires an initial password setup. */
     private String password;
 }

@@ -18,4 +18,8 @@ public class AuthResponse {
     private String loginId;
     /** Set when registering a school in one step. */
     private String schoolId;
+    private Boolean emailVerified;
+    /** First portal login: user must choose a password before accessing the app. */
+    private Boolean passwordSetupRequired;
+    private String setupToken;
 }

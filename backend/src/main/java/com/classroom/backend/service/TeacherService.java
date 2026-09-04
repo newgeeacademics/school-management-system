@@ -45,6 +45,9 @@ public class TeacherService {
         if (request.getPhone() == null || request.getPhone().isBlank()) {
             throw new IllegalArgumentException("Le téléphone mobile est obligatoire.");
         }
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new IllegalArgumentException("L'e-mail est obligatoire.");
+        }
 
         String schoolId = schoolContextService.requireCurrentSchoolId();
 

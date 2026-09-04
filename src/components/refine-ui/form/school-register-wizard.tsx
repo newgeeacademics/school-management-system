@@ -183,8 +183,7 @@ export function SchoolRegisterWizard() {
           );
         case 5:
           return Boolean(
-            school.website.trim() &&
-              logoFiles.length > 0 &&
+            logoFiles.length > 0 &&
               school.studentCount.trim() &&
               school.teacherCount.trim()
           );
@@ -567,7 +566,7 @@ export function SchoolRegisterWizard() {
         return (
           <>
             <label className='school-register__field'>
-              <span>{t('school.website')} *</span>
+              <span>{t('school.website')}</span>
               <input
                 type='url'
                 value={school.website}

@@ -1,0 +1,956 @@
+﻿[
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/health",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "none",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/auth/verify-registration-number?number=TEST-001",
+        "Status":  200,
+        "Expected":  "200,400,404",
+        "Role":  "none",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/matieres",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/transport",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/courses",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/users",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/calendar",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/classes",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/attendance",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/schedule",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/grades",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/schools",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/payments/reminders",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/drivers",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/students",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/teachers",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/parents",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/grades/evaluations",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/canteen",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/rooms",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/payments/receipts",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/overview",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/teachers",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/teachers/0e646640-a67e-4891-9408-97a698f23970",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/teachers/0e646640-a67e-4891-9408-97a698f23970/id-card",
+        "Status":  200,
+        "Expected":  "200,404",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/classes",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/classes/7e3312e0-7a7d-4523-9fc7-455c5b10b565",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/students",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/students/f538ba8a-72d9-40df-a342-676babde7b56",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/students/class/7e3312e0-7a7d-4523-9fc7-455c5b10b565",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/students/f538ba8a-72d9-40df-a342-676babde7b56/id-card",
+        "Status":  200,
+        "Expected":  "200,404",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/parents",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/parents/student/f538ba8a-72d9-40df-a342-676babde7b56",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/matieres",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/courses",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/courses/matiere/00000000-0000-0000-0000-000000000001",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/rooms",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/calendar",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/calendar/date/2026-06-01",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/schedule",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/schedule/class/7e3312e0-7a7d-4523-9fc7-455c5b10b565",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/schedule/day/Lundi",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/attendance",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/attendance/student/f538ba8a-72d9-40df-a342-676babde7b56",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/attendance/class/7e3312e0-7a7d-4523-9fc7-455c5b10b565",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/attendance/stats/f538ba8a-72d9-40df-a342-676babde7b56",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/grades/evaluations",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/grades/evaluations/class/7e3312e0-7a7d-4523-9fc7-455c5b10b565",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/grades",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/grades/student/f538ba8a-72d9-40df-a342-676babde7b56",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/grades/averages/class/7e3312e0-7a7d-4523-9fc7-455c5b10b565",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/payments/reminders",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/payments/receipts",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/canteen",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/canteen/day/Lundi",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/transport",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/transport/student/f538ba8a-72d9-40df-a342-676babde7b56",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/schools",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/schools/login-id-preview?firstName=Jean\u0026lastName=Dupont",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/users",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/users/role/ADMIN",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/drivers",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/fees",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/announcements",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/grades/modification-requests",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/communications/status",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/role-access/my",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/finance/overview",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/finance/payroll",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/finance/payroll?employeeType=TEACHER",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/tracking/live",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "parent",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/tracking/live",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "teacher",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/tracking/routes/00000000-0000-0000-0000-000000000001",
+        "Status":  400,
+        "Expected":  "200,400,404",
+        "Role":  "admin",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/feed",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "teacher",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/grades",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "teacher",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/attendance",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "teacher",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/notifications",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "teacher",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/directory",
+        "Status":  400,
+        "Expected":  "400",
+        "Role":  "teacher",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/announcements",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "teacher",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/chat/messages",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "teacher",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/messages",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "teacher",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/fees",
+        "Status":  400,
+        "Expected":  "400",
+        "Role":  "teacher",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/feed",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "parent",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/grades",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "parent",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/attendance",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "parent",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/notifications",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "parent",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/directory",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "parent",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/announcements",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "parent",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/chat/messages",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "parent",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/messages",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "parent",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/fees",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "parent",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/feed",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "student",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/grades",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "student",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/attendance",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "student",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/notifications",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "student",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/directory",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "student",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/announcements",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "student",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/chat/messages",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "student",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/messages",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "student",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/fees",
+        "Status":  200,
+        "Expected":  "200",
+        "Role":  "student",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/classes/7e3312e0-7a7d-4523-9fc7-455c5b10b565",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "teacher",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/classes/7e3312e0-7a7d-4523-9fc7-455c5b10b565/roll-call",
+        "Status":  403,
+        "Expected":  "200,403",
+        "Role":  "teacher",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/portal/classes/7e3312e0-7a7d-4523-9fc7-455c5b10b565/homework",
+        "Status":  200,
+        "Expected":  "200,403",
+        "Role":  "teacher",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/public/id-card/students/f538ba8a-72d9-40df-a342-676babde7b56",
+        "Status":  200,
+        "Expected":  "200,404",
+        "Role":  "none",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/public/id-card/teachers/0e646640-a67e-4891-9408-97a698f23970",
+        "Status":  200,
+        "Expected":  "200,404",
+        "Role":  "none",
+        "Note":  ""
+    },
+    {
+        "OK":  true,
+        "Method":  "GET",
+        "Path":  "/api/teachers",
+        "Status":  403,
+        "Expected":  "403",
+        "Role":  "none",
+        "Note":  ""
+    }
+]

@@ -1,0 +1,80 @@
+.phone-field,
+.school-register__phone {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: var(--background, #fff);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.phone-field:focus-within,
+.school-register__phone:focus-within {
+  border-color: var(--ring, #2563eb);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring, #2563eb) 25%, transparent);
+}
+
+.phone-field__prefix,
+.phone-field__country,
+.school-register__phone-prefix {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.65rem;
+  background: var(--muted, #f8fafc);
+  border: none;
+  border-right: 1px solid var(--border, #e5e7eb);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--foreground, #334155);
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 10rem;
+}
+
+.phone-field__country {
+  cursor: pointer;
+  appearance: none;
+  background-color: var(--muted, #f8fafc);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.4rem center;
+  padding-right: 1.35rem;
+}
+
+.phone-field__country:focus {
+  outline: none;
+}
+
+.phone-field__flag,
+.school-register__phone-flag {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.phone-field input,
+.school-register__phone input {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+}
+
+.phone-field input:focus,
+.school-register__phone input:focus {
+  outline: none;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.phone-field input:disabled,
+.school-register__phone input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

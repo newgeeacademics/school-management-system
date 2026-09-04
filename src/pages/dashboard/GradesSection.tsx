@@ -496,7 +496,7 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            <p className='text-[11px] text-muted-foreground'>
+            <p className='text-xs text-muted-foreground'>
               Choisissez d&apos;abord une classe et une période pour saisir ou
               consulter les notes.
             </p>
@@ -511,7 +511,7 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
               Saisie des notes et conseil de classe
             </CardTitle>
             {selectedClassId && (
-              <Badge variant='outline' className='text-[11px]'>
+              <Badge variant='outline' className='text-xs'>
                 {classes.find((c) => c.id === selectedClassId)?.name}
               </Badge>
             )}
@@ -525,21 +525,21 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
             </p>
           ) : (
             <>
-              <div className='overflow-x-auto'>
-                <table className='w-full border-collapse text-[11px]'>
+              <div className='dashboard-table-wrap'>
+                <table>
                   <thead>
                     <tr>
-                      <th className='border-b px-2 py-1 text-left'>Élève</th>
+                      <th className='border-b px-2 py-1.5 text-left'>Élève</th>
                       {classEvaluations.map((ev) => (
                         <th
                           key={ev.id}
-                          className='border-b px-2 py-1 text-left align-bottom'
+                          className='border-b px-2 py-1.5 text-left align-bottom'
                         >
                           <div className='flex flex-col gap-0.5'>
                             <span className='font-medium truncate'>
                               {ev.label}
                             </span>
-                            <span className='text-[10px] text-muted-foreground'>
+                            <span className='text-xs text-muted-foreground'>
                               {getCourseName(ev.courseId)} • coef {ev.coefficient}{' '}
                               • /{ev.maxScore}
                             </span>
@@ -554,7 +554,7 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
                     {sortedStudents.length === 0 ? (
                       <tr>
                         <td
-                          className='border-b px-2 py-2 text-[11px] text-muted-foreground'
+                          className='border-b px-2 py-2 text-xs text-muted-foreground'
                           colSpan={classEvaluations.length + 3}
                         >
                           Aucun élève n&apos;est encore rattaché à cette classe.
@@ -581,7 +581,7 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
                                 type='number'
                                 min={0}
                                 max={ev.maxScore}
-                                className='h-7 px-1 text-[11px]'
+                                className='h-7 px-1 text-xs'
                                 defaultValue={current === '' ? undefined : current}
                                 readOnly={!isAdmin && current !== ''}
                                 title={
@@ -636,7 +636,7 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
                             {rank != null ? (
                               <Badge
                                 variant={rank <= 3 ? 'default' : 'secondary'}
-                                className='text-[10px] font-semibold'
+                                className='text-xs font-semibold'
                               >
                                 {formatClassRank(rank)}
                               </Badge>
@@ -650,7 +650,7 @@ export const GradesSection: React.FC<GradesSectionProps> = ({
                   </tbody>
                 </table>
               </div>
-              <p className='text-[11px] text-muted-foreground'>
+              <p className='text-xs text-muted-foreground'>
                 {isAdmin
                   ? 'En tant qu\'administration, vous pouvez modifier les notes directement. Les demandes des enseignants apparaissent ci-dessus. Le rang est calculé sur la moyenne pondérée de la période (ex-aequo : même rang pour une moyenne identique).'
                   : 'La saisie initiale est directe. Pour modifier une note déjà enregistrée, cliquez sur la cellule et envoyez une demande à l\'administration. Le rang de classe est affiché selon la moyenne de la période sélectionnée.'}

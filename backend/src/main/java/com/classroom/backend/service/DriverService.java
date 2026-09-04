@@ -40,6 +40,9 @@ public class DriverService {
         AppUser appUser = null;
         boolean hasEmail = request.getEmail() != null && !request.getEmail().isBlank();
         boolean hasPhone = request.getPhone() != null && !request.getPhone().isBlank();
+        if (!hasEmail && !hasPhone) {
+            throw new IllegalArgumentException("E-mail ou téléphone requis pour le compte personnel.");
+        }
         if (hasEmail || hasPhone) {
             appUser = portalAccountService.createLinkedAccountForPerson(
                     request.getFirstName(), request.getLastName(), fullName,

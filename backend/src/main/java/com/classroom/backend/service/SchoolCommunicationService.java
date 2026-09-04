@@ -254,7 +254,7 @@ public class SchoolCommunicationService {
         String html = BrandedMessageEmailTemplate.html(
                 subject,
                 body,
-                emailService.getPublicMainUrlNormalized(),
+                normalizePortalUrl(),
                 emailService.resolveEmailLogoUrl()
         );
         int sent = 0;

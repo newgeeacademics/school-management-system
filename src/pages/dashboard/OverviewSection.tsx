@@ -57,10 +57,10 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
 
   return (
     <>
-      <section className='grid gap-4 md:grid-cols-3 lg:grid-cols-4'>
+      <section className='grid gap-5 md:grid-cols-3 lg:grid-cols-4'>
         <Card>
           <CardHeader className='flex flex-row items-center justify-between pb-2'>
-            <CardTitle className='text-xs font-medium text-muted-foreground'>
+            <CardTitle className='text-sm font-medium text-muted-foreground'>
               Classes actives
             </CardTitle>
           </CardHeader>
@@ -76,7 +76,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
 
         <Card>
           <CardHeader className='flex flex-row items-center justify-between pb-2'>
-            <CardTitle className='text-xs font-medium text-muted-foreground'>
+            <CardTitle className='text-sm font-medium text-muted-foreground'>
               Enseignants
             </CardTitle>
           </CardHeader>
@@ -92,7 +92,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
 
         <Card>
           <CardHeader className='flex flex-row items-center justify-between pb-2'>
-            <CardTitle className='text-xs font-medium text-muted-foreground'>
+            <CardTitle className='text-sm font-medium text-muted-foreground'>
               Élèves référencés
             </CardTitle>
           </CardHeader>
@@ -109,7 +109,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
         {remaining !== undefined && (
           <Card>
             <CardHeader className='flex flex-row items-center justify-between pb-2'>
-              <CardTitle className='text-xs font-medium text-muted-foreground'>
+              <CardTitle className='text-sm font-medium text-muted-foreground'>
                 Paiements
               </CardTitle>
             </CardHeader>
@@ -120,12 +120,12 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
                   {remaining.toLocaleString('fr-FR')} XOF
                 </span>
               </p>
-              <p className='mt-1 text-[11px] text-muted-foreground'>
+              <p className='mt-1 text-xs text-muted-foreground'>
                 Total : {totalDue?.toLocaleString('fr-FR')} • Payé :{' '}
                 {amountPaid?.toLocaleString('fr-FR')}
               </p>
               {typeof totalReceived === 'number' && (
-                <p className='mt-1 text-[11px] text-muted-foreground'>
+                <p className='mt-1 text-xs text-muted-foreground'>
                   Montant enregistré via reçus :{' '}
                   {totalReceived.toLocaleString('fr-FR')} XOF
                 </p>
@@ -137,7 +137,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
         {transportRoutes && transportRoutes.length > 0 && (
           <Card className='md:col-span-3 lg:col-span-1'>
             <CardHeader className='flex flex-row items-center justify-between pb-2'>
-              <CardTitle className='text-xs font-medium text-muted-foreground'>
+              <CardTitle className='text-sm font-medium text-muted-foreground'>
                 Transport scolaire
               </CardTitle>
             </CardHeader>
@@ -153,7 +153,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
         )}
       </section>
 
-      <section className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'>
+      <section className='grid gap-5 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'>
         <Card>
           <CardHeader>
             <CardTitle className='text-sm font-medium'>
@@ -176,7 +176,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
                     {event.time ? ` • ${event.time}` : ''}
                   </p>
                 </div>
-                <Badge variant='outline' className='text-[11px]'>
+                <Badge variant='outline' className='text-xs'>
                   {event.type}
                 </Badge>
               </div>
@@ -216,7 +216,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
               Créer un emploi du temps
             </Button>
             {typeof remindersCount === 'number' && remindersCount > 0 && (
-              <p className='mt-2 text-[11px] text-muted-foreground'>
+              <p className='mt-2 text-xs text-muted-foreground'>
                 {remindersCount} rappel(s) de paiement en attente.
               </p>
             )}

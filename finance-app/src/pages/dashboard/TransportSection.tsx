@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 
 import { RouteMap } from '@/components/RouteMap';
 import { fetchRoadRoute } from '@/lib/osrm';
+import { geocodePlace } from '../../../../shared/mapbox';
 import { TRANSPORT_NODES } from '@/lib/transportGraph';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -107,42 +108,25 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
   const endName =
     stops.find((n) => n.id === endStopId)?.name ?? '—';
 
+  const addStopFromQuery = async (query: string) => {
+    const place = await geocodePlace(query);
+    if (!place) return null;
+    const id = `custom-${Date.now()}`;
+    return { id, name: place.name, lat: place.lat, lng: place.lng };
+  };
+
   const handleStartQuerySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Blur the submit button immediately so it doesn't stay stuck in pressed state
     const submitter = (e.nativeEvent as SubmitEvent).submitter;
     if (submitter instanceof HTMLElement) submitter.blur();
     const query = startQuery.trim();
     if (!query) return;
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query,
-        )}&limit=1`,
-        {
-          headers: {
-            'Accept-Language': 'fr',
-          },
-        },
-      );
-      if (!res.ok) return;
-      const data = (await res.json()) as Array<{
-        lat: string;
-        lon: string;
-        display_name: string;
-      }>;
-      if (!data.length) return;
-      const best = data[0];
-      const id = `custom-${Date.now()}`;
-      const newStop = {
-        id,
-        name: best.display_name,
-        lat: parseFloat(best.lat),
-        lng: parseFloat(best.lon),
-      };
+      const newStop = await addStopFromQuery(query);
+      if (!newStop) return;
       setStops((prev) => [...prev, newStop]);
-      setStartStopId(id);
-      setSelectionMode('end'); // Auto-advance so next action defines arrival
+      setStartStopId(newStop.id);
+      setSelectionMode('end');
     } catch {
       // ignore network errors for now
     }
@@ -155,33 +139,10 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
     const query = endQuery.trim();
     if (!query) return;
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query,
-        )}&limit=1`,
-        {
-          headers: {
-            'Accept-Language': 'fr',
-          },
-        },
-      );
-      if (!res.ok) return;
-      const data = (await res.json()) as Array<{
-        lat: string;
-        lon: string;
-        display_name: string;
-      }>;
-      if (!data.length) return;
-      const best = data[0];
-      const id = `custom-${Date.now()}`;
-      const newStop = {
-        id,
-        name: best.display_name,
-        lat: parseFloat(best.lat),
-        lng: parseFloat(best.lon),
-      };
+      const newStop = await addStopFromQuery(query);
+      if (!newStop) return;
       setStops((prev) => [...prev, newStop]);
-      setEndStopId(id);
+      setEndStopId(newStop.id);
     } catch {
       // ignore network errors for now
     }
@@ -194,33 +155,10 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
     const query = stopQuery.trim();
     if (!query) return;
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query,
-        )}&limit=1`,
-        {
-          headers: {
-            'Accept-Language': 'fr',
-          },
-        },
-      );
-      if (!res.ok) return;
-      const data = (await res.json()) as Array<{
-        lat: string;
-        lon: string;
-        display_name: string;
-      }>;
-      if (!data.length) return;
-      const best = data[0];
-      const id = `custom-${Date.now()}`;
-      const newStop = {
-        id,
-        name: best.display_name,
-        lat: parseFloat(best.lat),
-        lng: parseFloat(best.lon),
-      };
+      const newStop = await addStopFromQuery(query);
+      if (!newStop) return;
       setStops((prev) => [...prev, newStop]);
-      setStopIds((prev) => [...prev, id]);
+      setStopIds((prev) => [...prev, newStop.id]);
       setStopQuery('');
     } catch {
       // ignore network errors for now
