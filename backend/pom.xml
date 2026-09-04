@@ -115,6 +115,12 @@
             <artifactId>web-push</artifactId>
             <version>5.1.2</version>
         </dependency>
+        <!-- compile scope: PushAsyncService.send() return type -->
+        <dependency>
+            <groupId>org.asynchttpclient</groupId>
+            <artifactId>async-http-client</artifactId>
+            <version>2.12.4</version>
+        </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>

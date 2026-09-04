@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushAsyncService;
 import nl.martijndwars.webpush.Subscription;
+import org.asynchttpclient.Response;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -127,13 +128,17 @@ public class WebPushService {
                     new Subscription.Keys(sub.getP256dh(), sub.getAuthKey())
             );
             Notification notification = new Notification(subscription, payload);
-            CompletableFuture<?> future = service.send(notification);
-            future.whenComplete((result, error) -> {
+            CompletableFuture<Response> future = service.send(notification);
+            future.whenComplete((response, error) -> {
                 if (error != null) {
                     log.warn("Push delivery failed for {}: {}", sub.getEndpoint(), error.getMessage());
                     if (isGone(error)) {
                         pushSubscriptionRepository.delete(sub);
                     }
+                    return;
+                }
+                if (response != null && (response.getStatusCode() == 404 || response.getStatusCode() == 410)) {
+                    pushSubscriptionRepository.delete(sub);
                 }
             });
         } catch (Exception e) {
