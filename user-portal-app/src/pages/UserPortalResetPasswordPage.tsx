@@ -85,7 +85,7 @@ export function UserPortalResetPasswordPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete='new-password'
-                    className='h-11 rounded-xl border-slate-200 focus-visible:ring-teal-600'
+                    className='h-11 rounded-xl border-slate-200 focus-visible:ring-ring'
                   />
                 </div>
                 <div className='auth-page__field'>
@@ -97,7 +97,7 @@ export function UserPortalResetPasswordPage() {
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
                     autoComplete='new-password'
-                    className='h-11 rounded-xl border-slate-200 focus-visible:ring-teal-600'
+                    className='h-11 rounded-xl border-slate-200 focus-visible:ring-ring'
                   />
                 </div>
                 <button type='submit' className='auth-page__submit' disabled={pending || password.length < 6}>

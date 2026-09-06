@@ -73,7 +73,7 @@ export function UserPortalForgotPasswordPage() {
                     onChange={(e) => setIdentifier(e.target.value)}
                     placeholder={t('userPortal.loginIdentifierPlaceholder')}
                     autoComplete='username'
-                    className='h-11 rounded-xl border-slate-200 focus-visible:ring-teal-600'
+                    className='h-11 rounded-xl border-slate-200 focus-visible:ring-ring'
                   />
                 </div>
                 <button type='submit' className='auth-page__submit' disabled={pending || !identifier.trim()}>

@@ -84,9 +84,9 @@ export function PushNotificationPrompt({ role, usesBackend }: PushNotificationPr
   };
 
   return (
-    <div className='shrink-0 border-b border-teal-100 bg-teal-50'>
-      <div className='portal-container flex flex-wrap items-center gap-3 py-3 text-sm text-teal-950'>
-        <BellRing className='size-5 shrink-0 text-teal-700' aria-hidden />
+    <div className='shrink-0 border-b border-border bg-secondary/60'>
+      <div className='portal-container flex flex-wrap items-center gap-3 py-3 text-sm text-foreground'>
+        <BellRing className='size-5 shrink-0 text-primary' aria-hidden />
         <p className='min-w-0 flex-1'>{t('userPortal.pushPrompt')}</p>
         <div className='flex shrink-0 items-center gap-2'>
           <Button type='button' size='sm' onClick={() => void handleEnable()} disabled={loading}>

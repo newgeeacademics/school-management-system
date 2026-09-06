@@ -18,7 +18,7 @@ export default defineConfig({
         name: 'NewGee Portail',
         short_name: 'Portail',
         description: 'Portail parents, élèves et enseignants',
-        theme_color: '#0f766e',
+        theme_color: '#2563eb',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait-primary',

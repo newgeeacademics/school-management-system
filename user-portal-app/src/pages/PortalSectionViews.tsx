@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { fetchPortalFees } from '@/lib/portal-fees';
 import { fetchPortalNotifications } from '@/lib/portal-notifications';
-import { PromoBanner } from '@/components/PromoBanner';
 import { PortalAttendanceView } from '@/pages/PortalAttendanceView';
 import { PortalGradesView } from '@/pages/PortalGradesView';
 import { PortalNotificationsView } from '@/pages/PortalNotificationsView';
@@ -45,7 +44,7 @@ function FeedSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className='rounded-2xl border border-[#e2e8f0] bg-white p-4 md:p-5'>
+    <section className='portal-card p-4 md:p-5'>
       <div
         className={cn(
           'text-sm text-muted-foreground',
@@ -104,6 +103,7 @@ export function PortalOverviewView() {
 
   const displayName = session?.name ?? session?.emailHint ?? '';
   const firstName = displayName.split(' ')[0] || displayName;
+  const initial = displayName.trim().charAt(0).toUpperCase() || '?';
 
   const quickActions = isParent
     ? [
@@ -146,28 +146,61 @@ export function PortalOverviewView() {
       ];
 
   return (
-    <div className='space-y-6 pb-4 md:space-y-8'>
-      <div className='grid gap-5 lg:grid-cols-2 lg:items-stretch'>
-        <div className='flex items-center gap-3.5 rounded-[20px] border border-[#e2e8f0] bg-white p-[18px] md:p-5'>
-          <div className='flex size-12 shrink-0 items-center justify-center rounded-[14px] bg-gradient-to-br from-primary to-[#0f766e] text-2xl text-white md:size-14 md:text-3xl'>
-            👋
+    <div className='space-y-6 pb-4'>
+      <div className='grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]'>
+        <div className='portal-card flex items-center gap-4 p-4 md:p-5'>
+          <div className='flex size-11 shrink-0 items-center justify-center rounded-md bg-primary text-base font-semibold text-primary-foreground md:size-12'>
+            {initial}
           </div>
           <div className='min-w-0'>
-            <p className='text-lg font-extrabold text-[#0f172a] md:text-xl'>
+            <p className='text-base font-semibold text-foreground md:text-lg'>
               {t('portalHome.welcomeHello', { name: firstName })}
             </p>
-            <p className='mt-0.5 text-[13px] leading-snug text-[#64748b] md:text-sm'>
+            <p className='mt-0.5 text-sm text-muted-foreground'>
               {isParent ? t('portalHome.welcomeParent') : t('portalHome.welcomeDefault')}
             </p>
           </div>
         </div>
 
-        <PromoBanner onNavigate={(target) => navigateSection(target)} />
+        <div className='portal-card p-4 md:p-5'>
+          <div className='flex items-center justify-between gap-2'>
+            <h2 className='portal-section-title'>{t('portalHome.cardCalendar')}</h2>
+            {feed.events.length > 0 ? (
+              <button
+                type='button'
+                onClick={() => navigateSection('calendar')}
+                className='text-xs font-medium text-primary hover:underline'
+              >
+                {t('portalHome.calendarUpcoming')}
+              </button>
+            ) : null}
+          </div>
+          {feed.events.length === 0 ? (
+            <p className='mt-3 text-sm text-muted-foreground'>{t('portalHome.emptyEvents')}</p>
+          ) : (
+            <ul className='mt-3 space-y-2'>
+              {feed.events.slice(0, 3).map((event) => (
+                <li
+                  key={event.id}
+                  className='flex items-start justify-between gap-3 border-b border-border pb-2 last:border-0 last:pb-0'
+                >
+                  <div className='min-w-0'>
+                    <p className='truncate text-sm font-medium text-foreground'>{event.label}</p>
+                    <p className='text-xs text-muted-foreground'>
+                      {event.date}
+                      {event.time ? ` · ${event.time}` : ''}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       <div>
-        <h2 className='text-base font-bold text-[#0f172a] md:text-lg'>{t('portalHome.quickAccess')}</h2>
-        <div className='mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4'>
+        <h2 className='portal-section-title'>{t('portalHome.quickAccess')}</h2>
+        <div className='mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4'>
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (
@@ -175,12 +208,12 @@ export function PortalOverviewView() {
                 key={action.section}
                 type='button'
                 onClick={() => navigateSection(action.section)}
-                className='flex min-h-[92px] flex-col rounded-[18px] border border-[#e2e8f0] bg-white p-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/[0.02] md:min-h-[100px] md:p-4'
+                className='portal-card flex min-h-[84px] flex-col p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/40 md:min-h-[88px]'
               >
-                <span className='flex size-9 items-center justify-center rounded-[10px] bg-primary/10 text-primary md:size-10'>
-                  <Icon className='size-5' aria-hidden />
+                <span className='flex size-8 items-center justify-center rounded-md bg-secondary text-primary'>
+                  <Icon className='size-4' aria-hidden />
                 </span>
-                <span className='mt-auto text-xs font-semibold leading-tight text-foreground md:text-sm'>
+                <span className='mt-auto text-xs font-medium leading-tight text-foreground md:text-sm'>
                   {action.label}
                 </span>
               </button>
@@ -190,8 +223,8 @@ export function PortalOverviewView() {
       </div>
 
       <div>
-        <h2 className='text-base font-bold text-[#0f172a] md:text-lg'>{t('portalHome.overviewTitle')}</h2>
-        <div className='mt-3 grid grid-cols-2 gap-3 md:grid-cols-4'>
+        <h2 className='portal-section-title'>{t('portalHome.overviewTitle')}</h2>
+        <div className='mt-3 grid grid-cols-2 gap-2 md:grid-cols-4'>
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
@@ -200,18 +233,20 @@ export function PortalOverviewView() {
                 type='button'
                 onClick={() => navigateSection(stat.section)}
                 className={cn(
-                  'flex min-h-[88px] flex-col rounded-[18px] border bg-white p-3.5 text-left transition-colors hover:border-primary/30 md:min-h-[96px] md:p-4',
-                  stat.highlight ? 'border-[#fecaca]' : 'border-[#e2e8f0]',
+                  'portal-card flex min-h-[84px] flex-col p-3.5 text-left transition-colors hover:border-primary/40 md:min-h-[88px] md:p-4',
+                  stat.highlight && 'border-destructive/30 bg-destructive/5',
                 )}
               >
                 <div className='flex items-center justify-between'>
-                  <Icon className='size-[18px] text-primary' aria-hidden />
+                  <Icon className='size-4 text-muted-foreground' aria-hidden />
                   {stat.highlight ? (
-                    <span className='size-2 rounded-full bg-[#ef4444]' aria-hidden />
+                    <span className='size-2 rounded-full bg-destructive' aria-hidden />
                   ) : null}
                 </div>
-                <p className='mt-auto text-2xl font-extrabold text-[#0f172a]'>{stat.value}</p>
-                <p className='text-xs font-medium text-[#64748b]'>{stat.label}</p>
+                <p className='mt-auto text-xl font-semibold tabular-nums text-foreground md:text-2xl'>
+                  {stat.value}
+                </p>
+                <p className='text-xs text-muted-foreground'>{stat.label}</p>
               </button>
             );
           })}

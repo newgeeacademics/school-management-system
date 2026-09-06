@@ -159,7 +159,7 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
                     value={usernameOrEmail}
                     onChange={(e) => setUsernameOrEmail(e.target.value)}
                     autoComplete='username'
-                    className='h-11 rounded-xl border-slate-200 focus-visible:ring-teal-600'
+                    className='h-11 rounded-xl border-slate-200 focus-visible:ring-ring'
                   />
                 </div>
 
@@ -170,7 +170,7 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
                     </Label>
                     <Link
                       to='/mot-de-passe-oublie'
-                      className='text-xs font-medium text-teal-700 hover:underline'
+                      className='text-xs font-medium text-primary hover:underline'
                     >
                       {t('userPortal.forgotPasswordLink')}
                     </Link>
@@ -181,7 +181,7 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={t('userPortal.passwordOptionalHint')}
                     autoComplete='current-password'
-                    className='h-11 rounded-xl border-slate-200 focus-visible:ring-teal-600'
+                    className='h-11 rounded-xl border-slate-200 focus-visible:ring-ring'
                   />
                   <p className='text-xs text-muted-foreground'>{t('userPortal.firstLoginHint')}</p>
                 </div>
@@ -197,7 +197,7 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     autoComplete='new-password'
-                    className='h-11 rounded-xl border-slate-200 focus-visible:ring-teal-600'
+                    className='h-11 rounded-xl border-slate-200 focus-visible:ring-ring'
                   />
                 </div>
                 <div className={isEmbedded ? 'auth-page__field' : 'space-y-2'}>
@@ -209,10 +209,10 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     autoComplete='new-password'
-                    className='h-11 rounded-xl border-slate-200 focus-visible:ring-teal-600'
+                    className='h-11 rounded-xl border-slate-200 focus-visible:ring-ring'
                   />
                 </div>
-                <button type='button' className='text-xs text-teal-700 hover:underline' onClick={backToLogin}>
+                <button type='button' className='text-xs text-primary hover:underline' onClick={backToLogin}>
                   {t('userPortal.backToLogin')}
                 </button>
               </>
