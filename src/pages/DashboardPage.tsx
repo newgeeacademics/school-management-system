@@ -90,6 +90,8 @@ import {
   getSchoolProfile,
   getSystemBadgeClass,
   getSystemLabel,
+  saveSchoolProfile,
+  buildSchoolProfile,
   schoolTypesFromProfile,
   type SchoolProfile,
 } from '@/lib/school-profile';
@@ -524,7 +526,14 @@ export const DashboardPage: React.FC = () => {
   const [schoolProfile, setSchoolProfile] = React.useState<SchoolProfile | null>(() =>
     getSchoolProfile()
   );
-  const [licensedStudentCount, setLicensedStudentCount] = React.useState<number | null>(null);
+  const [licensedStudentCount, setLicensedStudentCount] = React.useState<number | null>(() => {
+    const profile = getSchoolProfile();
+    return profile?.studentCount ?? null;
+  });
+  const [licensedTeacherCount, setLicensedTeacherCount] = React.useState<number | null>(() => {
+    const profile = getSchoolProfile();
+    return profile?.teacherCount ?? null;
+  });
   const schoolTypes = React.useMemo(
     () => schoolTypesFromProfile(schoolProfile) as SchoolType[],
     [schoolProfile]
@@ -543,9 +552,10 @@ export const DashboardPage: React.FC = () => {
 
     const hydrateProfile = async () => {
       const existing = getSchoolProfile();
-      if (existing) {
-        if (!cancelled) setSchoolProfile(existing);
-        return;
+      if (existing && !cancelled) {
+        setSchoolProfile(existing);
+        if (existing.studentCount != null) setLicensedStudentCount(existing.studentCount);
+        if (existing.teacherCount != null) setLicensedTeacherCount(existing.teacherCount);
       }
 
       try {
@@ -553,7 +563,11 @@ export const DashboardPage: React.FC = () => {
         const user = userRaw ? (JSON.parse(userRaw) as { schoolId?: string }) : null;
         if (user?.schoolId) {
           const fetched = await fetchAndCacheSchoolProfile(user.schoolId);
-          if (!cancelled && fetched) setSchoolProfile(fetched);
+          if (!cancelled && fetched) {
+            setSchoolProfile(fetched);
+            if (fetched.studentCount != null) setLicensedStudentCount(fetched.studentCount);
+            if (fetched.teacherCount != null) setLicensedTeacherCount(fetched.teacherCount);
+          }
         }
       } catch {
         // ignore
@@ -571,12 +585,31 @@ export const DashboardPage: React.FC = () => {
     let cancelled = false;
     void fetchLatestSchoolFromBackend()
       .then((school) => {
-        if (!cancelled) {
-          setLicensedStudentCount(school?.studentCount ?? null);
+        if (cancelled || !school) return;
+        setLicensedStudentCount(school.studentCount ?? null);
+        setLicensedTeacherCount(school.teacherCount ?? null);
+
+        const profile = buildSchoolProfile({
+          id: school.id,
+          name: school.name ?? '',
+          type: school.type ?? '',
+          system: school.system,
+          country: school.country,
+          city: school.city,
+          studentCount: school.studentCount ?? null,
+          teacherCount: school.teacherCount ?? null,
+          series: Array.isArray(school.series) ? school.series : undefined,
+        });
+        if (profile) {
+          saveSchoolProfile(profile);
+          setSchoolProfile(profile);
         }
       })
       .catch(() => {
-        if (!cancelled) setLicensedStudentCount(null);
+        if (!cancelled) {
+          setLicensedStudentCount(null);
+          setLicensedTeacherCount(null);
+        }
       });
     return () => {
       cancelled = true;
@@ -1906,6 +1939,9 @@ export const DashboardPage: React.FC = () => {
               students={students}
               events={events}
               onNavigate={setActiveSection}
+              schoolProfile={schoolProfile}
+              declaredStudentCount={licensedStudentCount}
+              declaredTeacherCount={licensedTeacherCount}
               totalDue={parentFeesTotal}
               amountPaid={parentFeesPaid}
               remindersCount={paymentRecordsForViewer.reminders.length}

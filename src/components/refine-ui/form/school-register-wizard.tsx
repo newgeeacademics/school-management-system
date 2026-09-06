@@ -380,6 +380,9 @@ export function SchoolRegisterWizard() {
         system: school.system,
         country: school.country,
         city: school.city,
+        studentCount: school.studentCount ? Number(school.studentCount) : null,
+        teacherCount: school.teacherCount ? Number(school.teacherCount) : null,
+        series: school.series,
       });
 
       toast.success(t('auth.schoolRegistered'), { richColors: true });

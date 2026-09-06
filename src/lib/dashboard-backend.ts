@@ -602,6 +602,9 @@ export function mapSchoolFromApi(row: Record<string, unknown>): Partial<School> 
     studentCount: row.studentCount != null ? Number(row.studentCount) : null,
     teacherCount: row.teacherCount != null ? Number(row.teacherCount) : null,
     series: splitCsvList(row.series),
+    gradingScale: row.gradingScale != null ? Number(row.gradingScale) : null,
+    evaluationTypes: splitCsvList(row.evaluationTypes),
+    evaluationPeriods: splitCsvList(row.evaluationPeriods),
     registrationNumber: String(row.registrationNumber ?? ''),
     languagesOffered: splitCsvList(row.languagesOffered),
     logoUrl: logoRemote,
@@ -630,6 +633,13 @@ function schoolPatchToRequest(patch: Partial<School>): Record<string, unknown> {
     studentCount: patch.studentCount ?? undefined,
     teacherCount: patch.teacherCount ?? undefined,
     series: Array.isArray(patch.series) ? patch.series.join(', ') : undefined,
+    gradingScale: patch.gradingScale ?? undefined,
+    evaluationTypes: Array.isArray(patch.evaluationTypes)
+      ? patch.evaluationTypes.join(', ')
+      : undefined,
+    evaluationPeriods: Array.isArray(patch.evaluationPeriods)
+      ? patch.evaluationPeriods.join(', ')
+      : undefined,
     registrationNumber: patch.registrationNumber || undefined,
     languagesOffered: Array.isArray(patch.languagesOffered)
       ? patch.languagesOffered.join(', ')

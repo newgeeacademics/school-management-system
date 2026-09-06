@@ -163,7 +163,7 @@ export function SchoolSettingsContent({ section, onNavigate }: Props) {
       );
 
     case 'settings_academics':
-      return <AcademicsPanel linkRow={linkRow} />;
+      return <AcademicsPanel school={school} linkRow={linkRow} />;
 
     case 'settings_attendance':
       return <AttendancePanel linkRow={linkRow} />;
@@ -735,7 +735,20 @@ function BrandingPanel({
   );
 }
 
-function AcademicsPanel({ linkRow }: { linkRow: (a: string, b: SectionId, c: string) => React.ReactNode }) {
+function AcademicsPanel({
+  school,
+  linkRow,
+}: {
+  school: Partial<School> | null;
+  linkRow: (a: string, b: SectionId, c: string) => React.ReactNode;
+}) {
+  const gradingScale = school?.gradingScale ?? 20;
+  const evaluationTypes =
+    school?.evaluationTypes?.length ? school.evaluationTypes.join(', ') : 'Devoir, Interro, Examen';
+  const periodCount = school?.evaluationPeriods?.length
+    ? String(school.evaluationPeriods.length)
+    : '3';
+
   return (
     <div className='max-w-4xl space-y-8'>
       <Card>
@@ -749,7 +762,7 @@ function AcademicsPanel({ linkRow }: { linkRow: (a: string, b: SectionId, c: str
               <Input defaultValue='2025–2026' placeholder='2025–2026' />
             </Field>
             <Field label='Nombre de périodes'>
-              <Select defaultValue='3'>
+              <Select defaultValue={periodCount} key={`periods-${periodCount}`}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -778,7 +791,21 @@ function AcademicsPanel({ linkRow }: { linkRow: (a: string, b: SectionId, c: str
         <CardContent>
           <FieldGrid>
             <Field label='Note maximale par défaut'>
-              <Input type='number' defaultValue={20} min={1} placeholder='20' />
+              <Input
+                type='number'
+                defaultValue={gradingScale}
+                key={`grading-${gradingScale}`}
+                min={1}
+                placeholder='20'
+                readOnly
+              />
+            </Field>
+            <Field label='Types d&apos;évaluation'>
+              <Input
+                defaultValue={evaluationTypes}
+                key={`eval-types-${evaluationTypes}`}
+                readOnly
+              />
             </Field>
             <Field label='Note de passage'>
               <Input type='number' defaultValue={10} min={0} placeholder='10' />
