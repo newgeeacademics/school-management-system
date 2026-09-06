@@ -667,6 +667,11 @@ body.landing-mobile-menu-open .landing__header {
   align-items: stretch;
 }
 
+.landing__plans-grid--single {
+  max-width: 420px;
+  margin-inline: auto;
+}
+
 .landing__plan-card {
   position: relative;
   display: flex;
