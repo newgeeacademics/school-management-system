@@ -1222,6 +1222,7 @@ export const DashboardPage: React.FC = () => {
       email: payload.email.trim(),
       phone: payload.phone.trim(),
       homeroomClassIds: payload.homeroomClassIds,
+      assignedClassIds: payload.assignedClassIds,
     };
     try {
       if (!requireBackend()) return;
@@ -1258,6 +1259,7 @@ export const DashboardPage: React.FC = () => {
       password?: string;
       phone?: string;
       homeroomClassIds?: string[];
+      assignedClassIds?: string[];
     }
   ) => {
     try {

@@ -108,9 +108,25 @@ function isSyntheticPortalEmail(email?: string): boolean {
   return email.toLowerCase().includes('@portal.classroom');
 }
 
+function relationIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === 'string') return item;
+      if (typeof item === 'object' && item !== null && 'id' in item) {
+        return String((item as { id: unknown }).id);
+      }
+      return '';
+    })
+    .filter(Boolean);
+}
+
 export function mapTeacherFromApi(t: Record<string, unknown>): Teacher {
   const appUser = t.appUser as Record<string, unknown> | undefined;
   const contactEmail = t.email ? String(t.email) : appUser?.email ? String(appUser.email) : undefined;
+  const assignedClassIds = Array.isArray(t.assignedClassIds)
+    ? t.assignedClassIds.map(String)
+    : relationIds(t.assignedClasses);
   return {
     id: String(t.id),
     name: String(t.name ?? ''),
@@ -122,6 +138,7 @@ export function mapTeacherFromApi(t: Record<string, unknown>): Teacher {
     email: contactEmail && !isSyntheticPortalEmail(contactEmail) ? contactEmail : undefined,
     phone: t.phone ? String(t.phone) : undefined,
     loginId: appUserLoginId(t),
+    assignedClassIds,
   };
 }
 
@@ -871,6 +888,7 @@ export async function createTeacherOnBackend(item: {
   password?: string;
   phone?: string;
   homeroomClassIds?: string[];
+  assignedClassIds?: string[];
 }) {
   const data = await adminApiFetch<Record<string, unknown>>('/api/teachers', {
     method: 'POST',
@@ -883,6 +901,7 @@ export async function createTeacherOnBackend(item: {
       password: item.password?.trim() || undefined,
       phone: item.phone?.trim() || undefined,
       homeroomClassIds: item.homeroomClassIds?.length ? item.homeroomClassIds : undefined,
+      assignedClassIds: item.assignedClassIds?.length ? item.assignedClassIds : undefined,
     }),
   });
   return mapTeacherFromApi(data);
@@ -899,6 +918,7 @@ export async function updateTeacherOnBackend(
     password?: string;
     phone?: string;
     homeroomClassIds?: string[];
+    assignedClassIds?: string[];
   }
 ) {
   const data = await adminApiFetch<Record<string, unknown>>(`/api/teachers/${id}`, {
@@ -912,6 +932,7 @@ export async function updateTeacherOnBackend(
       password: item.password?.trim() || undefined,
       phone: item.phone?.trim() || undefined,
       homeroomClassIds: item.homeroomClassIds ?? [],
+      assignedClassIds: item.assignedClassIds ?? [],
     }),
   });
   return mapTeacherFromApi(data);

@@ -17,6 +17,60 @@ export function homeroomClassIdsForTeacher(teacherId: string, classes: ClassItem
   return classes.filter((c) => c.homeroomTeacherId === teacherId).map((c) => c.id);
 }
 
+function toggleClassId(ids: string[], classId: string, checked: boolean): string[] {
+  if (checked) return ids.includes(classId) ? ids : [...ids, classId];
+  return ids.filter((id) => id !== classId);
+}
+
+export function ClassAssignmentPicker({
+  classes,
+  selectedIds,
+  onChange,
+  idPrefix,
+  emptyHint = 'Créez d\u2019abord des classes pour assigner un enseignant.',
+}: {
+  classes: ClassItem[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+  idPrefix: string;
+  emptyHint?: string;
+}) {
+  if (classes.length === 0) {
+    return (
+      <p className='text-xs text-muted-foreground italic rounded-lg border border-dashed p-3'>
+        {emptyHint}
+      </p>
+    );
+  }
+
+  return (
+    <div className='grid gap-2 sm:grid-cols-2 lg:grid-cols-3'>
+      {classes.map((classe) => {
+        const inputId = `${idPrefix}-class-${classe.id}`;
+        return (
+          <label
+            key={classe.id}
+            htmlFor={inputId}
+            className='flex items-start gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-xs cursor-pointer hover:bg-muted/50'
+          >
+            <input
+              id={inputId}
+              type='checkbox'
+              className='mt-0.5 h-4 w-4 rounded border-slate-300'
+              checked={selectedIds.includes(classe.id)}
+              onChange={(e) => onChange(toggleClassId(selectedIds, classe.id, e.target.checked))}
+            />
+            <span>
+              <span className='font-medium'>{classe.name}</span>
+              <span className='text-muted-foreground'> · {classe.level}</span>
+            </span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
 function toggleHomeroomClass(ids: string[], classId: string, checked: boolean): string[] {
   if (checked) return ids.includes(classId) ? ids : [...ids, classId];
   return ids.filter((id) => id !== classId);

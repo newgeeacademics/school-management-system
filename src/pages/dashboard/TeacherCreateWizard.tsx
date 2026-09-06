@@ -11,7 +11,7 @@ import {
 } from '@/lib/location-data';
 
 import type { ClassItem, Matiere } from './dashboardTypes';
-import { HomeroomPicker, SubjectField } from './teacherFormParts';
+import { ClassAssignmentPicker, HomeroomPicker, SubjectField } from './teacherFormParts';
 import {
   CreateWizardShell,
   WizardSummary,
@@ -46,6 +46,7 @@ export type TeacherCreatePayload = {
   email: string;
   phone: string;
   homeroomClassIds: string[];
+  assignedClassIds: string[];
 };
 
 type FormState = {
@@ -57,6 +58,7 @@ type FormState = {
   phoneCountry: string;
   phone: string;
   homeroomClassIds: string[];
+  assignedClassIds: string[];
 };
 
 const emptyForm = (phoneCountry: string): FormState => ({
@@ -68,6 +70,7 @@ const emptyForm = (phoneCountry: string): FormState => ({
   phoneCountry,
   phone: '',
   homeroomClassIds: [],
+  assignedClassIds: [],
 });
 
 type TeacherCreateWizardProps = {
@@ -127,6 +130,7 @@ export function TeacherCreateWizard({
         email: form.email.trim(),
         phone: formatPhoneWithCountry(form.phoneCountry, form.phone.trim()),
         homeroomClassIds: form.homeroomClassIds,
+        assignedClassIds: form.assignedClassIds,
       });
       setForm(emptyForm(resolvedDefaultCountry));
       setStep(1);
@@ -224,6 +228,15 @@ export function TeacherCreateWizard({
       {step === 4 ? (
         <>
           <div className='space-y-2'>
+            <Label className='text-sm'>Classes enseignées</Label>
+            <ClassAssignmentPicker
+              classes={classes}
+              selectedIds={form.assignedClassIds}
+              onChange={(ids) => setForm((f) => ({ ...f, assignedClassIds: ids }))}
+              idPrefix='wizard-assigned'
+            />
+          </div>
+          <div className='space-y-2'>
             <Label className='text-sm'>Professeur principal (optionnel)</Label>
             <HomeroomPicker
               classes={classes}
@@ -243,6 +256,12 @@ export function TeacherCreateWizard({
               label='Téléphone'
               value={formatPhoneWithCountry(form.phoneCountry, form.phone) || form.phone}
             />
+            {form.assignedClassIds.length > 0 ? (
+              <WizardSummaryRow
+                label='Classes'
+                value={form.assignedClassIds.map(getClassName).join(', ')}
+              />
+            ) : null}
             {form.homeroomClassIds.length > 0 ? (
               <WizardSummaryRow
                 label='Classes PP'

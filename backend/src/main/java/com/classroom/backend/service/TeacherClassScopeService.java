@@ -49,6 +49,14 @@ public class TeacherClassScopeService {
             classIds.add(homeroom.getId());
         }
 
+        if (teacher.getAssignedClasses() != null) {
+            for (ClassItem assigned : teacher.getAssignedClasses()) {
+                if (assigned != null && sameSchool(teacher, assigned)) {
+                    classIds.add(assigned.getId());
+                }
+            }
+        }
+
         for (ScheduleItem item : scheduleItemRepository.findAll()) {
             if (!scheduleItemBelongsToTeacher(item, teacher)) {
                 continue;

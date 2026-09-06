@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import type { ClassItem, Matiere, NewTeacherFormState, Teacher } from './dashboardTypes';
 import { formatPhoneWithCountry } from '@/lib/location-data';
 import { TeacherCreateWizard, type TeacherCreatePayload } from './TeacherCreateWizard';
-import { HomeroomPicker, SubjectField, homeroomClassIdsForTeacher } from './teacherFormParts';
+import { ClassAssignmentPicker, HomeroomPicker, SubjectField, homeroomClassIdsForTeacher } from './teacherFormParts';
 
 type TeachersSectionProps = {
   teachers: Teacher[];
@@ -31,6 +31,7 @@ type TeachersSectionProps = {
       password?: string;
       phone?: string;
       homeroomClassIds?: string[];
+      assignedClassIds?: string[];
     }
   ) => void | Promise<void>;
   onDeleteTeacher: (id: string) => void | Promise<void>;
@@ -66,9 +67,11 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
     phone: '',
     phoneCountry: phoneCountryDefault,
     homeroomClassIds: [],
+    assignedClassIds: [],
   });
 
   const withHomeroom = teachers.filter((t) => homeroomClassIdsForTeacher(t.id, classes).length > 0).length;
+  const withAssigned = teachers.filter((t) => (t.assignedClassIds?.length ?? 0) > 0).length;
 
   const startEdit = (teacher: Teacher) => {
     setEditingId(teacher.id);
@@ -82,6 +85,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
       phone: teacher.phone ?? '',
       phoneCountry: phoneCountryDefault,
       homeroomClassIds: homeroomClassIdsForTeacher(teacher.id, classes),
+      assignedClassIds: teacher.assignedClassIds ?? [],
     });
   };
 
@@ -97,6 +101,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
         password: draft.password.trim() || undefined,
         phone: formatPhoneWithCountry(draft.phoneCountry, draft.phone.trim()) || draft.phone.trim(),
         homeroomClassIds: draft.homeroomClassIds,
+        assignedClassIds: draft.assignedClassIds,
       })
     ).then(() => setEditingId(null));
   };
@@ -111,6 +116,10 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
         <div className='rounded-xl border bg-card px-4 py-3 min-w-[140px]'>
           <p className='text-2xl font-semibold'>{withHomeroom}</p>
           <p className='text-xs text-muted-foreground'>Prof. principal assignés</p>
+        </div>
+        <div className='rounded-xl border bg-card px-4 py-3 min-w-[140px]'>
+          <p className='text-2xl font-semibold'>{withAssigned}</p>
+          <p className='text-xs text-muted-foreground'>Liés à une classe</p>
         </div>
       </div>
 
@@ -157,6 +166,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
             {teachers.map((teacher) => {
               const isEditing = editingId === teacher.id;
               const homeroomIds = homeroomClassIdsForTeacher(teacher.id, classes);
+              const assignedIds = teacher.assignedClassIds ?? [];
 
               return (
                 <Card key={teacher.id}>
@@ -206,6 +216,12 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                           onChange={(e) => setDraft((d) => ({ ...d, password: e.target.value }))}
                           placeholder='Nouveau mot de passe (opt.)'
                         />
+                        <ClassAssignmentPicker
+                          classes={classes}
+                          selectedIds={draft.assignedClassIds}
+                          onChange={(ids) => setDraft((d) => ({ ...d, assignedClassIds: ids }))}
+                          idPrefix={`edit-assigned-${teacher.id}`}
+                        />
                         <HomeroomPicker
                           classes={classes}
                           selectedIds={draft.homeroomClassIds}
@@ -245,6 +261,15 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                                 N° personnel : {teacher.staffId}
                               </p>
                             ) : null}
+                            {assignedIds.length > 0 ? (
+                              <div className='mt-2 flex flex-wrap gap-1'>
+                                {assignedIds.map((classId) => (
+                                  <Badge key={classId} variant='outline' className='text-xs px-1.5 py-0'>
+                                    {getClassName(classId)}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : null}
                             {homeroomIds.length > 0 ? (
                               <div className='mt-2 flex flex-wrap gap-1'>
                                 {homeroomIds.map((classId) => (
@@ -253,9 +278,9 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                                   </Badge>
                                 ))}
                               </div>
-                            ) : (
-                              <p className='mt-1 text-xs text-muted-foreground italic'>Aucune classe PP</p>
-                            )}
+                            ) : assignedIds.length === 0 ? (
+                              <p className='mt-1 text-xs text-muted-foreground italic'>Aucune classe assignée</p>
+                            ) : null}
                           </div>
                         </div>
                         {onPrintIdCard ? (

@@ -31,4 +31,7 @@ public class TeacherRequest {
 
   /** Classes where this teacher is professeur principal (homeroom). */
   private List<String> homeroomClassIds;
+
+  /** Classes where this teacher teaches (subject assignment). */
+  private List<String> assignedClassIds;
 }
