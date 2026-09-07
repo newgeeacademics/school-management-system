@@ -52,6 +52,15 @@ export function TrackingDashboardPage() {
   }, [loadRoutes]);
 
   useEffect(() => {
+    if (!sheetOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSheetOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [sheetOpen]);
+
+  useEffect(() => {
     if (!session.token) return;
     const client = connectTrackingWebSocket(session.token, {
       onMessage: (msg) => {
@@ -252,27 +261,24 @@ export function TrackingDashboardPage() {
           </div>
         ) : (
           <>
-            {canPickRoute && (
-              <div className='absolute inset-x-0 top-0 z-10 flex gap-2 overflow-x-auto px-3 py-3'>
-                {routes.map((route) => (
-                  <Button
-                    key={route.routeId}
-                    variant={selected.routeId === route.routeId ? 'default' : 'outline'}
-                    size='sm'
-                    className='shrink-0 touch-target bg-card/95 shadow-sm'
-                    onClick={() => setSelectedId(route.routeId)}
-                  >
-                    {routeChipLabel(route)}
-                  </Button>
-                ))}
-              </div>
-            )}
+            {sheetOpen ? (
+              <button
+                type='button'
+                className='absolute inset-0 z-20 bg-black/30'
+                aria-label='Fermer le trajet'
+                onClick={() => setSheetOpen(false)}
+              />
+            ) : null}
 
-            <aside className='absolute top-3 right-3 bottom-3 hidden w-80 overflow-y-auto lg:block'>
-              <div className='space-y-3'>{details}</div>
-            </aside>
-
-            <div className='absolute inset-x-0 bottom-0 z-20 flex max-h-[72svh] flex-col rounded-t-2xl border bg-card shadow-[0_-8px_30px_rgb(15_23_42/0.12)] lg:hidden'>
+            <div
+              className={cn(
+                'absolute inset-x-0 bottom-0 z-30 mx-auto flex w-full max-w-lg flex-col rounded-t-2xl border bg-card shadow-[0_-8px_30px_rgb(15_23_42/0.18)]',
+                sheetOpen ? 'max-h-[80svh]' : 'max-h-[7.5rem]'
+              )}
+              role='dialog'
+              aria-modal={sheetOpen}
+              aria-label={selected.routeName}
+            >
               <button
                 type='button'
                 className='flex w-full flex-col items-center px-4 pt-2 pb-3'
@@ -294,6 +300,21 @@ export function TrackingDashboardPage() {
               </button>
               {sheetOpen ? (
                 <div className='min-h-0 space-y-3 overflow-y-auto px-3 pb-[max(1rem,env(safe-area-inset-bottom))]'>
+                  {canPickRoute ? (
+                    <div className='flex gap-2 overflow-x-auto pb-1'>
+                      {routes.map((route) => (
+                        <Button
+                          key={route.routeId}
+                          variant={selected.routeId === route.routeId ? 'default' : 'outline'}
+                          size='sm'
+                          className='shrink-0 touch-target'
+                          onClick={() => setSelectedId(route.routeId)}
+                        >
+                          {routeChipLabel(route)}
+                        </Button>
+                      ))}
+                    </div>
+                  ) : null}
                   {details}
                 </div>
               ) : null}
