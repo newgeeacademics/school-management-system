@@ -6,5 +6,6 @@ export function backendRoleToTracking(role: AuthResponse['role']): TrackingRole 
   if (role === 'PARENT') return 'parent';
   if (role === 'TEACHER') return 'teacher';
   if (role === 'ADMIN' || role === 'STAFF') return 'driver';
+  if (role === 'STUDENT') return 'student';
   return null;
 }

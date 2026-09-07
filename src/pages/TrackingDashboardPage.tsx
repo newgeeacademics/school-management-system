@@ -177,6 +177,20 @@ export function TrackingDashboardPage() {
   };
 
   const isLive = selected?.tripStatus === 'ACTIVE' && selected?.livePosition != null;
+  const canPickRoute = routes.length > 1;
+  const emptyCopy =
+    session.role === 'student'
+      ? 'Aucun bus scolaire n’est lié à votre compte pour le moment.'
+      : session.role === 'parent'
+        ? 'Aucun bus scolaire n’est lié à vos enfants pour le moment.'
+        : 'Aucun trajet n’a encore été créé.';
+
+  const routeChipLabel = (route: LiveRoute) => {
+    if (session.role === 'parent' && route.students.length > 0) {
+      return `${route.routeName} · ${route.students.map((s) => s.name).join(', ')}`;
+    }
+    return route.routeName;
+  };
 
   const details = selected ? (
     <RouteDetails
@@ -211,30 +225,34 @@ export function TrackingDashboardPage() {
 
       <main className='relative min-h-0 flex-1'>
         <div className='absolute inset-x-0 top-0 z-30'>
-          <PushNotificationPrompt enabled={session.role === 'parent' || session.role === 'teacher'} />
+          <PushNotificationPrompt
+            enabled={session.role === 'parent' || session.role === 'teacher' || session.role === 'student'}
+          />
         </div>
+
+        <TrackingMap
+          waypoints={selected?.waypoints ?? []}
+          routePolyline={selected?.routePolyline ?? []}
+          livePosition={selected?.livePosition ?? null}
+          driverPosition={selected?.driverPosition ?? null}
+          students={selected?.students ?? []}
+          liveActive={isLive}
+          className='absolute inset-0 h-full w-full [&_.mapboxgl-map]:h-full [&_.mapboxgl-canvas]:h-full'
+        />
+
         {loading ? (
-          <p className='p-4 text-sm text-muted-foreground'>Chargement des trajets…</p>
-        ) : routes.length === 0 ? (
-          <div className='m-4 rounded-xl border bg-card p-8 text-center'>
+          <p className='absolute left-3 top-3 z-10 rounded-lg bg-card/95 px-3 py-2 text-sm text-muted-foreground shadow-sm'>
+            Chargement des trajets…
+          </p>
+        ) : !selected ? (
+          <div className='absolute inset-x-4 top-4 z-10 rounded-xl border bg-card/95 p-6 text-center shadow-sm'>
             <MapPin className='mx-auto mb-3 size-10 text-muted-foreground' />
             <p className='font-medium'>Aucun trajet assigné</p>
-            <p className='mt-1 text-sm text-muted-foreground'>
-              Aucun bus scolaire n&apos;est lié à vos enfants ou élèves pour le moment.
-            </p>
+            <p className='mt-1 text-sm text-muted-foreground'>{emptyCopy}</p>
           </div>
-        ) : selected ? (
+        ) : (
           <>
-            <TrackingMap
-              waypoints={selected.waypoints}
-              routePolyline={selected.routePolyline}
-              livePosition={selected.livePosition}
-              driverPosition={selected.driverPosition}
-              students={selected.students}
-              className='absolute inset-0 h-full w-full [&_.mapboxgl-map]:h-full [&_.mapboxgl-canvas]:h-full'
-            />
-
-            {routes.length > 1 && (
+            {canPickRoute && (
               <div className='absolute inset-x-0 top-0 z-10 flex gap-2 overflow-x-auto px-3 py-3'>
                 {routes.map((route) => (
                   <Button
@@ -244,7 +262,7 @@ export function TrackingDashboardPage() {
                     className='shrink-0 touch-target bg-card/95 shadow-sm'
                     onClick={() => setSelectedId(route.routeId)}
                   >
-                    {route.routeName}
+                    {routeChipLabel(route)}
                   </Button>
                 ))}
               </div>
@@ -281,7 +299,7 @@ export function TrackingDashboardPage() {
               ) : null}
             </div>
           </>
-        ) : null}
+        )}
       </main>
     </div>
   );

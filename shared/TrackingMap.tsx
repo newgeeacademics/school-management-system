@@ -60,6 +60,7 @@ type TrackingMapProps = {
   livePosition: TrackingPosition | null;
   driverPosition?: TrackingPosition | null;
   students?: TrackingStudent[];
+  liveActive?: boolean;
   className?: string;
 };
 
@@ -69,6 +70,7 @@ export function TrackingMap({
   livePosition,
   driverPosition = null,
   students = [],
+  liveActive = true,
   className = 'h-full w-full',
 }: TrackingMapProps) {
   const mapRef = useRef<MapRef>(null);
@@ -162,9 +164,9 @@ export function TrackingMap({
 
         {livePosition && (
           <Marker longitude={livePosition.lng} latitude={livePosition.lat} anchor="center">
-            {emojiPin('#ea580c', '🚌', 28)}
+            {emojiPin(liveActive ? '#ea580c' : '#64748b', '🚌', 28)}
             <Popup longitude={livePosition.lng} latitude={livePosition.lat} closeButton={false} anchor="bottom">
-              Bus en route
+              {liveActive ? 'Bus en route' : 'Dernière position'}
               {livePosition.speedKmh != null && (
                 <span className="block text-xs">{Math.round(livePosition.speedKmh)} km/h</span>
               )}

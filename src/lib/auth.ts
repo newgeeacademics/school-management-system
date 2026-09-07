@@ -2,7 +2,7 @@ import { clearAccessToken, isBackendApiConfigured, setAccessToken } from '@/lib/
 
 const SESSION_KEY = 'newgee_tracking_session_v1';
 
-export type TrackingRole = 'parent' | 'teacher' | 'driver';
+export type TrackingRole = 'parent' | 'teacher' | 'driver' | 'student';
 
 export type TrackingSession = {
   role: TrackingRole;
@@ -20,7 +20,7 @@ export function getTrackingSession(): TrackingSession | null {
     const raw = sessionStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw) as Partial<TrackingSession>;
-    if (data.role === 'parent' || data.role === 'teacher' || data.role === 'driver') {
+    if (data.role === 'parent' || data.role === 'teacher' || data.role === 'driver' || data.role === 'student') {
       if (isBackendApiConfigured() && !data.token) {
         sessionStorage.removeItem(SESSION_KEY);
         return null;
