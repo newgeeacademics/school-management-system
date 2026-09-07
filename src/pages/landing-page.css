@@ -670,6 +670,7 @@ body.landing-mobile-menu-open .landing__header {
 .landing__plans-grid--single {
   max-width: 420px;
   margin-inline: auto;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .landing__plan-card {
@@ -1397,7 +1398,7 @@ body.landing-mobile-menu-open .landing__header {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .landing__plans-grid {
+  .landing__plans-grid:not(.landing__plans-grid--single) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
