@@ -48,6 +48,8 @@ export type Teacher = {
   email?: string;
   phone?: string;
   loginId?: string;
+  /** Classes where this teacher teaches (subject assignment). */
+  assignedClassIds?: string[];
 };
 
 export type Driver = {
@@ -251,6 +253,7 @@ export type NewTeacherFormState = {
   password: string;
   phone: string;
   homeroomClassIds: string[];
+  assignedClassIds: string[];
 };
 
 export type NewStudentFormState = {

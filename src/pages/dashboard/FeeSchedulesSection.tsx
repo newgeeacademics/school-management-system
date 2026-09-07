@@ -2,8 +2,7 @@ import React from 'react';
 
 import { EntityCrudActions } from '@/components/dashboard/EntityCrudActions';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -19,8 +18,11 @@ import type {
   FeeCategory,
   FeeInstallment,
   NewFeeInstallmentFormState,
-  SetStateAction,
 } from './dashboardTypes';
+import {
+  FeeInstallmentCreateWizard,
+  type FeeInstallmentCreatePayload,
+} from './FeeInstallmentCreateWizard';
 
 const CATEGORIES: FeeCategory[] = ['Scolarité', 'Cantine', 'Transport'];
 
@@ -34,17 +36,15 @@ const formatAmount = (value: number) => `${value.toLocaleString('fr-FR')} XOF`;
 
 type FeeSchedulesSectionProps = {
   installments: FeeInstallment[];
-  newInstallment: NewFeeInstallmentFormState;
-  setNewInstallment: SetStateAction<NewFeeInstallmentFormState>;
-  onCreate: (e: React.FormEvent) => void;
+  defaultAcademicYear: string;
+  onCreate: (payload: FeeInstallmentCreatePayload) => Promise<void>;
   onUpdate: (id: string, data: Omit<FeeInstallment, 'id'>) => void | Promise<void>;
   onDelete: (id: string) => void | Promise<void>;
 };
 
 export const FeeSchedulesSection: React.FC<FeeSchedulesSectionProps> = ({
   installments,
-  newInstallment,
-  setNewInstallment,
+  defaultAcademicYear,
   onCreate,
   onUpdate,
   onDelete,
@@ -201,19 +201,17 @@ export const FeeSchedulesSection: React.FC<FeeSchedulesSectionProps> = ({
       </p>
 
       <Card>
-        <CardHeader>
-          <CardTitle className='text-sm font-medium'>Ajouter une tranche</CardTitle>
+        <CardHeader className='pb-3'>
+          <CardTitle className='text-base'>Ajouter une tranche</CardTitle>
+          <CardDescription className='text-xs'>
+            Parcours guidé en 3 étapes — catégorie, montant & période, validation.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form
-            className='grid gap-3 md:grid-cols-2 lg:grid-cols-3 text-xs items-end'
+          <FeeInstallmentCreateWizard
+            defaultAcademicYear={defaultAcademicYear}
             onSubmit={onCreate}
-          >
-            {formFields(newInstallment, setNewInstallment)}
-            <Button type='submit' size='sm' className='md:col-span-2 lg:col-span-1'>
-              Ajouter
-            </Button>
-          </form>
+          />
         </CardContent>
       </Card>
 

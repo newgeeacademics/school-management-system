@@ -2,32 +2,24 @@ import React from 'react';
 import { CreditCard, Plus, Users } from 'lucide-react';
 
 import { EntityCrudActions } from '@/components/dashboard/EntityCrudActions';
-import { LoginIdPreview } from '@/components/dashboard/LoginIdPreview';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
+import { PhoneWithDialCode } from '@/components/refine-ui/form/phone-with-dial-code';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
-import type { ClassItem, NewTeacherFormState, SetStateAction, Teacher } from './dashboardTypes';
+import type { ClassItem, Matiere, NewTeacherFormState, Teacher } from './dashboardTypes';
+import { formatPhoneWithCountry } from '@/lib/location-data';
+import { TeacherCreateWizard, type TeacherCreatePayload } from './TeacherCreateWizard';
+import { ClassAssignmentPicker, HomeroomPicker, SubjectField, homeroomClassIdsForTeacher } from './teacherFormParts';
 
 type TeachersSectionProps = {
   teachers: Teacher[];
   classes: ClassItem[];
-  newTeacher: NewTeacherFormState;
-  setNewTeacher: SetStateAction<NewTeacherFormState>;
-  teacherSubjectPreset: string;
-  setTeacherSubjectPreset: React.Dispatch<React.SetStateAction<string>>;
-  onCreateTeacher: (e: React.FormEvent) => void;
+  matieres: Matiere[];
+  onCreateTeacher: (payload: TeacherCreatePayload) => Promise<void>;
   onUpdateTeacher: (
     id: string,
     data: {
@@ -39,97 +31,33 @@ type TeachersSectionProps = {
       password?: string;
       phone?: string;
       homeroomClassIds?: string[];
+      assignedClassIds?: string[];
     }
   ) => void | Promise<void>;
   onDeleteTeacher: (id: string) => void | Promise<void>;
   onPrintIdCard?: (teacherId: string) => void | Promise<void>;
-  subjectOptions: string[];
+  onOpenMatieres?: () => void;
+  defaultPhoneCountry?: string;
   getClassName: (id: string) => string;
   createFormRef?: React.RefObject<HTMLDivElement | null>;
 };
 
-function homeroomClassIdsForTeacher(teacherId: string, classes: ClassItem[]): string[] {
-  return classes.filter((c) => c.homeroomTeacherId === teacherId).map((c) => c.id);
-}
-
-function toggleHomeroomClass(ids: string[], classId: string, checked: boolean): string[] {
-  if (checked) return ids.includes(classId) ? ids : [...ids, classId];
-  return ids.filter((id) => id !== classId);
-}
-
-function HomeroomPicker({
-  classes,
-  selectedIds,
-  onChange,
-  idPrefix,
-  editingTeacherId,
-}: {
-  classes: ClassItem[];
-  selectedIds: string[];
-  onChange: (ids: string[]) => void;
-  idPrefix: string;
-  editingTeacherId?: string | null;
-}) {
-  if (classes.length === 0) {
-    return (
-      <p className='text-xs text-muted-foreground italic rounded-lg border border-dashed p-3'>
-        Créez d&apos;abord des classes pour assigner un professeur principal.
-      </p>
-    );
-  }
-
-  return (
-    <div className='grid gap-2 sm:grid-cols-2 lg:grid-cols-3'>
-      {classes.map((classe) => {
-        const inputId = `${idPrefix}-homeroom-${classe.id}`;
-        const takenByOther =
-          classe.homeroomTeacherId &&
-          classe.homeroomTeacherId !== editingTeacherId &&
-          !selectedIds.includes(classe.id);
-        return (
-          <label
-            key={classe.id}
-            htmlFor={inputId}
-            className='flex items-start gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-xs cursor-pointer hover:bg-muted/50'
-          >
-            <input
-              id={inputId}
-              type='checkbox'
-              className='mt-0.5 h-4 w-4 rounded border-slate-300'
-              checked={selectedIds.includes(classe.id)}
-              onChange={(e) => onChange(toggleHomeroomClass(selectedIds, classe.id, e.target.checked))}
-            />
-            <span>
-              <span className='font-medium'>{classe.name}</span>
-              <span className='text-muted-foreground'> · {classe.level}</span>
-              {takenByOther ? (
-                <span className='block text-[10px] text-amber-700'>Remplacera le PP actuel</span>
-              ) : null}
-            </span>
-          </label>
-        );
-      })}
-    </div>
-  );
-}
-
 export const TeachersSection: React.FC<TeachersSectionProps> = ({
   teachers,
   classes,
-  newTeacher,
-  setNewTeacher,
-  teacherSubjectPreset,
-  setTeacherSubjectPreset,
+  matieres,
   onCreateTeacher,
   onUpdateTeacher,
   onDeleteTeacher,
   onPrintIdCard,
-  subjectOptions,
+  onOpenMatieres,
+  defaultPhoneCountry,
   getClassName,
   createFormRef,
 }) => {
+  const phoneCountryDefault = defaultPhoneCountry?.trim() || 'Ivory Coast';
   const [editingId, setEditingId] = React.useState<string | null>(null);
-  const [draft, setDraft] = React.useState<NewTeacherFormState>({
+  const [draft, setDraft] = React.useState<NewTeacherFormState & { phoneCountry: string }>({
     firstName: '',
     lastName: '',
     subject: '',
@@ -137,10 +65,13 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
     email: '',
     password: '',
     phone: '',
+    phoneCountry: phoneCountryDefault,
     homeroomClassIds: [],
+    assignedClassIds: [],
   });
 
   const withHomeroom = teachers.filter((t) => homeroomClassIdsForTeacher(t.id, classes).length > 0).length;
+  const withAssigned = teachers.filter((t) => (t.assignedClassIds?.length ?? 0) > 0).length;
 
   const startEdit = (teacher: Teacher) => {
     setEditingId(teacher.id);
@@ -152,7 +83,9 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
       email: teacher.email ?? '',
       password: '',
       phone: teacher.phone ?? '',
+      phoneCountry: phoneCountryDefault,
       homeroomClassIds: homeroomClassIdsForTeacher(teacher.id, classes),
+      assignedClassIds: teacher.assignedClassIds ?? [],
     });
   };
 
@@ -166,8 +99,9 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
         staffId: draft.staffId.trim() || undefined,
         email: draft.email.trim() || undefined,
         password: draft.password.trim() || undefined,
-        phone: draft.phone.trim() || undefined,
+        phone: formatPhoneWithCountry(draft.phoneCountry, draft.phone.trim()) || draft.phone.trim(),
         homeroomClassIds: draft.homeroomClassIds,
+        assignedClassIds: draft.assignedClassIds,
       })
     ).then(() => setEditingId(null));
   };
@@ -183,13 +117,13 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
           <p className='text-2xl font-semibold'>{withHomeroom}</p>
           <p className='text-xs text-muted-foreground'>Prof. principal assignés</p>
         </div>
+        <div className='rounded-xl border bg-card px-4 py-3 min-w-[140px]'>
+          <p className='text-2xl font-semibold'>{withAssigned}</p>
+          <p className='text-xs text-muted-foreground'>Liés à une classe</p>
+        </div>
       </div>
 
-      <Card
-        ref={createFormRef}
-        id='teacher-create-form'
-        className='border-2 border-primary/30 bg-primary/[0.06] shadow-md scroll-mt-24'
-      >
+      <Card ref={createFormRef} id='teacher-create-form' className='scroll-mt-24'>
         <CardHeader className='pb-3'>
           <div className='flex items-center gap-2'>
             <div className='flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground'>
@@ -198,133 +132,20 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
             <div>
               <CardTitle className='text-base'>Ajouter un enseignant</CardTitle>
               <CardDescription className='text-xs'>
-                Créez le profil, le compte portail (identifiant généré automatiquement) et assignez les
-                classes ici — sans quitter cette page.
+                Parcours guidé en 4 étapes — identité, matière, compte portail, puis classes.
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <form className='space-y-4' onSubmit={onCreateTeacher}>
-            <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-              <div className='grid gap-2'>
-                <Label htmlFor='teacher-first-name'>Prénom *</Label>
-                <Input
-                  id='teacher-first-name'
-                  value={newTeacher.firstName}
-                  onChange={(e) => setNewTeacher((t) => ({ ...t, firstName: e.target.value }))}
-                  placeholder='Ex : Aminata'
-                  required
-                />
-              </div>
-              <div className='grid gap-2'>
-                <Label htmlFor='teacher-last-name'>Nom *</Label>
-                <Input
-                  id='teacher-last-name'
-                  value={newTeacher.lastName}
-                  onChange={(e) => setNewTeacher((t) => ({ ...t, lastName: e.target.value }))}
-                  placeholder='Ex : Koné'
-                  required
-                />
-              </div>
-              <div className='grid gap-2'>
-                <Label htmlFor='teacher-staff-id'>N° personnel (opt.)</Label>
-                <Input
-                  id='teacher-staff-id'
-                  value={newTeacher.staffId}
-                  onChange={(e) => setNewTeacher((t) => ({ ...t, staffId: e.target.value }))}
-                  placeholder='Auto si vide'
-                />
-              </div>
-              <div className='grid gap-2'>
-                <Label>Matière principale *</Label>
-                <Select
-                  value={teacherSubjectPreset || undefined}
-                  onValueChange={(value) => {
-                    setTeacherSubjectPreset(value);
-                    setNewTeacher((t) => ({
-                      ...t,
-                      subject: value === 'Autre' ? '' : value,
-                    }));
-                  }}
-                >
-                  <SelectTrigger className='w-full'>
-                    <SelectValue placeholder='Choisir une matière' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjectOptions.map((subject) => (
-                      <SelectItem key={subject} value={subject}>
-                        {subject}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {teacherSubjectPreset === 'Autre' && (
-                  <Input
-                    value={newTeacher.subject}
-                    onChange={(e) => setNewTeacher((t) => ({ ...t, subject: e.target.value }))}
-                    placeholder='Précisez la matière'
-                    required
-                  />
-                )}
-              </div>
-              <div className='grid gap-2 sm:col-span-2'>
-                <Label htmlFor='teacher-email'>E-mail de contact</Label>
-                <Input
-                  id='teacher-email'
-                  type='email'
-                  value={newTeacher.email}
-                  onChange={(e) => setNewTeacher((t) => ({ ...t, email: e.target.value }))}
-                  placeholder='enseignant@exemple.com'
-                />
-                <p className='text-[10px] text-muted-foreground'>
-                  Optionnel. Connexion portail avec l&apos;identifiant généré et le téléphone mobile.
-                </p>
-              </div>
-              <div className='grid gap-2 sm:col-span-2'>
-                <LoginIdPreview firstName={newTeacher.firstName} lastName={newTeacher.lastName} />
-              </div>
-              <div className='grid gap-2'>
-                <Label htmlFor='teacher-phone'>Téléphone mobile *</Label>
-                <Input
-                  id='teacher-phone'
-                  type='tel'
-                  value={newTeacher.phone}
-                  onChange={(e) => setNewTeacher((t) => ({ ...t, phone: e.target.value }))}
-                  placeholder='+225 07 00 00 00 00'
-                  required
-                />
-              </div>
-              <div className='grid gap-2'>
-                <Label htmlFor='teacher-password'>Mot de passe portail</Label>
-                <InputPassword
-                  id='teacher-password'
-                  value={newTeacher.password}
-                  onChange={(e) => setNewTeacher((t) => ({ ...t, password: e.target.value }))}
-                  placeholder='changeme si vide'
-                />
-              </div>
-            </div>
-
-            <div className='space-y-2'>
-              <Label className='text-sm'>Professeur principal (classes)</Label>
-              <HomeroomPicker
-                classes={classes}
-                selectedIds={newTeacher.homeroomClassIds}
-                onChange={(ids) => setNewTeacher((t) => ({ ...t, homeroomClassIds: ids }))}
-                idPrefix='new'
-              />
-            </div>
-
-            <p className='text-[11px] text-muted-foreground'>
-              * Téléphone mobile obligatoire pour le compte portail. Mot de passe vide → <strong>changeme</strong>.
-            </p>
-
-            <Button type='submit' className='gap-2'>
-              <Plus className='size-4' />
-              Créer l&apos;enseignant
-            </Button>
-          </form>
+          <TeacherCreateWizard
+            matieres={matieres}
+            classes={classes}
+            defaultPhoneCountry={defaultPhoneCountry}
+            onOpenMatieres={onOpenMatieres}
+            onSubmit={onCreateTeacher}
+            getClassName={getClassName}
+          />
         </CardContent>
       </Card>
 
@@ -345,6 +166,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
             {teachers.map((teacher) => {
               const isEditing = editingId === teacher.id;
               const homeroomIds = homeroomClassIdsForTeacher(teacher.id, classes);
+              const assignedIds = teacher.assignedClassIds ?? [];
 
               return (
                 <Card key={teacher.id}>
@@ -366,27 +188,39 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                           onChange={(e) => setDraft((d) => ({ ...d, staffId: e.target.value }))}
                           placeholder='N° personnel (opt.)'
                         />
-                        <Input
+                        <SubjectField
+                          compact
+                          idPrefix={`edit-${teacher.id}`}
                           value={draft.subject}
-                          onChange={(e) => setDraft((d) => ({ ...d, subject: e.target.value }))}
-                          placeholder='Matière'
+                          onChange={(subject) => setDraft((d) => ({ ...d, subject }))}
+                          matieres={matieres}
+                          onOpenMatieres={onOpenMatieres}
                         />
                         <Input
                           type='email'
                           value={draft.email}
                           onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
-                          placeholder='Email portail'
+                          placeholder='E-mail *'
+                          required
                         />
-                        <Input
-                          type='tel'
+                        <PhoneWithDialCode
+                          countryName={draft.phoneCountry}
+                          onCountryChange={(phoneCountry) => setDraft((d) => ({ ...d, phoneCountry }))}
                           value={draft.phone}
-                          onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))}
-                          placeholder='Téléphone'
+                          onChange={(phone) => setDraft((d) => ({ ...d, phone }))}
+                          placeholder='07 00 00 00 00'
+                          required
                         />
                         <InputPassword
                           value={draft.password}
                           onChange={(e) => setDraft((d) => ({ ...d, password: e.target.value }))}
                           placeholder='Nouveau mot de passe (opt.)'
+                        />
+                        <ClassAssignmentPicker
+                          classes={classes}
+                          selectedIds={draft.assignedClassIds}
+                          onChange={(ids) => setDraft((d) => ({ ...d, assignedClassIds: ids }))}
+                          idPrefix={`edit-assigned-${teacher.id}`}
                         />
                         <HomeroomPicker
                           classes={classes}
@@ -413,31 +247,40 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                             <p className='font-medium leading-tight'>{teacher.name}</p>
                             <p className='text-xs text-muted-foreground'>{teacher.subject}</p>
                             {teacher.loginId ? (
-                              <p className='mt-0.5 truncate text-[11px] text-muted-foreground'>
+                              <p className='mt-0.5 truncate text-xs text-muted-foreground'>
                                 Connexion : <span className='font-mono'>{teacher.loginId}</span>
                               </p>
                             ) : teacher.email ? (
-                              <p className='mt-0.5 truncate text-[11px] text-muted-foreground'>{teacher.email}</p>
+                              <p className='mt-0.5 truncate text-xs text-muted-foreground'>{teacher.email}</p>
                             ) : null}
                             {teacher.phone ? (
-                              <p className='text-[11px] text-muted-foreground'>{teacher.phone}</p>
+                              <p className='text-xs text-muted-foreground'>{teacher.phone}</p>
                             ) : null}
                             {teacher.staffId ? (
-                              <p className='text-[11px] font-mono text-muted-foreground'>
+                              <p className='text-xs font-mono text-muted-foreground'>
                                 N° personnel : {teacher.staffId}
                               </p>
+                            ) : null}
+                            {assignedIds.length > 0 ? (
+                              <div className='mt-2 flex flex-wrap gap-1'>
+                                {assignedIds.map((classId) => (
+                                  <Badge key={classId} variant='outline' className='text-xs px-1.5 py-0'>
+                                    {getClassName(classId)}
+                                  </Badge>
+                                ))}
+                              </div>
                             ) : null}
                             {homeroomIds.length > 0 ? (
                               <div className='mt-2 flex flex-wrap gap-1'>
                                 {homeroomIds.map((classId) => (
-                                  <Badge key={classId} variant='secondary' className='text-[10px] px-1.5 py-0'>
+                                  <Badge key={classId} variant='secondary' className='text-xs px-1.5 py-0'>
                                     PP · {getClassName(classId)}
                                   </Badge>
                                 ))}
                               </div>
-                            ) : (
-                              <p className='mt-1 text-[10px] text-muted-foreground italic'>Aucune classe PP</p>
-                            )}
+                            ) : assignedIds.length === 0 ? (
+                              <p className='mt-1 text-xs text-muted-foreground italic'>Aucune classe assignée</p>
+                            ) : null}
                           </div>
                         </div>
                         {onPrintIdCard ? (
@@ -445,7 +288,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                             type='button'
                             variant='outline'
                             size='sm'
-                            className='mt-2 h-7 gap-1 text-[11px]'
+                            className='mt-2 h-7 gap-1 text-xs'
                             onClick={() => void Promise.resolve(onPrintIdCard(teacher.id))}
                           >
                             <CreditCard className='size-3' />

@@ -122,15 +122,16 @@ export function PermissionsSection({ onOpenUsers }: Props) {
             personnel (finance en écriture).
           </CardDescription>
         </CardHeader>
-        <CardContent className='overflow-x-auto'>
-          <table className='w-full min-w-[640px] border-collapse text-xs'>
+        <CardContent>
+          <div className='dashboard-table-wrap'>
+          <table className='min-w-[640px]'>
             <thead>
-              <tr className='border-b border-border text-left'>
-                <th className='py-2 pr-4 font-medium text-muted-foreground'>Rôle</th>
+              <tr className='text-left'>
+                <th className='px-2 py-2 pr-4 font-medium text-muted-foreground'>Rôle</th>
                 {MODULES.map((mod) => (
                   <th key={mod.id} className='px-2 py-2 font-medium'>
                     <div>{mod.label}</div>
-                    <div className='font-normal text-[10px] text-muted-foreground'>{mod.hint}</div>
+                    <div className='font-normal text-xs text-muted-foreground'>{mod.hint}</div>
                   </th>
                 ))}
               </tr>
@@ -162,6 +163,7 @@ export function PermissionsSection({ onOpenUsers }: Props) {
               ))}
             </tbody>
           </table>
+          </div>
 
           <div className='mt-4 flex flex-wrap gap-2'>
             <Button type='button' size='sm' onClick={() => void handleSave()} disabled={saving}>

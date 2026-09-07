@@ -21,12 +21,13 @@ import logoSrc from '@/assets/logo/newgee-logo.png';
 
 import { LandingSiteChrome } from '@/components/landing/LandingSiteChrome';
 import { useTranslation } from '@/i18n';
+import { WHATSAPP_CONTACT_URL } from '@/lib/app-urls';
 import { useLandingReveal } from './use-landing-reveal';
 import './landing-page.css';
 
 const FEATURE_ICONS = [GraduationCap, Users, ClipboardList, CalendarDays, MapPin, ShieldCheck] as const;
 const MODULE_ICONS = [BarChart3, Users, ClipboardList, CalendarDays, Check, Wallet, Utensils, Bus] as const;
-const PLAN_IDS = ['starter', 'standard', 'establishment'] as const;
+const PLAN_ID = 'establishment';
 
 export const LandingPage = () => {
   const { t } = useTranslation();
@@ -277,37 +278,28 @@ export const LandingPage = () => {
               <h2 className='landing__section-title'>{t('landing.plansTitle')}</h2>
               <p className='landing__section-desc'>{t('landing.plansDesc')}</p>
             </div>
-            <div className='landing__plans-grid'>
-              {PLAN_IDS.map((planId) => (
-                <article
-                  key={planId}
-                  className={`landing__plan-card${planId === 'standard' ? ' landing__plan-card--featured' : ''}`}
-                >
-                  {planId === 'standard' && <span className='landing__plan-badge'>{t('plans.recommended')}</span>}
-                  <h3 className='landing__plan-name'>{t(`plans.${planId}Name`)}</h3>
-                  <p className='landing__plan-tagline'>{t(`plans.${planId}Tagline`)}</p>
-                  <p className='landing__plan-price'>
-                    {t(`plans.${planId}Price`)}
-                    <span className='landing__plan-period'>{t('plans.perStudent')}</span>
-                  </p>
-                  <p className='landing__plan-limit'>{t(`plans.${planId}Limit`)}</p>
-                  <ul className='landing__plan-highlights'>
-                    {[1, 2, 3].map((n) => (
-                      <li key={n}>
-                        <Check size={14} aria-hidden />
-                        {t(`plans.${planId}Highlight${n}`)}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    className={`landing__btn${planId === 'standard' ? ' landing__btn--primary' : ' landing__btn--ghost'} landing__plan-cta`}
-                    to='/plans'
-                  >
-                    {t('landing.plansViewDetails')}
-                    <ArrowRight size={16} />
-                  </Link>
-                </article>
-              ))}
+            <div className='landing__plans-grid landing__plans-grid--single'>
+              <article className='landing__plan-card landing__plan-card--featured'>
+                <h3 className='landing__plan-name'>{t(`plans.${PLAN_ID}Name`)}</h3>
+                <p className='landing__plan-tagline'>{t(`plans.${PLAN_ID}Tagline`)}</p>
+                <p className='landing__plan-price'>
+                  {t(`plans.${PLAN_ID}Price`)}
+                  <span className='landing__plan-period'>{t('plans.perStudentYear')}</span>
+                </p>
+                <p className='landing__plan-limit'>{t(`plans.${PLAN_ID}Limit`)}</p>
+                <ul className='landing__plan-highlights'>
+                  {[1, 2, 3].map((n) => (
+                    <li key={n}>
+                      <Check size={14} aria-hidden />
+                      {t(`plans.${PLAN_ID}Highlight${n}`)}
+                    </li>
+                  ))}
+                </ul>
+                <Link className='landing__btn landing__btn--primary landing__plan-cta' to='/plans'>
+                  {t('landing.plansViewDetails')}
+                  <ArrowRight size={16} />
+                </Link>
+              </article>
             </div>
           </div>
         </section>
@@ -370,7 +362,17 @@ function LandingFaqSection() {
                   <ChevronDown size={18} className='landing__faq-chevron' aria-hidden='true' />
                 </button>
                 <div className='landing__faq-panel' aria-hidden={!isOpen}>
-                  <p className='landing__faq-answer'>{item.answer}</p>
+                  <div className='landing__faq-body'>
+                    <p className='landing__faq-answer'>{item.answer}</p>
+                    <a
+                      className='landing__faq-whatsapp'
+                      href={WHATSAPP_CONTACT_URL}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                    >
+                      {t('landing.faqWhatsapp')}
+                    </a>
+                  </div>
                 </div>
               </article>
             );

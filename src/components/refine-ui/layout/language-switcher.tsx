@@ -34,13 +34,9 @@ export function LanguageSwitcher({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
-          size={showLabel && !compact ? 'default' : 'icon'}
-          className={cn(
-            'gap-2 border border-slate-200 rounded-[10px] bg-white',
-            compact && 'h-[42px] w-[42px] rounded-full p-0',
-            className
-          )}
+          variant="outline"
+          size="sm"
+          className={cn('gap-1.5', className)}
           aria-label={t('common.language')}
         >
           <Languages className="h-4 w-4" />

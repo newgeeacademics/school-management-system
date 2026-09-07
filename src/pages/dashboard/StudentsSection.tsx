@@ -3,12 +3,10 @@ import React from 'react';
 import { CreditCard, FileDown } from 'lucide-react';
 
 import { InputPassword } from '@/components/refine-ui/form/input-password';
-import { LoginIdPreview } from '@/components/dashboard/LoginIdPreview';
 import { EntityCrudActions, NONE_SELECT_VALUE } from '@/components/dashboard/EntityCrudActions';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -17,19 +15,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import type {
-  ClassItem,
-  NewStudentFormState,
-  SetStateAction,
-  Student,
-} from './dashboardTypes';
+import type { ClassItem, NewStudentFormState, Student } from './dashboardTypes';
+import { StudentCreateWizard, type StudentCreatePayload } from './StudentCreateWizard';
 
 type StudentsSectionProps = {
   students: Student[];
   classes: ClassItem[];
-  newStudent: NewStudentFormState;
-  setNewStudent: SetStateAction<NewStudentFormState>;
-  onCreateStudent: (e: React.FormEvent) => void;
+  defaultPhoneCountry?: string;
+  licensedStudentCount?: number | null;
+  onGoToBilling?: () => void;
+  onCreateStudent: (payload: StudentCreatePayload) => Promise<void>;
   onUpdateStudent: (
     id: string,
     data: {
@@ -62,8 +57,9 @@ const emptyDraft = (): NewStudentFormState => ({
 export const StudentsSection: React.FC<StudentsSectionProps> = ({
   students,
   classes,
-  newStudent,
-  setNewStudent,
+  defaultPhoneCountry,
+  licensedStudentCount,
+  onGoToBilling,
   onCreateStudent,
   onUpdateStudent,
   onDeleteStudent,
@@ -105,109 +101,25 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
   };
 
   return (
-    <section className='space-y-5'>
+    <section className='space-y-6'>
       {!readOnly && (
         <Card>
-          <CardHeader>
-            <CardTitle className='text-sm font-medium'>Ajouter un élève + compte portail</CardTitle>
+          <CardHeader className='pb-3'>
+            <CardTitle className='text-base'>Ajouter un élève</CardTitle>
+            <CardDescription className='text-xs'>
+              Parcours guidé en 4 étapes — identité, scolarité, compte portail, validation.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className='mb-3 text-[11px] text-muted-foreground'>
-              Prénom et nom séparés. Saisissez l&apos;e-mail de contact (parent ou élève) ; l&apos;identifiant
-              de connexion  est généré automatiquement et envoyé par e-mail.
-            </p>
-            <form
-              className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
+            <StudentCreateWizard
+              classes={classes}
+              defaultPhoneCountry={defaultPhoneCountry}
+              licensedStudentCount={licensedStudentCount}
+              enrolledCount={students.length}
+              onGoToBilling={onGoToBilling}
               onSubmit={onCreateStudent}
-            >
-              <div className='grid gap-2'>
-                <Label htmlFor='student-first-name'>Prénom</Label>
-                <Input
-                  id='student-first-name'
-                  value={newStudent.firstName}
-                  onChange={(e) => setNewStudent((s) => ({ ...s, firstName: e.target.value }))}
-                  placeholder='Ex : Aïcha'
-                  required
-                />
-              </div>
-              <div className='grid gap-2'>
-                <Label htmlFor='student-last-name'>Nom</Label>
-                <Input
-                  id='student-last-name'
-                  value={newStudent.lastName}
-                  onChange={(e) => setNewStudent((s) => ({ ...s, lastName: e.target.value }))}
-                  placeholder='Ex : Konaté'
-                  required
-                />
-              </div>
-              <div className='grid gap-2'>
-                <Label htmlFor='student-id-card'>N° carte (opt.)</Label>
-                <Input
-                  id='student-id-card'
-                  value={newStudent.idCardNumber}
-                  onChange={(e) => setNewStudent((s) => ({ ...s, idCardNumber: e.target.value }))}
-                  placeholder='Auto si vide'
-                />
-              </div>
-              <div className='grid gap-2'>
-                <Label>Classe</Label>
-                <Select
-                  value={newStudent.classId || NONE_SELECT_VALUE}
-                  onValueChange={(value) =>
-                    setNewStudent((s) => ({
-                      ...s,
-                      classId: value === NONE_SELECT_VALUE ? '' : value,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder='Associer à une classe' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE_SELECT_VALUE}>Aucune classe</SelectItem>
-                    {classes.map((classe) => (
-                      <SelectItem key={classe.id} value={classe.id}>
-                        {classe.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className='grid gap-2'>
-                <Label htmlFor='student-phone'>Téléphone (optionnel)</Label>
-                <Input
-                  id='student-phone'
-                  value={newStudent.phone}
-                  onChange={(e) => setNewStudent((s) => ({ ...s, phone: e.target.value }))}
-                  placeholder='+225…'
-                />
-              </div>
-              <div className='grid gap-2'>
-                <Label htmlFor='student-email'>E-mail de contact *</Label>
-                <Input
-                  id='student-email'
-                  type='email'
-                  value={newStudent.email}
-                  onChange={(e) => setNewStudent((s) => ({ ...s, email: e.target.value }))}
-                  placeholder='parent@exemple.com'
-                  required
-                />
-              </div>
-              <div className='grid gap-2 md:col-span-2 lg:col-span-3'>
-                <LoginIdPreview firstName={newStudent.firstName} lastName={newStudent.lastName} />
-              </div>
-              <div className='grid gap-2'>
-                <Label>Mot de passe</Label>
-                <InputPassword
-                  value={newStudent.password}
-                  onChange={(e) => setNewStudent((s) => ({ ...s, password: e.target.value }))}
-                  placeholder='changeme si vide'
-                />
-              </div>
-              <Button type='submit' size='sm'>
-                Ajouter
-              </Button>
-            </form>
+              getClassName={getClassName}
+            />
           </CardContent>
         </Card>
       )}
@@ -260,7 +172,7 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
               {students.map((student) => {
                 const isEditing = editingId === student.id;
                 return (
-                  <div key={student.id} className='rounded-md border border-border/80 px-3 py-2'>
+                  <div key={student.id} className='dashboard-entity-card'>
                     {isEditing ? (
                       <div className='space-y-2'>
                         <Input
@@ -326,22 +238,22 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
                     ) : (
                       <>
                         <p className='text-sm font-medium text-foreground'>{student.name}</p>
-                        <p className='text-[11px] text-muted-foreground'>
+                        <p className='text-xs text-muted-foreground'>
                           Classe :{' '}
                           {student.classId ? getClassName(student.classId) : 'Non renseignée'}
                         </p>
                         {student.matricule && (
-                          <p className='text-[11px] font-mono text-muted-foreground'>
+                          <p className='text-xs font-mono text-muted-foreground'>
                             Matricule : {student.matricule}
                           </p>
                         )}
                         {student.idCardNumber && (
-                          <p className='text-[11px] font-mono text-muted-foreground'>
+                          <p className='text-xs font-mono text-muted-foreground'>
                             N° carte : {student.idCardNumber}
                           </p>
                         )}
                         {(student.loginId || student.email || student.phone) && (
-                          <p className='text-[11px] text-muted-foreground'>
+                          <p className='text-xs text-muted-foreground'>
                             {student.loginId ? (
                               <>
                                 Connexion : <span className='font-mono'>{student.loginId}</span>
@@ -356,7 +268,7 @@ export const StudentsSection: React.FC<StudentsSectionProps> = ({
                             type='button'
                             variant='outline'
                             size='sm'
-                            className='mt-2 h-7 gap-1 text-[11px]'
+                            className='mt-2 h-7 gap-1 text-xs'
                             onClick={() => void Promise.resolve(onPrintIdCard(student.id))}
                           >
                             <CreditCard className='size-3' />

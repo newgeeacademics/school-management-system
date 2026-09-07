@@ -3,6 +3,13 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 import type {
@@ -36,9 +43,6 @@ type PaymentsSectionProps = {
   setNewReceipt?: SetStateAction<NewPaymentReceiptFormState>;
   onCreateReceipt?: (e: React.FormEvent) => void;
 };
-
-const selectClass =
-  'flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 const formatAmount = (value: number, currency: string) =>
   `${value.toLocaleString('fr-FR')} ${currency}`;
@@ -106,18 +110,21 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
       {showFamilyPicker ? (
         <div className='max-w-md'>
           <Label htmlFor='payments-family'>Enfant / compte parent</Label>
-          <select
-            id='payments-family'
-            className={`${selectClass} mt-1`}
+          <Select
             value={selectedParentContactId}
-            onChange={(e) => onParentContactChange(e.target.value)}
+            onValueChange={onParentContactChange}
           >
-            {linkedParentContacts.map((parent) => (
-              <option key={parent.id} value={parent.id}>
-                {parentContactLabel(parent, students)}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger id='payments-family' className='mt-1'>
+              <SelectValue placeholder='Choisir un enfant' />
+            </SelectTrigger>
+            <SelectContent>
+              {linkedParentContacts.map((parent) => (
+                <SelectItem key={parent.id} value={parent.id}>
+                  {parentContactLabel(parent, students)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       ) : null}
 
@@ -182,24 +189,23 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
               <div className='grid gap-2'>
                 <Label htmlFor='reminder-parent'>Parent</Label>
                 {parents.length > 0 ? (
-                  <select
-                    id='reminder-parent'
-                    className={selectClass}
-                    value={newReminder.parentContactId}
-                    onChange={(e) =>
-                      setNewReminder((r) =>
-                        applyParentContact(e.target.value, parents, students, r)
-                      )
+                  <Select
+                    value={newReminder.parentContactId || undefined}
+                    onValueChange={(value) =>
+                      setNewReminder((r) => applyParentContact(value, parents, students, r))
                     }
-                    required
                   >
-                    <option value=''>Choisir un parent</option>
-                    {parents.map((parent) => (
-                      <option key={parent.id} value={parent.id}>
-                        {parentContactLabel(parent, students)}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger id='reminder-parent'>
+                      <SelectValue placeholder='Choisir un parent' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {parents.map((parent) => (
+                        <SelectItem key={parent.id} value={parent.id}>
+                          {parentContactLabel(parent, students)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 ) : (
                   <Input
                     id='reminder-parent'
@@ -290,24 +296,23 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
               <div className='grid gap-2'>
                 <Label htmlFor='receipt-parent'>Parent</Label>
                 {parents.length > 0 ? (
-                  <select
-                    id='receipt-parent'
-                    className={selectClass}
-                    value={newReceipt.parentContactId}
-                    onChange={(e) =>
-                      setNewReceipt((r) =>
-                        applyParentContact(e.target.value, parents, students, r)
-                      )
+                  <Select
+                    value={newReceipt.parentContactId || undefined}
+                    onValueChange={(value) =>
+                      setNewReceipt((r) => applyParentContact(value, parents, students, r))
                     }
-                    required
                   >
-                    <option value=''>Choisir un parent</option>
-                    {parents.map((parent) => (
-                      <option key={parent.id} value={parent.id}>
-                        {parentContactLabel(parent, students)}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger id='receipt-parent'>
+                      <SelectValue placeholder='Choisir un parent' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {parents.map((parent) => (
+                        <SelectItem key={parent.id} value={parent.id}>
+                          {parentContactLabel(parent, students)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 ) : (
                   <Input
                     id='receipt-parent'
@@ -400,17 +405,17 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
                   {reminders.map((r) => (
                     <div
                       key={r.id}
-                      className='rounded-md border border-border/70 px-3 py-2'
+                      className='dashboard-entity-card'
                     >
                       <p className='text-sm font-medium text-foreground'>
                         {r.parentName}
                         {r.studentName ? ` – ${r.studentName}` : ''}
                       </p>
-                      <p className='text-[11px] text-muted-foreground'>
+                      <p className='text-xs text-muted-foreground'>
                         Montant : {formatAmount(r.amount, currency)} • Échéance :{' '}
                         {r.dueDate || 'Non définie'}
                       </p>
-                      <p className='text-[11px] text-muted-foreground'>
+                      <p className='text-xs text-muted-foreground'>
                         Statut : {r.status}
                       </p>
                     </div>
@@ -436,17 +441,17 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
                   {receipts.map((r) => (
                     <div
                       key={r.id}
-                      className='rounded-md border border-border/70 px-3 py-2'
+                      className='dashboard-entity-card'
                     >
                       <p className='text-sm font-medium text-foreground'>
                         Reçu pour {r.parentName}
                         {r.studentName ? ` – ${r.studentName}` : ''}
                       </p>
-                      <p className='text-[11px] text-muted-foreground'>
+                      <p className='text-xs text-muted-foreground'>
                         Montant : {formatAmount(r.amount, currency)} • Date :{' '}
                         {r.date || 'Non définie'}
                       </p>
-                      <p className='text-[11px] text-muted-foreground'>
+                      <p className='text-xs text-muted-foreground'>
                         Référence : {r.reference || 'Générée automatiquement'}
                       </p>
                     </div>

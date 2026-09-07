@@ -3,10 +3,8 @@ import React from 'react';
 import { EntityCrudActions } from '@/components/dashboard/EntityCrudActions';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -15,7 +13,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import type { AppUser, AppUserRole, NewUserFormState, SetStateAction } from './dashboardTypes';
+import type { AppUser, AppUserRole, NewUserFormState } from './dashboardTypes';
+import { UserCreateWizard, type UserCreatePayload } from './UserCreateWizard';
 
 const ROLE_LABELS: Record<AppUserRole, string> = {
   admin: 'Admin établissement',
@@ -27,9 +26,8 @@ const ROLE_LABELS: Record<AppUserRole, string> = {
 
 type UsersSectionProps = {
   users: AppUser[];
-  newUser: NewUserFormState;
-  setNewUser: SetStateAction<NewUserFormState>;
-  onCreateUser: (e: React.FormEvent) => void;
+  defaultPhoneCountry?: string;
+  onCreateUser: (payload: UserCreatePayload) => Promise<void>;
   onUpdateUser: (
     id: string,
     data: { name: string; email?: string; phone?: string; role: AppUserRole; password?: string }
@@ -39,8 +37,7 @@ type UsersSectionProps = {
 
 export const UsersSection: React.FC<UsersSectionProps> = ({
   users,
-  newUser,
-  setNewUser,
+  defaultPhoneCountry,
   onCreateUser,
   onUpdateUser,
   onDeleteUser,
@@ -79,75 +76,13 @@ export const UsersSection: React.FC<UsersSectionProps> = ({
   };
 
   return (
-    <section className='space-y-5'>
+    <section className='space-y-6'>
       <Card>
-        <CardHeader>
-          <CardTitle className='text-sm font-medium'>Créer un compte utilisateur</CardTitle>
+        <CardHeader className='pb-3'>
+          <CardTitle className='text-base'>Créer un compte utilisateur</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className='mb-3 text-[11px] text-muted-foreground'>
-            Créez un compte avec email ou numéro de téléphone. Mot de passe par défaut :{' '}
-            <strong>changeme</strong> si vide.
-          </p>
-          <form
-            className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
-            onSubmit={onCreateUser}
-          >
-            <div className='grid gap-2'>
-              <Label>Nom</Label>
-              <Input
-                value={newUser.name}
-                onChange={(e) => setNewUser((u) => ({ ...u, name: e.target.value }))}
-                required
-              />
-            </div>
-            <div className='grid gap-2'>
-              <Label>Email</Label>
-              <Input
-                type='email'
-                value={newUser.email}
-                onChange={(e) => setNewUser((u) => ({ ...u, email: e.target.value }))}
-              />
-            </div>
-            <div className='grid gap-2'>
-              <Label>Téléphone</Label>
-              <Input
-                value={newUser.phone}
-                onChange={(e) => setNewUser((u) => ({ ...u, phone: e.target.value }))}
-                placeholder='+225…'
-              />
-            </div>
-            <div className='grid gap-2'>
-              <Label>Rôle</Label>
-              <Select
-                value={newUser.role}
-                onValueChange={(value) => setNewUser((u) => ({ ...u, role: value as AppUserRole }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(ROLE_LABELS) as AppUserRole[]).map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {ROLE_LABELS[r]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className='grid gap-2'>
-              <Label>Mot de passe (opt.)</Label>
-              <Input
-                type='password'
-                value={newUser.password ?? ''}
-                onChange={(e) => setNewUser((u) => ({ ...u, password: e.target.value }))}
-                placeholder='changeme'
-              />
-            </div>
-            <Button type='submit' size='sm'>
-              Créer
-            </Button>
-          </form>
+          <UserCreateWizard defaultPhoneCountry={defaultPhoneCountry} onSubmit={onCreateUser} />
         </CardContent>
       </Card>
 
@@ -165,7 +100,7 @@ export const UsersSection: React.FC<UsersSectionProps> = ({
                 return (
                   <div
                     key={user.id}
-                    className='rounded-md border border-border/80 px-3 py-2'
+                    className='dashboard-entity-card'
                   >
                     {isEditing ? (
                       <div className='space-y-2'>
@@ -230,7 +165,7 @@ export const UsersSection: React.FC<UsersSectionProps> = ({
                           </Avatar>
                           <div className='min-w-0'>
                             <p className='text-sm font-medium truncate'>{user.name}</p>
-                            <p className='text-[11px] text-muted-foreground truncate'>
+                            <p className='text-xs text-muted-foreground truncate'>
                               {user.loginId ? (
                                 <>
                                   Connexion : <span className='font-mono'>{user.loginId}</span>
@@ -239,7 +174,7 @@ export const UsersSection: React.FC<UsersSectionProps> = ({
                                 user.email || user.phone || '—'
                               )}
                             </p>
-                            <Badge variant='secondary' className='mt-0.5 text-[10px]'>
+                            <Badge variant='secondary' className='mt-0.5 text-xs'>
                               {ROLE_LABELS[user.role]}
                             </Badge>
                           </div>

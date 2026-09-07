@@ -2,7 +2,7 @@
   min-height: 100dvh;
   display: grid;
   grid-template-columns: 1fr;
-  background: #fff;
+  background: var(--background);
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
@@ -16,7 +16,7 @@
 
 .auth-page__top {
   padding: 16px 20px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
 }
 
 .auth-page__top--split {
@@ -40,9 +40,9 @@
 }
 
 .auth-page__logo {
-  height: 88px;
+  height: 44px;
   width: auto;
-  max-width: 320px;
+  max-width: 160px;
   object-fit: contain;
   display: block;
   border: none;
@@ -51,10 +51,9 @@
 }
 
 .auth-page__logo--hero {
-  height: 140px;
-  max-width: 440px;
+  height: 72px;
+  max-width: 240px;
   margin: 0 auto 12px;
-  animation: auth-logo-float 5s ease-in-out 1s infinite;
 }
 
 .auth-page__card > :nth-child(2) {
@@ -69,16 +68,6 @@
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes auth-logo-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
   }
 }
 
@@ -117,17 +106,17 @@
 
 .auth-page__title {
   margin-top: 0;
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 600;
   letter-spacing: -0.02em;
-  color: #0f172a;
+  color: var(--foreground);
 }
 
 .auth-page__subtitle {
   margin-top: 8px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #64748b;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--muted-foreground);
   line-height: 1.5;
 }
 
@@ -143,20 +132,20 @@
 }
 
 .auth-page__submit {
-  height: 44px;
+  height: 36px;
   border: none;
-  border-radius: 12px;
-  background: #2563eb;
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.95rem;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+  font-size: 0.875rem;
   cursor: pointer;
   box-shadow: none;
   transition: background 0.15s;
 }
 
 .auth-page__submit:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--accent-foreground);
 }
 
 .auth-page__submit:disabled {
@@ -226,13 +215,13 @@
   }
 
   .auth-page__logo {
-    height: 72px;
-    max-width: 260px;
+    height: 40px;
+    max-width: 140px;
   }
 
   .auth-page__logo--hero {
-    height: 120px;
-    max-width: 360px;
+    height: 64px;
+    max-width: 200px;
   }
 }
 
@@ -246,7 +235,7 @@
   }
 
   .auth-page__logo--hero {
-    height: 152px;
-    max-width: 480px;
+    height: 80px;
+    max-width: 240px;
   }
 }
