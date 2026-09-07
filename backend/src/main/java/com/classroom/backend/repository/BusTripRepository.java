@@ -12,6 +12,8 @@ public interface BusTripRepository extends JpaRepository<BusTrip, String> {
     Optional<BusTrip> findFirstByTransportRoute_IdAndStatusOrderByStartedAtDesc(
             String routeId, BusTripStatus status);
 
+    Optional<BusTrip> findFirstByTransportRoute_IdOrderByStartedAtDesc(String routeId);
+
     List<BusTrip> findByTransportRoute_IdInAndStatus(List<String> routeIds, BusTripStatus status);
 
     long countByStatus(BusTripStatus status);
