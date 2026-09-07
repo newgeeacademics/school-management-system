@@ -6,7 +6,7 @@ import { Menu, X } from 'lucide-react';
 import logoSrc from '@/assets/logo/newgee-logo.png';
 import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 import { useTranslation } from '@/i18n';
-import { getUserPortalLoginUrl } from '@/lib/app-urls';
+import { getUserPortalLoginUrl, WHATSAPP_CONTACT_URL } from '@/lib/app-urls';
 import { getLandingMobilePortal } from '@/lib/landing-mobile-portal';
 
 import '@/pages/landing-page.css';
@@ -78,6 +78,12 @@ export function LandingSiteChrome({ children }: LandingSiteChromeProps) {
                 <a href='tel:+2250555965862'>+225 05 55 96 58 62</a>
               </li>
               <li>
+                <span className='landing__footer-label'>{t('landing.footerWhatsappLabel')}</span>
+                <a href={WHATSAPP_CONTACT_URL} target='_blank' rel='noopener noreferrer'>
+                  WhatsApp
+                </a>
+              </li>
+              <li>
                 <span className='landing__footer-label'>{t('landing.footerEmailLabel')}</span>
                 <a href='mailto:contact@newgeeacademy.com'>contact@newgeeacademy.com</a>
               </li>
@@ -99,7 +105,7 @@ export function LandingSiteChrome({ children }: LandingSiteChromeProps) {
                 <a href='/#mentions-legales'>{t('landing.footerLegal')}</a>
               </li>
               <li>
-                <a href='mailto:contact@newgeeacademy.com?subject=Support%20NewGee'>
+                <a href={WHATSAPP_CONTACT_URL} target='_blank' rel='noopener noreferrer'>
                   {t('landing.footerSupport')}
                 </a>
               </li>
@@ -107,6 +113,13 @@ export function LandingSiteChrome({ children }: LandingSiteChromeProps) {
           </div>
           <div>
             <p className='landing__footer-heading'>{t('landing.footerSocial')}</p>
+            <ul className='landing__footer-list'>
+              <li>
+                <a href={WHATSAPP_CONTACT_URL} target='_blank' rel='noopener noreferrer'>
+                  {t('landing.footerWhatsappLabel')}
+                </a>
+              </li>
+            </ul>
             <p className='landing__footer-hint'>{t('landing.footerSocialHint')}</p>
           </div>
         </div>

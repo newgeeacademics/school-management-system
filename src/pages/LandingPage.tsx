@@ -21,6 +21,7 @@ import logoSrc from '@/assets/logo/newgee-logo.png';
 
 import { LandingSiteChrome } from '@/components/landing/LandingSiteChrome';
 import { useTranslation } from '@/i18n';
+import { WHATSAPP_CONTACT_URL } from '@/lib/app-urls';
 import { useLandingReveal } from './use-landing-reveal';
 import './landing-page.css';
 
@@ -361,7 +362,17 @@ function LandingFaqSection() {
                   <ChevronDown size={18} className='landing__faq-chevron' aria-hidden='true' />
                 </button>
                 <div className='landing__faq-panel' aria-hidden={!isOpen}>
-                  <p className='landing__faq-answer'>{item.answer}</p>
+                  <div className='landing__faq-body'>
+                    <p className='landing__faq-answer'>{item.answer}</p>
+                    <a
+                      className='landing__faq-whatsapp'
+                      href={WHATSAPP_CONTACT_URL}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                    >
+                      {t('landing.faqWhatsapp')}
+                    </a>
+                  </div>
                 </div>
               </article>
             );
