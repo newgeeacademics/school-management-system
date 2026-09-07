@@ -114,7 +114,7 @@ export function PortalAttendanceView({ variant }: PortalAttendanceViewProps) {
         </div>
       ) : null}
 
-      <section className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
+      <section className='portal-card p-4 md:p-5'>
         <h2 className='mb-3 text-sm font-semibold text-foreground'>
           {variant === 'absences'
             ? t('portalAttendance.absenceListTitle')

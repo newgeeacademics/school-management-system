@@ -1,4 +1,4 @@
-@import "../../../shared/pwa-mobile.css";
+@import "./pwa-mobile.css";
 
 @import "tailwindcss";
 @import "tw-animate-css";

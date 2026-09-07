@@ -132,7 +132,7 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
 
   return (
     <div className={cn('relative w-full', isEmbedded ? 'min-h-0' : 'min-h-svh p-4 md:p-8')}>
-      <div className={cn(isEmbedded ? '' : 'mx-auto max-w-md rounded-2xl border border-border bg-card p-6 shadow-sm')}>
+      <div className={cn(isEmbedded ? '' : 'portal-card mx-auto max-w-md p-6')}>
         <div className={cn(isEmbedded ? '' : 'mb-6')}>
           <h1 className={cn('font-bold tracking-tight text-slate-900', isEmbedded ? 'auth-page__title' : 'text-3xl')}>
             {isSetupMode ? t('userPortal.setupPasswordTitle') : t('userPortal.welcomeTitle')}

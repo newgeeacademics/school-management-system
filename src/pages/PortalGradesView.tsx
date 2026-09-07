@@ -336,13 +336,13 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
       ) : null}
 
       {isParent ? (
-        <div className='rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/5 via-card to-card p-4 shadow-sm'>
+        <div className='portal-card bg-muted/30 p-4 md:p-5'>
           <p className='text-sm font-medium text-foreground'>{t('portalGrades.parentIntro')}</p>
           <p className='mt-1 text-xs text-muted-foreground'>{t('portalGrades.readOnlyHint')}</p>
         </div>
       ) : null}
 
-      <div className='flex flex-wrap items-end gap-3 rounded-2xl border border-border/80 bg-card p-4 shadow-sm'>
+      <div className='portal-card flex flex-wrap items-end gap-3 p-4 md:p-5'>
         {showClassPicker ? (
           <div className='min-w-[10rem] flex-1'>
             <Label htmlFor='grades-class'>{t('portalGrades.classLabel')}</Label>
@@ -427,7 +427,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
       ) : null}
 
       {tab === 'bulletin' ? (
-        <section className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
+        <section className='portal-card p-4 md:p-5'>
           <h2 className='flex items-center gap-2 text-sm font-semibold text-foreground'>
             <GraduationCap className='size-4 text-primary' aria-hidden />
             {t('portalGrades.bulletinTitle')}
@@ -474,7 +474,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
       ) : null}
 
       {tab === 'marks' && canManage ? (
-        <form onSubmit={handleCreateEvaluation} className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
+        <form onSubmit={handleCreateEvaluation} className='portal-card p-4 md:p-5'>
           <h2 className='flex items-center gap-2 text-sm font-semibold text-foreground'>
             <Plus className='size-4 text-primary' aria-hidden />
             {t('portalGrades.newEvaluation')}
@@ -568,7 +568,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
       ) : null}
 
       {tab === 'marks' ? (
-        <section className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
+        <section className='portal-card p-4 md:p-5'>
           <h2 className='text-sm font-semibold text-foreground'>{t('portalGrades.marksTitle')}</h2>
           {!data?.evaluations.length ? (
             <p className='mt-3 text-xs italic text-muted-foreground'>{t('portalGrades.emptyMarks')}</p>

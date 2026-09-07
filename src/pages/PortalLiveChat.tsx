@@ -94,7 +94,7 @@ export function PortalLiveChat() {
   const currentEmail = session?.email?.toLowerCase();
 
   return (
-    <section className='flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm'>
+    <section className='portal-card flex flex-col overflow-hidden'>
       <header className='flex items-center justify-between gap-2 border-b border-border px-4 py-3'>
         <div>
           <h2 className='text-sm font-semibold text-foreground'>{t('portalChat.title')}</h2>
@@ -140,7 +140,7 @@ export function PortalLiveChat() {
                 className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
+                  className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                     isMine
                       ? 'rounded-br-md bg-primary text-primary-foreground'
                       : 'rounded-bl-md bg-muted text-foreground'
