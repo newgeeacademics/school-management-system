@@ -62,7 +62,7 @@ export function PortalFeesView() {
 
   if (items.length === 0) {
     return (
-      <section className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
+      <section className='portal-card p-4 md:p-5'>
         <p className='text-sm italic text-muted-foreground'>{t('portalFees.empty')}</p>
       </section>
     );
@@ -70,7 +70,7 @@ export function PortalFeesView() {
 
   return (
     <div className='space-y-4'>
-      <div className='rounded-2xl border border-border bg-muted/30 px-4 py-3'>
+      <div className='portal-card bg-muted/30 px-4 py-3'>
         <p className='text-xs text-muted-foreground'>{t('portalFees.totalLabel')}</p>
         <p className='text-2xl font-semibold text-foreground'>{formatAmount(total)}</p>
       </div>

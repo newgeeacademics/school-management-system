@@ -122,7 +122,7 @@ export function PortalMessagesView() {
       ) : (
         <>
           {isTeacher ? (
-            <section className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
+            <section className='portal-card p-4 md:p-5'>
               <h2 className='flex items-center gap-2 text-sm font-semibold text-foreground'>
                 <Send className='size-4' aria-hidden />
                 {t('portalMessages.teacherComposeTitle')}
@@ -194,7 +194,7 @@ export function PortalMessagesView() {
               messages.map((msg) => (
                 <article
                   key={msg.id}
-                  className='rounded-2xl border border-border bg-card p-4 shadow-sm'
+                  className='portal-card p-4 md:p-5'
                 >
                   <div className='flex items-start gap-3'>
                     <Mail className='mt-0.5 size-5 shrink-0 text-primary' aria-hidden />

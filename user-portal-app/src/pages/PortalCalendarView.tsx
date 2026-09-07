@@ -12,7 +12,7 @@ export function PortalCalendarView() {
     <div className='space-y-4'>
       <p className='text-sm text-muted-foreground'>{t('portalHome.descCalendar')}</p>
 
-      <section className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
+      <section className='portal-card p-4 md:p-5'>
         <SchoolCalendarGrid
           events={feed.events}
           unscheduledTitle={t('portalHome.calendarUnscheduled')}
@@ -20,7 +20,7 @@ export function PortalCalendarView() {
       </section>
 
       {feed.events.length > 0 ? (
-        <section className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
+        <section className='portal-card p-4 md:p-5'>
           <h2 className='mb-3 text-sm font-semibold text-foreground'>
             {t('portalHome.calendarUpcoming')}
           </h2>
