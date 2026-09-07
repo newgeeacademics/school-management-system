@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   LogOut,
+  Menu,
   UserCircle2,
   Users,
 } from 'lucide-react';
@@ -13,6 +14,7 @@ import { FinanceOverviewPanel } from '@/components/finance/FinanceOverviewPanel'
 import { PayrollPanel } from '@/components/finance/PayrollPanel';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { clearAuthSession, getStoredUser } from '@/lib/auth';
 import {
   createPayroll,
@@ -34,10 +36,63 @@ const NAV: { id: FinanceSectionId; label: string; icon: React.ComponentType<{ cl
   { id: 'staff', label: 'Paie personnel', icon: Users },
 ];
 
+type FinanceNavProps = {
+  section: FinanceSectionId;
+  userName?: string;
+  onSelect: (id: FinanceSectionId) => void;
+  onLogout: () => void;
+  className?: string;
+};
+
+function FinanceNav({ section, userName, onSelect, onLogout, className }: FinanceNavProps) {
+  return (
+    <div className={cn('flex h-full flex-col', className)}>
+      <div className='flex items-center gap-2 border-b border-violet-800/60 px-4 py-4'>
+        <AppLogo markClassName='app-logo__mark--compact' name='NewGee Finance' />
+        <div>
+          <p className='text-[10px] text-violet-300'>Back-office trésorerie</p>
+        </div>
+      </div>
+      <nav className='flex-1 space-y-1 p-3'>
+        {NAV.map((item) => (
+          <button
+            key={item.id}
+            type='button'
+            onClick={() => onSelect(item.id)}
+            className={cn(
+              'touch-target flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors',
+              section === item.id
+                ? 'bg-violet-600 text-white shadow-sm'
+                : 'text-violet-200 hover:bg-violet-900/60 hover:text-white',
+            )}
+          >
+            <item.icon className='size-4 shrink-0' />
+            {item.label}
+          </button>
+        ))}
+      </nav>
+      <div className='border-t border-violet-800/60 p-3 safe-pb'>
+        <p className='truncate px-1 text-xs text-violet-300'>{userName}</p>
+        <Button
+          type='button'
+          variant='ghost'
+          size='sm'
+          className='mt-2 w-full justify-start gap-2 text-violet-200 hover:bg-violet-900/60 hover:text-white'
+          onClick={onLogout}
+        >
+          <LogOut className='size-4' />
+          Déconnexion
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function FinanceDashboardPage() {
   const navigate = useNavigate();
   const user = getStoredUser();
   const [section, setSection] = React.useState<FinanceSectionId>('overview');
+  const [navOpen, setNavOpen] = React.useState(false);
   const [overview, setOverview] = React.useState<FinanceOverview | null>(null);
   const [teacherPayroll, setTeacherPayroll] = React.useState<PayrollPayment[]>([]);
   const [staffPayroll, setStaffPayroll] = React.useState<PayrollPayment[]>([]);
@@ -75,6 +130,11 @@ export function FinanceDashboardPage() {
   const logout = () => {
     clearAuthSession();
     navigate('/login', { replace: true });
+  };
+
+  const selectSection = (id: FinanceSectionId) => {
+    setSection(id);
+    setNavOpen(false);
   };
 
   const handleCreate = async (data: Parameters<typeof createPayroll>[0]) => {
@@ -116,56 +176,43 @@ export function FinanceDashboardPage() {
 
   return (
     <div className='flex min-h-svh bg-violet-50/40'>
-      <aside className='flex w-64 shrink-0 flex-col border-r border-violet-900/30 bg-[#2e1065] text-violet-100'>
-        <div className='flex items-center gap-2 border-b border-violet-800/60 px-4 py-4'>
-          <AppLogo markClassName='app-logo__mark--compact' name='NewGee Finance' />
-          <div>
-            <p className='text-[10px] text-violet-300'>Back-office trésorerie</p>
-          </div>
-        </div>
-        <nav className='flex-1 space-y-1 p-3'>
-          {NAV.map((item) => (
-            <button
-              key={item.id}
-              type='button'
-              onClick={() => setSection(item.id)}
-              className={cn(
-                'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors',
-                section === item.id
-                  ? 'bg-violet-600 text-white shadow-sm'
-                  : 'text-violet-200 hover:bg-violet-900/60 hover:text-white'
-              )}
-            >
-              <item.icon className='size-4 shrink-0' />
-              {item.label}
-            </button>
-          ))}
-        </nav>
-        <div className='border-t border-violet-800/60 p-3'>
-          <p className='truncate px-1 text-xs text-violet-300'>{user?.name}</p>
-          <Button
-            type='button'
-            variant='ghost'
-            size='sm'
-            className='mt-2 w-full justify-start gap-2 text-violet-200 hover:bg-violet-900/60 hover:text-white'
-            onClick={logout}
-          >
-            <LogOut className='size-4' />
-            Déconnexion
-          </Button>
-        </div>
+      <aside className='hidden w-64 shrink-0 flex-col border-r border-violet-900/30 bg-[#2e1065] text-violet-100 md:flex'>
+        <FinanceNav section={section} userName={user?.name} onSelect={selectSection} onLogout={logout} />
       </aside>
 
+      <Sheet open={navOpen} onOpenChange={setNavOpen}>
+        <SheetContent side='left' className='w-[min(100vw-1rem,16rem)] border-violet-900/30 bg-[#2e1065] p-0 text-violet-100'>
+          <SheetHeader className='sr-only'>
+            <SheetTitle>Navigation finance</SheetTitle>
+          </SheetHeader>
+          <FinanceNav section={section} userName={user?.name} onSelect={selectSection} onLogout={logout} />
+        </SheetContent>
+      </Sheet>
+
       <main className='flex min-w-0 flex-1 flex-col'>
-        <header className='border-b border-violet-100 bg-white px-6 py-4'>
-          <h1 className='text-xl font-semibold text-foreground'>{sectionTitle}</h1>
-          <p className='text-sm text-muted-foreground'>
-            Gestion des recettes, charges salariales et suivi de la rentabilité.
-            {role === 'teacher' && !canWrite && ' · Mode consultation'}
-            {role === 'staff' && ' · Personnel autorisé à saisir les paiements'}
-          </p>
+        <header className='safe-pt border-b border-violet-100 bg-white px-4 py-3 md:px-6 md:py-4'>
+          <div className='flex items-start gap-3'>
+            <Button
+              type='button'
+              variant='outline'
+              size='icon'
+              className='touch-target shrink-0 md:hidden'
+              onClick={() => setNavOpen(true)}
+              aria-label='Ouvrir le menu'
+            >
+              <Menu className='size-5' />
+            </Button>
+            <div className='min-w-0 flex-1'>
+              <h1 className='text-lg font-semibold text-foreground md:text-xl'>{sectionTitle}</h1>
+              <p className='text-xs text-muted-foreground md:text-sm'>
+                Gestion des recettes, charges salariales et suivi de la rentabilité.
+                {role === 'teacher' && !canWrite && ' · Mode consultation'}
+                {role === 'staff' && ' · Personnel autorisé à saisir les paiements'}
+              </p>
+            </div>
+          </div>
         </header>
-        <div className='flex-1 overflow-auto p-6'>
+        <div className='flex-1 overflow-auto p-4 md:p-6'>
           {section === 'overview' && <FinanceOverviewPanel overview={overview} loading={loading} />}
           {section === 'teachers' && (
             <PayrollPanel
@@ -194,7 +241,7 @@ export function FinanceDashboardPage() {
           )}
         </div>
         <Separator />
-        <footer className='px-6 py-2 text-[10px] text-muted-foreground'>
+        <footer className='safe-pb px-4 py-2 text-[10px] text-muted-foreground md:px-6'>
           Les recettes proviennent des reçus de frais scolaires enregistrés dans la console admin.
         </footer>
       </main>
