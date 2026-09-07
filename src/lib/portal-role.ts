@@ -1,6 +1,6 @@
 import type { PortalRole } from '@/lib/auth';
 
-/** Maps backend JWT role to portal session role; admins/staff cannot use the portal. */
+
 export function backendRoleToPortal(role: string): PortalRole | null {
   switch (role.toUpperCase()) {
     case 'STUDENT':
@@ -14,7 +14,7 @@ export function backendRoleToPortal(role: string): PortalRole | null {
   }
 }
 
-/** Parents only consult grades (read-only). Teachers manage grades. */
+
 export function canManageGrades(role: PortalRole | undefined, apiCanEdit: boolean): boolean {
   return apiCanEdit && role === 'teacher';
 }

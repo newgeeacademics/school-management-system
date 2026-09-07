@@ -1,3 +1,5 @@
+@import "../../../shared/pwa-mobile.css";
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -44,74 +46,69 @@
   --color-gray-0: #ffffff;
 }
 
-/* Portail familles — thème moderne, clair, distinct de l’app établissement. */
+/* Aligned with school dashboard — institutional blue, restrained surfaces. */
 :root {
-  --radius: 0.875rem;
-  --background: #f1f5f9;
-  --foreground: #0f172a;
+  --radius: 0.625rem;
+  --background: #ffffff;
+  --foreground: #020617;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #020617;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #0d9488;
-  --primary-foreground: #f0fdfa;
-  --secondary: #e0f2fe;
-  --secondary-foreground: #0c4a6e;
-  --muted: #eef2f7;
+  --popover-foreground: #020617;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #eff6ff;
+  --secondary-foreground: #1e293b;
+  --muted: #f8fafc;
   --muted-foreground: #64748b;
-  --accent: #ccfbf1;
-  --accent-foreground: #115e59;
-  --destructive: #dc2626;
+  --accent: #eff6ff;
+  --accent-foreground: #1d4ed8;
+  --destructive: #ef4444;
   --border: #e2e8f0;
-  --input: #cbd5e1;
-  --ring: #14b8a6;
-  --chart-1: #0d9488;
-  --chart-2: #0284c7;
-  --chart-3: #059669;
-  --chart-4: #ea580c;
-  --chart-5: #7c3aed;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #0d9488;
-  --sidebar-primary-foreground: #f0fdfa;
-  --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #0f172a;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+  --chart-1: #2563eb;
+  --chart-2: #16a34a;
+  --chart-3: #3b82f6;
+  --chart-4: #eab308;
+  --chart-5: #8b5cf6;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #020617;
+  --sidebar-primary: #2563eb;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e0edff;
+  --sidebar-accent-foreground: #1e293b;
   --sidebar-border: #e2e8f0;
-  --sidebar-ring: #14b8a6;
+  --sidebar-ring: #2563eb;
 }
 
 .dark {
   --background: #020617;
   --foreground: #e5e7eb;
-  --card: #020617;
+  --card: #0f172a;
   --card-foreground: #e5e7eb;
-  --popover: #020617;
+  --popover: #0f172a;
   --popover-foreground: #e5e7eb;
-  --primary: #1d4ed8;
-  --primary-foreground: #e5e7eb;
-  --secondary: #0b1220;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #1e293b;
   --secondary-foreground: #e5e7eb;
-  --muted: #020617;
-  --muted-foreground: #64748b;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
   --accent: #1e293b;
   --accent-foreground: #e5e7eb;
   --destructive: #ef4444;
-  --border: rgba(148, 163, 184, 0.6);
-  --input: rgba(148, 163, 184, 0.4);
-  --ring: #1d4ed8;
-  --chart-1: #38bdf8;
-  --chart-2: #4ade80;
-  --chart-3: #3b82f6;
-  --chart-4: #facc15;
-  --chart-5: #a855f7;
-  --sidebar: #020617;
+  --border: rgba(148, 163, 184, 0.35);
+  --input: rgba(148, 163, 184, 0.35);
+  --ring: #3b82f6;
+  --sidebar: #0f172a;
   --sidebar-foreground: #e5e7eb;
-  --sidebar-primary: #1d4ed8;
-  --sidebar-primary-foreground: #e5e7eb;
-  --sidebar-accent: #020617;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e293b;
   --sidebar-accent-foreground: #e5e7eb;
-  --sidebar-border: rgba(148, 163, 184, 0.6);
-  --sidebar-ring: #1d4ed8;
+  --sidebar-border: rgba(148, 163, 184, 0.35);
+  --sidebar-ring: #3b82f6;
 }
 
 .app-logo {
@@ -140,9 +137,13 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family:
-      'Plus Jakarta Sans',
       ui-sans-serif,
       system-ui,
+      -apple-system,
+      'Segoe UI',
+      Roboto,
+      'Helvetica Neue',
+      Arial,
       sans-serif;
   }
 }
@@ -153,61 +154,22 @@
   }
 
   .portal-dashboard {
-    @apply h-svh overflow-hidden bg-background text-foreground;
-  }
-
-  .portal-main {
-    background: var(--background);
+    @apply min-h-svh bg-muted/40 text-foreground;
   }
 
   .portal-container {
     @apply mx-auto w-full max-w-6xl px-4 md:px-6 lg:px-8;
   }
-}
 
-@layer base {
-  .portal-login-form {
-    animation: portalFormReveal 0.5s ease-out both;
+  .portal-card {
+    @apply rounded-lg border border-border bg-card shadow-sm;
   }
 
-  .portal-field {
-    opacity: 0;
-    transform: translateY(10px);
-    animation: portalFieldReveal 0.4s ease-out forwards;
+  .portal-section-title {
+    @apply text-sm font-semibold text-foreground md:text-base;
   }
 
-  .portal-field-1 {
-    animation-delay: 0.04s;
-  }
-  .portal-field-2 {
-    animation-delay: 0.1s;
-  }
-  .portal-field-3 {
-    animation-delay: 0.16s;
-  }
-  .portal-field-4 {
-    animation-delay: 0.22s;
-  }
-
-  @keyframes portalFormReveal {
-    0% {
-      opacity: 0;
-      transform: translateY(16px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes portalFieldReveal {
-    0% {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  .portal-section-desc {
+    @apply text-xs text-muted-foreground md:text-sm;
   }
 }
