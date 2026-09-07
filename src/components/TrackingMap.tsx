@@ -1,1 +1,1 @@
-export { TrackingMap } from '../../../shared/TrackingMap';
+export { TrackingMap } from '@shared/TrackingMap';

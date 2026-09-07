@@ -30,7 +30,7 @@ export function TrackingDashboardPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [driverMode, setDriverMode] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(true);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const watchIdRef = useRef<number | null>(null);
 
   const selected = routes.find((r) => r.routeId === selectedId) ?? routes[0] ?? null;
@@ -192,8 +192,8 @@ export function TrackingDashboardPage() {
   ) : null;
 
   return (
-    <div className='flex h-svh flex-col overflow-hidden bg-background'>
-      <header className='safe-pt z-30 border-b bg-card/95 backdrop-blur'>
+    <div className='fixed inset-0 flex flex-col overflow-hidden bg-background'>
+      <header className='safe-pt z-30 shrink-0 border-b bg-card/95 backdrop-blur'>
         <div className='flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4'>
           <div className='flex min-w-0 items-center gap-2 sm:gap-3'>
             <AppLogo markClassName='app-logo__mark--compact' name='NewGee Transport' />
@@ -209,9 +209,10 @@ export function TrackingDashboardPage() {
         </div>
       </header>
 
-      <PushNotificationPrompt enabled={session.role === 'parent' || session.role === 'teacher'} />
-
       <main className='relative min-h-0 flex-1'>
+        <div className='absolute inset-x-0 top-0 z-30'>
+          <PushNotificationPrompt enabled={session.role === 'parent' || session.role === 'teacher'} />
+        </div>
         {loading ? (
           <p className='p-4 text-sm text-muted-foreground'>Chargement des trajets…</p>
         ) : routes.length === 0 ? (
@@ -230,7 +231,7 @@ export function TrackingDashboardPage() {
               livePosition={selected.livePosition}
               driverPosition={selected.driverPosition}
               students={selected.students}
-              className='absolute inset-0 h-full w-full'
+              className='absolute inset-0 h-full w-full [&_.mapboxgl-map]:h-full [&_.mapboxgl-canvas]:h-full'
             />
 
             {routes.length > 1 && (
