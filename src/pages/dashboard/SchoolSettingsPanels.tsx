@@ -22,26 +22,12 @@ import {
 } from '@/lib/dashboard-backend';
 import type { School } from '@/types';
 import type { SectionId } from './dashboardTypes';
+import { SCHOOL_SETTINGS_IDS } from './schoolSettingsSections';
+
+export { isSchoolSettingsSection, SCHOOL_SETTINGS_IDS } from './schoolSettingsSections';
 
 const LOCAL_SCHOOLS_KEY = 'newgee_local_schools';
 const BRANDING_STORAGE_KEY = 'newgee_school_branding_v1';
-
-export const SCHOOL_SETTINGS_IDS = [
-  'settings_profile',
-  'settings_branding',
-  'settings_academics',
-  'settings_attendance',
-  'settings_examinations',
-  'settings_finance',
-  'settings_communication',
-  'settings_security',
-  'settings_compliance',
-  'settings_automation',
-] as const satisfies readonly SectionId[];
-
-export function isSchoolSettingsSection(id: SectionId): id is (typeof SCHOOL_SETTINGS_IDS)[number] {
-  return (SCHOOL_SETTINGS_IDS as readonly string[]).includes(id);
-}
 
 type Props = {
   section: (typeof SCHOOL_SETTINGS_IDS)[number];

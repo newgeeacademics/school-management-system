@@ -17,15 +17,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import type { ClassItem, NewTeacherFormState, SetStateAction, Teacher } from './dashboardTypes';
+import type { ClassItem, Matiere, NewTeacherFormState, SetStateAction, Teacher } from './dashboardTypes';
 
 type TeachersSectionProps = {
   teachers: Teacher[];
   classes: ClassItem[];
+  matieres: Matiere[];
   newTeacher: NewTeacherFormState;
   setNewTeacher: SetStateAction<NewTeacherFormState>;
-  teacherSubjectPreset: string;
-  setTeacherSubjectPreset: React.Dispatch<React.SetStateAction<string>>;
   onCreateTeacher: (e: React.FormEvent) => void;
   onUpdateTeacher: (
     id: string,
@@ -39,7 +38,7 @@ type TeachersSectionProps = {
     }
   ) => void | Promise<void>;
   onDeleteTeacher: (id: string) => void | Promise<void>;
-  subjectOptions: string[];
+  onOpenMatieres?: () => void;
   getClassName: (id: string) => string;
   createFormRef?: React.RefObject<HTMLDivElement | null>;
 };
@@ -99,7 +98,7 @@ function HomeroomPicker({
               <span className='font-medium'>{classe.name}</span>
               <span className='text-muted-foreground'> · {classe.level}</span>
               {takenByOther ? (
-                <span className='block text-[10px] text-amber-700'>Remplacera le PP actuel</span>
+                <span className='block text-xs text-amber-700'>Remplacera le PP actuel</span>
               ) : null}
             </span>
           </label>
@@ -109,17 +108,108 @@ function HomeroomPicker({
   );
 }
 
+function matiereNamesFrom(matiereList: Matiere[]): string[] {
+  return [...new Set(matiereList.map((m) => m.name.trim()).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, 'fr'),
+  );
+}
+
+function SubjectField({
+  value,
+  onChange,
+  matieres,
+  onOpenMatieres,
+  idPrefix,
+  compact = false,
+}: {
+  value: string;
+  onChange: (subject: string) => void;
+  matieres: Matiere[];
+  onOpenMatieres?: () => void;
+  idPrefix: string;
+  compact?: boolean;
+}) {
+  const names = matiereNamesFrom(matieres);
+  const options = names.length > 0 ? [...names, 'Autre'] : [];
+  const [preset, setPreset] = React.useState(() => {
+    if (names.includes(value)) return value;
+    if (value.trim()) return 'Autre';
+    return '';
+  });
+
+  React.useEffect(() => {
+    if (names.includes(value)) setPreset(value);
+    else if (value.trim()) setPreset('Autre');
+    else setPreset('');
+  }, [value, names]);
+
+  if (names.length === 0) {
+    return (
+      <div className='grid gap-2'>
+        {!compact ? <Label htmlFor={`${idPrefix}-subject`}>Matière principale *</Label> : null}
+        <Input
+          id={`${idPrefix}-subject`}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder='Ex : Mathématiques'
+          required
+        />
+        <p className='text-xs text-muted-foreground'>
+          Aucune matière enregistrée. Ajoutez d&apos;abord les matières du programme dans le menu{' '}
+          <strong>Matières</strong>.
+        </p>
+        {onOpenMatieres ? (
+          <Button type='button' variant='link' className='h-auto justify-start p-0 text-xs' onClick={onOpenMatieres}>
+            Aller aux matières
+          </Button>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className='grid gap-2'>
+      {!compact ? <Label htmlFor={`${idPrefix}-subject-preset`}>Matière principale *</Label> : null}
+      <Select
+        value={preset || undefined}
+        onValueChange={(next) => {
+          setPreset(next);
+          onChange(next === 'Autre' ? '' : next);
+        }}
+      >
+        <SelectTrigger id={`${idPrefix}-subject-preset`} className='w-full'>
+          <SelectValue placeholder='Choisir une matière du programme' />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((name) => (
+            <SelectItem key={name} value={name}>
+              {name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {preset === 'Autre' ? (
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder='Précisez la matière'
+          required
+        />
+      ) : null}
+    </div>
+  );
+}
+
 export const TeachersSection: React.FC<TeachersSectionProps> = ({
   teachers,
   classes,
+  matieres,
   newTeacher,
   setNewTeacher,
-  teacherSubjectPreset,
-  setTeacherSubjectPreset,
   onCreateTeacher,
   onUpdateTeacher,
   onDeleteTeacher,
-  subjectOptions,
+  onOpenMatieres,
   getClassName,
   createFormRef,
 }) => {
@@ -174,11 +264,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
         </div>
       </div>
 
-      <Card
-        ref={createFormRef}
-        id='teacher-create-form'
-        className='border-2 border-primary/30 bg-primary/[0.06] shadow-md scroll-mt-24'
-      >
+      <Card ref={createFormRef} id='teacher-create-form' className='scroll-mt-24'>
         <CardHeader className='pb-3'>
           <div className='flex items-center gap-2'>
             <div className='flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground'>
@@ -187,7 +273,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
             <div>
               <CardTitle className='text-base'>Ajouter un enseignant</CardTitle>
               <CardDescription className='text-xs'>
-                Créez le profil, le compte portail (email ou téléphone) et assignez les classes ici — sans quitter cette page.
+                Créez le profil, le compte portail et assignez les classes ici — sans quitter cette page.
               </CardDescription>
             </div>
           </div>
@@ -195,7 +281,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
         <CardContent>
           <form className='space-y-4' onSubmit={onCreateTeacher}>
             <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-              <div className='grid gap-2'>
+              <div className='grid gap-2 sm:col-span-2'>
                 <Label htmlFor='teacher-name'>Nom complet *</Label>
                 <Input
                   id='teacher-name'
@@ -205,50 +291,28 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                   required
                 />
               </div>
-              <div className='grid gap-2'>
-                <Label>Matière principale *</Label>
-                <Select
-                  value={teacherSubjectPreset || undefined}
-                  onValueChange={(value) => {
-                    setTeacherSubjectPreset(value);
-                    setNewTeacher((t) => ({
-                      ...t,
-                      subject: value === 'Autre' ? '' : value,
-                    }));
-                  }}
-                >
-                  <SelectTrigger className='w-full'>
-                    <SelectValue placeholder='Choisir une matière' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjectOptions.map((subject) => (
-                      <SelectItem key={subject} value={subject}>
-                        {subject}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {teacherSubjectPreset === 'Autre' && (
-                  <Input
-                    value={newTeacher.subject}
-                    onChange={(e) => setNewTeacher((t) => ({ ...t, subject: e.target.value }))}
-                    placeholder='Précisez la matière'
-                    required
-                  />
-                )}
-              </div>
-              <div className='grid gap-2'>
-                <Label htmlFor='teacher-email'>Email (connexion portail)</Label>
+              <SubjectField
+                idPrefix='new-teacher'
+                value={newTeacher.subject}
+                onChange={(subject) => setNewTeacher((t) => ({ ...t, subject }))}
+                matieres={matieres}
+                onOpenMatieres={onOpenMatieres}
+              />
+              <div className='grid gap-2 sm:col-span-2'>
+                <Label htmlFor='teacher-email'>E-mail de contact</Label>
                 <Input
                   id='teacher-email'
                   type='email'
                   value={newTeacher.email}
                   onChange={(e) => setNewTeacher((t) => ({ ...t, email: e.target.value }))}
-                  placeholder='prof@ecole.fr'
+                  placeholder='enseignant@exemple.com'
                 />
+                <p className='text-xs text-muted-foreground'>
+                  E-mail ou téléphone requis pour le compte portail.
+                </p>
               </div>
               <div className='grid gap-2'>
-                <Label htmlFor='teacher-phone'>Téléphone (connexion / annuaire)</Label>
+                <Label htmlFor='teacher-phone'>Téléphone mobile</Label>
                 <Input
                   id='teacher-phone'
                   type='tel'
@@ -278,8 +342,8 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
               />
             </div>
 
-            <p className='text-[11px] text-muted-foreground'>
-              * Email <strong>ou</strong> téléphone obligatoire pour la connexion portail. Mot de passe vide → <strong>changeme</strong>.
+            <p className='text-xs text-muted-foreground'>
+              Mot de passe vide → <strong>changeme</strong>.
             </p>
 
             <Button type='submit' className='gap-2'>
@@ -316,12 +380,15 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                         <Input
                           value={draft.name}
                           onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-                          placeholder='Nom'
+                          placeholder='Nom complet'
                         />
-                        <Input
+                        <SubjectField
+                          compact
+                          idPrefix={`edit-${teacher.id}`}
                           value={draft.subject}
-                          onChange={(e) => setDraft((d) => ({ ...d, subject: e.target.value }))}
-                          placeholder='Matière'
+                          onChange={(subject) => setDraft((d) => ({ ...d, subject }))}
+                          matieres={matieres}
+                          onOpenMatieres={onOpenMatieres}
                         />
                         <Input
                           type='email'
@@ -364,22 +431,26 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                           <div className='min-w-0 flex-1'>
                             <p className='font-medium leading-tight'>{teacher.name}</p>
                             <p className='text-xs text-muted-foreground'>{teacher.subject}</p>
-                            {teacher.email ? (
-                              <p className='mt-0.5 truncate text-[11px] text-muted-foreground'>{teacher.email}</p>
+                            {teacher.loginId ? (
+                              <p className='mt-0.5 truncate text-xs text-muted-foreground'>
+                                Connexion : <span className='font-mono'>{teacher.loginId}</span>
+                              </p>
+                            ) : teacher.email ? (
+                              <p className='mt-0.5 truncate text-xs text-muted-foreground'>{teacher.email}</p>
                             ) : null}
                             {teacher.phone ? (
-                              <p className='text-[11px] text-muted-foreground'>{teacher.phone}</p>
+                              <p className='text-xs text-muted-foreground'>{teacher.phone}</p>
                             ) : null}
                             {homeroomIds.length > 0 ? (
                               <div className='mt-2 flex flex-wrap gap-1'>
                                 {homeroomIds.map((classId) => (
-                                  <Badge key={classId} variant='secondary' className='text-[10px] px-1.5 py-0'>
+                                  <Badge key={classId} variant='secondary' className='text-xs px-1.5 py-0'>
                                     PP · {getClassName(classId)}
                                   </Badge>
                                 ))}
                               </div>
                             ) : (
-                              <p className='mt-1 text-[10px] text-muted-foreground italic'>Aucune classe PP</p>
+                              <p className='mt-1 text-xs text-muted-foreground italic'>Aucune classe PP</p>
                             )}
                           </div>
                         </div>
