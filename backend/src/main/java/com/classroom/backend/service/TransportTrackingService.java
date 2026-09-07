@@ -40,25 +40,9 @@ public class TransportTrackingService {
     @Transactional(readOnly = true)
     public List<LiveTrackingResponse> getLiveRoutesForCurrentUser() {
         AppUser user = resolveCurrentUser();
-        if (user.getRole() == UserRole.STAFF) {
-            return driverRepository.findByAppUser_Id(user.getId())
-                    .map(driver -> transportRouteRepository.findAll().stream()
-                            .filter(route -> route.getDriver() != null
-                                    && driver.getId().equals(route.getDriver().getId()))
-                            .map(route -> toLiveResponse(route, Set.of()))
-                            .toList())
-                    .orElse(List.of());
-        }
-
-        Set<String> studentIds = resolveScopedStudentIds();
-        if (studentIds.isEmpty()) {
-            return List.of();
-        }
-
-        return transportRouteRepository.findAll().stream()
-                .filter(route -> route.getStudents() != null && route.getStudents().stream()
-                        .anyMatch(s -> studentIds.contains(s.getId())))
-                .map(route -> toLiveResponse(route, studentIds))
+        Set<String> scopedStudentIds = scopeStudentIds(user);
+        return visibleRoutes(user, scopedStudentIds).stream()
+                .map(route -> toLiveResponse(route, scopedStudentIds))
                 .toList();
     }
 
@@ -67,24 +51,13 @@ public class TransportTrackingService {
         TransportRoute route = transportRouteRepository.findById(routeId)
                 .orElseThrow(() -> new RuntimeException("Transport route not found: " + routeId));
 
-        Set<String> studentIds = resolveScopedStudentIds();
-        boolean allowed = route.getStudents() != null && route.getStudents().stream()
-                .anyMatch(s -> studentIds.contains(s.getId()));
-
         AppUser user = resolveCurrentUser();
-        if (!allowed && user.getRole() != UserRole.ADMIN && user.getRole() != UserRole.STAFF) {
+        Set<String> scopedStudentIds = scopeStudentIds(user);
+        if (!canAccessRoute(user, route, scopedStudentIds)) {
             throw new RuntimeException("Access denied to this route");
         }
-        if (user.getRole() == UserRole.STAFF) {
-            boolean isAssignedDriver = driverRepository.findByAppUser_Id(user.getId())
-                    .map(driver -> route.getDriver() != null && driver.getId().equals(route.getDriver().getId()))
-                    .orElse(false);
-            if (!isAssignedDriver) {
-                throw new RuntimeException("Access denied to this route");
-            }
-        }
 
-        return toLiveResponse(route, studentIds);
+        return toLiveResponse(route, scopedStudentIds);
     }
 
     @Transactional
@@ -200,18 +173,21 @@ public class TransportTrackingService {
 
         LivePositionDto livePosition = null;
         LivePositionDto driverPosition = null;
-        String tripStatus = "INACTIVE";
-        if (activeTrip.isPresent()) {
-            BusTrip trip = activeTrip.get();
-            tripStatus = trip.getStatus().name();
-            if (trip.getCurrentLat() != null && trip.getCurrentLng() != null) {
-                livePosition = LivePositionDto.builder()
-                        .lat(trip.getCurrentLat())
-                        .lng(trip.getCurrentLng())
-                        .heading(trip.getHeading())
-                        .speedKmh(trip.getSpeedKmh())
-                        .recordedAt(trip.getLastPositionAt() != null ? trip.getLastPositionAt().toString() : null)
-                        .build();
+        String tripStatus = activeTrip.map(trip -> trip.getStatus().name()).orElse("INACTIVE");
+        BusTrip positionTrip = activeTrip.orElseGet(() ->
+                busTripRepository.findFirstByTransportRoute_IdOrderByStartedAtDesc(route.getId())
+                        .orElse(null));
+        if (positionTrip != null && positionTrip.getCurrentLat() != null && positionTrip.getCurrentLng() != null) {
+            livePosition = LivePositionDto.builder()
+                    .lat(positionTrip.getCurrentLat())
+                    .lng(positionTrip.getCurrentLng())
+                    .heading(positionTrip.getHeading())
+                    .speedKmh(activeTrip.isPresent() ? positionTrip.getSpeedKmh() : null)
+                    .recordedAt(positionTrip.getLastPositionAt() != null
+                            ? positionTrip.getLastPositionAt().toString()
+                            : null)
+                    .build();
+            if (activeTrip.isPresent()) {
                 driverPosition = livePosition;
             }
         }
@@ -299,6 +275,46 @@ public class TransportTrackingService {
         } catch (Exception e) {
             return List.of();
         }
+    }
+
+    private List<TransportRoute> visibleRoutes(AppUser user, Set<String> scopedStudentIds) {
+        return switch (user.getRole()) {
+            case ADMIN, TEACHER -> transportRouteRepository.findAll();
+            case STAFF -> driverRepository.findByAppUser_Id(user.getId())
+                    .map(driver -> transportRouteRepository.findAll().stream()
+                            .filter(route -> route.getDriver() != null
+                                    && driver.getId().equals(route.getDriver().getId()))
+                            .toList())
+                    .orElse(List.of());
+            default -> {
+                if (scopedStudentIds.isEmpty()) {
+                    yield List.of();
+                }
+                yield transportRouteRepository.findAll().stream()
+                        .filter(route -> route.getStudents() != null && route.getStudents().stream()
+                                .anyMatch(s -> scopedStudentIds.contains(s.getId())))
+                        .toList();
+            }
+        };
+    }
+
+    private boolean canAccessRoute(AppUser user, TransportRoute route, Set<String> scopedStudentIds) {
+        return switch (user.getRole()) {
+            case ADMIN, TEACHER -> true;
+            case STAFF -> driverRepository.findByAppUser_Id(user.getId())
+                    .map(driver -> route.getDriver() != null && driver.getId().equals(route.getDriver().getId()))
+                    .orElse(false);
+            default -> route.getStudents() != null && route.getStudents().stream()
+                    .anyMatch(s -> scopedStudentIds.contains(s.getId()));
+        };
+    }
+
+    /** Empty set = every student on the selected route (admin, teacher, assigned driver). */
+    private Set<String> scopeStudentIds(AppUser user) {
+        return switch (user.getRole()) {
+            case ADMIN, TEACHER, STAFF -> Set.of();
+            default -> resolveScopedStudentIds();
+        };
     }
 
     private Set<String> resolveScopedStudentIds() {

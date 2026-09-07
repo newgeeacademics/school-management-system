@@ -1,8 +1,13 @@
+import { existsSync } from 'fs';
 import path from 'path';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+
+const sharedDir = existsSync(path.resolve(__dirname, 'shared'))
+  ? path.resolve(__dirname, 'shared')
+  : path.resolve(__dirname, '../shared');
 
 export default defineConfig({
   plugins: [
@@ -41,6 +46,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@shared': sharedDir,
     },
   },
   server: {

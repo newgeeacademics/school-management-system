@@ -25,7 +25,7 @@ function Remove-Clutter {
 }
 
 $AppFiles = @(
-    "src", "public", "index.html", "package.json", "package-lock.json",
+    "src", "shared", "public", "index.html", "package.json", "package-lock.json",
     "vite.config.ts", "tsconfig.json", "postcss.config.cjs", "tailwind.config.cjs",
     "components.json", ".env.example", "vercel.json"
 )
@@ -113,6 +113,7 @@ $TrackingFiles = @(
     "vite.config.ts", "tsconfig.json", ".env.example", "vercel.json"
 )
 Copy-AppFiles -Source (Join-Path $RepoRoot "tracking-app") -Dest (Join-Path $WtRoot "tracking") -Files $TrackingFiles
+Copy-AppFiles -Source $RepoRoot -Dest (Join-Path $WtRoot "tracking") -Files @("shared")
 Copy-Item (Join-Path $RepoRoot ".gitignore") (Join-Path $WtRoot "tracking\.gitignore") -Force
 Remove-Clutter (Join-Path $WtRoot "tracking")
 Push-Location (Join-Path $WtRoot "tracking")
