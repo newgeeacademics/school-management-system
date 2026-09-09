@@ -67,7 +67,8 @@ public class PortalAccountService {
         }
 
         String loginId = schoolEmailService.generateUniqueLoginId(firstName, lastName);
-        String rawPassword = (password != null && !password.isBlank()) ? password : "changeme";
+        String rawPassword = java.util.UUID.randomUUID().toString();
+        boolean portalAccount = requiresPortalAccount(role);
 
         AppUser user = AppUser.builder()
                 .name(name)
@@ -77,12 +78,13 @@ public class PortalAccountService {
                 .password(passwordEncoder.encode(rawPassword))
                 .role(role)
                 .schoolId(schoolContextService.getCurrentSchoolId().orElse(null))
+                .passwordSetupRequired(portalAccount)
                 .build();
         AppUser saved = appUserRepository.save(user);
 
         if (hasEmail && isRealContactEmail(contactEmail)) {
             emailNotificationService.sendPortalCredentials(
-                    name, contactEmail, loginId, rawPassword, role);
+                    name, contactEmail, loginId, null, role);
         }
 
         return saved;

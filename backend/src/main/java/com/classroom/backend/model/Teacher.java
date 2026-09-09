@@ -1,7 +1,13 @@
 package com.classroom.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "teachers")
@@ -38,4 +44,23 @@ public class Teacher {
 
     @Column(name = "school_id")
     private String schoolId;
+
+    /** Classes where this teacher teaches (subject teacher, not necessarily homeroom). */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "teacher_assigned_classes",
+            joinColumns = @JoinColumn(name = "teacher_id"),
+            inverseJoinColumns = @JoinColumn(name = "class_id")
+    )
+    @Builder.Default
+    @JsonIgnore
+    private Set<ClassItem> assignedClasses = new HashSet<>();
+
+    @JsonProperty("assignedClassIds")
+    public List<String> getAssignedClassIds() {
+        if (assignedClasses == null || assignedClasses.isEmpty()) {
+            return List.of();
+        }
+        return assignedClasses.stream().map(ClassItem::getId).sorted().toList();
+    }
 }

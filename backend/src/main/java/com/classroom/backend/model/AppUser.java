@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "app_users")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -38,4 +40,16 @@ public class AppUser {
     /** School this account administers (set when registering an establishment). */
     @Column(name = "school_id")
     private String schoolId;
+
+    @Column(name = "password_reset_token")
+    @JsonIgnore
+    private String passwordResetToken;
+
+    @Column(name = "password_reset_expires_at")
+    @JsonIgnore
+    private Instant passwordResetExpiresAt;
+
+    @Column(name = "password_setup_required", nullable = false)
+    @Builder.Default
+    private boolean passwordSetupRequired = false;
 }

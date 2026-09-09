@@ -26,9 +26,11 @@ public final class PortalCredentialsEmailTemplate {
                 "Rôle : " + safe(roleLabel, ""),
                 "Identifiant de connexion : " + safe(loginId, ""),
                 "E-mail de contact : " + safe(contactEmail, ""),
-                "Mot de passe : " + safe(password, ""),
+                password != null && !password.isBlank()
+                        ? "Mot de passe : " + password.trim()
+                        : "Mot de passe : à définir lors de votre première connexion avec votre identifiant.",
                 "Connexion : " + safe(loginUrl, ""),
-                "Changez votre mot de passe après la première connexion.",
+                "Connectez-vous avec votre identifiant : le portail vous demandera de créer votre mot de passe.",
                 "— L'équipe NewGee"
         );
     }
@@ -48,7 +50,9 @@ public final class PortalCredentialsEmailTemplate {
                         "displayName", escapeHtml(displayName),
                         "loginId", escapeHtml(loginId),
                         "contactEmail", escapeHtml(contactEmail),
-                        "password", escapeHtml(password),
+                        "password", password != null && !password.isBlank()
+                                ? escapeHtml(password.trim())
+                                : "À définir à la première connexion",
                         "roleLabel", escapeHtml(roleLabel),
                         "loginUrl", escapeHtmlAttr(loginUrl),
                         "logoUrl", escapeHtmlAttr(logoUrl),

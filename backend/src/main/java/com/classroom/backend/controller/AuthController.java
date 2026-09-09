@@ -4,6 +4,7 @@ import com.classroom.backend.dto.auth.AuthResponse;
 import com.classroom.backend.dto.auth.LoginRequest;
 import com.classroom.backend.dto.auth.RegisterRequest;
 import com.classroom.backend.dto.auth.RegisterSchoolRequest;
+import com.classroom.backend.dto.auth.SetupInitialPasswordRequest;
 import com.classroom.backend.repository.SchoolRepository;
 import com.classroom.backend.service.AuthService;
 import jakarta.validation.Valid;
@@ -58,5 +59,11 @@ public class AuthController {
                 "available", !taken,
                 "message", taken ? "Ce numéro d'identification est déjà enregistré." : "Numéro disponible."
         ));
+    }
+
+    @PostMapping("/setup-initial-password")
+    public ResponseEntity<AuthResponse> setupInitialPassword(@Valid @RequestBody SetupInitialPasswordRequest request) {
+        return ResponseEntity.ok(authService.completeInitialPasswordSetup(
+                request.getSetupToken(), request.getNewPassword()));
     }
 }

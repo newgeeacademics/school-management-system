@@ -13,7 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,10 +28,12 @@ public class TeacherService {
     private final SchoolContextService schoolContextService;
     private final TeacherStaffIdService teacherStaffIdService;
 
+    @Transactional(readOnly = true)
     public List<Teacher> findAll() {
         return schoolContextService.findAllForCurrentSchool(teacherRepository::findBySchoolId);
     }
 
+    @Transactional(readOnly = true)
     public Teacher findById(String id) {
         Teacher teacher = teacherRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Teacher not found: " + id));
@@ -44,6 +48,9 @@ public class TeacherService {
 
         if (request.getPhone() == null || request.getPhone().isBlank()) {
             throw new IllegalArgumentException("Le téléphone mobile est obligatoire.");
+        }
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new IllegalArgumentException("L'e-mail est obligatoire.");
         }
 
         String schoolId = schoolContextService.requireCurrentSchoolId();
@@ -77,6 +84,7 @@ public class TeacherService {
             teacher = teacherRepository.save(teacher);
         }
         syncHomeroomClasses(teacher, request.getHomeroomClassIds());
+        syncAssignedClasses(teacher, request.getAssignedClassIds());
         return teacher;
     }
 
@@ -122,6 +130,9 @@ public class TeacherService {
         if (request.getHomeroomClassIds() != null) {
             syncHomeroomClasses(teacher, request.getHomeroomClassIds());
         }
+        if (request.getAssignedClassIds() != null) {
+            syncAssignedClasses(teacher, request.getAssignedClassIds());
+        }
         return teacher;
     }
 
@@ -129,9 +140,30 @@ public class TeacherService {
     public void delete(String id) {
         Teacher teacher = findById(id);
         syncHomeroomClasses(teacher, List.of());
+        syncAssignedClasses(teacher, List.of());
         AppUser linked = teacher.getAppUser();
         teacherRepository.delete(teacher);
         portalAccountService.deleteLinkedAccount(linked);
+    }
+
+    private void syncAssignedClasses(Teacher teacher, List<String> classIds) {
+        List<String> ids = classIds != null ? classIds : List.of();
+        Set<ClassItem> next = new HashSet<>();
+        for (String classId : ids) {
+            if (classId == null || classId.isBlank()) {
+                continue;
+            }
+            classItemRepository.findById(classId).ifPresent(clazz -> {
+                schoolContextService.assertSchoolAccess(clazz.getSchoolId());
+                schoolContextService.assertSameSchool(
+                        teacher.getSchoolId(),
+                        clazz.getSchoolId(),
+                        "Ce professeur n'appartient pas à l'établissement de cette classe.");
+                next.add(clazz);
+            });
+        }
+        teacher.setAssignedClasses(next);
+        teacherRepository.save(teacher);
     }
 
     private void syncHomeroomClasses(Teacher teacher, List<String> classIds) {

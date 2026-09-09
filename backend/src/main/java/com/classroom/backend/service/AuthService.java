@@ -12,11 +12,15 @@ import com.classroom.backend.service.email.EmailNotificationService;
 import com.classroom.backend.util.PhoneAccountUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -84,6 +88,27 @@ public class AuthService {
         AppUser user = accountIdentifierService.requireBySignInIdentifier(request.getEmail());
         String principal = accountIdentifierService.canonicalPrincipalName(user);
 
+        if (user.isPasswordSetupRequired()) {
+            String setupToken = UUID.randomUUID().toString();
+            user.setPasswordResetToken(setupToken);
+            user.setPasswordResetExpiresAt(Instant.now().plusSeconds(3600));
+            appUserRepository.save(user);
+            return AuthResponse.builder()
+                    .passwordSetupRequired(true)
+                    .setupToken(setupToken)
+                    .id(user.getId())
+                    .name(user.getName())
+                    .email(user.getEmail())
+                    .loginId(user.getLoginId())
+                    .role(user.getRole())
+                    .schoolId(user.getSchoolId())
+                    .build();
+        }
+
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new BadCredentialsException("Mot de passe requis.");
+        }
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(principal, request.getPassword())
         );
@@ -98,6 +123,42 @@ public class AuthService {
                 .loginId(user.getLoginId())
                 .role(user.getRole())
                 .schoolId(user.getSchoolId())
+                .passwordSetupRequired(false)
+                .build();
+    }
+
+    @Transactional
+    public AuthResponse completeInitialPasswordSetup(String setupToken, String newPassword) {
+        if (setupToken == null || setupToken.isBlank()) {
+            throw new RuntimeException("Session de création de mot de passe invalide.");
+        }
+        AppUser user = appUserRepository.findByPasswordResetToken(setupToken.trim())
+                .orElseThrow(() -> new RuntimeException("Session expirée. Reconnectez-vous avec votre identifiant."));
+        if (user.getPasswordResetExpiresAt() == null || user.getPasswordResetExpiresAt().isBefore(Instant.now())) {
+            throw new RuntimeException("Session expirée. Reconnectez-vous avec votre identifiant.");
+        }
+        if (!user.isPasswordSetupRequired()) {
+            throw new RuntimeException("Ce compte a déjà un mot de passe. Utilisez « Mot de passe oublié ».");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordSetupRequired(false);
+        user.setPasswordResetToken(null);
+        user.setPasswordResetExpiresAt(null);
+        appUserRepository.save(user);
+
+        String principal = accountIdentifierService.canonicalPrincipalName(user);
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(principal, newPassword)
+        );
+        return AuthResponse.builder()
+                .token(jwtTokenProvider.generateToken(authentication))
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .loginId(user.getLoginId())
+                .role(user.getRole())
+                .schoolId(user.getSchoolId())
+                .passwordSetupRequired(false)
                 .build();
     }
 }
