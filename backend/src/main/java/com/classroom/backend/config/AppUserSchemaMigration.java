@@ -38,7 +38,13 @@ public class AppUserSchemaMigration {
                             + "WHERE login_id IS NOT NULL");
             jdbcTemplate.execute(
                     "ALTER TABLE schedule_items ADD COLUMN IF NOT EXISTS teacher_id character varying(255)");
-            log.info("app_users schema verified (STAFF role + login_id)");
+            jdbcTemplate.execute(
+                    "ALTER TABLE app_users ADD COLUMN IF NOT EXISTS password_setup_required boolean NOT NULL DEFAULT false");
+            jdbcTemplate.execute(
+                    "ALTER TABLE app_users ADD COLUMN IF NOT EXISTS password_reset_token character varying(255)");
+            jdbcTemplate.execute(
+                    "ALTER TABLE app_users ADD COLUMN IF NOT EXISTS password_reset_expires_at timestamp with time zone");
+            log.info("app_users schema verified (STAFF role + login_id + password setup)");
         } catch (Exception e) {
             log.warn("Could not patch app_users role constraint: {}", e.getMessage());
         }

@@ -132,7 +132,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
             <div>
               <CardTitle className='text-base'>Ajouter un enseignant</CardTitle>
               <CardDescription className='text-xs'>
-                Parcours guidé en 4 étapes — identité, matière, compte portail, puis classes.
+                Parcours guidé en 4 étapes — identité, matière et classes, compte portail, puis validation.
               </CardDescription>
             </div>
           </div>

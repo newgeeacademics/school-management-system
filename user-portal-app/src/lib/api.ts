@@ -60,7 +60,11 @@ export type AuthResponse = {
 export async function loginWithIdentifier(identifier: string, password?: string): Promise<AuthResponse> {
   return apiFetch<AuthResponse>('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email: identifier, password: password ?? '' }),
+    body: JSON.stringify(
+      password?.trim()
+        ? { email: identifier, password: password.trim() }
+        : { email: identifier }
+    ),
   });
 }
 

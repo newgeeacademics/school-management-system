@@ -25,16 +25,16 @@ const STEPS: WizardStepMeta[] = [
     subtitle: 'Prénom, nom et numéro personnel.',
   },
   {
-    title: 'Matière enseignée',
-    subtitle: 'Choisissez la matière principale dans votre programme.',
+    title: 'Matière et classes',
+    subtitle: 'Matière, classes enseignées et professeur principal — avant validation.',
   },
   {
     title: 'Coordonnées & compte',
     subtitle: 'E-mail obligatoire pour le portail et contact.',
   },
   {
-    title: 'Classes & validation',
-    subtitle: 'Professeur principal et récapitulatif — mot de passe défini à la première connexion.',
+    title: 'Validation',
+    subtitle: 'Récapitulatif — le mot de passe se définit à la première connexion.',
   },
 ];
 
@@ -187,13 +187,33 @@ export function TeacherCreateWizard({
       ) : null}
 
       {step === 2 ? (
-        <SubjectField
-          idPrefix='teacher-wizard'
-          value={form.subject}
-          onChange={(subject) => setForm((f) => ({ ...f, subject }))}
-          matieres={matieres}
-          onOpenMatieres={onOpenMatieres}
-        />
+        <>
+          <SubjectField
+            idPrefix='teacher-wizard'
+            value={form.subject}
+            onChange={(subject) => setForm((f) => ({ ...f, subject }))}
+            matieres={matieres}
+            onOpenMatieres={onOpenMatieres}
+          />
+          <div className='space-y-2'>
+            <Label className='text-sm'>Classes enseignées</Label>
+            <ClassAssignmentPicker
+              classes={classes}
+              selectedIds={form.assignedClassIds}
+              onChange={(ids) => setForm((f) => ({ ...f, assignedClassIds: ids }))}
+              idPrefix='wizard-assigned'
+            />
+          </div>
+          <div className='space-y-2'>
+            <Label className='text-sm'>Professeur principal (optionnel)</Label>
+            <HomeroomPicker
+              classes={classes}
+              selectedIds={form.homeroomClassIds}
+              onChange={(ids) => setForm((f) => ({ ...f, homeroomClassIds: ids }))}
+              idPrefix='wizard'
+            />
+          </div>
+        </>
       ) : null}
 
       {step === 3 ? (
@@ -227,24 +247,6 @@ export function TeacherCreateWizard({
 
       {step === 4 ? (
         <>
-          <div className='space-y-2'>
-            <Label className='text-sm'>Classes enseignées</Label>
-            <ClassAssignmentPicker
-              classes={classes}
-              selectedIds={form.assignedClassIds}
-              onChange={(ids) => setForm((f) => ({ ...f, assignedClassIds: ids }))}
-              idPrefix='wizard-assigned'
-            />
-          </div>
-          <div className='space-y-2'>
-            <Label className='text-sm'>Professeur principal (optionnel)</Label>
-            <HomeroomPicker
-              classes={classes}
-              selectedIds={form.homeroomClassIds}
-              onChange={(ids) => setForm((f) => ({ ...f, homeroomClassIds: ids }))}
-              idPrefix='wizard'
-            />
-          </div>
           <p className='text-xs text-muted-foreground max-w-md'>
             L&apos;enseignant choisira son mot de passe lors de sa première connexion au portail.
           </p>
