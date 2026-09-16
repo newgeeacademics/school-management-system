@@ -201,6 +201,8 @@
     "saving": "Saving…",
     "saveError": "Could not save.",
     "saveAttendance": "Save attendance",
+    "finalizeAttendance": "Finish roll call",
+    "rollCallFinalized": "Roll call finished — attendance is locked. Contact the school office for corrections.",
     "attendanceLoadError": "Could not load attendance.",
     "addHomework": "New homework",
     "homeworkTitle": "Title",

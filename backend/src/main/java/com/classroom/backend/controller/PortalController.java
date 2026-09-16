@@ -148,6 +148,12 @@ public class PortalController {
         return ResponseEntity.ok(portalClassHubService.saveRollCall(request));
     }
 
+    /** Teacher only — lock roll call for a class on a date. */
+    @PostMapping("/classes/roll-call/finalize")
+    public ResponseEntity<PortalRollCallResponse> finalizeRollCall(@Valid @RequestBody RollCallRequest request) {
+        return ResponseEntity.ok(portalClassHubService.finalizeRollCall(request.getClassId(), request.getDate()));
+    }
+
     /** Homework list for a class. */
     @GetMapping("/classes/{classId}/homework")
     public ResponseEntity<PortalHomeworkResponse> homework(@PathVariable String classId) {
