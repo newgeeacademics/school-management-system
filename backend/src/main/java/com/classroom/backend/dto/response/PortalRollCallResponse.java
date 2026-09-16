@@ -14,6 +14,8 @@ public class PortalRollCallResponse {
     private String className;
     private String date;
     private boolean canEdit;
+    /** True once the teacher has clicked "Terminer l'appel". */
+    private boolean finalized;
     private List<PortalRollCallRow> students;
 
     @Data

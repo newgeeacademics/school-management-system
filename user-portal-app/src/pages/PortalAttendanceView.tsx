@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, Clock, UserCircle2, XCircle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from '@/i18n';
+import { usePortalFeedContext } from '@/context/PortalFeedContext';
 import { getPortalSession } from '@/lib/auth';
 import {
   fetchPortalAttendance,
@@ -33,6 +34,8 @@ export function PortalAttendanceView({ variant }: PortalAttendanceViewProps) {
   const statusFilter: AttendanceStatus | undefined = variant === 'presence' ? 'PRESENT' : undefined;
   const { t } = useTranslation();
   const session = getPortalSession();
+  const { activeStudentId } = usePortalFeedContext();
+  const parentStudentId = session?.role === 'parent' ? activeStudentId : '';
   const [studentId, setStudentId] = useState('');
   const [data, setData] = useState<PortalAttendanceDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,18 +46,18 @@ export function PortalAttendanceView({ variant }: PortalAttendanceViewProps) {
     setError(null);
     try {
       const detail = await fetchPortalAttendance({
-        studentId: studentId || undefined,
+        studentId: parentStudentId || studentId || undefined,
         status: statusFilter,
       });
       setData(detail);
-      if (!studentId && detail.studentId) setStudentId(detail.studentId);
+      if (!parentStudentId && !studentId && detail.studentId) setStudentId(detail.studentId);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('portalAttendance.loadError'));
       setData(null);
     } finally {
       setLoading(false);
     }
-  }, [studentId, statusFilter, variant, t]);
+  }, [studentId, parentStudentId, statusFilter, variant, t]);
 
   const visibleRecords =
     variant === 'absences'
@@ -65,7 +68,7 @@ export function PortalAttendanceView({ variant }: PortalAttendanceViewProps) {
     void reload();
   }, [reload]);
 
-  const showStudentPicker = session?.role === 'parent' && (data?.students.length ?? 0) > 1;
+  const showStudentPicker = false;
   const stats = data?.stats;
 
   return (

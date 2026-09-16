@@ -32,6 +32,7 @@ public class PortalClassHubService {
     private final AttendanceRecordRepository attendanceRecordRepository;
     private final HomeworkAssignmentRepository homeworkAssignmentRepository;
     private final TeacherRepository teacherRepository;
+    private final RollCallSessionRepository rollCallSessionRepository;
 
     @Transactional(readOnly = true)
     public PortalClassDetailResponse getClassDetail(String classId) {
@@ -74,11 +75,14 @@ public class PortalClassHubService {
                 .filter(r -> r.getStudent() != null)
                 .collect(Collectors.toMap(r -> r.getStudent().getId(), r -> r, (a, b) -> a));
 
+        boolean finalized = isRollCallFinalized(classId, date);
+
         return PortalRollCallResponse.builder()
                 .classId(clazz.getId())
                 .className(clazz.getName())
                 .date(date)
-                .canEdit(scope.canEdit())
+                .canEdit(scope.canEdit() && !finalized)
+                .finalized(finalized)
                 .students(students.stream()
                         .map(s -> {
                             AttendanceRecord rec = byStudent.get(s.getId());
@@ -98,6 +102,11 @@ public class PortalClassHubService {
         PortalScopeResolver.PortalScope scope = portalScopeResolver.resolveForCurrentUser();
         scope.assertCanEdit();
         scope.assertClassAccessible(request.getClassId());
+
+        if (isRollCallFinalized(request.getClassId(), request.getDate())) {
+            throw new IllegalStateException(
+                    "L'appel est terminé. Demandez une modification à l'administration.");
+        }
 
         ClassItem clazz = classItemRepository.findById(request.getClassId())
                 .orElseThrow(() -> new IllegalStateException("Classe introuvable."));
@@ -131,6 +140,35 @@ public class PortalClassHubService {
         }
 
         return getRollCall(request.getClassId(), request.getDate());
+    }
+
+    @Transactional
+    public PortalRollCallResponse finalizeRollCall(String classId, String date) {
+        PortalScopeResolver.PortalScope scope = portalScopeResolver.resolveForCurrentUser();
+        scope.assertCanEdit();
+        scope.assertClassAccessible(classId);
+
+        if (isRollCallFinalized(classId, date)) {
+            return getRollCall(classId, date);
+        }
+
+        ClassItem clazz = classItemRepository.findById(classId)
+                .orElseThrow(() -> new IllegalStateException("Classe introuvable."));
+        Teacher teacher = portalScopeResolver.resolveTeacherForCurrentUser();
+
+        RollCallSession session = rollCallSessionRepository.findByClassItem_IdAndDate(classId, date)
+                .orElseGet(() -> RollCallSession.builder().classItem(clazz).date(date).build());
+        session.setFinalizedAt(Instant.now());
+        session.setFinalizedBy(teacher);
+        rollCallSessionRepository.save(session);
+
+        return getRollCall(classId, date);
+    }
+
+    private boolean isRollCallFinalized(String classId, String date) {
+        return rollCallSessionRepository.findByClassItem_IdAndDate(classId, date)
+                .map(s -> s.getFinalizedAt() != null)
+                .orElse(false);
     }
 
     @Transactional(readOnly = true)
@@ -206,23 +244,33 @@ public class PortalClassHubService {
         }
 
         List<PortalTeacherContactDto> contacts = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
 
         for (Student student : scope.students()) {
             ClassItem clazz = student.getClassItem();
             if (clazz == null) continue;
-            Teacher teacher = clazz.getHomeroomTeacher();
-            if (teacher == null) continue;
 
-            contacts.add(PortalTeacherContactDto.builder()
-                    .classId(clazz.getId())
-                    .className(clazz.getName())
-                    .studentName(student.getName())
-                    .teacherId(teacher.getId())
-                    .teacherName(teacher.getName())
-                    .subject(teacher.getSubject())
-                    .phone(resolveTeacherPhone(teacher))
-                    .email(resolveTeacherEmail(teacher))
-                    .build());
+            List<Teacher> teachers = new ArrayList<>();
+            if (clazz.getHomeroomTeacher() != null) {
+                teachers.add(clazz.getHomeroomTeacher());
+            }
+            teachers.addAll(teacherRepository.findByAssignedClassId(clazz.getId()));
+
+            for (Teacher teacher : teachers) {
+                String key = student.getId() + "|" + teacher.getId();
+                if (!seen.add(key)) continue;
+
+                contacts.add(PortalTeacherContactDto.builder()
+                        .classId(clazz.getId())
+                        .className(clazz.getName())
+                        .studentName(student.getName())
+                        .teacherId(teacher.getId())
+                        .teacherName(teacher.getName())
+                        .subject(teacher.getSubject())
+                        .phone(resolveTeacherPhone(teacher))
+                        .email(resolveTeacherEmail(teacher))
+                        .build());
+            }
         }
 
         return PortalDirectoryResponse.builder().teachers(contacts).build();

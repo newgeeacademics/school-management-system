@@ -165,6 +165,8 @@
     "saving": "Enregistrement…",
     "saveError": "Impossible d’enregistrer.",
     "saveAttendance": "Enregistrer l’appel",
+    "finalizeAttendance": "Terminer l’appel",
+    "rollCallFinalized": "Appel terminé — les présences sont verrouillées. Contactez l’administration pour toute correction.",
     "attendanceLoadError": "Impossible de charger l’appel.",
     "addHomework": "Nouveau devoir",
     "homeworkTitle": "Intitulé",
