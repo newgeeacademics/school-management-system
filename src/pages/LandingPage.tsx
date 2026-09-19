@@ -21,7 +21,7 @@ import logoSrc from '@/assets/logo/newgee-logo.png';
 
 import { LandingSiteChrome } from '@/components/landing/LandingSiteChrome';
 import { useTranslation } from '@/i18n';
-import { getWhatsappContactUrl } from '@/lib/app-urls';
+import { WHATSAPP_CONTACT_URL } from '@/lib/app-urls';
 import { useLandingReveal } from './use-landing-reveal';
 import './landing-page.css';
 
@@ -328,7 +328,6 @@ const FAQ_COUNT = 6;
 
 function LandingFaqSection() {
   const { t } = useTranslation();
-  const whatsappUrl = getWhatsappContactUrl();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const items = Array.from({ length: FAQ_COUNT }, (_, index) => ({
@@ -365,16 +364,14 @@ function LandingFaqSection() {
                 <div className='landing__faq-panel' aria-hidden={!isOpen}>
                   <div className='landing__faq-body'>
                     <p className='landing__faq-answer'>{item.answer}</p>
-                    {whatsappUrl ? (
-                      <a
-                        className='landing__faq-whatsapp'
-                        href={whatsappUrl}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                      >
-                        {t('landing.faqWhatsapp')}
-                      </a>
-                    ) : null}
+                    <a
+                      className='landing__faq-whatsapp'
+                      href={WHATSAPP_CONTACT_URL}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                    >
+                      {t('landing.faqWhatsapp')}
+                    </a>
                   </div>
                 </div>
               </article>

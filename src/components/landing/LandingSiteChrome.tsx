@@ -6,7 +6,7 @@ import { Menu, X } from 'lucide-react';
 import logoSrc from '@/assets/logo/newgee-logo.png';
 import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 import { useTranslation } from '@/i18n';
-import { getUserPortalLoginUrl, getWhatsappContactUrl } from '@/lib/app-urls';
+import { getUserPortalLoginUrl, WHATSAPP_CONTACT_URL } from '@/lib/app-urls';
 import { getLandingMobilePortal } from '@/lib/landing-mobile-portal';
 
 import '@/pages/landing-page.css';
@@ -18,7 +18,6 @@ type LandingSiteChromeProps = {
 export function LandingSiteChrome({ children }: LandingSiteChromeProps) {
   const { t } = useTranslation();
   const year = new Date().getFullYear();
-  const whatsappUrl = getWhatsappContactUrl();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   return (
@@ -74,14 +73,12 @@ export function LandingSiteChrome({ children }: LandingSiteChromeProps) {
           <div>
             <p className='landing__footer-heading'>{t('landing.footerContact')}</p>
             <ul className='landing__footer-list'>
-              {whatsappUrl ? (
-                <li>
-                  <span className='landing__footer-label'>{t('landing.footerWhatsappLabel')}</span>
-                  <a href={whatsappUrl} target='_blank' rel='noopener noreferrer'>
-                    WhatsApp
-                  </a>
-                </li>
-              ) : null}
+              <li>
+                <span className='landing__footer-label'>{t('landing.footerWhatsappLabel')}</span>
+                <a href={WHATSAPP_CONTACT_URL} target='_blank' rel='noopener noreferrer'>
+                  WhatsApp
+                </a>
+              </li>
               <li>
                 <span className='landing__footer-label'>{t('landing.footerEmailLabel')}</span>
                 <a href='mailto:contact@newgeeacademy.com'>contact@newgeeacademy.com</a>
@@ -103,29 +100,23 @@ export function LandingSiteChrome({ children }: LandingSiteChromeProps) {
               <li>
                 <a href='/#mentions-legales'>{t('landing.footerLegal')}</a>
               </li>
-              {whatsappUrl ? (
-                <li>
-                  <a href={whatsappUrl} target='_blank' rel='noopener noreferrer'>
-                    {t('landing.footerSupport')}
-                  </a>
-                </li>
-              ) : null}
+              <li>
+                <a href={WHATSAPP_CONTACT_URL} target='_blank' rel='noopener noreferrer'>
+                  {t('landing.footerSupport')}
+                </a>
+              </li>
             </ul>
           </div>
           <div>
             <p className='landing__footer-heading'>{t('landing.footerSocial')}</p>
-            {whatsappUrl ? (
-              <>
-                <ul className='landing__footer-list'>
-                  <li>
-                    <a href={whatsappUrl} target='_blank' rel='noopener noreferrer'>
-                      {t('landing.footerWhatsappLabel')}
-                    </a>
-                  </li>
-                </ul>
-                <p className='landing__footer-hint'>{t('landing.footerSocialHint')}</p>
-              </>
-            ) : null}
+            <ul className='landing__footer-list'>
+              <li>
+                <a href={WHATSAPP_CONTACT_URL} target='_blank' rel='noopener noreferrer'>
+                  {t('landing.footerWhatsappLabel')}
+                </a>
+              </li>
+            </ul>
+            <p className='landing__footer-hint'>{t('landing.footerSocialHint')}</p>
           </div>
         </div>
         <div className='landing__section-inner landing__footer-legal'>

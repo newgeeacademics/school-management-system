@@ -12,7 +12,6 @@ interface ImportMetaEnv {
   readonly VITE_CLOUDINARY_CLOUD_NAME: string | undefined;
   readonly VITE_CLOUDINARY_UPLOAD_PRESET: string | undefined;
   readonly VITE_MAPBOX_TOKEN: string | undefined;
-  readonly VITE_WHATSAPP_CONTACT_URL: string | undefined;
 }
 
 interface ImportMeta {

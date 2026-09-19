@@ -31,11 +31,7 @@ export function getUserPortalLoginUrl(): string {
   return `${getUserPortalOrigin()}/connexion`;
 }
 
-/** Optional WhatsApp contact link — set VITE_WHATSAPP_CONTACT_URL on Vercel (e.g. https://wa.me/…). */
-export function getWhatsappContactUrl(): string | undefined {
-  const value = import.meta.env.VITE_WHATSAPP_CONTACT_URL?.trim();
-  return value || undefined;
-}
+export const WHATSAPP_CONTACT_URL = 'https://wa.me/message/F4GANMX2U4RTA1';
 
 /** True when production build is missing user portal URL. */
 export function isCrossAppConfigIncomplete(): boolean {
