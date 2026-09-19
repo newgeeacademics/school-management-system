@@ -126,7 +126,7 @@ public class TeacherClassScopeService {
         return teacher.getSchoolId().equals(clazz.getSchoolId());
     }
 
-    private boolean courseMatchesTeacherSubject(Course course, String teacherSubject) {
+    public boolean courseMatchesTeacherSubject(Course course, String teacherSubject) {
         if (course == null || teacherSubject == null || teacherSubject.isBlank()) {
             return false;
         }

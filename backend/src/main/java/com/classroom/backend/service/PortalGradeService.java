@@ -9,6 +9,7 @@ import com.classroom.backend.model.*;
 import com.classroom.backend.model.enums.EvaluationPeriod;
 import com.classroom.backend.model.enums.EvaluationType;
 import com.classroom.backend.model.enums.UserRole;
+import com.classroom.backend.repository.ClassItemRepository;
 import com.classroom.backend.repository.CourseRepository;
 import com.classroom.backend.repository.EvaluationRepository;
 import com.classroom.backend.repository.StudentGradeRepository;
@@ -24,12 +25,14 @@ import java.util.stream.Collectors;
 public class PortalGradeService {
 
     private final PortalScopeResolver scopeResolver;
+    private final TeacherClassScopeService teacherClassScopeService;
     private final GradeService gradeService;
     private final SchoolService schoolService;
     private final EvaluationDocumentService evaluationDocumentService;
     private final EvaluationRepository evaluationRepository;
     private final StudentGradeRepository studentGradeRepository;
     private final CourseRepository courseRepository;
+    private final ClassItemRepository classItemRepository;
 
     private static final Map<EvaluationPeriod, String> PERIOD_LABELS = Map.of(
             EvaluationPeriod.TRIMESTRE_1, "Trimestre 1",
@@ -75,7 +78,7 @@ public class PortalGradeService {
         List<Student> scopedStudents = filterStudents(scope, resolvedClassId, resolvedStudentId);
 
         List<Course> courses = resolvedClassId != null
-                ? coursesForClass(classes, resolvedClassId)
+                ? coursesForClass(resolvedClassId, scope)
                 : List.of();
 
         List<Evaluation> evaluations = resolvedClassId != null
@@ -112,7 +115,7 @@ public class PortalGradeService {
                         .build()).toList())
                 .courses(courses.stream().map(c -> PortalCourseOption.builder()
                         .id(c.getId())
-                        .name(c.getName())
+                        .name(resolveCourseName(c))
                         .build()).toList())
                 .students(scopedStudents.stream().map(s -> PortalStudentOption.builder()
                         .id(s.getId())
@@ -281,21 +284,77 @@ public class PortalGradeService {
         return list;
     }
 
-    private List<Course> coursesForClass(List<ClassItem> classes, String classId) {
-        return classes.stream()
-                .filter(c -> c.getId().equals(classId))
-                .findFirst()
-                .map(c -> courseRepository.findByLevel(c.getLevel()))
-                .orElse(List.of());
+    private List<Course> coursesForClass(String classId, PortalScopeResolver.PortalScope scope) {
+        ClassItem clazz = classItemRepository.findById(classId).orElse(null);
+        if (clazz == null) {
+            return List.of();
+        }
+
+        List<Course> matched = matchCoursesForClassLevel(clazz.getLevel());
+        if (scope.role() == UserRole.TEACHER && !matched.isEmpty()) {
+            Teacher teacher = scopeResolver.resolveTeacherForCurrentUser();
+            List<Course> forSubject = matched.stream()
+                    .filter(c -> teacherClassScopeService.courseMatchesTeacherSubject(c, teacher.getSubject()))
+                    .toList();
+            if (!forSubject.isEmpty()) {
+                matched = forSubject;
+            }
+        }
+
+        return matched.stream()
+                .sorted(Comparator.comparing(this::resolveCourseName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+    /** Classes use "Collège - 6ème" while courses often use "Collège" — match both. */
+    private List<Course> matchCoursesForClassLevel(String classLevel) {
+        if (classLevel == null || classLevel.isBlank()) {
+            return courseRepository.findAll();
+        }
+        String trimmed = classLevel.trim();
+        List<Course> exact = courseRepository.findByLevel(trimmed);
+        if (!exact.isEmpty()) {
+            return exact;
+        }
+        int dash = trimmed.indexOf(" - ");
+        if (dash > 0) {
+            List<Course> byType = courseRepository.findByLevel(trimmed.substring(0, dash).trim());
+            if (!byType.isEmpty()) {
+                return byType;
+            }
+        }
+        return courseRepository.findAll().stream()
+                .filter(c -> c.getLevel() != null && levelsCompatible(trimmed, c.getLevel()))
+                .toList();
+    }
+
+    private static boolean levelsCompatible(String classLevel, String courseLevel) {
+        String cl = classLevel.trim();
+        String co = courseLevel.trim();
+        return cl.equals(co) || cl.startsWith(co + " - ") || co.startsWith(cl + " - ");
+    }
+
+    private String resolveCourseName(Course course) {
+        if (course == null) {
+            return "";
+        }
+        if (course.getName() != null && !course.getName().isBlank()) {
+            return course.getName().trim();
+        }
+        if (course.getMatiere() != null && course.getMatiere().getName() != null) {
+            return course.getMatiere().getName().trim();
+        }
+        return "";
     }
 
     private PortalEvaluationDto toEvaluationDto(Evaluation e) {
         boolean hasDoc = e.getDocumentStoredName() != null && !e.getDocumentStoredName().isBlank();
+        Course course = e.getCourse();
         return PortalEvaluationDto.builder()
                 .id(e.getId())
                 .classId(e.getClassItem().getId())
-                .courseId(e.getCourse().getId())
-                .courseName(e.getCourse().getName())
+                .courseId(course != null ? course.getId() : null)
+                .courseName(resolveCourseName(course))
                 .label(e.getLabel())
                 .date(e.getDate())
                 .period(PERIOD_LABELS.getOrDefault(e.getPeriod(), e.getPeriod().name()))
