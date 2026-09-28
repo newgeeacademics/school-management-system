@@ -49,7 +49,23 @@ public class TeacherClassScopeService {
             classIds.add(homeroom.getId());
         }
 
-        for (ScheduleItem item : scheduleItemRepository.findAll()) {
+        if (teacher.getAssignedClasses() != null) {
+            for (ClassItem assigned : teacher.getAssignedClasses()) {
+                if (assigned != null && sameSchool(teacher, assigned)) {
+                    classIds.add(assigned.getId());
+                }
+            }
+        }
+
+        for (ScheduleItem item : scheduleItemRepository.findByTeacherId(teacher.getId())) {
+            ClassItem clazz = item.getClassItem();
+            if (clazz != null && sameSchool(teacher, clazz)) {
+                classIds.add(clazz.getId());
+            }
+        }
+
+        List<ScheduleItem> timetableRows = timetableRowsForTeacherSchool(teacher);
+        for (ScheduleItem item : timetableRows) {
             if (!scheduleItemBelongsToTeacher(item, teacher)) {
                 continue;
             }
@@ -87,6 +103,19 @@ public class TeacherClassScopeService {
             return teacher.getId().equals(item.getTeacher().getId());
         }
         return courseMatchesTeacherSubject(item.getCourse(), teacher.getSubject());
+    }
+
+    private List<ScheduleItem> timetableRowsForTeacherSchool(Teacher teacher) {
+        if (teacher.getSchoolId() == null || teacher.getSchoolId().isBlank()) {
+            return List.of();
+        }
+        List<String> schoolClassIds = classItemRepository.findBySchoolId(teacher.getSchoolId()).stream()
+                .map(ClassItem::getId)
+                .toList();
+        if (schoolClassIds.isEmpty()) {
+            return List.of();
+        }
+        return scheduleItemRepository.findByClassItemIdIn(schoolClassIds);
     }
 
     private List<ClassItem> homeroomClasses(Teacher teacher) {
