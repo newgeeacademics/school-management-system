@@ -311,6 +311,8 @@
     "newEvaluation": "New assessment",
     "courseLabel": "Subject",
     "chooseCourse": "Choose a subject",
+    "subjectUnknown": "Subject not set",
+    "subjectMissingHint": "No subject found for this class (timetable or courses). Contact the school office.",
     "evalLabel": "Title",
     "dateLabel": "Date",
     "typeLabel": "Type",

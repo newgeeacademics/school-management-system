@@ -12,6 +12,7 @@ import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.ClassItemRepository;
 import com.classroom.backend.repository.CourseRepository;
 import com.classroom.backend.repository.EvaluationRepository;
+import com.classroom.backend.repository.ScheduleItemRepository;
 import com.classroom.backend.repository.StudentGradeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ public class PortalGradeService {
     private final StudentGradeRepository studentGradeRepository;
     private final CourseRepository courseRepository;
     private final ClassItemRepository classItemRepository;
+    private final ScheduleItemRepository scheduleItemRepository;
 
     private static final Map<EvaluationPeriod, String> PERIOD_LABELS = Map.of(
             EvaluationPeriod.TRIMESTRE_1, "Trimestre 1",
@@ -77,9 +79,11 @@ public class PortalGradeService {
         List<ClassItem> classes = scope.classes();
         List<Student> scopedStudents = filterStudents(scope, resolvedClassId, resolvedStudentId);
 
-        List<Course> courses = resolvedClassId != null
-                ? coursesForClass(resolvedClassId, scope)
-                : List.of();
+        List<Course> courses = resolvedClassId != null && scope.role() == UserRole.TEACHER
+                ? coursesForClass(resolvedClassId, scopeResolver.resolveTeacherForCurrentUser())
+                : resolvedClassId != null
+                        ? coursesForClassReadOnly(resolvedClassId)
+                        : List.of();
 
         List<Evaluation> evaluations = resolvedClassId != null
                 ? evaluationRepository.findByClassItemIdAndPeriod(resolvedClassId, period)
@@ -88,10 +92,7 @@ public class PortalGradeService {
         Set<String> evaluationIds = evaluations.stream().map(Evaluation::getId).collect(Collectors.toSet());
         Set<String> studentIds = scopedStudents.stream().map(Student::getId).collect(Collectors.toSet());
 
-        List<StudentGrade> grades = studentGradeRepository.findAll().stream()
-                .filter(g -> g.getStudent() != null && studentIds.contains(g.getStudent().getId()))
-                .filter(g -> g.getEvaluation() != null && evaluationIds.contains(g.getEvaluation().getId()))
-                .toList();
+        List<StudentGrade> grades = loadGradesForEvaluations(evaluationIds, studentIds);
 
         List<GradeAverageResponse> bulletin = resolvedClassId != null
                 ? gradeService.computeClassAverages(resolvedClassId).stream()
@@ -102,12 +103,27 @@ public class PortalGradeService {
         Map<String, String> classNames = classes.stream()
                 .collect(Collectors.toMap(ClassItem::getId, ClassItem::getName, (a, b) -> a));
 
+        String teacherSubject = null;
+        String defaultCourseId = null;
+        if (scope.role() == UserRole.TEACHER && resolvedClassId != null) {
+            Teacher teacher = scopeResolver.resolveTeacherForCurrentUser();
+            teacherSubject = teacher.getSubject();
+            Optional<Course> defaultCourse = resolveTeacherCourseForClass(resolvedClassId, teacher);
+            if (defaultCourse.isPresent()) {
+                defaultCourseId = defaultCourse.get().getId();
+                Course chosen = defaultCourse.get();
+                courses = List.of(chosen);
+            }
+        }
+
         return PortalGradesDetailResponse.builder()
                 .role(scope.role().name())
                 .canEdit(scope.canEdit())
                 .classId(resolvedClassId)
                 .period(PERIOD_LABELS.getOrDefault(period, period.name()))
                 .studentId(resolvedStudentId)
+                .teacherSubject(teacherSubject)
+                .defaultCourseId(defaultCourseId)
                 .classes(classes.stream().map(c -> PortalClassOption.builder()
                         .id(c.getId())
                         .name(c.getName())
@@ -139,11 +155,72 @@ public class PortalGradeService {
         scope.assertClassAccessible(request.getClassId());
 
         Teacher teacher = scopeResolver.resolveTeacherForCurrentUser();
+        applyTeacherCourseForEvaluation(request, teacher);
         if (request.getMaxScore() == null || request.getMaxScore() <= 0) {
             request.setMaxScore(defaultGradingScale());
         }
         Evaluation saved = gradeService.createEvaluation(request, teacher);
         return toEvaluationDto(saved);
+    }
+
+    private void applyTeacherCourseForEvaluation(EvaluationRequest request, Teacher teacher) {
+        Course course = resolveTeacherCourseForClass(request.getClassId(), teacher)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Aucune matière trouvée pour cette classe. Vérifiez l'emploi du temps ou la matière de l'enseignant."));
+        if (request.getCourseId() == null || request.getCourseId().isBlank()) {
+            request.setCourseId(course.getId());
+            return;
+        }
+        if (!course.getId().equals(request.getCourseId())) {
+            Course requested = courseRepository.findById(request.getCourseId())
+                    .orElseThrow(() -> new IllegalStateException("Matière introuvable."));
+            if (!teacherClassScopeService.courseMatchesTeacherSubject(requested, teacher.getSubject())) {
+                throw new IllegalStateException("Vous ne pouvez saisir des notes que pour votre matière.");
+            }
+        }
+    }
+
+    private List<StudentGrade> loadGradesForEvaluations(Set<String> evaluationIds, Set<String> studentIds) {
+        if (evaluationIds.isEmpty() || studentIds.isEmpty()) {
+            return List.of();
+        }
+        return studentGradeRepository.findByEvaluationIdInAndStudentIdIn(evaluationIds, studentIds);
+    }
+
+    private Optional<Course> resolveTeacherCourseForClass(String classId, Teacher teacher) {
+        Optional<Course> fromTimetable = scheduleItemRepository.findByClassItemId(classId).stream()
+                .filter(item -> teacherClassScopeService.scheduleItemBelongsToTeacher(item, teacher))
+                .map(ScheduleItem::getCourse)
+                .filter(Objects::nonNull)
+                .findFirst();
+        if (fromTimetable.isPresent()) {
+            return fromTimetable;
+        }
+        List<Course> matched = coursesForClass(classId, teacher);
+        if (matched.size() == 1) {
+            return Optional.of(matched.get(0));
+        }
+        if (!matched.isEmpty()) {
+            return Optional.of(matched.get(0));
+        }
+        return Optional.empty();
+    }
+
+    private List<Course> coursesForClass(String classId, Teacher teacher) {
+        ClassItem clazz = classItemRepository.findById(classId).orElse(null);
+        if (clazz == null) {
+            return List.of();
+        }
+        List<Course> matched = matchCoursesForClassLevel(clazz.getLevel());
+        List<Course> forSubject = matched.stream()
+                .filter(c -> teacherClassScopeService.courseMatchesTeacherSubject(c, teacher.getSubject()))
+                .toList();
+        if (!forSubject.isEmpty()) {
+            matched = forSubject;
+        }
+        return matched.stream()
+                .sorted(Comparator.comparing(this::resolveCourseName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
     }
 
     @Transactional
@@ -284,24 +361,12 @@ public class PortalGradeService {
         return list;
     }
 
-    private List<Course> coursesForClass(String classId, PortalScopeResolver.PortalScope scope) {
+    private List<Course> coursesForClassReadOnly(String classId) {
         ClassItem clazz = classItemRepository.findById(classId).orElse(null);
         if (clazz == null) {
             return List.of();
         }
-
-        List<Course> matched = matchCoursesForClassLevel(clazz.getLevel());
-        if (scope.role() == UserRole.TEACHER && !matched.isEmpty()) {
-            Teacher teacher = scopeResolver.resolveTeacherForCurrentUser();
-            List<Course> forSubject = matched.stream()
-                    .filter(c -> teacherClassScopeService.courseMatchesTeacherSubject(c, teacher.getSubject()))
-                    .toList();
-            if (!forSubject.isEmpty()) {
-                matched = forSubject;
-            }
-        }
-
-        return matched.stream()
+        return matchCoursesForClassLevel(clazz.getLevel()).stream()
                 .sorted(Comparator.comparing(this::resolveCourseName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }

@@ -311,6 +311,8 @@
     "newEvaluation": "Nouvelle évaluation",
     "courseLabel": "Matière",
     "chooseCourse": "Choisir une matière",
+    "subjectUnknown": "Matière non renseignée",
+    "subjectMissingHint": "Matière introuvable pour cette classe (emploi du temps ou cours). Contactez l'administration.",
     "evalLabel": "Intitulé",
     "dateLabel": "Date",
     "typeLabel": "Type",

@@ -15,6 +15,10 @@ public class PortalGradesDetailResponse {
     private String period;
     private String studentId;
 
+    /** Teacher portal: matière liée à la classe (pas de choix manuel). */
+    private String teacherSubject;
+    private String defaultCourseId;
+
     private List<PortalClassOption> classes;
     private List<PortalCourseOption> courses;
     private List<PortalStudentOption> students;

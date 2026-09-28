@@ -43,7 +43,7 @@ public class PortalService {
                 .collect(Collectors.toMap(ClassItem::getId, ClassItem::getName, (a, b) -> a));
 
         List<PortalScheduleDto> schedule = role == UserRole.TEACHER
-                ? filterScheduleForTeacher(scopedTeacher)
+                ? filterScheduleForTeacher(scopedTeacher, classIds)
                 : filterSchedule(classIds);
 
         return PortalFeedResponse.builder()
@@ -89,15 +89,17 @@ public class PortalService {
         if (classIds.isEmpty()) {
             return List.of();
         }
-        return scheduleItemRepository.findAll().stream()
-                .filter(item -> item.getClassItem() != null && classIds.contains(item.getClassItem().getId()))
+        return scheduleItemRepository.findByClassItemIdIn(classIds).stream()
                 .map(this::toScheduleDto)
                 .sorted(this::compareSchedule)
                 .toList();
     }
 
-    private List<PortalScheduleDto> filterScheduleForTeacher(Teacher teacher) {
-        return scheduleItemRepository.findAll().stream()
+    private List<PortalScheduleDto> filterScheduleForTeacher(Teacher teacher, Set<String> classIds) {
+        if (classIds.isEmpty()) {
+            return List.of();
+        }
+        return scheduleItemRepository.findByClassItemIdIn(classIds).stream()
                 .filter(item -> teacherClassScopeService.scheduleItemBelongsToTeacher(item, teacher))
                 .map(this::toScheduleDto)
                 .sorted(this::compareSchedule)
@@ -147,8 +149,7 @@ public class PortalService {
         if (studentIds.isEmpty()) {
             return List.of();
         }
-        return studentGradeRepository.findAll().stream()
-                .filter(g -> g.getStudent() != null && studentIds.contains(g.getStudent().getId()))
+        return studentGradeRepository.findByStudentIdIn(studentIds).stream()
                 .map(g -> PortalGradeDto.builder()
                         .id(g.getId())
                         .score(g.getScore())
