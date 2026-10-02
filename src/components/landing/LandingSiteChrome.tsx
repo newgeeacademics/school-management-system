@@ -74,10 +74,6 @@ export function LandingSiteChrome({ children }: LandingSiteChromeProps) {
             <p className='landing__footer-heading'>{t('landing.footerContact')}</p>
             <ul className='landing__footer-list'>
               <li>
-                <span className='landing__footer-label'>{t('landing.footerPhoneLabel')}</span>
-                <a href='tel:+2250555965862'>+225 05 55 96 58 62</a>
-              </li>
-              <li>
                 <span className='landing__footer-label'>{t('landing.footerWhatsappLabel')}</span>
                 <a href={WHATSAPP_CONTACT_URL} target='_blank' rel='noopener noreferrer'>
                   WhatsApp

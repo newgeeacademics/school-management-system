@@ -850,8 +850,8 @@ export const DashboardPage: React.FC = () => {
     if (!payload.firstName.trim() || !payload.lastName.trim()) {
       return;
     }
-    if (!payload.email?.trim() && !payload.phone?.trim()) {
-      toast.error("L'e-mail ou le téléphone de contact est requis.");
+    if (!payload.email?.trim()) {
+      toast.error("L'e-mail est requis pour envoyer le lien d'activation portail.");
       return;
     }
     const body = {
@@ -866,7 +866,7 @@ export const DashboardPage: React.FC = () => {
       const created = await createParentOnBackend(body);
       setParents((prev) => [...prev, created]);
       await syncPortalUsers();
-      toast.success('Parent et compte portail créés');
+      toast.success(`Parent créé — invitation envoyée à ${body.email}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
       throw err;
@@ -1210,17 +1210,13 @@ export const DashboardPage: React.FC = () => {
       toast.error('E-mail invalide ou incomplet.');
       return;
     }
-    if (!payload.phone.trim()) {
-      toast.error('Le téléphone mobile est obligatoire.');
-      return;
-    }
     const body = {
       firstName: payload.firstName.trim(),
       lastName: payload.lastName.trim(),
       subject: payload.subject.trim() || 'Matière à définir',
       staffId: payload.staffId?.trim() || undefined,
       email: payload.email.trim(),
-      phone: payload.phone.trim(),
+      phone: payload.phone?.trim() || undefined,
       homeroomClassIds: payload.homeroomClassIds,
       assignedClassIds: payload.assignedClassIds,
     };
@@ -1230,7 +1226,7 @@ export const DashboardPage: React.FC = () => {
       setTeachers((prev) => [...prev, created]);
       applyHomeroomClasses(created.id, body.homeroomClassIds ?? []);
       await syncPortalUsers();
-      toast.success('Enseignant créé avec compte portail');
+      toast.success(`Enseignant créé — invitation envoyée à ${body.email}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
       throw err;
@@ -1295,8 +1291,8 @@ export const DashboardPage: React.FC = () => {
     if (!payload.firstName.trim() || !payload.lastName.trim()) {
       return;
     }
-    if (!payload.email?.trim() && !payload.phone?.trim()) {
-      toast.error("L'e-mail ou le téléphone de contact est requis.");
+    if (!payload.email?.trim()) {
+      toast.error("L'e-mail est requis pour envoyer le lien d'activation portail.");
       return;
     }
     const body = {
@@ -1312,7 +1308,7 @@ export const DashboardPage: React.FC = () => {
       const created = await createStudentOnBackend(body);
       setStudents((prev) => [...prev, created]);
       await syncPortalUsers();
-      toast.success('Élève et compte portail créés');
+      toast.success(`Élève créé — invitation portail envoyée à ${body.email}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
       throw err;

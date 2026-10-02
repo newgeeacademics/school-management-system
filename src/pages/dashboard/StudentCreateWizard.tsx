@@ -92,10 +92,7 @@ export function StudentCreateWizard({
   const [form, setForm] = React.useState<FormState>(() => emptyForm(resolvedCountry));
   const [submitting, setSubmitting] = React.useState(false);
 
-  const hasContact = Boolean(
-    isCompleteEmail(form.email) ||
-      (form.phone.trim() && isValidLocalPhone(form.phoneCountry, form.phone)),
-  );
+  const hasContact = isCompleteEmail(form.email);
 
   const enrolledCheck = React.useMemo(
     () => checkEnrolledCapacity(licensedStudentCount, enrolledCount),
@@ -251,7 +248,7 @@ export function StudentCreateWizard({
       {step === 3 ? (
         <>
           <div className='grid gap-2 max-w-md'>
-            <Label htmlFor='student-wizard-email'>E-mail de contact</Label>
+            <Label htmlFor='student-wizard-email'>E-mail de contact *</Label>
             <Input
               id='student-wizard-email'
               type='email'

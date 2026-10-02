@@ -60,6 +60,7 @@ type TrackingMapProps = {
   livePosition: TrackingPosition | null;
   driverPosition?: TrackingPosition | null;
   students?: TrackingStudent[];
+  liveActive?: boolean;
   className?: string;
 };
 
@@ -69,7 +70,8 @@ export function TrackingMap({
   livePosition,
   driverPosition = null,
   students = [],
-  className = 'h-[420px] w-full rounded-xl',
+  liveActive = true,
+  className = 'h-full w-full',
 }: TrackingMapProps) {
   const mapRef = useRef<MapRef>(null);
   const token = getMapboxToken();
@@ -116,7 +118,7 @@ export function TrackingMap({
 
   if (!hasMapboxToken()) {
     return (
-      <div className={`${className} flex items-center justify-center rounded-xl border bg-muted/40 p-4 text-center text-sm text-muted-foreground`}>
+      <div className={`${className} flex items-center justify-center bg-muted/40 p-4 text-center text-sm text-muted-foreground`}>
         Add <code className="mx-1">VITE_MAPBOX_TOKEN</code> to <code>.env.local</code>
       </div>
     );
@@ -128,8 +130,9 @@ export function TrackingMap({
         ref={mapRef}
         mapboxAccessToken={token}
         initialViewState={{ longitude: center.lng, latitude: center.lat, zoom: 13 }}
-        style={{ width: '100%', height: '100%', borderRadius: '0.75rem' }}
+        style={{ width: '100%', height: '100%' }}
         mapStyle={getMapboxStyle()}
+        onLoad={() => mapRef.current?.getMap()?.resize()}
       >
         {routeGeoJson && (
           <Source id="route" type="geojson" data={routeGeoJson}>
@@ -161,9 +164,9 @@ export function TrackingMap({
 
         {livePosition && (
           <Marker longitude={livePosition.lng} latitude={livePosition.lat} anchor="center">
-            {emojiPin('#ea580c', '🚌', 28)}
+            {emojiPin(liveActive ? '#ea580c' : '#64748b', '🚌', 28)}
             <Popup longitude={livePosition.lng} latitude={livePosition.lat} closeButton={false} anchor="bottom">
-              Bus en route
+              {liveActive ? 'Bus en route' : 'Dernière position'}
               {livePosition.speedKmh != null && (
                 <span className="block text-xs">{Math.round(livePosition.speedKmh)} km/h</span>
               )}
