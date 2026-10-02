@@ -86,9 +86,23 @@ public class PortalAccountService {
                 .build();
         AppUser saved = appUserRepository.save(user);
 
-        if (hasEmail && isRealContactEmail(contactEmail)) {
-            emailNotificationService.sendPortalCredentials(
-                    name, contactEmail, loginId, null, role);
+        boolean inviteByEmail = portalAccount
+                && hasEmail
+                && isRealContactEmail(contactEmail)
+                && (password == null || password.isBlank());
+
+        if (inviteByEmail) {
+            String invitationToken = userEmailAuthService.issueInvitationToken(saved);
+            emailNotificationService.sendPortalInvitation(
+                    name, contactEmail, loginId, role, invitationToken);
+        } else if (hasEmail && isRealContactEmail(contactEmail)) {
+            if (password != null && !password.isBlank()) {
+                emailNotificationService.sendPortalCredentials(
+                        name, contactEmail, loginId, password, role);
+            } else {
+                emailNotificationService.sendPortalCredentials(
+                        name, contactEmail, loginId, null, role);
+            }
             userEmailAuthService.sendVerificationEmail(saved);
         }
 
@@ -196,6 +210,22 @@ public class PortalAccountService {
         if (user != null) {
             appUserRepository.delete(user);
         }
+    }
+
+    @Transactional
+    public void resendPortalInvitation(String userId) {
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Compte introuvable."));
+        schoolContextService.assertSchoolAccess(user.getSchoolId());
+        if (!user.isPasswordSetupRequired()) {
+            throw new IllegalStateException("Ce compte est déjà activé.");
+        }
+        if (!isRealContactEmail(user.getEmail())) {
+            throw new IllegalArgumentException("Aucune adresse e-mail valide pour renvoyer l'invitation.");
+        }
+        String token = userEmailAuthService.issueInvitationToken(user);
+        emailNotificationService.sendPortalInvitation(
+                user.getName(), user.getEmail(), user.getLoginId(), user.getRole(), token);
     }
 
     public String resolveLoginEmail(String identifier) {

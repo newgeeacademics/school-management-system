@@ -5,10 +5,7 @@ import { isCompleteEmail } from '@/components/refine-ui/form/email-with-at-separ
 import { PhoneWithDialCode } from '@/components/refine-ui/form/phone-with-dial-code';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  formatPhoneWithCountry,
-  isValidLocalPhone,
-} from '@/lib/location-data';
+import { formatPhoneWithCountry } from '@/lib/location-data';
 
 import type { ClassItem, Matiere } from './dashboardTypes';
 import { ClassAssignmentPicker, HomeroomPicker, SubjectField } from './teacherFormParts';
@@ -30,7 +27,7 @@ const STEPS: WizardStepMeta[] = [
   },
   {
     title: 'Coordonnées & compte',
-    subtitle: 'E-mail obligatoire pour le portail et contact.',
+    subtitle: 'E-mail obligatoire — un lien d\'activation sera envoyé.',
   },
   {
     title: 'Validation',
@@ -105,9 +102,7 @@ export function TeacherCreateWizard({
         case 2:
           return Boolean(form.subject.trim());
         case 3:
-          return Boolean(
-            isCompleteEmail(form.email) && isValidLocalPhone(form.phoneCountry, form.phone),
-          );
+          return isCompleteEmail(form.email);
         case 4:
           return true;
         default:
@@ -128,7 +123,9 @@ export function TeacherCreateWizard({
         subject: form.subject.trim(),
         staffId: form.staffId.trim() || undefined,
         email: form.email.trim(),
-        phone: formatPhoneWithCountry(form.phoneCountry, form.phone.trim()),
+        phone: form.phone.trim()
+          ? formatPhoneWithCountry(form.phoneCountry, form.phone.trim())
+          : '',
         homeroomClassIds: form.homeroomClassIds,
         assignedClassIds: form.assignedClassIds,
       });
@@ -230,7 +227,7 @@ export function TeacherCreateWizard({
             />
           </div>
           <div className='grid gap-2 max-w-md'>
-            <Label htmlFor='teacher-wizard-phone'>Téléphone mobile *</Label>
+            <Label htmlFor='teacher-wizard-phone'>Téléphone mobile (optionnel)</Label>
             <PhoneWithDialCode
               id='teacher-wizard-phone'
               countryName={form.phoneCountry}
@@ -238,9 +235,11 @@ export function TeacherCreateWizard({
               value={form.phone}
               onChange={(phone) => setForm((f) => ({ ...f, phone }))}
               placeholder='07 00 00 00 00'
-              required
             />
           </div>
+          <p className='text-xs text-muted-foreground max-w-md'>
+            Un e-mail d&apos;invitation avec lien d&apos;activation sera envoyé automatiquement (si l&apos;e-mail est configuré sur le serveur).
+          </p>
           <LoginIdPreview firstName={form.firstName} lastName={form.lastName} />
         </>
       ) : null}
@@ -248,7 +247,7 @@ export function TeacherCreateWizard({
       {step === 4 ? (
         <>
           <p className='text-xs text-muted-foreground max-w-md'>
-            L&apos;enseignant choisira son mot de passe lors de sa première connexion au portail.
+            L&apos;enseignant reçoit un lien par e-mail pour créer son mot de passe et accéder au portail.
           </p>
           <WizardSummary>
             <WizardSummaryRow label='Nom' value={`${form.firstName} ${form.lastName}`} />

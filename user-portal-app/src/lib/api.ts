@@ -68,6 +68,16 @@ export async function loginWithIdentifier(identifier: string, password?: string)
   });
 }
 
+export async function fetchActivationPreview(token: string): Promise<{
+  name: string;
+  email: string;
+  loginId: string;
+  role: string;
+}> {
+  const qs = new URLSearchParams({ token });
+  return apiFetch(`/api/auth/activation-preview?${qs.toString()}`);
+}
+
 export async function setupInitialPassword(
   setupToken: string,
   newPassword: string,

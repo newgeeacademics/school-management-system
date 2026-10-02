@@ -6,6 +6,7 @@ import com.classroom.backend.service.email.templates.ChildLinkedToParentEmailTem
 import com.classroom.backend.service.email.templates.EmailVerificationTemplate;
 import com.classroom.backend.service.email.templates.PasswordResetEmailTemplate;
 import com.classroom.backend.service.email.templates.PortalCredentialsEmailTemplate;
+import com.classroom.backend.service.email.templates.PortalInvitationEmailTemplate;
 import com.classroom.backend.service.email.templates.WelcomeEmailTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,6 +75,44 @@ public class EmailNotificationService {
             } catch (Exception ignored) {
                 log.warn("Welcome plain email also failed for {}", email);
             }
+        }
+    }
+
+    public void sendPortalInvitation(
+            String displayName,
+            String contactEmail,
+            String loginId,
+            UserRole role,
+            String invitationToken
+    ) {
+        if (contactEmail == null || contactEmail.isBlank() || !emailService.isConfigured()) {
+            return;
+        }
+        if (invitationToken == null || invitationToken.isBlank()) {
+            return;
+        }
+        String activateUrl = normalizePortalUrl() + "/activer-compte?token=" + invitationToken.trim();
+        String roleLabel = roleLabel(role);
+        String resolvedLoginId = loginId != null && !loginId.isBlank() ? loginId.trim() : contactEmail.trim();
+        String subject = PortalInvitationEmailTemplate.subject();
+        String html = PortalInvitationEmailTemplate.html(
+                displayName,
+                roleLabel,
+                resolvedLoginId,
+                contactEmail.trim(),
+                activateUrl,
+                emailService.resolveEmailLogoUrl()
+        );
+        try {
+            emailService.sendHtmlEmail(contactEmail.trim(), subject, html);
+        } catch (Exception e) {
+            log.warn("Portal invitation email failed for {}", contactEmail, e);
+            emailService.sendSimpleEmail(
+                    contactEmail.trim(),
+                    subject,
+                    PortalInvitationEmailTemplate.text(
+                            displayName, roleLabel, resolvedLoginId, contactEmail, activateUrl)
+            );
         }
     }
 

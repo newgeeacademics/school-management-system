@@ -46,11 +46,14 @@ public class TeacherService {
         String fullName = PersonNameUtil.requireFullName(
                 request.getFirstName(), request.getLastName(), request.getName());
 
-        if (request.getPhone() == null || request.getPhone().isBlank()) {
-            throw new IllegalArgumentException("Le téléphone mobile est obligatoire.");
+        boolean hasEmail = request.getEmail() != null && !request.getEmail().isBlank();
+        boolean hasPhone = request.getPhone() != null && !request.getPhone().isBlank();
+        if (!hasEmail && !hasPhone) {
+            throw new IllegalArgumentException("L'e-mail (recommandé) ou le téléphone est requis pour le portail.");
         }
-        if (request.getEmail() == null || request.getEmail().isBlank()) {
-            throw new IllegalArgumentException("L'e-mail est obligatoire.");
+        if (!hasEmail) {
+            throw new IllegalArgumentException(
+                    "L'e-mail est requis pour envoyer le lien d'activation au portail.");
         }
 
         String schoolId = schoolContextService.requireCurrentSchoolId();

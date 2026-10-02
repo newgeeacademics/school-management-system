@@ -104,4 +104,16 @@ public class AuthController {
         return ResponseEntity.ok(authService.completeInitialPasswordSetup(
                 request.getSetupToken(), request.getNewPassword()));
     }
+
+    /** Preview invitation link from admin e-mail (before password is set). */
+    @GetMapping("/activation-preview")
+    public ResponseEntity<Map<String, Object>> activationPreview(@RequestParam String token) {
+        var user = userEmailAuthService.previewInvitationToken(token);
+        return ResponseEntity.ok(Map.of(
+                "name", user.getName(),
+                "email", user.getEmail(),
+                "loginId", user.getLoginId() != null ? user.getLoginId() : user.getEmail(),
+                "role", user.getRole().name()
+        ));
+    }
 }

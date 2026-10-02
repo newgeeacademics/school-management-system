@@ -18,6 +18,7 @@ public class UserEmailAuthService {
 
     private static final long VERIFY_HOURS = 24;
     private static final long RESET_HOURS = 1;
+    private static final long INVITATION_HOURS = 7 * 24;
 
     private final AppUserRepository appUserRepository;
     private final AccountIdentifierService accountIdentifierService;
@@ -94,12 +95,38 @@ public class UserEmailAuthService {
 
     @Transactional
     public String issuePasswordSetupToken(AppUser user) {
+        return issueSetupToken(user, RESET_HOURS);
+    }
+
+    /** Long-lived token for e-mail invitation links (admin-created accounts). */
+    @Transactional
+    public String issueInvitationToken(AppUser user) {
+        return issueSetupToken(user, INVITATION_HOURS);
+    }
+
+    @Transactional(readOnly = true)
+    public AppUser previewInvitationToken(String token) {
+        if (token == null || token.isBlank()) {
+            throw new RuntimeException("Lien d'activation invalide.");
+        }
+        AppUser user = appUserRepository.findByPasswordResetToken(token.trim())
+                .orElseThrow(() -> new RuntimeException("Lien d'activation invalide ou expiré."));
+        if (user.getPasswordResetExpiresAt() == null || user.getPasswordResetExpiresAt().isBefore(Instant.now())) {
+            throw new RuntimeException("Lien d'activation expiré. Demandez une nouvelle invitation à l'établissement.");
+        }
+        if (!user.isPasswordSetupRequired()) {
+            throw new RuntimeException("Ce compte est déjà activé. Connectez-vous avec votre mot de passe.");
+        }
+        return user;
+    }
+
+    private String issueSetupToken(AppUser user, long hoursValid) {
         if (user == null) {
             throw new IllegalArgumentException("Utilisateur introuvable.");
         }
         String token = UUID.randomUUID().toString();
         user.setPasswordResetToken(token);
-        user.setPasswordResetExpiresAt(Instant.now().plusSeconds(RESET_HOURS * 3600));
+        user.setPasswordResetExpiresAt(Instant.now().plusSeconds(hoursValid * 3600));
         appUserRepository.save(user);
         return token;
     }
@@ -119,6 +146,9 @@ public class UserEmailAuthService {
         }
         applyNewPassword(user, newPassword);
         user.setPasswordSetupRequired(false);
+        user.setEmailVerified(true);
+        user.setEmailVerifyToken(null);
+        user.setEmailVerifyExpiresAt(null);
         return appUserRepository.save(user);
     }
 
