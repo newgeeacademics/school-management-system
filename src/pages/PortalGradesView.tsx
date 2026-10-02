@@ -160,6 +160,12 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
     return bulletinRows;
   }, [bulletinRows, isParent, studentId]);
 
+  const teacherCourseId = data?.defaultCourseId ?? data?.courses[0]?.id ?? '';
+  const teacherSubjectLabel =
+    data?.teacherSubject?.trim() ||
+    data?.courses[0]?.name ||
+    t('portalGrades.subjectUnknown');
+
   useEffect(() => {
     if (data?.gradingConfig?.gradingScale) {
       setNewEval((p) => ({ ...p, maxScore: data.gradingConfig!.gradingScale }));
@@ -169,15 +175,22 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
     }
   }, [data?.gradingConfig?.gradingScale, data?.gradingConfig?.evaluationTypes]);
 
+  useEffect(() => {
+    if (canManage && teacherCourseId) {
+      setNewEval((p) => (p.courseId === teacherCourseId ? p : { ...p, courseId: teacherCourseId }));
+    }
+  }, [canManage, teacherCourseId]);
+
   const handleCreateEvaluation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canManage || !classId || !newEval.courseId || !newEval.label.trim()) return;
+    const courseId = teacherCourseId || newEval.courseId;
+    if (!canManage || !classId || !courseId || !newEval.label.trim()) return;
     setSaving(true);
     setError(null);
     try {
       await createPortalEvaluation({
         classId,
-        courseId: newEval.courseId,
+        courseId,
         label: newEval.label.trim(),
         date: newEval.date,
         period,
@@ -340,13 +353,13 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
       ) : null}
 
       {isParent ? (
-        <div className='rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/5 via-card to-card p-4 shadow-sm'>
+        <div className='portal-card bg-muted/30 p-4 md:p-5'>
           <p className='text-sm font-medium text-foreground'>{t('portalGrades.parentIntro')}</p>
           <p className='mt-1 text-xs text-muted-foreground'>{t('portalGrades.readOnlyHint')}</p>
         </div>
       ) : null}
 
-      <div className='flex flex-wrap items-end gap-3 rounded-2xl border border-border/80 bg-card p-4 shadow-sm'>
+      <div className='portal-card flex flex-wrap items-end gap-3 p-4 md:p-5'>
         {showClassPicker ? (
           <div className='min-w-[10rem] flex-1'>
             <Label htmlFor='grades-class'>{t('portalGrades.classLabel')}</Label>
@@ -431,7 +444,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
       ) : null}
 
       {tab === 'bulletin' ? (
-        <section className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
+        <section className='portal-card p-4 md:p-5'>
           <h2 className='flex items-center gap-2 text-sm font-semibold text-foreground'>
             <GraduationCap className='size-4 text-primary' aria-hidden />
             {t('portalGrades.bulletinTitle')}
@@ -478,7 +491,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
       ) : null}
 
       {tab === 'marks' && canManage ? (
-        <form onSubmit={handleCreateEvaluation} className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
+        <form onSubmit={handleCreateEvaluation} className='portal-card p-4 md:p-5'>
           <h2 className='flex items-center gap-2 text-sm font-semibold text-foreground'>
             <Plus className='size-4 text-primary' aria-hidden />
             {t('portalGrades.newEvaluation')}
@@ -489,20 +502,12 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
             <div className='mt-3 grid gap-3 sm:grid-cols-2'>
               <div>
                 <Label htmlFor='eval-course'>{t('portalGrades.courseLabel')}</Label>
-                <select
-                  id='eval-course'
-                  className={selectClass}
-                  value={newEval.courseId}
-                  onChange={(e) => setNewEval((p) => ({ ...p, courseId: e.target.value }))}
-                  required
-                >
-                  <option value=''>{t('portalGrades.chooseCourse')}</option>
-                  {data?.courses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                <p id='eval-course' className='mt-1 rounded-lg border border-input bg-muted/40 px-3 py-2 text-sm font-medium text-foreground'>
+                  {teacherSubjectLabel}
+                </p>
+                {!teacherCourseId ? (
+                  <p className='mt-1 text-xs text-amber-700'>{t('portalGrades.subjectMissingHint')}</p>
+                ) : null}
               </div>
               <div>
                 <Label htmlFor='eval-label'>{t('portalGrades.evalLabel')}</Label>
@@ -562,7 +567,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
                 />
               </div>
               <div className='sm:col-span-2'>
-                <Button type='submit' disabled={saving || !classId}>
+                <Button type='submit' disabled={saving || !classId || !teacherCourseId}>
                   {t('portalGrades.addEvaluation')}
                 </Button>
               </div>
@@ -572,7 +577,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
       ) : null}
 
       {tab === 'marks' ? (
-        <section className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
+        <section className='portal-card p-4 md:p-5'>
           <h2 className='text-sm font-semibold text-foreground'>{t('portalGrades.marksTitle')}</h2>
           {!data?.evaluations.length ? (
             <p className='mt-3 text-xs italic text-muted-foreground'>{t('portalGrades.emptyMarks')}</p>

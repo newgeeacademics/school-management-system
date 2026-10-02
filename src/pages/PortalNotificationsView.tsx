@@ -57,7 +57,7 @@ export function PortalNotificationsView() {
       ) : null}
 
       {!loading && !error && notifications.length === 0 ? (
-        <div className='flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center'>
+        <div className='portal-card flex flex-col items-center gap-2 border-dashed bg-muted/20 px-6 py-12 text-center'>
           <Bell className='size-8 text-muted-foreground/60' aria-hidden />
           <p className='text-sm text-muted-foreground'>{t('portalNotifications.empty')}</p>
         </div>

@@ -1,6 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { UserPortalLoginPage } from '@/pages/UserPortalLoginPage';
+import { UserPortalForgotPasswordPage } from '@/pages/UserPortalForgotPasswordPage';
+import { UserPortalResetPasswordPage } from '@/pages/UserPortalResetPasswordPage';
+import { UserPortalActivateAccountPage } from '@/pages/UserPortalActivateAccountPage';
 import { IdCardScanPage } from '@/pages/IdCardScanPage';
 import { PortalHomePage } from '@/pages/PortalHomePage';
 import { PortalClassHubView } from '@/pages/PortalClassHubView';
@@ -15,6 +18,9 @@ export function App() {
         <Routes>
           <Route path='/' element={<Navigate to='/connexion' replace />} />
           <Route path='/connexion' element={<UserPortalLoginPage />} />
+          <Route path='/mot-de-passe-oublie' element={<UserPortalForgotPasswordPage />} />
+          <Route path='/reset-password' element={<UserPortalResetPasswordPage />} />
+          <Route path='/activer-compte' element={<UserPortalActivateAccountPage />} />
           <Route path='/carte/:type/:id' element={<IdCardScanPage />} />
           <Route
             path='/accueil'

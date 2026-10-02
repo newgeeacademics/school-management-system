@@ -18,7 +18,7 @@ export function PortalScheduleView() {
 
   if (feed.schedule.length === 0) {
     return (
-      <section className='rounded-2xl border border-[#e2e8f0] bg-white p-5'>
+      <section className='portal-card p-4 md:p-5'>
         <p className='text-sm italic text-muted-foreground'>{t('portalHome.emptySchedule')}</p>
       </section>
     );
@@ -30,17 +30,17 @@ export function PortalScheduleView() {
         <p className='text-sm text-muted-foreground'>{t('portalSchedule.teacherHint')}</p>
       ) : null}
 
-      <section className='overflow-x-auto rounded-2xl border border-[#e2e8f0] bg-white'>
+      <section className='portal-card overflow-x-auto'>
         <table className='w-full min-w-[640px] border-collapse text-sm'>
-          <thead className='bg-[#f8fafc]'>
+          <thead className='bg-muted'>
             <tr>
-              <th className='sticky left-0 z-10 min-w-[88px] border-b border-[#e2e8f0] bg-[#f8fafc] px-3 py-2.5 text-left text-xs font-semibold text-[#64748b]'>
+              <th className='sticky left-0 z-10 min-w-[88px] border-b border-border bg-muted px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground'>
                 {t('portalSchedule.colTime')}
               </th>
               {days.map((day) => (
                 <th
                   key={day}
-                  className='min-w-[120px] border-b border-l border-[#e2e8f0] px-3 py-2.5 text-left text-xs font-semibold text-[#64748b]'
+                  className='min-w-[120px] border-b border-l border-border px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground'
                 >
                   {day}
                 </th>
@@ -49,8 +49,8 @@ export function PortalScheduleView() {
           </thead>
           <tbody>
             {timeRows.map((time) => (
-              <tr key={time} className='odd:bg-white even:bg-[#fafbfc]'>
-                <td className='sticky left-0 z-10 border-t border-[#e2e8f0] bg-inherit px-3 py-2.5 text-xs font-semibold text-[#0f172a]'>
+              <tr key={time} className='odd:bg-card even:bg-muted/30'>
+                <td className='sticky left-0 z-10 border-t border-border bg-inherit px-3 py-2.5 text-xs font-semibold text-foreground'>
                   {time}
                 </td>
                 {days.map((day) => {
@@ -58,24 +58,24 @@ export function PortalScheduleView() {
                   return (
                     <td
                       key={day}
-                      className='border-t border-l border-[#e2e8f0] px-3 py-2.5 align-top'
+                      className='border-t border-l border-border px-3 py-2.5 align-top'
                     >
                       {slot ? (
                         <div className='space-y-0.5'>
-                          <p className='font-semibold text-[#0f172a]'>
+                          <p className='font-semibold text-foreground'>
                             {slot.courseName ?? t('portalSchedule.unassignedCourse')}
                           </p>
                           {slot.className ? (
-                            <p className='text-xs text-[#64748b]'>{slot.className}</p>
+                            <p className='text-xs text-muted-foreground'>{slot.className}</p>
                           ) : null}
                           {slot.room ? (
-                            <p className='text-xs text-[#64748b]'>
+                            <p className='text-xs text-muted-foreground'>
                               {t('portalSchedule.roomLabel', { room: slot.room })}
                             </p>
                           ) : null}
                         </div>
                       ) : (
-                        <span className='text-xs text-[#cbd5e1]'>—</span>
+                        <span className='text-xs text-muted-foreground/40'>—</span>
                       )}
                     </td>
                   );

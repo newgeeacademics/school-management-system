@@ -37,7 +37,7 @@ function InfoSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
+    <section className='portal-card p-4 md:p-5'>
       <h2 className='mb-2 text-sm font-semibold text-foreground'>{title}</h2>
       <div>{children}</div>
     </section>
@@ -218,7 +218,7 @@ export function IdCardScanPage() {
         {loading ? (
           <p className='text-center text-sm text-muted-foreground'>Chargement de la fiche…</p>
         ) : error ? (
-          <section className='rounded-2xl border border-destructive/30 bg-card p-8 text-center shadow-sm'>
+          <section className='portal-card border-destructive/30 p-8 text-center'>
             <AlertCircle className='mx-auto size-10 text-destructive' aria-hidden />
             <p className='mt-3 text-sm font-medium text-foreground'>Fiche introuvable</p>
             <p className='mt-1 text-xs text-muted-foreground'>{error}</p>

@@ -17,6 +17,8 @@ export type PortalGradesDetail = {
   classId?: string;
   period: string;
   studentId?: string;
+  teacherSubject?: string;
+  defaultCourseId?: string;
   gradingConfig?: PortalGradingConfig;
   classes: { id: string; name: string; level?: string }[];
   courses: { id: string; name: string }[];

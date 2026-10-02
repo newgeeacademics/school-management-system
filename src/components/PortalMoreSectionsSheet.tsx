@@ -37,12 +37,12 @@ export function PortalMoreSectionsSheet({
       />
       <div
         className={cn(
-          'relative z-10 w-full max-w-lg rounded-t-[24px] bg-white px-5 pb-6 pt-3',
+          'relative z-10 w-full max-w-lg rounded-t-xl border border-border bg-card px-5 pb-6 pt-3',
           'animate-in slide-in-from-bottom duration-200',
-          'md:max-w-2xl md:rounded-2xl md:shadow-xl',
+          'md:max-w-2xl md:rounded-lg md:shadow-lg',
         )}
       >
-        <div className='mx-auto mb-4 h-1 w-10 rounded-full bg-[#e2e8f0] md:hidden' />
+        <div className='mx-auto mb-4 h-1 w-10 rounded-full bg-border md:hidden' />
         <div className='mb-4 flex items-start justify-between gap-3'>
           <div>
             <h2 className='text-lg font-bold text-foreground'>{t('portalHome.moreSectionsTitle')}</h2>
@@ -67,12 +67,12 @@ export function PortalMoreSectionsSheet({
                   onSelect(section);
                   onClose();
                 }}
-                className='flex flex-col items-center gap-2 rounded-2xl bg-[#f8fafc] p-2.5 text-center transition hover:bg-primary/5'
+                className='flex flex-col items-center gap-2 rounded-lg border border-border bg-muted/50 p-2.5 text-center transition hover:bg-accent/50'
               >
-                <span className='flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary'>
-                  <Icon className='size-[22px]' aria-hidden />
+                <span className='flex size-9 items-center justify-center rounded-md bg-secondary text-primary'>
+                  <Icon className='size-5' aria-hidden />
                 </span>
-                <span className='line-clamp-2 text-[11px] font-semibold leading-tight text-foreground'>
+                <span className='line-clamp-2 text-[11px] font-medium leading-tight text-foreground'>
                   {t(sectionNavLabel(section, role))}
                 </span>
               </button>
