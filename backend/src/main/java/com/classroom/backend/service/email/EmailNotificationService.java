@@ -85,13 +85,14 @@ public class EmailNotificationService {
             UserRole role,
             String invitationToken
     ) {
-        if (contactEmail == null || contactEmail.isBlank() || !emailService.isConfigured()) {
-            return;
-        }
         if (invitationToken == null || invitationToken.isBlank()) {
             return;
         }
         String activateUrl = normalizePortalUrl() + "/activer-compte?token=" + invitationToken.trim();
+        if (contactEmail == null || contactEmail.isBlank() || !emailService.isConfigured()) {
+            log.info("Portal invitation (e-mail not configured) for {}: {}", contactEmail, activateUrl);
+            return;
+        }
         String roleLabel = roleLabel(role);
         String resolvedLoginId = loginId != null && !loginId.isBlank() ? loginId.trim() : contactEmail.trim();
         String subject = PortalInvitationEmailTemplate.subject();
@@ -106,7 +107,7 @@ public class EmailNotificationService {
         try {
             emailService.sendHtmlEmail(contactEmail.trim(), subject, html);
         } catch (Exception e) {
-            log.warn("Portal invitation email failed for {}", contactEmail, e);
+            log.warn("Portal invitation email failed for {} — open locally: {}", contactEmail, activateUrl, e);
             emailService.sendSimpleEmail(
                     contactEmail.trim(),
                     subject,
