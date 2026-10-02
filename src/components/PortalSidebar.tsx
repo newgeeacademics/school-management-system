@@ -135,10 +135,10 @@ export function PortalSidebar({
                         type='button'
                         onClick={() => handleNav(id)}
                         className={cn(
-                          'flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors',
+                          'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all',
                           active
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-sidebar-foreground hover:bg-sidebar-accent'
+                            ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+                            : 'text-sidebar-foreground hover:bg-sidebar-accent/80'
                         )}
                       >
                         <Icon className={cn('size-4 shrink-0', active ? 'opacity-100' : 'opacity-70')} aria-hidden />

@@ -25,7 +25,16 @@ function PortalLayoutInner() {
   const session = getPortalSession();
   const activeSection = sectionFromPath(location.pathname);
   const meta = sectionMeta(activeSection);
-  const { loading, error, reload, usesBackend, navigateSection } = usePortalFeedContext();
+  const {
+    loading,
+    error,
+    reload,
+    usesBackend,
+    navigateSection,
+    activeStudentId,
+    setActiveStudentId,
+    parentStudents,
+  } = usePortalFeedContext();
   const [moreOpen, setMoreOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [bottomIndex, setBottomIndex] = useState(() =>
@@ -107,6 +116,23 @@ function PortalLayoutInner() {
                   ? t('portalHome.descParentGrades')
                   : t(meta.descKey)}
               </p>
+              {session.role === 'parent' && parentStudents.length > 1 ? (
+                <label className='mt-2 flex max-w-xs items-center gap-2 text-xs text-muted-foreground'>
+                  <span className='shrink-0 font-medium'>{t('portalGrades.studentLabel')}</span>
+                  <select
+                    className='min-w-0 flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground'
+                    value={activeStudentId}
+                    onChange={(e) => setActiveStudentId(e.target.value)}
+                  >
+                    {parentStudents.map((student) => (
+                      <option key={student.id} value={student.id}>
+                        {student.name}
+                        {student.className ? ` (${student.className})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
             </div>
             <div className='flex shrink-0 items-center gap-0.5'>
               {roleHasNotifications(session.role) ? (

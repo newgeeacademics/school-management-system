@@ -12,6 +12,7 @@ import {
   deletePortalHomework,
   fetchPortalHomework,
   fetchPortalRollCall,
+  finalizePortalRollCall,
   savePortalRollCall,
   type AttendanceStatusApi,
   type PortalHomeworkList,
@@ -67,6 +68,7 @@ function AttendanceTab({ classId, className }: { classId: string; className: str
   const [statuses, setStatuses] = useState<Record<string, AttendanceStatusApi>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -104,6 +106,22 @@ function AttendanceTab({ classId, className }: { classId: string; className: str
       setError(err instanceof Error ? err.message : t('portalClassHub.saveError'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleFinalize = async () => {
+    if (!data?.canEdit || data.finalized) return;
+    setFinalizing(true);
+    setError(null);
+    try {
+      const entries = Object.entries(statuses).map(([studentId, status]) => ({ studentId, status }));
+      await savePortalRollCall({ classId, date, entries });
+      const finalized = await finalizePortalRollCall({ classId, date });
+      setData(finalized);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('portalClassHub.saveError'));
+    } finally {
+      setFinalizing(false);
     }
   };
 
@@ -157,10 +175,26 @@ function AttendanceTab({ classId, className }: { classId: string; className: str
         </ul>
       )}
 
+      {data?.finalized ? (
+        <p className='rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground'>
+          {t('portalClassHub.rollCallFinalized')}
+        </p>
+      ) : null}
+
       {data?.canEdit ? (
-        <Button type='button' onClick={() => void handleSave()} disabled={saving}>
-          {saving ? t('portalClassHub.saving') : t('portalClassHub.saveAttendance')}
-        </Button>
+        <div className='flex flex-wrap gap-2'>
+          <Button type='button' onClick={() => void handleSave()} disabled={saving || finalizing}>
+            {saving ? t('portalClassHub.saving') : t('portalClassHub.saveAttendance')}
+          </Button>
+          <Button
+            type='button'
+            variant='secondary'
+            onClick={() => void handleFinalize()}
+            disabled={saving || finalizing}
+          >
+            {finalizing ? t('portalClassHub.saving') : t('portalClassHub.finalizeAttendance')}
+          </Button>
+        </div>
       ) : null}
     </div>
   );

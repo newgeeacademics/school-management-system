@@ -16,6 +16,7 @@ export type PortalRollCall = {
   className: string;
   date: string;
   canEdit: boolean;
+  finalized?: boolean;
   students: {
     studentId: string;
     studentName: string;
@@ -67,6 +68,16 @@ export async function savePortalRollCall(payload: {
   return apiFetch<PortalRollCall>('/api/portal/classes/roll-call', {
     method: 'POST',
     body: JSON.stringify(payload),
+  });
+}
+
+export async function finalizePortalRollCall(payload: {
+  classId: string;
+  date: string;
+}): Promise<PortalRollCall> {
+  return apiFetch<PortalRollCall>('/api/portal/classes/roll-call/finalize', {
+    method: 'POST',
+    body: JSON.stringify({ classId: payload.classId, date: payload.date, entries: [] }),
   });
 }
 
