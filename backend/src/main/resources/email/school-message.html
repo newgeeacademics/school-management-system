@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bienvenue</title>
+  <title>{{subject}}</title>
 </head>
 <body style="margin:0;padding:32px 16px;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#18181b;">
   <div style="display:none;max-height:0;overflow:hidden;">{{preheader}}</div>
@@ -23,7 +23,7 @@
                   </td>
                   <td style="vertical-align:middle;">
                     <p style="margin:0;font-size:16px;font-weight:600;color:#18181b;">NewGee</p>
-                    <p style="margin:2px 0 0 0;font-size:13px;color:#71717a;">Gestion scolaire</p>
+                    <p style="margin:2px 0 0 0;font-size:13px;color:#71717a;">Message de l'établissement</p>
                   </td>
                 </tr>
               </table>
@@ -31,22 +31,25 @@
           </tr>
           <tr>
             <td style="padding:28px 32px;">
-              <p style="margin:0 0 6px 0;font-size:13px;font-weight:500;color:#2563eb;">Inscription</p>
-              <h1 style="margin:0 0 20px 0;font-size:22px;font-weight:600;color:#18181b;line-height:1.3;">Bienvenue, {{displayName}}</h1>
-              <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#52525b;">Votre établissement est enregistré. Depuis le tableau de bord, vous pouvez ajouter vos classes, enseignants, élèves et paramétrer le portail familles.</p>
-              <table role="presentation" cellpadding="0" cellspacing="0">
+              <h1 style="margin:0 0 20px 0;font-size:20px;font-weight:600;color:#18181b;line-height:1.35;">{{subject}}</h1>
+              <div style="font-size:15px;line-height:1.65;color:#3f3f46;">{{body}}</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px 28px 32px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border-radius:8px;border:1px solid #f4f4f5;">
                 <tr>
-                  <td style="border-radius:8px;background:#2563eb;">
-                    <a href="{{appUrl}}" style="display:inline-block;padding:12px 24px;font-size:15px;font-weight:500;color:#ffffff;text-decoration:none;">Accéder au tableau de bord</a>
+                  <td style="padding:16px 20px;">
+                    <p style="margin:0 0 12px 0;font-size:14px;color:#52525b;">Retrouvez ce message et les autres informations sur le portail.</p>
+                    <a href="{{portalUrl}}" style="display:inline-block;padding:10px 20px;font-size:14px;font-weight:500;color:#ffffff;background:#2563eb;text-decoration:none;border-radius:8px;">Ouvrir le portail</a>
                   </td>
                 </tr>
               </table>
-              <p style="margin:24px 0 0 0;font-size:14px;line-height:1.6;color:#71717a;">Vous recevrez un e-mail séparé pour confirmer votre adresse.</p>
             </td>
           </tr>
           <tr>
             <td style="padding:20px 32px;background:#fafafa;border-top:1px solid #f4f4f5;">
-              <p style="margin:0;font-size:12px;line-height:1.5;color:#a1a1aa;">© {{year}} NewGee</p>
+              <p style="margin:0;font-size:12px;line-height:1.5;color:#a1a1aa;">Envoyé par votre établissement via NewGee · © {{year}}</p>
             </td>
           </tr>
         </table>

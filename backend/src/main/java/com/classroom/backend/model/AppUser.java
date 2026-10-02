@@ -41,6 +41,19 @@ public class AppUser {
     @Column(name = "school_id")
     private String schoolId;
 
+    /** False until the user clicks the verification link (existing rows default true). */
+    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
+    private boolean emailVerified = true;
+
+    @Column(name = "email_verify_token")
+    @JsonIgnore
+    private String emailVerifyToken;
+
+    @Column(name = "email_verify_expires_at")
+    @JsonIgnore
+    private Instant emailVerifyExpiresAt;
+
     @Column(name = "password_reset_token")
     @JsonIgnore
     private String passwordResetToken;
@@ -49,6 +62,7 @@ public class AppUser {
     @JsonIgnore
     private Instant passwordResetExpiresAt;
 
+    /** True until the user sets their password on first portal login. */
     @Column(name = "password_setup_required", nullable = false)
     @Builder.Default
     private boolean passwordSetupRequired = false;

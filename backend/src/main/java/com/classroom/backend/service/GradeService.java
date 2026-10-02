@@ -21,6 +21,7 @@ public class GradeService {
     private final ClassItemRepository classItemRepository;
     private final CourseRepository courseRepository;
     private final StudentRepository studentRepository;
+    private final PortalPushNotifier portalPushNotifier;
 
     // --- Evaluations ---
 
@@ -115,7 +116,16 @@ public class GradeService {
                     .build();
         }
 
-        return studentGradeRepository.save(grade);
+        StudentGrade saved = studentGradeRepository.save(grade);
+        String evalLabel = evaluation.getLabel() != null ? evaluation.getLabel() : "Évaluation";
+        portalPushNotifier.notifyStudentFamily(
+                student,
+                "Nouvelle note publiée",
+                student.getName() + " — " + evalLabel + " : " + request.getScore(),
+                "/accueil/grades",
+                "grade-" + saved.getId()
+        );
+        return saved;
     }
 
     @Transactional

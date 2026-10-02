@@ -15,12 +15,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PortalAccountService {
 
+    public record ParentAccountResult(AppUser user, boolean newlyCreated) {}
+
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailNotificationService emailNotificationService;
     private final SchoolEmailService schoolEmailService;
     private final AccountIdentifierService accountIdentifierService;
     private final SchoolContextService schoolContextService;
+    private final UserEmailAuthService userEmailAuthService;
 
     /**
      * Creates a portal account with a short login id (e.g. sermem1) and a real contact email
@@ -78,13 +81,29 @@ public class PortalAccountService {
                 .password(passwordEncoder.encode(rawPassword))
                 .role(role)
                 .schoolId(schoolContextService.getCurrentSchoolId().orElse(null))
+                .emailVerified(!hasEmail || !isRealContactEmail(contactEmail))
                 .passwordSetupRequired(portalAccount)
                 .build();
         AppUser saved = appUserRepository.save(user);
 
-        if (hasEmail && isRealContactEmail(contactEmail)) {
-            emailNotificationService.sendPortalCredentials(
-                    name, contactEmail, loginId, null, role);
+        boolean inviteByEmail = portalAccount
+                && hasEmail
+                && isRealContactEmail(contactEmail)
+                && (password == null || password.isBlank());
+
+        if (inviteByEmail) {
+            String invitationToken = userEmailAuthService.issueInvitationToken(saved);
+            emailNotificationService.sendPortalInvitation(
+                    name, contactEmail, loginId, role, invitationToken);
+        } else if (hasEmail && isRealContactEmail(contactEmail)) {
+            if (password != null && !password.isBlank()) {
+                emailNotificationService.sendPortalCredentials(
+                        name, contactEmail, loginId, password, role);
+            } else {
+                emailNotificationService.sendPortalCredentials(
+                        name, contactEmail, loginId, null, role);
+            }
+            userEmailAuthService.sendVerificationEmail(saved);
         }
 
         return saved;
@@ -101,7 +120,7 @@ public class PortalAccountService {
     }
 
     @Transactional
-    public AppUser findOrCreateParentAccount(
+    public ParentAccountResult findOrCreateParentAccount(
             String firstName,
             String lastName,
             String name,
@@ -122,7 +141,7 @@ public class PortalAccountService {
                 }
                 existing.setName(PersonNameUtil.resolveFullName(firstName, lastName, name));
                 appUserRepository.save(existing);
-                return existing;
+                return new ParentAccountResult(existing, false);
             }
         }
 
@@ -136,12 +155,13 @@ public class PortalAccountService {
                 }
                 existing.setName(PersonNameUtil.resolveFullName(firstName, lastName, name));
                 appUserRepository.save(existing);
-                return existing;
+                return new ParentAccountResult(existing, false);
             }
         }
 
-        return createLinkedAccountForPerson(
+        AppUser created = createLinkedAccountForPerson(
                 firstName, lastName, name, email, phone, password, UserRole.PARENT);
+        return new ParentAccountResult(created, true);
     }
 
     @Transactional
@@ -170,6 +190,7 @@ public class PortalAccountService {
 
         if (password != null && !password.isBlank()) {
             user.setPassword(passwordEncoder.encode(password));
+            user.setPasswordSetupRequired(false);
             appUserRepository.save(user);
             if (user.getEmail() != null && isRealContactEmail(user.getEmail())) {
                 emailNotificationService.sendPortalCredentials(
@@ -189,6 +210,22 @@ public class PortalAccountService {
         if (user != null) {
             appUserRepository.delete(user);
         }
+    }
+
+    @Transactional
+    public void resendPortalInvitation(String userId) {
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Compte introuvable."));
+        schoolContextService.assertSchoolAccess(user.getSchoolId());
+        if (!user.isPasswordSetupRequired()) {
+            throw new IllegalStateException("Ce compte est déjà activé.");
+        }
+        if (!isRealContactEmail(user.getEmail())) {
+            throw new IllegalArgumentException("Aucune adresse e-mail valide pour renvoyer l'invitation.");
+        }
+        String token = userEmailAuthService.issueInvitationToken(user);
+        emailNotificationService.sendPortalInvitation(
+                user.getName(), user.getEmail(), user.getLoginId(), user.getRole(), token);
     }
 
     public String resolveLoginEmail(String identifier) {

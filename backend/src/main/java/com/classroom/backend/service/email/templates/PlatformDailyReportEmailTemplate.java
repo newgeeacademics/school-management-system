@@ -31,10 +31,10 @@ public final class PlatformDailyReportEmailTemplate {
                 : "—";
 
         StringBuilder body = new StringBuilder();
-        body.append("<p style=\"margin:0 0 16px 0;font-size:14px;color:#334155;\">")
-                .append("Synthèse automatique de l&apos;activité sur la plateforme NewGee.")
+        body.append("<p style=\"margin:0 0 16px 0;font-size:14px;color:#444;line-height:1.5;\">")
+                .append("Activité plateforme")
                 .append("</p>");
-        body.append("<p style=\"margin:0 0 20px 0;font-size:12px;color:#64748b;\">Généré le ")
+        body.append("<p style=\"margin:0 0 16px 0;font-size:13px;color:#666;\">")
                 .append(generated)
                 .append("</p>");
 
@@ -42,16 +42,18 @@ public final class PlatformDailyReportEmailTemplate {
         body.append(schoolsSection(s));
 
         String href = escapeHtmlAttr(normalizeBase(appUrl));
-        String logo = escapeHtmlAttr(logoUrl == null ? href + "/favicon.ico" : logoUrl);
+        String logo = escapeHtmlAttr(logoUrl == null ? href + "/newgee-logo.png" : logoUrl);
         String subject = escapeHtml(subject(s));
 
         return EmailTemplateRenderer.render(
-                "email/generic-branded.html",
+                "email/daily-report.html",
                 Map.of(
                         "subject", subject,
                         "body", body.toString(),
                         "appUrl", href,
                         "logoUrl", logo,
+                        "preheader", escapeHtml(EmailTemplateUtil.preheader(
+                                "Rapport quotidien NewGee.")),
                         "year", String.valueOf(Year.now().getValue())
                 ),
                 "<html><body>" + body + "</body></html>"
@@ -60,7 +62,7 @@ public final class PlatformDailyReportEmailTemplate {
 
     private static String metricTable(PlatformDailyReportSnapshot s) {
         StringBuilder table = new StringBuilder();
-        table.append("<table style=\"width:100%;border-collapse:collapse;font-size:13px;color:#334155;\">");
+        table.append("<table style=\"width:100%;border-collapse:collapse;font-size:14px;color:#333;\">");
         row(table, "Établissements inscrits", s.getTotalSchools());
         row(table, "Nouveaux établissements (24 h)", s.getSchoolsRegisteredLast24h());
         row(table, "Élèves", s.getTotalStudents());
@@ -89,9 +91,9 @@ public final class PlatformDailyReportEmailTemplate {
     }
 
     private static void rowText(StringBuilder table, String label, String value) {
-        table.append("<tr><td style=\"padding:8px 0;border-bottom:1px solid #e2e8f0;\">")
+        table.append("<tr><td style=\"padding:8px 0;border-bottom:1px solid #eee;\">")
                 .append(escapeHtml(label))
-                .append("</td><td style=\"padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:600;\">")
+                .append("</td><td style=\"padding:8px 0;border-bottom:1px solid #eee;text-align:right;\">")
                 .append(escapeHtml(value))
                 .append("</td></tr>");
     }
@@ -101,8 +103,8 @@ public final class PlatformDailyReportEmailTemplate {
             return "<p style=\"margin:24px 0 0 0;font-size:13px;color:#64748b;\">Aucun établissement inscrit.</p>";
         }
         StringBuilder list = new StringBuilder();
-        list.append("<h2 style=\"margin:24px 0 12px 0;font-size:16px;color:#1e293b;\">Établissements</h2>");
-        list.append("<ul style=\"margin:0;padding-left:18px;font-size:13px;color:#334155;line-height:1.7;\">");
+        list.append("<p style=\"margin:20px 0 8px 0;font-size:15px;font-weight:600;color:#111;\">Établissements</p>");
+        list.append("<ul style=\"margin:0;padding-left:18px;font-size:14px;color:#333;line-height:1.6;\">");
         for (SchoolLine line : s.getSchools()) {
             list.append("<li><strong>")
                     .append(escapeHtml(line.getName() != null ? line.getName() : "—"))

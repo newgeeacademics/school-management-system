@@ -6,6 +6,7 @@ import com.classroom.backend.model.ParentContact;
 import com.classroom.backend.model.Student;
 import com.classroom.backend.repository.ParentContactRepository;
 import com.classroom.backend.repository.StudentRepository;
+import com.classroom.backend.service.email.EmailNotificationService;
 import com.classroom.backend.util.PersonNameUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,8 @@ public class ParentContactService {
     private final StudentRepository studentRepository;
     private final PortalAccountService portalAccountService;
     private final SchoolContextService schoolContextService;
+    private final EmailNotificationService emailNotificationService;
+    private final SchoolLookupService schoolLookupService;
 
     public List<ParentContact> findAll() {
         return schoolContextService.findAllForCurrentSchool(parentContactRepository::findBySchoolId);
@@ -56,9 +59,10 @@ public class ParentContactService {
             }
         }
 
-        AppUser appUser = portalAccountService.findOrCreateParentAccount(
+        PortalAccountService.ParentAccountResult accountResult = portalAccountService.findOrCreateParentAccount(
                 request.getFirstName(), request.getLastName(), fullName,
                 request.getEmail(), request.getPhone(), request.getPassword());
+        AppUser appUser = accountResult.user();
 
         ParentContact parent = ParentContact.builder()
                 .name(fullName)
@@ -71,7 +75,33 @@ public class ParentContactService {
                 .schoolId(schoolId)
                 .build();
 
-        return parentContactRepository.save(parent);
+        ParentContact saved = parentContactRepository.save(parent);
+        notifyParentOfChildLink(saved, accountResult.newlyCreated(), student);
+        return saved;
+    }
+
+    private void notifyParentOfChildLink(ParentContact parent, boolean newlyCreated, Student student) {
+        if (student == null || parent.getAppUser() == null) {
+            return;
+        }
+        String parentEmail = parent.getEmail();
+        if (parentEmail == null || parentEmail.isBlank()) {
+            parentEmail = parent.getAppUser().getEmail();
+        }
+        if (parentEmail == null || parentEmail.isBlank()) {
+            return;
+        }
+        if (newlyCreated) {
+            return;
+        }
+        String className = student.getClassItem() != null ? student.getClassItem().getName() : null;
+        emailNotificationService.sendChildLinkedToParent(
+                parentEmail,
+                schoolLookupService.currentSchoolName(),
+                parent.getName(),
+                student.getName(),
+                className
+        );
     }
 
     @Transactional
@@ -104,7 +134,7 @@ public class ParentContactService {
                 || (request.getPhone() != null && !request.getPhone().isBlank())) {
             AppUser appUser = portalAccountService.findOrCreateParentAccount(
                     request.getFirstName(), request.getLastName(), fullName,
-                    request.getEmail(), request.getPhone(), request.getPassword());
+                    request.getEmail(), request.getPhone(), request.getPassword()).user();
             parent.setAppUser(appUser);
         }
 

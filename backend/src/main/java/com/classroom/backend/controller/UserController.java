@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -50,5 +51,13 @@ public class UserController {
     public ResponseEntity<Void> delete(@PathVariable String id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/resend-invitation")
+    public ResponseEntity<Map<String, String>> resendInvitation(@PathVariable String id) {
+        userService.resendInvitation(id);
+        return ResponseEntity.ok(Map.of(
+                "message", "Invitation renvoyée par e-mail si le serveur mail est configuré."
+        ));
     }
 }

@@ -19,5 +19,7 @@ public interface ParentContactRepository extends JpaRepository<ParentContact, St
 
     List<ParentContact> findByEmailIgnoreCase(String email);
 
+    List<ParentContact> findByNameIgnoreCase(String name);
+
     List<ParentContact> findBySchoolId(String schoolId);
 }

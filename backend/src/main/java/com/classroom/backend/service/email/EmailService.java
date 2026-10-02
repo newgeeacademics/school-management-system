@@ -43,6 +43,9 @@ public class EmailService {
     @Value("${app.public.main-url:http://localhost:5173}")
     private String publicMainUrl;
 
+    @Value("${app.public.portal-url:http://localhost:5174}")
+    private String publicPortalUrl;
+
     @Value("${app.email.logo-url:}")
     private String emailLogoUrlOverride;
 
@@ -74,12 +77,17 @@ public class EmailService {
         return base.isBlank() ? "http://localhost:5173" : base;
     }
 
+    public String getPublicPortalUrlNormalized() {
+        String base = publicPortalUrl == null ? "" : publicPortalUrl.trim().replaceAll("/+$", "");
+        return base.isBlank() ? "http://localhost:5174" : base;
+    }
+
     public String resolveEmailLogoUrl() {
         String override = emailLogoUrlOverride == null ? "" : emailLogoUrlOverride.trim();
         if (!override.isBlank()) {
             return override;
         }
-        return getPublicMainUrlNormalized() + "/favicon.ico";
+        return getPublicMainUrlNormalized() + "/newgee-logo.png";
     }
 
     public void sendHtmlEmail(String toEmail, String subject, String htmlContent) throws MessagingException {
@@ -93,7 +101,7 @@ public class EmailService {
         String html = BrandedMessageEmailTemplate.html(
                 subject,
                 content,
-                getPublicMainUrlNormalized(),
+                getPublicPortalUrlNormalized(),
                 resolveEmailLogoUrl()
         );
         try {

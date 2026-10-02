@@ -26,13 +26,17 @@ public final class PortalCredentialsEmailTemplate {
                 "Rôle : " + safe(roleLabel, ""),
                 "Identifiant de connexion : " + safe(loginId, ""),
                 "E-mail de contact : " + safe(contactEmail, ""),
-                password != null && !password.isBlank()
-                        ? "Mot de passe : " + password.trim()
-                        : "Mot de passe : à définir lors de votre première connexion avec votre identifiant.",
+                passwordLine(password),
                 "Connexion : " + safe(loginUrl, ""),
-                "Connectez-vous avec votre identifiant : le portail vous demandera de créer votre mot de passe.",
                 "— L'équipe NewGee"
         );
+    }
+
+    private static String passwordLine(String password) {
+        if (password != null && !password.isBlank()) {
+            return "Mot de passe : " + password.trim();
+        }
+        return "Mot de passe : à définir lors de votre première connexion avec votre identifiant.";
     }
 
     public static String html(
@@ -44,18 +48,24 @@ public final class PortalCredentialsEmailTemplate {
             String loginUrl,
             String logoUrl
     ) {
+        String passwordCell = password != null && !password.isBlank()
+                ? escapeHtml(password.trim())
+                : "À définir à la première connexion";
         return EmailTemplateRenderer.render(
                 "email/portal-credentials.html",
                 Map.of(
                         "displayName", escapeHtml(displayName),
                         "loginId", escapeHtml(loginId),
                         "contactEmail", escapeHtml(contactEmail),
-                        "password", password != null && !password.isBlank()
-                                ? escapeHtml(password.trim())
-                                : "À définir à la première connexion",
+                        "password", passwordCell,
+                        "passwordHint", password != null && !password.isBlank()
+                                ? "Nous vous recommandons de modifier votre mot de passe après la première connexion."
+                                : "Connectez-vous avec votre identifiant : le portail vous demandera de créer votre mot de passe.",
                         "roleLabel", escapeHtml(roleLabel),
                         "loginUrl", escapeHtmlAttr(loginUrl),
                         "logoUrl", escapeHtmlAttr(logoUrl),
+                        "preheader", escapeHtml(EmailTemplateUtil.preheader(
+                                "Vos identifiants portail NewGee — identifiant " + safe(loginId, ""))),
                         "year", String.valueOf(Year.now().getValue())
                 ),
                 "<html><body><p>Bonjour {{displayName}}</p><p>Identifiant: {{loginId}}</p></body></html>"

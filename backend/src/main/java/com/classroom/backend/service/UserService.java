@@ -66,4 +66,9 @@ public class UserService {
         findById(id);
         appUserRepository.deleteById(id);
     }
+
+    @Transactional
+    public void resendInvitation(String id) {
+        portalAccountService.resendPortalInvitation(id);
+    }
 }

@@ -27,5 +27,7 @@ public interface AppUserRepository extends JpaRepository<AppUser, String> {
     List<AppUser> findBySchoolId(String schoolId);
     long countByRole(UserRole role);
 
+    Optional<AppUser> findByEmailVerifyToken(String emailVerifyToken);
+
     Optional<AppUser> findByPasswordResetToken(String passwordResetToken);
 }

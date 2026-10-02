@@ -7,6 +7,7 @@ import com.classroom.backend.model.Student;
 import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.ClassItemRepository;
 import com.classroom.backend.repository.StudentRepository;
+import com.classroom.backend.service.email.EmailNotificationService;
 import com.classroom.backend.util.IdCardNumberUtil;
 import com.classroom.backend.util.MatriculeGenerator;
 import com.classroom.backend.util.PersonNameUtil;
@@ -24,6 +25,9 @@ public class StudentService {
     private final ClassItemRepository classItemRepository;
     private final PortalAccountService portalAccountService;
     private final SchoolContextService schoolContextService;
+    private final EmailNotificationService emailNotificationService;
+    private final SchoolLookupService schoolLookupService;
+    private final SchoolCapacityService schoolCapacityService;
 
     public List<Student> findAll() {
         return schoolContextService.findAllForCurrentSchool(studentRepository::findBySchoolId);
@@ -49,6 +53,7 @@ public class StudentService {
 
         ClassItem classItem = null;
         String schoolId = schoolContextService.requireCurrentSchoolId();
+        schoolCapacityService.assertCanEnrollStudent(schoolId);
         if (request.getClassId() != null && !request.getClassId().isBlank()) {
             classItem = classItemRepository.findById(request.getClassId()).orElse(null);
             if (classItem != null) {
@@ -83,7 +88,30 @@ public class StudentService {
             student.setIdCardNumber(IdCardNumberUtil.resolveStudentCardNumber(null, matricule, student.getId()));
         }
 
-        return studentRepository.save(student);
+        Student saved = studentRepository.save(student);
+        notifyParentOfEnrollment(saved, appUser, classItem, request.getEmail());
+        return saved;
+    }
+
+    private void notifyParentOfEnrollment(
+            Student student,
+            AppUser appUser,
+            ClassItem classItem,
+            String contactEmail
+    ) {
+        if (appUser == null || contactEmail == null || contactEmail.isBlank()) {
+            return;
+        }
+        String className = classItem != null ? classItem.getName() : null;
+        emailNotificationService.sendChildEnrollmentNotification(
+                contactEmail.trim(),
+                schoolLookupService.currentSchoolName(),
+                null,
+                student.getName(),
+                className,
+                appUser.getLoginId(),
+                null
+        );
     }
 
     @Transactional

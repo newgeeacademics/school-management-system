@@ -55,6 +55,12 @@ app:
     main-url: ${APP_MAIN_URL:http://localhost:5173}
     portal-url: ${APP_PORTAL_URL:http://localhost:5174}
 
+  push:
+    vapid:
+      public-key: ${VAPID_PUBLIC_KEY:}
+      private-key: ${VAPID_PRIVATE_KEY:}
+      subject: ${VAPID_SUBJECT:mailto:contact@newgeeacademy.com}
+
   email:
     enabled: ${APP_EMAIL_ENABLED:true}
     from: ${APP_EMAIL_FROM:NewGee <contact@newgeeacademy.com>}

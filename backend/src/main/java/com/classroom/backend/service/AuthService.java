@@ -19,9 +19,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -33,6 +30,7 @@ public class AuthService {
     private final SchoolService schoolService;
     private final EmailNotificationService emailNotificationService;
     private final AccountIdentifierService accountIdentifierService;
+    private final UserEmailAuthService userEmailAuthService;
 
     @Transactional
     public AuthResponse registerSchool(RegisterSchoolRequest request) {
@@ -45,6 +43,7 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(UserRole.ADMIN)
+                .emailVerified(false)
                 .build();
         user = appUserRepository.save(user);
 
@@ -55,6 +54,7 @@ public class AuthService {
         String token = issueToken(user.getEmail(), request.getPassword());
 
         emailNotificationService.sendSchoolWelcome(user.getName(), user.getEmail());
+        userEmailAuthService.sendVerificationEmail(user);
 
         String officialEmail = request.getSchool().getOfficialEmail();
         if (officialEmail != null
@@ -74,6 +74,7 @@ public class AuthService {
                 .email(user.getEmail())
                 .role(user.getRole())
                 .schoolId(school.getId())
+                .emailVerified(user.isEmailVerified())
                 .build();
     }
 
@@ -89,10 +90,7 @@ public class AuthService {
         String principal = accountIdentifierService.canonicalPrincipalName(user);
 
         if (user.isPasswordSetupRequired()) {
-            String setupToken = UUID.randomUUID().toString();
-            user.setPasswordResetToken(setupToken);
-            user.setPasswordResetExpiresAt(Instant.now().plusSeconds(3600));
-            appUserRepository.save(user);
+            String setupToken = userEmailAuthService.issuePasswordSetupToken(user);
             return AuthResponse.builder()
                     .passwordSetupRequired(true)
                     .setupToken(setupToken)
@@ -102,6 +100,7 @@ public class AuthService {
                     .loginId(user.getLoginId())
                     .role(user.getRole())
                     .schoolId(user.getSchoolId())
+                    .emailVerified(user.isEmailVerified())
                     .build();
         }
 
@@ -123,41 +122,28 @@ public class AuthService {
                 .loginId(user.getLoginId())
                 .role(user.getRole())
                 .schoolId(user.getSchoolId())
+                .emailVerified(user.isEmailVerified())
                 .passwordSetupRequired(false)
                 .build();
     }
 
     @Transactional
     public AuthResponse completeInitialPasswordSetup(String setupToken, String newPassword) {
-        if (setupToken == null || setupToken.isBlank()) {
-            throw new RuntimeException("Session de création de mot de passe invalide.");
-        }
-        AppUser user = appUserRepository.findByPasswordResetToken(setupToken.trim())
-                .orElseThrow(() -> new RuntimeException("Session expirée. Reconnectez-vous avec votre identifiant."));
-        if (user.getPasswordResetExpiresAt() == null || user.getPasswordResetExpiresAt().isBefore(Instant.now())) {
-            throw new RuntimeException("Session expirée. Reconnectez-vous avec votre identifiant.");
-        }
-        if (!user.isPasswordSetupRequired()) {
-            throw new RuntimeException("Ce compte a déjà un mot de passe. Utilisez « Mot de passe oublié ».");
-        }
-        user.setPassword(passwordEncoder.encode(newPassword));
-        user.setPasswordSetupRequired(false);
-        user.setPasswordResetToken(null);
-        user.setPasswordResetExpiresAt(null);
-        appUserRepository.save(user);
-
+        AppUser user = userEmailAuthService.completeInitialPasswordSetup(setupToken, newPassword);
         String principal = accountIdentifierService.canonicalPrincipalName(user);
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(principal, newPassword)
         );
+        String token = jwtTokenProvider.generateToken(authentication);
         return AuthResponse.builder()
-                .token(jwtTokenProvider.generateToken(authentication))
+                .token(token)
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
                 .loginId(user.getLoginId())
                 .role(user.getRole())
                 .schoolId(user.getSchoolId())
+                .emailVerified(user.isEmailVerified())
                 .passwordSetupRequired(false)
                 .build();
     }
