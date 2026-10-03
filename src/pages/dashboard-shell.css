@@ -34,7 +34,7 @@
   height: 28px;
   width: 28px;
   flex-shrink: 0;
-  color: #64748b;
+  color: var(--brand-ink-faint);
 }
 
 .dashboard-shell .dashboard-sidebar-footer {
@@ -105,7 +105,15 @@
 }
 
 .dashboard-shell [data-sidebar='sidebar'] {
-  border-right: 1px solid #e2e8f0;
+  border-right: 1px solid var(--brand-line);
+}
+
+.dashboard-shell [data-sidebar='group-label'] {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand-ink-faint);
 }
 
 .dashboard-shell [data-slot='sidebar-inset'] {
@@ -115,10 +123,10 @@
 }
 
 .dashboard-header {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--brand-hairline);
   background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
-  padding: 14px 20px;
+  backdrop-filter: saturate(1.4) blur(12px);
+  padding: 16px 24px;
 }
 
 .dashboard-header__row {
@@ -134,27 +142,32 @@
 }
 
 .dashboard-header__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--brand-blue-soft);
+  color: var(--brand-blue-deep);
   font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #2563eb;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .dashboard-header__title {
-  margin-top: 4px;
-  font-size: 1.35rem;
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #0f172a;
-  line-height: 1.2;
+  letter-spacing: -0.025em;
+  color: var(--brand-ink);
+  line-height: 1.12;
 }
 
 .dashboard-header__desc {
   margin-top: 4px;
-  font-size: 0.82rem;
-  color: #64748b;
-  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--brand-ink-soft);
+  font-weight: 400;
   max-width: 42rem;
 }
 
@@ -208,15 +221,15 @@
 }
 
 .dashboard-content {
-  background: #f8fafc;
+  background: var(--brand-canvas);
   min-width: 0;
-  padding: 24px;
+  padding: 28px;
 }
 
 .dashboard-user-pill {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--brand-line);
   background: #fff;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 10px;
 }
 
