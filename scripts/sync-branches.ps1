@@ -58,6 +58,7 @@ Pop-Location
 # --- admin ---
 git worktree add (Join-Path $WtRoot "admin") admin
 Copy-AppFiles -Source (Join-Path $RepoRoot "admin-app") -Dest (Join-Path $WtRoot "admin") -Files $AppFiles
+Copy-AppFiles -Source $RepoRoot -Dest (Join-Path $WtRoot "admin") -Files @("shared")
 Copy-Item (Join-Path $RepoRoot ".gitignore") (Join-Path $WtRoot "admin\.gitignore") -Force
 Remove-Clutter (Join-Path $WtRoot "admin")
 Push-Location (Join-Path $WtRoot "admin")
