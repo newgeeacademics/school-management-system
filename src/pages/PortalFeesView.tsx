@@ -84,7 +84,7 @@ export function PortalFeesView() {
             {installments.map((item) => (
               <div
                 key={item.id}
-                className='flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm'
+                className='flex items-start gap-3 rounded-2xl border border-foreground/[0.06] bg-card px-4 py-3 shadow-[var(--brand-shadow)]'
               >
                 <Wallet className='mt-0.5 size-4 shrink-0 text-primary' aria-hidden />
                 <div className='min-w-0 flex-1'>

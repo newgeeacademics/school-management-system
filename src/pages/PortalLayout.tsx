@@ -105,10 +105,10 @@ function PortalLayoutInner() {
       />
 
       <div className='flex min-h-svh min-w-0 flex-1 flex-col'>
-        <header className='shrink-0 border-b border-border bg-card'>
+        <header className='shrink-0 border-b border-foreground/[0.06] bg-card/90 backdrop-blur-md backdrop-saturate-150'>
           <div className='portal-container flex items-center gap-3 py-3 md:py-3.5'>
             <div className='min-w-0 flex-1 md:pl-0'>
-              <h1 className='truncate text-base font-semibold text-foreground md:text-lg'>
+              <h1 className='truncate font-display text-lg font-bold tracking-tight text-foreground md:text-2xl'>
                 {t(sectionLabelKey(activeSection, session.role))}
               </h1>
               <p className='truncate text-xs text-muted-foreground'>
@@ -120,7 +120,7 @@ function PortalLayoutInner() {
                 <label className='mt-2 flex max-w-xs items-center gap-2 text-xs text-muted-foreground'>
                   <span className='shrink-0 font-medium'>{t('portalGrades.studentLabel')}</span>
                   <select
-                    className='min-w-0 flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground'
+                    className='min-w-0 flex-1 rounded-full border border-input bg-background px-3 py-1 text-xs text-foreground'
                     value={activeStudentId}
                     onChange={(e) => setActiveStudentId(e.target.value)}
                   >

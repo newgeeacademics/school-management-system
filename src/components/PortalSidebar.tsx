@@ -135,9 +135,9 @@ export function PortalSidebar({
                         type='button'
                         onClick={() => handleNav(id)}
                         className={cn(
-                          'flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors',
+                          'flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors',
                           active
-                            ? 'bg-primary text-primary-foreground'
+                            ? 'bg-primary font-semibold text-primary-foreground shadow-[0_6px_16px_color-mix(in_srgb,var(--primary)_25%,transparent)]'
                             : 'text-sidebar-foreground hover:bg-sidebar-accent'
                         )}
                       >

@@ -70,7 +70,7 @@ export function PortalNotificationsView() {
             return (
               <li
                 key={item.id}
-                className='flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm'
+                className='flex items-start gap-3 rounded-2xl border border-foreground/[0.06] bg-card px-4 py-3 shadow-[var(--brand-shadow)]'
               >
                 <span
                   className={cn(

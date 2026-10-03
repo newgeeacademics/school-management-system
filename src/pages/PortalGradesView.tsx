@@ -296,7 +296,7 @@ export function PortalGradesView({ fixedClassId, embedded: _embedded = false }: 
     <div className='space-y-4'>
       {modDialog ? (
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4'>
-          <div className='w-full max-w-md rounded-xl border bg-card p-4 shadow-lg'>
+          <div className='w-full max-w-md rounded-2xl border border-foreground/[0.06] bg-card p-4 shadow-[var(--brand-shadow-lg)]'>
             <h3 className='text-sm font-semibold'>Demande de modification de note</h3>
             <form className='mt-3 space-y-3 text-sm' onSubmit={(e) => void submitModificationRequest(e)}>
               <p>
