@@ -1480,3 +1480,232 @@ body.landing-mobile-menu-open .landing__header {
     grid-template-columns: 1fr;
   }
 }
+
+/* ------------------------------------------------------------------
+   Style refresh — display typography, pill buttons, soft cards.
+   Shape and type only: every colour comes from the theme tokens above.
+   ------------------------------------------------------------------ */
+.landing {
+  --landing-display: var(--font-display);
+  --landing-hairline: color-mix(in srgb, var(--landing-ink) 7%, transparent);
+  --landing-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 36px rgba(15, 23, 42, 0.06);
+  --landing-shadow-lg: 0 2px 4px rgba(15, 23, 42, 0.04), 0 30px 70px rgba(15, 23, 42, 0.12);
+  --landing-glow: color-mix(in srgb, var(--landing-blue) 28%, transparent);
+  --landing-ease: cubic-bezier(0.16, 0.84, 0.44, 1);
+}
+
+.landing__title,
+.landing__section-title,
+.landing__feature-title,
+.landing__step-title,
+.landing__plan-name,
+.landing__plan-price,
+.landing__stat-value,
+.landing__cta-title {
+  font-family: var(--landing-display);
+}
+
+.landing__title {
+  font-size: clamp(2.4rem, 6vw, 4.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+
+.landing__title-accent {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.landing__lead,
+.landing__section-desc,
+.landing__cta-desc {
+  font-weight: 400;
+}
+
+.landing__header {
+  border-bottom-color: var(--landing-hairline);
+  backdrop-filter: saturate(1.4) blur(14px);
+}
+
+.landing__nav-link {
+  padding: 8px 14px;
+  font-size: 0.875rem;
+  border-radius: 999px;
+}
+
+.landing__btn,
+.landing__menu-btn,
+.landing__mobile-close {
+  border-radius: 999px;
+}
+
+.landing__btn {
+  height: 40px;
+  padding: 0 20px;
+  font-size: 0.875rem;
+  transition:
+    background 0.2s var(--landing-ease),
+    color 0.2s var(--landing-ease),
+    border-color 0.2s var(--landing-ease),
+    box-shadow 0.2s var(--landing-ease),
+    transform 0.2s var(--landing-ease);
+}
+
+.landing__btn:active {
+  transform: scale(0.97);
+}
+
+.landing__btn--primary:hover,
+.landing__btn--on-dark:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px var(--landing-glow);
+}
+
+.landing__hero-actions .landing__btn,
+.landing__cta-actions .landing__btn {
+  height: 50px;
+  padding: 0 28px;
+  font-size: 0.95rem;
+}
+
+.landing__hero {
+  background:
+    radial-gradient(circle at 8% 15%, color-mix(in srgb, var(--landing-blue) 10%, transparent), transparent 36%),
+    radial-gradient(ellipse 80% 60% at 70% -10%, color-mix(in srgb, var(--landing-blue) 14%, transparent), transparent 70%),
+    var(--landing-surface);
+}
+
+.landing__badge,
+.landing__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: none;
+  background: color-mix(in srgb, var(--landing-blue) 10%, transparent);
+  color: var(--landing-blue-dark);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.landing__section-title {
+  margin-top: 14px;
+  font-size: clamp(1.9rem, 4vw, 2.9rem);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+}
+
+.landing__preview {
+  border-radius: 22px;
+  border-color: var(--landing-hairline);
+  box-shadow: var(--landing-shadow-lg);
+  transform: rotate(-1deg);
+  transition: transform 0.5s var(--landing-ease);
+}
+
+.landing__preview:hover {
+  transform: rotate(0deg) translateY(-4px);
+}
+
+.landing__stat,
+.landing__feature,
+.landing__step,
+.landing__plan-card,
+.landing__compare-wrap {
+  border-radius: 22px;
+  border-color: var(--landing-hairline);
+  box-shadow: var(--landing-shadow);
+}
+
+.landing__stat,
+.landing__step {
+  padding: 22px;
+}
+
+.landing__stat-value {
+  font-size: 2.2rem;
+  letter-spacing: -0.035em;
+}
+
+.landing__feature {
+  padding: 26px;
+  transition:
+    box-shadow 0.35s var(--landing-ease),
+    transform 0.35s var(--landing-ease);
+}
+
+.landing__feature:hover {
+  box-shadow: var(--landing-shadow-lg);
+  transform: translateY(-4px);
+}
+
+.landing__feature-icon {
+  border-radius: 14px;
+}
+
+.landing__feature-title {
+  margin-top: 18px;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.landing__step-num {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+}
+
+.landing__module {
+  border-radius: 999px;
+  border-color: var(--landing-hairline);
+  box-shadow: var(--landing-shadow);
+}
+
+.landing__plan-card {
+  padding: 28px 24px;
+}
+
+.landing__plan-card--featured {
+  border: 2px solid var(--landing-blue);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 30px 70px color-mix(in srgb, var(--landing-blue) 16%, transparent);
+}
+
+.landing__plan-price {
+  font-size: 2.2rem;
+  letter-spacing: -0.035em;
+}
+
+.landing__faq-item {
+  border-radius: 18px;
+  border-color: var(--landing-hairline);
+}
+
+.landing__cta {
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.18), transparent 40%),
+    var(--landing-blue);
+  box-shadow: 0 20px 40px var(--landing-glow);
+}
+
+.landing__cta-title {
+  font-size: clamp(1.8rem, 4vw, 2.75rem);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+}
+
+@media (max-width: 639px) {
+  .landing__cta {
+    border-radius: 20px;
+  }
+
+  .landing__preview {
+    border-radius: 16px;
+    transform: none;
+  }
+}

@@ -239,3 +239,85 @@
     max-width: 240px;
   }
 }
+
+/* ------------------------------------------------------------------
+   Style refresh — card form, display title, pill submit button.
+   Colours come from the app theme (--primary, --card, --foreground…).
+   ------------------------------------------------------------------ */
+.auth-page__main {
+  background:
+    radial-gradient(circle at 15% 8%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 45%),
+    radial-gradient(circle at 90% 95%, color-mix(in srgb, var(--primary) 7%, transparent), transparent 50%),
+    var(--background);
+}
+
+.auth-page__card {
+  width: 100%;
+  max-width: 460px;
+  padding: 32px 28px;
+  border-radius: 22px;
+  background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--foreground) 7%, transparent);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 30px 70px rgba(15, 23, 42, 0.12);
+}
+
+.auth-page__title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.auth-page__subtitle {
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+.auth-page__submit {
+  height: 48px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition:
+    background 0.2s cubic-bezier(0.16, 0.84, 0.44, 1),
+    transform 0.2s cubic-bezier(0.16, 0.84, 0.44, 1),
+    box-shadow 0.2s cubic-bezier(0.16, 0.84, 0.44, 1);
+}
+
+.auth-page__submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--primary) 28%, transparent);
+}
+
+.auth-page__submit:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.auth-page__role-btn {
+  border-radius: 16px;
+}
+
+.auth-page__visual {
+  margin: 16px;
+  border-radius: 28px;
+}
+
+.auth-page__visual-copy h2 {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+@media (max-width: 639px) {
+  .auth-page__card {
+    max-width: none;
+    padding: 24px 18px;
+    border-radius: 18px;
+  }
+
+  .auth-page__title {
+    font-size: 1.6rem;
+  }
+}
