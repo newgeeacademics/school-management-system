@@ -19,7 +19,6 @@ import {
 } from '@/lib/school-capacity';
 import {
   formatPhoneWithCountry,
-  isValidLocalPhone,
   isValidOptionalLocalPhone,
 } from '@/lib/location-data';
 

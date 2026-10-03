@@ -50,7 +50,7 @@ function StudentProfile({ card }: { card: PublicStudentCard }) {
 
   return (
     <div className='space-y-4'>
-      <div className='overflow-hidden rounded-xl border border-border bg-card shadow-sm'>
+      <div className='overflow-hidden rounded-2xl border border-foreground/[0.06] bg-card shadow-[var(--brand-shadow)]'>
         <div className='bg-primary px-4 py-3 text-primary-foreground'>
           <p className='text-xs font-bold uppercase tracking-wide'>{card.schoolName}</p>
           {card.schoolCity ? <p className='text-[10px] opacity-90'>{card.schoolCity}</p> : null}
@@ -112,7 +112,7 @@ function TeacherProfile({ card }: { card: PublicTeacherCard }) {
 
   return (
     <div className='space-y-4'>
-      <div className='overflow-hidden rounded-xl border border-border bg-card shadow-sm'>
+      <div className='overflow-hidden rounded-2xl border border-foreground/[0.06] bg-card shadow-[var(--brand-shadow)]'>
         <div className='bg-primary px-4 py-3 text-primary-foreground'>
           <p className='text-xs font-bold uppercase tracking-wide'>{card.schoolName}</p>
           {card.schoolCity ? <p className='text-[10px] opacity-90'>{card.schoolCity}</p> : null}

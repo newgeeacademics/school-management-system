@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/select';
 import {
   formatPhoneWithCountry,
-  isValidLocalPhone,
   isValidOptionalLocalPhone,
 } from '@/lib/location-data';
 
