@@ -216,12 +216,12 @@ export function TrackingDashboardPage() {
 
   return (
     <div className='fixed inset-0 flex flex-col overflow-hidden bg-background'>
-      <header className='safe-pt z-30 shrink-0 border-b bg-card/95 backdrop-blur'>
+      <header className='safe-pt z-30 shrink-0 border-b border-foreground/[0.06] bg-card/90 backdrop-blur-md backdrop-saturate-150'>
         <div className='flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4'>
           <div className='flex min-w-0 items-center gap-2 sm:gap-3'>
             <AppLogo markClassName='app-logo__mark--compact' name='NewGee Transport' />
             <div className='min-w-0'>
-              <h1 className='truncate text-base font-semibold'>Suivi Transport</h1>
+              <h1 className='truncate font-display text-base font-bold tracking-tight'>Suivi Transport</h1>
               <p className='truncate text-xs text-muted-foreground'>{session.name ?? session.email}</p>
             </div>
           </div>
@@ -250,11 +250,11 @@ export function TrackingDashboardPage() {
         />
 
         {loading ? (
-          <p className='absolute left-3 top-3 z-10 rounded-lg bg-card/95 px-3 py-2 text-sm text-muted-foreground shadow-sm'>
+          <p className='absolute left-3 top-3 z-10 rounded-full bg-card/95 px-4 py-2 text-sm text-muted-foreground shadow-[var(--brand-shadow)]'>
             Chargement des trajets…
           </p>
         ) : !selected ? (
-          <div className='absolute inset-x-4 top-4 z-10 rounded-xl border bg-card/95 p-6 text-center shadow-sm'>
+          <div className='absolute inset-x-4 top-4 z-10 mx-auto max-w-md rounded-[22px] border border-foreground/[0.06] bg-card/95 p-6 text-center shadow-[var(--brand-shadow-lg)] backdrop-blur'>
             <MapPin className='mx-auto mb-3 size-10 text-muted-foreground' />
             <p className='font-medium'>Aucun trajet assigné</p>
             <p className='mt-1 text-sm text-muted-foreground'>{emptyCopy}</p>
@@ -264,7 +264,7 @@ export function TrackingDashboardPage() {
             {sheetOpen ? (
               <button
                 type='button'
-                className='absolute inset-0 z-20 bg-black/30'
+                className='absolute inset-0 z-20 bg-slate-950/30 backdrop-blur-[2px]'
                 aria-label='Fermer le trajet'
                 onClick={() => setSheetOpen(false)}
               />
@@ -272,7 +272,7 @@ export function TrackingDashboardPage() {
 
             <div
               className={cn(
-                'absolute inset-x-0 bottom-0 z-30 mx-auto flex w-full max-w-lg flex-col rounded-t-2xl border bg-card shadow-[0_-8px_30px_rgb(15_23_42/0.18)]',
+                'absolute inset-x-0 bottom-0 z-30 mx-auto flex w-full max-w-lg flex-col rounded-t-[28px] border border-b-0 border-foreground/[0.06] bg-card shadow-[0_-12px_40px_rgb(15_23_42/0.16)] transition-[max-height] duration-300 ease-[cubic-bezier(.16,.84,.44,1)]',
                 sheetOpen ? 'max-h-[80svh]' : 'max-h-[7.5rem]'
               )}
               role='dialog'
@@ -281,15 +281,16 @@ export function TrackingDashboardPage() {
             >
               <button
                 type='button'
-                className='flex w-full flex-col items-center px-4 pt-2 pb-3'
+                className='flex w-full flex-col items-center px-5 pt-2.5 pb-3'
                 onClick={() => setSheetOpen((open) => !open)}
                 aria-expanded={sheetOpen}
               >
-                <span className='mb-2 h-1 w-10 rounded-full bg-muted-foreground/30' />
+                <span className='mb-2.5 h-1.5 w-12 rounded-full bg-muted-foreground/25' />
                 <span className='flex w-full items-center justify-between gap-2 text-left'>
                   <span className='min-w-0'>
-                    <span className='block truncate text-sm font-semibold'>{selected.routeName}</span>
-                    <span className='text-xs text-muted-foreground'>
+                    <span className='block truncate font-display text-base font-bold tracking-tight'>{selected.routeName}</span>
+                    <span className='inline-flex items-center gap-1.5 text-xs text-muted-foreground'>
+                      <span className={cn('size-1.5 rounded-full', isLive ? 'bg-green-500' : 'bg-muted-foreground/50')} />
                       {isLive ? 'En direct' : 'Hors ligne'}
                     </span>
                   </span>
@@ -299,7 +300,7 @@ export function TrackingDashboardPage() {
                 </span>
               </button>
               {sheetOpen ? (
-                <div className='min-h-0 space-y-3 overflow-y-auto px-3 pb-[max(1rem,env(safe-area-inset-bottom))]'>
+                <div className='min-h-0 space-y-3 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))]'>
                   {canPickRoute ? (
                     <div className='flex gap-2 overflow-x-auto pb-1'>
                       {routes.map((route) => (
@@ -347,8 +348,8 @@ function RouteDetails({
 }) {
   return (
     <>
-      <div className='rounded-xl border bg-card p-4'>
-        <h2 className='font-semibold'>{selected.routeName}</h2>
+      <div className='rounded-2xl border border-foreground/[0.06] bg-card shadow-[var(--brand-shadow)] p-4'>
+        <h2 className='font-display text-lg font-bold tracking-tight'>{selected.routeName}</h2>
         <p className='mt-1 text-sm text-muted-foreground'>Chauffeur : {selected.driverName}</p>
         <p className='text-sm text-muted-foreground'>
           Départ : {selected.departureTime}
@@ -370,14 +371,14 @@ function RouteDetails({
       </div>
 
       {selected.students.length > 0 && (
-        <div className='rounded-xl border bg-card p-4'>
+        <div className='rounded-2xl border border-foreground/[0.06] bg-card shadow-[var(--brand-shadow)] p-4'>
           <h3 className='mb-3 flex items-center gap-2 text-sm font-semibold'>
             <Users className='size-4' />
             Élèves sur ce trajet
           </h3>
           <ul className='space-y-2'>
             {selected.students.map((student) => (
-              <li key={student.id} className='rounded-lg bg-muted/50 px-3 py-2 text-sm'>
+              <li key={student.id} className='rounded-xl bg-muted/60 px-3 py-2 text-sm'>
                 <span className='font-medium'>{student.name}</span>
                 {student.className && (
                   <span className='block text-xs text-muted-foreground'>{student.className}</span>
@@ -389,7 +390,7 @@ function RouteDetails({
       )}
 
       {showDriver && (
-        <div className='rounded-xl border bg-card p-4'>
+        <div className='rounded-2xl border border-foreground/[0.06] bg-card shadow-[var(--brand-shadow)] p-4'>
           <h3 className='mb-3 text-sm font-semibold'>Mode chauffeur</h3>
           <div className='grid grid-cols-1 gap-2'>
             <Button size='sm' className='w-full touch-target' onClick={onStartTrip}>
