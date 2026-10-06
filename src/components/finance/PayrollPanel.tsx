@@ -14,7 +14,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import type { PayrollEmployeeType, PayrollPayment, TeacherOption } from '@/types/finance';
 
-const formatXof = (n: number) => `${n.toLocaleString('fr-FR')} XOF`;
+// Amounts are nullable Doubles on the API (e.g. no payment yet).
+const formatXof = (n: number | null | undefined) => `${(n ?? 0).toLocaleString('fr-FR')} XOF`;
 
 const STATUS_LABELS: Record<PayrollPayment['status'], string> = {
   PENDING: 'En attente',
