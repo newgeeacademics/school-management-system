@@ -1,1 +1,1 @@
-export { MapLocationPicker } from '../../../../../shared/MapLocationPicker';
+export { MapLocationPicker } from '@shared/MapLocationPicker';
