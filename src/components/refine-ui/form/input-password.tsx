@@ -24,6 +24,8 @@ export const InputPassword = ({ className, ...props }: InputPasswordProps) => {
           "absolute right-3 top-1/2 -translate-y-1/2"
         )}
         onClick={() => setShowPassword(!showPassword)}
+        aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+        aria-pressed={showPassword}
       >
         {showPassword ? (
           <EyeOff size={18} className={cn("text-gray-500")} />

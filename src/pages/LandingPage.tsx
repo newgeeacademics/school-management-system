@@ -17,7 +17,7 @@ import {
   Wallet,
 } from 'lucide-react';
 
-import logoSrc from '@/assets/logo/newgee-logo.png';
+import logoSrc from '@/assets/logo/newgee-logo-tight.png';
 
 import { LandingSiteChrome } from '@/components/landing/LandingSiteChrome';
 import { useTranslation } from '@/i18n';

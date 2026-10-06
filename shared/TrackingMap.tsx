@@ -27,7 +27,7 @@ function stopDot(color: string) {
         height: 18,
         borderRadius: '50%',
         border: '2px solid white',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+        boxShadow: '0 2px 6px rgba(15,23,42,0.25)',
       }}
     />
   );
@@ -42,7 +42,7 @@ function emojiPin(bg: string, emoji: string, size: number) {
         height: size,
         borderRadius: '50%',
         border: '3px solid white',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
+        boxShadow: '0 6px 16px rgba(15,23,42,0.28), 0 0 0 4px rgba(255,255,255,0.35)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -136,7 +136,12 @@ export function TrackingMap({
       >
         {routeGeoJson && (
           <Source id="route" type="geojson" data={routeGeoJson}>
-            <Layer id="route-line" type="line" paint={{ 'line-color': '#2563eb', 'line-width': 5, 'line-opacity': 0.85 }} />
+            <Layer
+              id="route-line"
+              type="line"
+              layout={{ 'line-cap': 'round', 'line-join': 'round' }}
+              paint={{ 'line-color': '#2563eb', 'line-width': 6, 'line-opacity': 0.9 }}
+            />
           </Source>
         )}
 

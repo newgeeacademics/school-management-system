@@ -1,7 +1,8 @@
 import type React from 'react';
 import { BASE_URL, ACCESS_TOKEN_KEY, isApiUrlFromEnv } from '@/constants';
 import { parseApiErrorResponse, wrapFetchError } from '@/lib/api-error';
-import { getStoredUser } from '@/lib/auth';
+import { clearAuthSession, getStoredUser } from '@/lib/auth';
+import { SCHOOL_TYPE_API_VALUES, normalizeTypeCode } from '@/lib/school-profile';
 import type { School } from '@/types';
 import type {
   AppUser,
@@ -52,6 +53,21 @@ function getToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
+export const SESSION_EXPIRED_MESSAGE = 'Votre session a expiré. Reconnectez-vous.';
+
+let sessionExpiryHandled = false;
+
+/** Token rejected by the API: drop the session once and send the user back to /login. */
+function handleExpiredSession(): void {
+  if (sessionExpiryHandled || typeof window === 'undefined') return;
+  clearAuthSession();
+  if (window.location.pathname !== '/login') {
+    // Full navigation: resets in-memory dashboard state; the flag stops parallel requests re-triggering it.
+    sessionExpiryHandled = true;
+    window.location.assign('/login?expired=1');
+  }
+}
+
 export async function adminApiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getToken();
   const headers = new Headers(init.headers);
@@ -62,11 +78,17 @@ export async function adminApiFetch<T>(path: string, init: RequestInit = {}): Pr
 
   try {
     const res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
+    if (res.status === 401 && token && !path.startsWith('/api/auth/')) {
+      handleExpiredSession();
+      throw new Error(SESSION_EXPIRED_MESSAGE);
+    }
     if (!res.ok) {
       throw new Error(await parseApiErrorResponse(res, `Erreur API ${res.status}`));
     }
     if (res.status === 204) return undefined as T;
-    return res.json() as Promise<T>;
+    // Some endpoints answer 200 with an empty body — avoid "Unexpected end of JSON input".
+    const text = await res.text();
+    return (text ? JSON.parse(text) : undefined) as T;
   } catch (err) {
     throw wrapFetchError(err, 'Erreur de communication avec le serveur');
   }
@@ -85,6 +107,14 @@ export async function loginAdmin(email: string, password: string) {
   return adminApiFetch<AuthLoginResponse>('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email: email.trim(), password }),
+  });
+}
+
+/** Exchange a Google Identity Services ID token for a NewGee session (backend verifies it). */
+export async function loginWithGoogle(idToken: string) {
+  return adminApiFetch<AuthLoginResponse>('/api/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ idToken }),
   });
 }
 
@@ -634,8 +664,10 @@ export function mapSchoolFromApi(row: Record<string, unknown>): Partial<School> 
 function schoolPatchToRequest(patch: Partial<School>): Record<string, unknown> {
   const gps =
     patch.gpsLat != null && patch.gpsLng != null ? `${patch.gpsLat},${patch.gpsLng}` : undefined;
+  const typeCode = patch.type ? normalizeTypeCode(patch.type) : null;
   return {
     name: patch.name,
+    type: typeCode ? SCHOOL_TYPE_API_VALUES[typeCode] : undefined,
     system: patch.system,
     country: patch.country,
     city: patch.city,

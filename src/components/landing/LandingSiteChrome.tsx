@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 
-import logoSrc from '@/assets/logo/newgee-logo.png';
+import logoSrc from '@/assets/logo/newgee-logo-tight.png';
 import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 import { useTranslation } from '@/i18n';
 import { getUserPortalLoginUrl, WHATSAPP_CONTACT_URL } from '@/lib/app-urls';

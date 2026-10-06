@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 
 import { ACCESS_TOKEN_KEY } from '@/constants';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { disableGoogleAutoSelect } from '@/lib/google-auth';
 import {
   clearAuthSession,
   getStoredRole,
@@ -93,6 +95,7 @@ import {
   saveSchoolProfile,
   buildSchoolProfile,
   schoolTypesFromProfile,
+  cycleForLevel,
   type SchoolProfile,
 } from '@/lib/school-profile';
 
@@ -180,7 +183,7 @@ import { UsersSection } from './dashboard/UsersSection';
 import { GradesSection } from './dashboard/GradesSection';
 import { isSchoolSettingsSection, SchoolSettingsContent } from './dashboard/SchoolSettingsPanels';
 import { SystemRegistrySection } from './dashboard/SystemRegistrySection';
-import logoSrc from '@/assets/logo/newgee-logo.png';
+import logoSrc from '@/assets/logo/newgee-logo-tight.png';
 import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 
 import './dashboard-shell.css';
@@ -1152,7 +1155,10 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateClass = async (payload: ClassCreatePayload) => {
     if (!payload.name.trim()) return;
-    const typeForLevel = schoolTypes.length === 1 ? schoolTypes[0] : '';
+    // Multi-cycle schools (e.g. collège + lycée): the level decides the cycle ("2nde" → Lycée).
+    const typeForLevel =
+      cycleForLevel(schoolProfile, payload.level.trim()) ||
+      (schoolTypes.length === 1 ? schoolTypes[0] : '');
     let levelLabel = payload.level.trim() || 'Niveau non défini';
     if (typeForLevel && payload.level.trim()) {
       levelLabel = `${typeForLevel} - ${payload.level.trim()}`;
@@ -1489,15 +1495,23 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
+  const [sendingParentMessage, setSendingParentMessage] = React.useState(false);
+
   const handleSendParentMessage = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (sendingParentMessage) return;
     if (!newParentMessage.subject.trim() || !newParentMessage.body.trim()) return;
+    if (!newParentMessage.sendEmail && !newParentMessage.publishOnPortal) {
+      toast.error('Choisissez au moins un canal : portail ou e-mail.');
+      return;
+    }
     if (newParentMessage.audience === 'CLASS_PARENTS' && !newParentMessage.classId) {
       toast.error('Choisissez une classe');
       return;
     }
+    if (!requireBackend()) return;
+    setSendingParentMessage(true);
     try {
-      if (!requireBackend()) return;
       const result = await sendParentMessageOnBackend({
         subject: newParentMessage.subject.trim(),
         body: newParentMessage.body.trim(),
@@ -1509,7 +1523,22 @@ export const DashboardPage: React.FC = () => {
         sendEmail: newParentMessage.sendEmail,
         publishOnPortal: newParentMessage.publishOnPortal,
       });
-      toast.success(result.message ?? 'Message envoyé');
+      const emailFailed =
+        newParentMessage.sendEmail && (result.emailsSent ?? 0) === 0 && !result.portalPublished;
+      const emailSkipped = newParentMessage.sendEmail && (result.emailsSent ?? 0) === 0;
+      if (emailFailed) {
+        toast.error(result.message ?? 'Aucun e-mail envoyé.');
+        return;
+      }
+      if (emailSkipped) {
+        toast.warning(
+          result.portalPublished
+            ? `Publié sur le portail. ${result.message ?? 'Aucun e-mail envoyé.'}`
+            : result.message ?? 'Aucun e-mail envoyé.'
+        );
+      } else {
+        toast.success(result.message ?? 'Message envoyé');
+      }
       setNewParentMessage({
         subject: '',
         body: '',
@@ -1520,6 +1549,8 @@ export const DashboardPage: React.FC = () => {
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
+    } finally {
+      setSendingParentMessage(false);
     }
   };
 
@@ -1772,6 +1803,15 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
+  const reportAttendanceSaveError = (err: unknown) => {
+    console.error(err);
+    toast.error(
+      err instanceof Error && err.message
+        ? `Présence non enregistrée : ${err.message}`
+        : 'Présence non enregistrée. Vérifiez votre connexion et réessayez.'
+    );
+  };
+
   const handleAttendanceStatusChange = (record: AttendanceRecord, isUpdate: boolean) => {
     if (!requireBackend()) return;
     const payload = {
@@ -1782,7 +1822,7 @@ export const DashboardPage: React.FC = () => {
     };
     const isBackendId = record.id && !record.id.startsWith('att-');
     if (isUpdate && isBackendId) {
-      void updateAttendanceOnBackend(record.id, payload).catch((err) => console.error(err));
+      void updateAttendanceOnBackend(record.id, payload).catch(reportAttendanceSaveError);
       return;
     }
     void createAttendanceOnBackend(payload)
@@ -1798,10 +1838,11 @@ export const DashboardPage: React.FC = () => {
           ),
         );
       })
-      .catch((err) => console.error(err));
+      .catch(reportAttendanceSaveError);
   };
 
   const handleLogout = () => {
+    disableGoogleAutoSelect();
     clearAuthSession();
     navigate('/login');
   };
@@ -1901,6 +1942,7 @@ export const DashboardPage: React.FC = () => {
         </header>
 
         <main className='dashboard-content flex-1 space-y-6'>
+          <ErrorBoundary compact resetKey={activeSection}>
           {activeSection === 'system_registry' && (
             <SystemRegistrySection
               sectionConfig={sectionConfig}
@@ -2077,6 +2119,7 @@ export const DashboardPage: React.FC = () => {
               newParentMessage={newParentMessage}
               setNewParentMessage={setNewParentMessage}
               onSendParentMessage={handleSendParentMessage}
+              sendingParentMessage={sendingParentMessage}
               classes={classes}
               emailConfigured={emailConfigured}
             />
@@ -2244,6 +2287,7 @@ export const DashboardPage: React.FC = () => {
               receipts={paymentReceipts}
             />
           )}
+          </ErrorBoundary>
         </main>
       </SidebarInset>
 
