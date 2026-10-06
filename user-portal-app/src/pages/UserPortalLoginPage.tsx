@@ -5,7 +5,7 @@ import { UserPortalSignInForm } from '@/components/refine-ui/form/user-portal-si
 import { getPortalSession } from '@/lib/auth';
 import { defaultPortalPath } from '@/lib/portal-role';
 import { getMainAppOrigin } from '@/lib/school-app-url';
-import logoSrc from '@/assets/logo/newgee-logo.png';
+import logoSrc from '@/assets/logo/newgee-logo-tight.png';
 
 import './auth-page.css';
 

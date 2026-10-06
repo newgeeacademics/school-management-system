@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { TrackingSignInForm } from '@/components/TrackingSignInForm';
 import { getTrackingSession } from '@/lib/auth';
 import { getMainAppOrigin } from '@/lib/school-app-url';
-import logoSrc from '@/assets/logo/newgee-logo.png';
+import logoSrc from '@/assets/logo/newgee-logo-tight.png';
 
 import './auth-page.css';
 

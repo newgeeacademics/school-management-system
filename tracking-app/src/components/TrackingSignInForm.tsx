@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Lock } from 'lucide-react';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import { isGoogleAuthConfigured } from '@/lib/google-auth';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { cn } from '@/lib/utils';
-import { isBackendApiConfigured, loginWithIdentifier } from '@/lib/api';
+import { isBackendApiConfigured, loginWithGoogle, loginWithIdentifier, type AuthResponse } from '@/lib/api';
 import { getSchoolLoginUrl, getUserPortalOrigin } from '@/lib/school-app-url';
 import { setTrackingSession } from '@/lib/auth';
 import { backendRoleToTracking } from '@/lib/tracking-role';
@@ -19,6 +22,48 @@ export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' 
 
   const schoolLoginUrl = getSchoolLoginUrl();
   const userPortalOrigin = getUserPortalOrigin();
+
+  const [searchParams] = useSearchParams();
+  const sessionExpired = searchParams.get('expired') === '1';
+
+  /** Saves the session when the role may use transport tracking. */
+  const completeLogin = (auth: AuthResponse): boolean => {
+    const trackingRole = backendRoleToTracking(auth.role);
+    if (!trackingRole) {
+      toast.error(
+        'Ce compte ne peut pas accéder au suivi transport. Utilisez le portail adapté à votre profil.',
+        { richColors: true }
+      );
+      return false;
+    }
+    setTrackingSession({
+      role: trackingRole,
+      email: auth.email,
+      loginId: auth.loginId ?? undefined,
+      name: auth.name,
+      userId: auth.id,
+      token: auth.token,
+      backendRole: auth.role,
+    });
+    toast.success('Connexion réussie', { richColors: true });
+    navigate('/suivi', { replace: true });
+    return true;
+  };
+
+  const onGoogleCredential = async (idToken: string) => {
+    if (!isBackendApiConfigured()) {
+      toast.error('API backend non configurée sur ce déploiement.', { richColors: true });
+      return;
+    }
+    setIsPending(true);
+    try {
+      completeLogin(await loginWithGoogle(idToken));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Connexion Google impossible.', { richColors: true });
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,30 +84,10 @@ export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' 
       }
 
       const auth = await loginWithIdentifier(identifier, password);
-      const trackingRole = backendRoleToTracking(auth.role);
-      if (!trackingRole) {
-        toast.error(
-          'Ce compte ne peut pas accéder au suivi transport. Utilisez le portail adapté à votre profil.',
-          { richColors: true }
-        );
-        setIsPending(false);
-        return;
+      if (completeLogin(auth)) {
+        setUsernameOrEmail('');
+        setPassword('');
       }
-
-      setTrackingSession({
-        role: trackingRole,
-        email: auth.email,
-        loginId: auth.loginId ?? undefined,
-        name: auth.name,
-        userId: auth.id,
-        token: auth.token,
-        backendRole: auth.role,
-      });
-
-      toast.success('Connexion réussie', { richColors: true });
-      setUsernameOrEmail('');
-      setPassword('');
-      navigate('/suivi', { replace: true });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Identifiants invalides ou serveur indisponible.';
@@ -85,6 +110,20 @@ export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' 
         </div>
 
         <div className={isEmbedded ? 'auth-page__form' : 'mt-6 space-y-5'}>
+          {sessionExpired ? (
+            <div role='status' className='auth-alert auth-alert--warning'>
+              <Lock className='h-4 w-4 shrink-0' />
+              <span>Votre session a expiré. Reconnectez-vous pour continuer.</span>
+            </div>
+          ) : null}
+          {isGoogleAuthConfigured() ? (
+            <>
+              <GoogleSignInButton onCredential={onGoogleCredential} disabled={isPending} />
+              <div className='auth-divider'>
+                <span>ou</span>
+              </div>
+            </>
+          ) : null}
           <form onSubmit={onSubmit} className={isEmbedded ? 'contents' : 'space-y-5'}>
             <div className={isEmbedded ? 'auth-page__field' : 'space-y-2'}>
               <Label htmlFor='tracking-login-email' className='text-sm font-semibold text-slate-700'>

@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { FinanceOverview } from '@/types/finance';
 import { TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 
-const formatXof = (n: number) => `${n.toLocaleString('fr-FR')} XOF`;
+// Amounts are nullable Doubles on the API (e.g. no payment yet).
+const formatXof = (n: number | null | undefined) => `${(n ?? 0).toLocaleString('fr-FR')} XOF`;
 
 type Props = {
   overview: FinanceOverview | null;

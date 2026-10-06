@@ -98,7 +98,7 @@
     "navGroupSchool": "School work",
     "navGroupLife": "School life",
     "descOverview": "Summary of your school activity.",
-    "descClasses": "Classes that apply to you.",
+    "descClasses": "All classes and day-to-day teaching tools.",
     "descStudents": "Students in your classes or family.",
     "descSchools": "School information.",
     "descSchedule": "Timetable and class slots.",
@@ -160,7 +160,6 @@
     "childHint": "View attendance, absences and grades from the menu.",
     "navDirectory": "Teacher directory",
     "descDirectory": "Homeroom teacher contact details for your child’s class.",
-    "descClasses": "All classes and day-to-day teaching tools.",
     "navAnnouncements": "Announcements",
     "navFees": "Fee schedule",
     "descAnnouncements": "Official school announcements.",
@@ -332,5 +331,12 @@
     "uploadDoc": "Attach paper",
     "replaceDoc": "Replace",
     "downloadDoc": "Download"
+  },
+  "errors": {
+    "errorTitle": "Oops, something went wrong",
+    "errorDesc": "This page hit an unexpected error. Your data is safe.",
+    "errorRetry": "Try again",
+    "errorHome": "Back to home",
+    "errorReload": "Reload page"
   }
 }

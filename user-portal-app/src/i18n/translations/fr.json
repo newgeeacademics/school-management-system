@@ -98,7 +98,7 @@
     "navGroupSchool": "Scolarité",
     "navGroupLife": "Vie scolaire",
     "descOverview": "Résumé de votre activité scolaire.",
-    "descClasses": "Classes qui vous concernent.",
+    "descClasses": "Vue globale des classes et gestion pédagogique.",
     "descStudents": "Élèves de vos classes ou de votre famille.",
     "descSchools": "Informations sur l’établissement.",
     "descSchedule": "Emploi du temps et créneaux de cours.",
@@ -160,7 +160,6 @@
     "childHint": "Consultez les présences, absences et notes depuis le menu.",
     "navDirectory": "Annuaire enseignants",
     "descDirectory": "Coordonnées du professeur principal de la classe.",
-    "descClasses": "Vue globale des classes et gestion pédagogique.",
     "navAnnouncements": "Annonces",
     "navFees": "Échéancier",
     "descAnnouncements": "Annonces officielles de l’établissement.",
@@ -332,5 +331,12 @@
     "uploadDoc": "Joindre sujet",
     "replaceDoc": "Remplacer",
     "downloadDoc": "Télécharger"
+  },
+  "errors": {
+    "errorTitle": "Oups, quelque chose s’est mal passé",
+    "errorDesc": "Cette page a rencontré une erreur inattendue. Vos données sont en sécurité.",
+    "errorRetry": "Réessayer",
+    "errorHome": "Retour à l’accueil",
+    "errorReload": "Recharger la page"
   }
 }
