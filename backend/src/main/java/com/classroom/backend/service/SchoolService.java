@@ -57,7 +57,10 @@ public class SchoolService {
     public School update(String id, SchoolRequest request) {
         School school = findById(id);
         school.setName(request.getName());
-        school.setType(request.getType());
+        // Partial updates (e.g. the settings form) must not wipe fields they do not send.
+        if (request.getType() != null) {
+            school.setType(request.getType());
+        }
         school.setSystem(request.getSystem());
         school.setCountry(request.getCountry());
         school.setCity(request.getCity());
@@ -72,9 +75,15 @@ public class SchoolService {
         school.setStudentCount(request.getStudentCount());
         school.setTeacherCount(request.getTeacherCount());
         school.setSeries(request.getSeries());
-        school.setRegistrationNumber(request.getRegistrationNumber());
-        school.setLanguagesOffered(request.getLanguagesOffered());
-        school.setLogoFileName(request.getLogoFileName());
+        if (request.getRegistrationNumber() != null) {
+            school.setRegistrationNumber(request.getRegistrationNumber());
+        }
+        if (request.getLanguagesOffered() != null) {
+            school.setLanguagesOffered(request.getLanguagesOffered());
+        }
+        if (request.getLogoFileName() != null) {
+            school.setLogoFileName(request.getLogoFileName());
+        }
         if (request.getGradingScale() != null) {
             school.setGradingScale(request.getGradingScale());
         }
