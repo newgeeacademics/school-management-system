@@ -22,62 +22,23 @@ import {
 } from '@/lib/dashboard-backend';
 import type { School } from '@/types';
 import type { SectionId } from './dashboardTypes';
+import { SCHOOL_SETTINGS_IDS } from './schoolSettingsSections';
 
-const BRANDING_STORAGE_KEY = 'newgee_school_branding_v1';
+export { isSchoolSettingsSection, SCHOOL_SETTINGS_IDS } from './schoolSettingsSections';
 
-export const SCHOOL_SETTINGS_IDS = [
-  'settings_profile',
-  'settings_branding',
-  'settings_academics',
-  'settings_attendance',
-  'settings_examinations',
-  'settings_finance',
-  'settings_communication',
-  'settings_security',
-  'settings_compliance',
-  'settings_automation',
-] as const satisfies readonly SectionId[];
-
-export function isSchoolSettingsSection(id: SectionId): id is (typeof SCHOOL_SETTINGS_IDS)[number] {
-  return (SCHOOL_SETTINGS_IDS as readonly string[]).includes(id);
-}
+import {
+  applySchoolBranding,
+  defaultSchoolBranding,
+  fileToDataUrl,
+  persistSchoolBranding,
+  readSchoolBranding,
+  type SchoolBranding,
+} from '@/lib/school-branding';
 
 type Props = {
   section: (typeof SCHOOL_SETTINGS_IDS)[number];
   onNavigate: (id: SectionId) => void;
 };
-
-type BrandingPersisted = {
-  primaryColor: string;
-  secondaryColor: string;
-  accentColor: string;
-  surfaceColor: string;
-  fontHeading: string;
-  fontBody: string;
-};
-
-const defaultBranding: BrandingPersisted = {
-  primaryColor: '#2563eb',
-  secondaryColor: '#0f172a',
-  accentColor: '#f59e0b',
-  surfaceColor: '#f8fafc',
-  fontHeading: 'Inter',
-  fontBody: 'Inter',
-};
-
-function readBranding(): BrandingPersisted {
-  try {
-    const raw = window.localStorage.getItem(BRANDING_STORAGE_KEY);
-    if (!raw) return { ...defaultBranding };
-    return { ...defaultBranding, ...JSON.parse(raw) };
-  } catch {
-    return { ...defaultBranding };
-  }
-}
-
-function persistBranding(b: BrandingPersisted) {
-  window.localStorage.setItem(BRANDING_STORAGE_KEY, JSON.stringify(b));
-}
 
 function str(v: unknown, fallback = ''): string {
   if (v === null || v === undefined) return fallback;
@@ -92,6 +53,41 @@ function seriesToStr(series: unknown): string {
 function languagesToStr(lang: unknown): string {
   if (Array.isArray(lang)) return lang.join(', ');
   return str(lang);
+}
+
+function buildProfileFormFromSchool(school: Partial<School> | null) {
+  return {
+    name: str(school?.name),
+    legalName: str(school?.legalName),
+    type: str(school?.type),
+    system: str(school?.system),
+    registrationNumber: str(school?.registrationNumber),
+    accreditationRef: str(school?.accreditationRef),
+    country: str(school?.country),
+    city: str(school?.city),
+    commune: str(school?.commune),
+    address: str(school?.address),
+    gpsLat: school?.gpsLat != null ? String(school.gpsLat) : '',
+    gpsLng: school?.gpsLng != null ? String(school.gpsLng) : '',
+    phone: str(school?.phone),
+    officialEmail: str(school?.officialEmail),
+    website: str(school?.website),
+    socialLinks: str(school?.socialLinks),
+    directorName: str(school?.directorName),
+    directorPhone: str(school?.directorPhone),
+    studentCount: school?.studentCount != null ? String(school.studentCount) : '',
+    teacherCount: school?.teacherCount != null ? String(school.teacherCount) : '',
+    series: seriesToStr(school?.series),
+    academicYearLabel: str(school?.academicYearLabel),
+    languagesOffered: languagesToStr(school?.languagesOffered),
+    openingHours: str(school?.openingHours),
+    billingContactName: str(school?.billingContactName),
+    billingEmail: str(school?.billingEmail),
+    billingPhone: str(school?.billingPhone),
+    emergencyContactName: str(school?.emergencyContactName),
+    emergencyContactPhone: str(school?.emergencyContactPhone),
+    internalNotes: str(school?.internalNotes),
+  };
 }
 
 function FieldGrid({ children }: { children: React.ReactNode }) {
@@ -167,7 +163,7 @@ export function SchoolSettingsContent({ section, onNavigate }: Props) {
       );
 
     case 'settings_academics':
-      return <AcademicsPanel linkRow={linkRow} />;
+      return <AcademicsPanel school={school} linkRow={linkRow} />;
 
     case 'settings_attendance':
       return <AttendancePanel linkRow={linkRow} />;
@@ -204,38 +200,11 @@ function SchoolProfilePanel({
   onSaved: () => void;
   linkRow: (label: string, target: SectionId, text: string) => React.ReactNode;
 }) {
-  const [form, setForm] = React.useState({
-    name: str(school?.name),
-    legalName: str(school?.legalName),
-    type: str(school?.type),
-    system: str(school?.system),
-    registrationNumber: str(school?.registrationNumber),
-    accreditationRef: str(school?.accreditationRef),
-    country: str(school?.country),
-    city: str(school?.city),
-    commune: str(school?.commune),
-    address: str(school?.address),
-    gpsLat: school?.gpsLat != null ? String(school.gpsLat) : '',
-    gpsLng: school?.gpsLng != null ? String(school.gpsLng) : '',
-    phone: str(school?.phone),
-    officialEmail: str(school?.officialEmail),
-    website: str(school?.website),
-    socialLinks: str(school?.socialLinks),
-    directorName: str(school?.directorName),
-    directorPhone: str(school?.directorPhone),
-    studentCount: school?.studentCount != null ? String(school.studentCount) : '',
-    teacherCount: school?.teacherCount != null ? String(school.teacherCount) : '',
-    series: seriesToStr(school?.series),
-    academicYearLabel: str(school?.academicYearLabel),
-    languagesOffered: languagesToStr(school?.languagesOffered),
-    openingHours: str(school?.openingHours),
-    billingContactName: str(school?.billingContactName),
-    billingEmail: str(school?.billingEmail),
-    billingPhone: str(school?.billingPhone),
-    emergencyContactName: str(school?.emergencyContactName),
-    emergencyContactPhone: str(school?.emergencyContactPhone),
-    internalNotes: str(school?.internalNotes),
-  });
+  const [form, setForm] = React.useState(() => buildProfileFormFromSchool(school));
+
+  React.useEffect(() => {
+    if (school) setForm(buildProfileFormFromSchool(school));
+  }, [school]);
 
   const update = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -501,14 +470,36 @@ function BrandingPanel({
 }) {
   const [logoFiles, setLogoFiles] = React.useState<File[]>([]);
   const [bannerFiles, setBannerFiles] = React.useState<File[]>([]);
-  const [brochureName, setBrochureName] = React.useState('');
-  const [branding, setBranding] = React.useState<BrandingPersisted>(() => readBranding());
+  const [branding, setBranding] = React.useState<SchoolBranding>(() => readSchoolBranding());
 
-  const logoPreview = logoFiles.length ? undefined : school?.logoUrl || undefined;
+  React.useEffect(() => {
+    if (!school) return;
+    setBranding((prev) => {
+      let next = prev;
+      let changed = false;
+      if (school.logoUrl && !prev.logoDataUrl && prev.logoRemoteUrl !== school.logoUrl) {
+        next = { ...next, logoRemoteUrl: school.logoUrl };
+        changed = true;
+      }
+      if (school.name && !prev.portalWelcomeTitle?.trim()) {
+        next = { ...next, portalWelcomeTitle: `Bienvenue à ${school.name}` };
+        changed = true;
+      }
+      if (changed) persistSchoolBranding(next);
+      return next;
+    });
+  }, [school]);
 
-  const setColor = (key: keyof BrandingPersisted) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value;
-    setBranding((prev) => ({ ...prev, [key]: v }));
+  const logoPreview =
+    logoFiles.length > 0
+      ? undefined
+      : branding.logoDataUrl || branding.logoRemoteUrl || school?.logoUrl || undefined;
+  const bannerPreview = bannerFiles.length > 0 ? undefined : branding.bannerDataUrl;
+
+  const setColor = (
+    key: keyof Pick<SchoolBranding, 'primaryColor' | 'secondaryColor' | 'accentColor' | 'surfaceColor'>,
+  ) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBranding((prev) => ({ ...prev, [key]: e.target.value }));
   };
 
   const setHexText = (key: 'primaryColor' | 'secondaryColor' | 'accentColor' | 'surfaceColor') => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -519,21 +510,43 @@ function BrandingPanel({
     }
   };
 
-  const handleSave = () => {
-    persistBranding(branding);
-    if (logoFiles.length > 0) {
-      toast.message('Logo: prévisualisation locale uniquement (connectez Cloudinary pour la production).', {
+  const handleSave = async () => {
+    try {
+      let next: SchoolBranding = { ...branding };
+      if (logoFiles[0]) {
+        const url = await fileToDataUrl(logoFiles[0]);
+        if (url) next = { ...next, logoDataUrl: url };
+      }
+      if (bannerFiles[0]) {
+        const url = await fileToDataUrl(bannerFiles[0]);
+        if (url) next = { ...next, bannerDataUrl: url };
+      }
+      if (!logoFiles[0] && school?.logoUrl && !next.logoDataUrl) {
+        next = { ...next, logoRemoteUrl: school.logoUrl };
+      }
+      persistSchoolBranding(next);
+      applySchoolBranding(next);
+      setBranding(next);
+      setLogoFiles([]);
+      setBannerFiles([]);
+      toast.success(
+        'Charte enregistrée. Logo, bandeau et couleurs sont actifs en local ; un bucket cloud pourra les héberger plus tard.',
+        { richColors: true },
+      );
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de l’enregistrement', {
         richColors: true,
       });
     }
-    onSaved();
   };
 
   return (
     <div className='max-w-4xl space-y-8'>
       <p className='text-sm text-muted-foreground'>
-        Logo, visuels portail, supports téléchargeables et couleurs de marque. Les couleurs sont enregistrées en local pour
-        prévisualiser le thème.
+        Logo, visuels portail, supports téléchargeables et couleurs de marque. Tout est enregistré
+        localement et appliqué au tableau de bord ; un bucket pourra héberger les fichiers en
+        production.
       </p>
 
       <Card>
@@ -563,6 +576,7 @@ function BrandingPanel({
             onChange={setBannerFiles}
             type='banner'
             maxSizeText={t('fileUploader.maxSizeText')}
+            currentImageUrl={bannerPreview}
           />
         </CardContent>
       </Card>
@@ -584,25 +598,35 @@ function BrandingPanel({
               className='mt-2 cursor-pointer'
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                setBrochureName(f?.name ?? '');
+                setBranding((p) => ({ ...p, brandPackFileName: f?.name ?? p.brandPackFileName }));
               }}
             />
-            {brochureName ? (
+            {branding.brandPackFileName ? (
               <p className='mt-2 text-xs text-muted-foreground'>
-                Fichier sélectionné : {brochureName}
+                Fichier sélectionné : {branding.brandPackFileName}
               </p>
             ) : (
               <p className='mt-2 text-xs text-muted-foreground'>
-                Emplacement réservé — stockage serveur requis en production.
+                Nom du fichier mémorisé localement ; téléversement cloud à venir.
               </p>
             )}
           </div>
           <FieldGrid>
             <Field label='Titre d’accueil (portail)'>
-              <Input placeholder='Bienvenue à …' />
+              <Input
+                placeholder='Bienvenue à …'
+                value={branding.portalWelcomeTitle ?? ''}
+                onChange={(e) =>
+                  setBranding((p) => ({ ...p, portalWelcomeTitle: e.target.value }))
+                }
+              />
             </Field>
             <Field label='Slogan'>
-              <Input placeholder='Excellence · Inclusion · Avenir' />
+              <Input
+                placeholder='Excellence · Inclusion · Avenir'
+                value={branding.portalSlogan ?? ''}
+                onChange={(e) => setBranding((p) => ({ ...p, portalSlogan: e.target.value }))}
+              />
             </Field>
           </FieldGrid>
         </CardContent>
@@ -629,7 +653,7 @@ function BrandingPanel({
                     type='color'
                     aria-label={label}
                     className='h-10 w-14 cursor-pointer rounded-md border bg-background p-0'
-                    value={branding[key].length >= 4 ? branding[key] : defaultBranding[key]}
+                    value={branding[key].length >= 4 ? branding[key] : defaultSchoolBranding[key]}
                     onChange={setColor(key)}
                   />
                   <div className='min-w-0 flex-1'>
@@ -711,7 +735,20 @@ function BrandingPanel({
   );
 }
 
-function AcademicsPanel({ linkRow }: { linkRow: (a: string, b: SectionId, c: string) => React.ReactNode }) {
+function AcademicsPanel({
+  school,
+  linkRow,
+}: {
+  school: Partial<School> | null;
+  linkRow: (a: string, b: SectionId, c: string) => React.ReactNode;
+}) {
+  const gradingScale = school?.gradingScale ?? 20;
+  const evaluationTypes =
+    school?.evaluationTypes?.length ? school.evaluationTypes.join(', ') : 'Devoir, Interro, Examen';
+  const periodCount = school?.evaluationPeriods?.length
+    ? String(school.evaluationPeriods.length)
+    : '3';
+
   return (
     <div className='max-w-4xl space-y-8'>
       <Card>
@@ -725,7 +762,7 @@ function AcademicsPanel({ linkRow }: { linkRow: (a: string, b: SectionId, c: str
               <Input defaultValue='2025–2026' placeholder='2025–2026' />
             </Field>
             <Field label='Nombre de périodes'>
-              <Select defaultValue='3'>
+              <Select defaultValue={periodCount} key={`periods-${periodCount}`}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -754,7 +791,21 @@ function AcademicsPanel({ linkRow }: { linkRow: (a: string, b: SectionId, c: str
         <CardContent>
           <FieldGrid>
             <Field label='Note maximale par défaut'>
-              <Input type='number' defaultValue={20} min={1} placeholder='20' />
+              <Input
+                type='number'
+                defaultValue={gradingScale}
+                key={`grading-${gradingScale}`}
+                min={1}
+                placeholder='20'
+                readOnly
+              />
+            </Field>
+            <Field label='Types d&apos;évaluation'>
+              <Input
+                defaultValue={evaluationTypes}
+                key={`eval-types-${evaluationTypes}`}
+                readOnly
+              />
             </Field>
             <Field label='Note de passage'>
               <Input type='number' defaultValue={10} min={0} placeholder='10' />

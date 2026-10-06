@@ -46,6 +46,9 @@ export type School = {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   internalNotes?: string;
+  gradingScale?: number | null;
+  evaluationTypes?: string[];
+  evaluationPeriods?: string[];
   createdAt: string;
   updatedAt: string;
 };

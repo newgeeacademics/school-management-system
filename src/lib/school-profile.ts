@@ -17,6 +17,9 @@ export type SchoolProfile = {
   system: SchoolSystemCode;
   country?: string;
   city?: string;
+  studentCount?: number | null;
+  teacherCount?: number | null;
+  series?: string[];
 };
 
 const TYPE_CODE_TO_DASHBOARD: Record<RegistrationSchoolType, DashboardSchoolType> = {
@@ -71,7 +74,14 @@ export const SYSTEM_LABELS_EN: Record<SchoolSystemCode, string> = {
 
 export function normalizeTypeCode(raw: string): RegistrationSchoolType | null {
   if (!raw?.trim()) return null;
-  return RAW_TYPE_TO_CODE[raw.trim()] ?? null;
+  const trimmed = raw.trim();
+  const direct = RAW_TYPE_TO_CODE[trimmed];
+  if (direct) return direct;
+  const ascii = trimmed
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '');
+  return RAW_TYPE_TO_CODE[ascii] ?? RAW_TYPE_TO_CODE[trimmed.toUpperCase()] ?? null;
 }
 
 export function normalizeSystem(raw?: string): SchoolSystemCode {
@@ -114,6 +124,9 @@ export function buildSchoolProfile(input: {
   system?: string;
   country?: string;
   city?: string;
+  studentCount?: number | null;
+  teacherCount?: number | null;
+  series?: string[];
 }): SchoolProfile | null {
   const typeCode = normalizeTypeCode(input.type);
   if (!typeCode || !input.name?.trim()) return null;
@@ -126,6 +139,9 @@ export function buildSchoolProfile(input: {
     system: normalizeSystem(input.system),
     country: input.country?.trim() || undefined,
     city: input.city?.trim() || undefined,
+    studentCount: input.studentCount ?? null,
+    teacherCount: input.teacherCount ?? null,
+    series: input.series?.length ? input.series : undefined,
   };
 }
 
@@ -156,6 +172,9 @@ export function readStoredSchoolProfile(): SchoolProfile | null {
       system: normalizeSystem(data.system),
       country: data.country,
       city: data.city,
+      studentCount: typeof data.studentCount === 'number' ? data.studentCount : null,
+      teacherCount: typeof data.teacherCount === 'number' ? data.teacherCount : null,
+      series: Array.isArray(data.series) ? data.series : undefined,
     };
   } catch {
     return null;
@@ -220,6 +239,9 @@ export function persistSchoolProfileFromRegistration(args: {
   system?: string;
   country?: string;
   city?: string;
+  studentCount?: number | null;
+  teacherCount?: number | null;
+  series?: string[];
 }): SchoolProfile | null {
   const profile = buildSchoolProfile({
     id: args.schoolId,
@@ -228,6 +250,9 @@ export function persistSchoolProfileFromRegistration(args: {
     system: args.system,
     country: args.country,
     city: args.city,
+    studentCount: args.studentCount ?? null,
+    teacherCount: args.teacherCount ?? null,
+    series: args.series,
   });
   if (profile) saveSchoolProfile(profile);
   return profile;
@@ -243,6 +268,12 @@ export async function fetchAndCacheSchoolProfile(schoolId: string): Promise<Scho
     });
     if (!res.ok) return null;
     const row = (await res.json()) as Record<string, unknown>;
+    const seriesRaw = row.series;
+    const series =
+      typeof seriesRaw === 'string' && seriesRaw.trim()
+        ? seriesRaw.split(/[,;]/).map((s) => s.trim()).filter(Boolean)
+        : undefined;
+
     const profile = buildSchoolProfile({
       id: String(row.id ?? schoolId),
       name: String(row.name ?? ''),
@@ -250,6 +281,9 @@ export async function fetchAndCacheSchoolProfile(schoolId: string): Promise<Scho
       system: String(row.system ?? ''),
       country: String(row.country ?? ''),
       city: String(row.city ?? ''),
+      studentCount: row.studentCount != null ? Number(row.studentCount) : null,
+      teacherCount: row.teacherCount != null ? Number(row.teacherCount) : null,
+      series,
     });
     if (profile) saveSchoolProfile(profile);
     return profile;

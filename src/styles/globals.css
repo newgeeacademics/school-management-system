@@ -1,3 +1,5 @@
+@import "../../shared/pwa-mobile.css";
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -33,6 +35,9 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --font-display: var(--font-display);
+  --font-serif: var(--font-serif);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -45,7 +50,33 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  /* Typography — Inter for UI, Inter Tight for headings, Instrument Serif for accents */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+
+  /* Brand palette (NewGee blue + slate) */
+  --brand-canvas: #f8fafc;
+  --brand-canvas-deep: #f1f5f9;
+  --brand-panel: #ffffff;
+  --brand-ink: #0f172a;
+  --brand-ink-soft: #64748b;
+  --brand-ink-faint: #94a3b8;
+  --brand-line: #e2e8f0;
+  --brand-line-strong: #cbd5e1;
+  --brand-hairline: rgba(15, 23, 42, 0.07);
+  --brand-blue: #2563eb;
+  --brand-blue-deep: #1d4ed8;
+  --brand-blue-soft: #eff6ff;
+  --brand-blue-light: #dbeafe;
+  --brand-green: #16a34a;
+  --brand-green-soft: #dcfce7;
+  --brand-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 36px rgba(15, 23, 42, 0.06);
+  --brand-shadow-lg: 0 2px 4px rgba(15, 23, 42, 0.04), 0 30px 70px rgba(15, 23, 42, 0.12);
+  --brand-focus: rgba(37, 99, 235, 0.18);
+  --brand-ease: cubic-bezier(0.16, 0.84, 0.44, 1);
+
+  --radius: 0.875rem;
   --background: #ffffff;
   --foreground: #020617;
   --card: #ffffff;
@@ -81,6 +112,17 @@
 }
 
 .dark {
+  --brand-canvas: #020617;
+  --brand-canvas-deep: #0b1220;
+  --brand-panel: #020617;
+  --brand-ink: #e5e7eb;
+  --brand-ink-soft: #94a3b8;
+  --brand-line: rgba(148, 163, 184, 0.4);
+  --brand-line-strong: rgba(148, 163, 184, 0.6);
+  --brand-hairline: rgba(148, 163, 184, 0.2);
+  --brand-blue-soft: #0b1220;
+  --brand-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.35);
+
   --background: #020617;
   --foreground: #e5e7eb;
   --card: #020617;
@@ -150,6 +192,19 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+  }
+  ::selection {
+    background: var(--brand-blue-light);
+    color: var(--brand-ink);
   }
 }
 
@@ -224,11 +279,41 @@ body.landing-mobile-menu-open .landing__header {
   }
 
   .text-gradient-blue {
-    @apply bg-gradient-to-br from-blue-600 to-blue-500 bg-clip-text text-transparent;
+    background: linear-gradient(135deg, var(--brand-blue-deep), var(--brand-blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
   .bg-gradient-blue {
-    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    background: linear-gradient(90deg, var(--brand-blue-deep), var(--brand-blue));
+  }
+
+  /* Italic serif accent word inside a heading, e.g. <span class="serif-accent">simple</span> */
+  .serif-accent {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  /* Rounded pill label above section titles */
+  .eyebrow-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--brand-blue-soft);
+    color: var(--brand-blue-deep);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .accent-bar {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--brand-blue-deep), var(--brand-blue), #60a5fa);
   }
 }
 

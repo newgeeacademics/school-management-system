@@ -1,32 +1,25 @@
 import React from 'react';
-import { Car, Plus, Trash2 } from 'lucide-react';
+import { Car, Trash2 } from 'lucide-react';
 
-import { InputPassword } from '@/components/refine-ui/form/input-password';
-import { LoginIdPreview } from '@/components/dashboard/LoginIdPreview';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
-import type { Driver, NewDriverFormState, SetStateAction } from './dashboardTypes';
+import type { Driver } from './dashboardTypes';
+import { DriverCreateWizard, type DriverCreatePayload } from './DriverCreateWizard';
 
 type DriversSectionProps = {
   drivers: Driver[];
-  newDriver: NewDriverFormState;
-  setNewDriver: SetStateAction<NewDriverFormState>;
-  onCreateDriver: (e: React.FormEvent) => void | Promise<void>;
+  defaultPhoneCountry?: string;
+  onCreateDriver: (payload: DriverCreatePayload) => Promise<void>;
   onDeleteDriver: (id: string) => void | Promise<void>;
 };
 
 export const DriversSection: React.FC<DriversSectionProps> = ({
   drivers,
-  newDriver,
-  setNewDriver,
+  defaultPhoneCountry,
   onCreateDriver,
   onDeleteDriver,
 }) => {
-  const hasContact = Boolean(newDriver.email.trim() || newDriver.phone.trim());
-
   return (
     <Card>
       <CardHeader>
@@ -35,115 +28,39 @@ export const DriversSection: React.FC<DriversSectionProps> = ({
           Chauffeurs
         </CardTitle>
         <CardDescription className='text-xs'>
-          Créez un compte chauffeur (rôle personnel) pour le suivi GPS en direct sur le tracker.
+          Parcours guidé en 3 étapes — identité, compte tracker GPS, validation.
         </CardDescription>
       </CardHeader>
       <CardContent className='space-y-4'>
-        <form className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-xs' onSubmit={onCreateDriver}>
-          <div className='grid gap-1'>
-            <Label htmlFor='driver-first-name'>Prénom *</Label>
-            <Input
-              id='driver-first-name'
-              value={newDriver.firstName}
-              onChange={(e) => setNewDriver((d) => ({ ...d, firstName: e.target.value }))}
-              required
-            />
-          </div>
-          <div className='grid gap-1'>
-            <Label htmlFor='driver-last-name'>Nom *</Label>
-            <Input
-              id='driver-last-name'
-              value={newDriver.lastName}
-              onChange={(e) => setNewDriver((d) => ({ ...d, lastName: e.target.value }))}
-              required
-            />
-          </div>
-          <div className='grid gap-1'>
-            <Label htmlFor='driver-license'>Permis (optionnel)</Label>
-            <Input
-              id='driver-license'
-              value={newDriver.licenseNumber}
-              onChange={(e) => setNewDriver((d) => ({ ...d, licenseNumber: e.target.value }))}
-            />
-          </div>
-          <div className='grid gap-1 sm:col-span-2 lg:col-span-3'>
-            <Label htmlFor='driver-email'>E-mail de contact</Label>
-            <Input
-              id='driver-email'
-              type='email'
-              value={newDriver.email}
-              onChange={(e) => setNewDriver((d) => ({ ...d, email: e.target.value }))}
-              placeholder='chauffeur@exemple.com'
-            />
-            <p className='text-[10px] text-muted-foreground'>
-              E-mail ou téléphone requis pour le compte tracker. Connexion avec l&apos;identifiant
-              généré ci-dessous.
-            </p>
-          </div>
-          <div className='grid gap-1 sm:col-span-2 lg:col-span-3'>
-            <LoginIdPreview firstName={newDriver.firstName} lastName={newDriver.lastName} />
-          </div>
-          <div className='grid gap-1'>
-            <Label htmlFor='driver-phone'>Téléphone de contact</Label>
-            <Input
-              id='driver-phone'
-              type='tel'
-              value={newDriver.phone}
-              onChange={(e) => setNewDriver((d) => ({ ...d, phone: e.target.value }))}
-              placeholder='+225 07 00 00 00 00'
-            />
-          </div>
-          <div className='grid gap-1'>
-            <Label htmlFor='driver-password'>Mot de passe initial</Label>
-            <InputPassword
-              id='driver-password'
-              value={newDriver.password}
-              onChange={(e) => setNewDriver((d) => ({ ...d, password: e.target.value }))}
-              placeholder='changeme si vide'
-            />
-          </div>
-          <div className='sm:col-span-2 lg:col-span-3'>
-            <Button type='submit' size='sm' disabled={!hasContact}>
-              <Plus className='size-3.5 mr-1' />
-              Ajouter le chauffeur
-            </Button>
-            {!hasContact ? (
-              <p className='mt-2 text-[11px] text-amber-600 dark:text-amber-500'>
-                Renseignez un e-mail ou un numéro de téléphone pour activer la connexion au tracker.
-              </p>
-            ) : null}
-          </div>
-        </form>
+        <DriverCreateWizard defaultPhoneCountry={defaultPhoneCountry} onSubmit={onCreateDriver} />
 
         {drivers.length === 0 ? (
           <p className='text-xs text-muted-foreground'>Aucun chauffeur enregistré.</p>
         ) : (
-          <ul className='space-y-2'>
+          <ul className='space-y-2 text-xs'>
             {drivers.map((driver) => (
               <li
                 key={driver.id}
-                className='rounded-lg border px-3 py-2 text-xs flex flex-wrap items-center justify-between gap-2'
+                className='flex items-center justify-between gap-2 rounded-md border border-border/80 px-3 py-2'
               >
                 <div>
                   <p className='font-medium'>{driver.name}</p>
                   <p className='text-muted-foreground'>
-                    {driver.email || driver.phone || '—'}
-                    {driver.licenseNumber ? ` · Permis ${driver.licenseNumber}` : ''}
+                    {driver.email ?? driver.phone ?? '—'}
                   </p>
                 </div>
                 <Button
                   type='button'
-                  size='sm'
                   variant='ghost'
-                  className='h-7 text-destructive hover:text-destructive'
+                  size='sm'
+                  className='text-destructive hover:text-destructive'
                   onClick={() => {
-                    if (window.confirm(`Supprimer le chauffeur ${driver.name} ?`)) {
-                      void onDeleteDriver(driver.id);
+                    if (confirm(`Supprimer le chauffeur « ${driver.name} » ?`)) {
+                      void Promise.resolve(onDeleteDriver(driver.id));
                     }
                   }}
                 >
-                  <Trash2 className='size-3.5 mr-1' />
-                  Supprimer
+                  <Trash2 className='size-3.5' />
                 </Button>
               </li>
             ))}

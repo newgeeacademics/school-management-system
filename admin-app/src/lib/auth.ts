@@ -6,7 +6,7 @@ import { ACCESS_TOKEN_KEY } from '@/constants';
 
 const STORAGE_KEY = 'classroom_test_role';
 
-export type UserRole = 'admin' | 'teacher' | 'parent' | 'student';
+export type UserRole = 'admin' | 'teacher' | 'parent' | 'student' | 'staff';
 
 export type StoredUser = {
   id: string;

@@ -1,12 +1,9 @@
 import React from 'react';
 
 import { InputPassword } from '@/components/refine-ui/form/input-password';
-import { LoginIdPreview } from '@/components/dashboard/LoginIdPreview';
 import { EntityCrudActions, NONE_SELECT_VALUE } from '@/components/dashboard/EntityCrudActions';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -15,19 +12,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import type {
-  NewParentFormState,
-  ParentContact,
-  SetStateAction,
-  Student,
-} from './dashboardTypes';
+import type { NewParentFormState, ParentContact, Student } from './dashboardTypes';
+import { ParentCreateWizard, type ParentCreatePayload } from './ParentCreateWizard';
 
 type ParentsSectionProps = {
   parents: ParentContact[];
   students: Student[];
-  newParent: NewParentFormState;
-  setNewParent: SetStateAction<NewParentFormState>;
-  onCreateParent: (e: React.FormEvent) => void;
+  defaultPhoneCountry?: string;
+  onCreateParent: (payload: ParentCreatePayload) => Promise<void>;
   onUpdateParent: (
     id: string,
     data: {
@@ -54,8 +46,7 @@ const emptyDraft = (): NewParentFormState => ({
 export const ParentsSection: React.FC<ParentsSectionProps> = ({
   parents,
   students,
-  newParent,
-  setNewParent,
+  defaultPhoneCountry,
   onCreateParent,
   onUpdateParent,
   onDeleteParent,
@@ -94,97 +85,20 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
   };
 
   return (
-    <section className='space-y-5'>
+    <section className='space-y-6'>
       <Card>
-        <CardHeader>
-          <CardTitle className='text-sm font-medium'>Ajouter un parent + compte portail</CardTitle>
+        <CardHeader className='pb-3'>
+          <CardTitle className='text-base'>Ajouter un parent</CardTitle>
+          <CardDescription className='text-xs'>
+            Parcours guidé en 3 étapes — identité, compte portail, lien avec un élève.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className='mb-3 text-[11px] text-muted-foreground'>
-            Liez le parent à un élève. L&apos;identifiant de connexion portail est généré automatiquement
-            à partir du prénom et du nom.
-          </p>
-          <form
-            className='grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_auto] items-end text-xs'
+          <ParentCreateWizard
+            students={students}
+            defaultPhoneCountry={defaultPhoneCountry}
             onSubmit={onCreateParent}
-          >
-            <div className='grid gap-2'>
-              <Label htmlFor='parent-first-name'>Prénom</Label>
-              <Input
-                id='parent-first-name'
-                value={newParent.firstName}
-                onChange={(e) => setNewParent((p) => ({ ...p, firstName: e.target.value }))}
-                required
-              />
-            </div>
-            <div className='grid gap-2'>
-              <Label htmlFor='parent-last-name'>Nom</Label>
-              <Input
-                id='parent-last-name'
-                value={newParent.lastName}
-                onChange={(e) => setNewParent((p) => ({ ...p, lastName: e.target.value }))}
-                required
-              />
-            </div>
-            <div className='grid gap-2'>
-              <Label htmlFor='parent-phone'>Téléphone</Label>
-              <Input
-                id='parent-phone'
-                value={newParent.phone}
-                onChange={(e) => setNewParent((p) => ({ ...p, phone: e.target.value }))}
-              />
-            </div>
-            <div className='grid gap-2'>
-              <Label htmlFor='parent-email'>E-mail de contact *</Label>
-              <Input
-                id='parent-email'
-                type='email'
-                value={newParent.email}
-                onChange={(e) => setNewParent((p) => ({ ...p, email: e.target.value }))}
-                placeholder='parent@exemple.com'
-                required
-              />
-            </div>
-            <div className='grid gap-2 md:col-span-2 lg:col-span-3'>
-              <LoginIdPreview firstName={newParent.firstName} lastName={newParent.lastName} />
-            </div>
-            <div className='grid gap-2'>
-              <Label htmlFor='parent-password'>Mot de passe</Label>
-              <InputPassword
-                id='parent-password'
-                value={newParent.password}
-                onChange={(e) => setNewParent((p) => ({ ...p, password: e.target.value }))}
-                placeholder='changeme si vide'
-              />
-            </div>
-            <div className='grid gap-2'>
-              <Label>Enfant</Label>
-              <Select
-                value={newParent.studentId || NONE_SELECT_VALUE}
-                onValueChange={(value) =>
-                  setNewParent((p) => ({
-                    ...p,
-                    studentId: value === NONE_SELECT_VALUE ? '' : value,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Élève' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE_SELECT_VALUE}>Aucun élève</SelectItem>
-                  {students.map((student) => (
-                    <SelectItem key={student.id} value={student.id}>
-                      {student.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button type='submit' size='sm'>
-              Ajouter
-            </Button>
-          </form>
+          />
         </CardContent>
       </Card>
 
@@ -200,7 +114,7 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
               {parents.map((parent) => {
                 const isEditing = editingId === parent.id;
                 return (
-                  <div key={parent.id} className='rounded-md border border-border/80 px-3 py-2'>
+                  <div key={parent.id} className='dashboard-entity-card'>
                     {isEditing ? (
                       <div className='space-y-2'>
                         <Input
@@ -261,7 +175,7 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
                     ) : (
                       <>
                         <p className='text-sm font-medium'>{parent.name}</p>
-                        <p className='text-[11px] text-muted-foreground'>
+                        <p className='text-xs text-muted-foreground'>
                           {parent.loginId ? (
                             <>
                               Connexion : <span className='font-mono'>{parent.loginId}</span>
@@ -271,7 +185,7 @@ export const ParentsSection: React.FC<ParentsSectionProps> = ({
                             <>Tél. : {parent.phone || '—'} · Email : {parent.email || '—'}</>
                           )}
                         </p>
-                        <p className='text-[11px] text-muted-foreground'>
+                        <p className='text-xs text-muted-foreground'>
                           Enfant : {getStudentName(parent.studentId)}
                         </p>
                         <EntityCrudActions

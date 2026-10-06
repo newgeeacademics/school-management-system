@@ -46,7 +46,7 @@ export function PortalDirectoryView() {
       {teachers.map((teacher) => (
         <article
           key={`${teacher.classId}-${teacher.teacherId}`}
-          className='rounded-xl border border-border bg-card p-4 shadow-sm'
+          className='rounded-2xl border border-foreground/[0.06] bg-card p-4 shadow-[var(--brand-shadow)]'
         >
           <div className='flex items-start gap-3'>
             <div className='flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'>

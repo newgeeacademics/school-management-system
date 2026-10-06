@@ -38,9 +38,9 @@
 }
 
 .school-register__logo-img {
-  height: 140px;
+  height: 72px;
   width: auto;
-  max-width: 440px;
+  max-width: 240px;
   object-fit: contain;
   display: block;
   margin-inline: auto;
@@ -101,13 +101,13 @@
 .school-register__field select,
 .school-register__field textarea {
   width: 100%;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--background);
   outline: none;
   font-weight: 500;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -431,11 +431,11 @@
 }
 
 .school-register__btn {
-  height: 44px;
-  border-radius: 12px;
+  height: 36px;
+  border-radius: var(--radius-md);
   padding: 0 16px;
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: opacity 0.15s, transform 0.15s;
 }
@@ -501,12 +501,12 @@
 
 .school-register__btn--primary {
   border: none;
-  background: #2563eb;
-  color: #fff;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .school-register__btn--primary:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--accent-foreground);
 }
 
 .school-register__map-wrap {

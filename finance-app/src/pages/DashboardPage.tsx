@@ -1,27 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import {
-  BarChart2,
-  BookMarked,
-  BookOpen,
-  Calendar,
-  Car,
-  CheckSquare,
-  ChevronDown,
-  ClipboardList,
-  Cog,
-  GraduationCap,
-  LayoutDashboard,
-  Layers,
-  MoreHorizontal,
-  Receipt,
-  School,
-  Shield,
-  Users,
-  Utensils,
-  Wallet,
-} from 'lucide-react';
 
 import { AppLogo } from '@/components/AppLogo';
 import { ACCESS_TOKEN_KEY } from '@/constants';
@@ -67,23 +46,13 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { cn } from '@/lib/utils';
 import { ensureUniqueClassName } from '@/lib/class-name-utils';
 import { UserPortalSidebarLink } from '@/components/UserPortalSidebarLink';
 
@@ -95,7 +64,6 @@ import {
   LEVELS_BY_SCHOOL_TYPE,
   ROOM_TYPE_OPTIONS,
   SCHOOL_TYPES,
-  SUBJECT_OPTIONS,
   TIME_SLOT_OPTIONS,
   type SchoolType,
 } from './dashboard/dashboardConstants';
@@ -134,6 +102,8 @@ import {
   type Teacher,
   type TransportRoute,
 } from './dashboard/dashboardTypes';
+import { DashboardSidebarNav } from './dashboard/DashboardSidebarNav';
+import { getDashboardSectionIds } from './dashboard/dashboardNavConfig';
 import { CalendarSection } from './dashboard/CalendarSection';
 import { CanteenSection } from './dashboard/CanteenSection';
 import { ClassesSection } from './dashboard/ClassesSection';
@@ -153,77 +123,6 @@ import { UsersSection } from './dashboard/UsersSection';
 import { GradesSection } from './dashboard/GradesSection';
 import { isSchoolSettingsSection, SchoolSettingsContent } from './dashboard/SchoolSettingsPanels';
 import { SystemRegistrySection } from './dashboard/SystemRegistrySection';
-
-/** Every section an admin account can open (used for active-tab validation). */
-const ADMIN_SECTION_IDS: SectionId[] = [
-  'overview',
-  'system_registry',
-  'settings_profile',
-  'settings_branding',
-  'settings_academics',
-  'settings_attendance',
-  'settings_examinations',
-  'settings_finance',
-  'settings_communication',
-  'settings_security',
-  'settings_compliance',
-  'settings_automation',
-  'teachers',
-  'sis',
-  'students',
-  'parents',
-  'classes',
-  'matieres',
-  'courses',
-  'schedule',
-  'curriculum',
-  'attendance',
-  'exams',
-  'payments',
-  'users',
-  'permissions',
-  'billing',
-  'calendar',
-  'rooms',
-  'canteen',
-  'transport',
-  'reports',
-];
-
-const roleNavItems: Record<UserRole, { id: SectionId; label: string; icon: React.ComponentType<any> }[]> = {
-  admin: ADMIN_SECTION_IDS.map((id) => ({ id, label: '', icon: GraduationCap })),
-  teacher: [
-    { id: 'overview', label: 'Vue d’ensemble', icon: GraduationCap },
-    { id: 'classes', label: 'Mes classes', icon: Users },
-    { id: 'grades', label: 'Notes & bulletins', icon: BarChart2 },
-    { id: 'attendance', label: 'Présences', icon: CheckSquare },
-    { id: 'schedule', label: 'Emploi du temps', icon: ClipboardList },
-    { id: 'calendar', label: 'Calendrier', icon: Calendar },
-  ],
-  parent: [
-    { id: 'overview', label: 'Vue d’ensemble', icon: GraduationCap },
-    { id: 'students', label: 'Mes enfants', icon: Users },
-    { id: 'canteen', label: 'Cantine', icon: Utensils },
-    { id: 'transport', label: 'Transport', icon: Car },
-    { id: 'payments', label: 'Paiements', icon: Wallet },
-    { id: 'schedule', label: 'Emplois du temps', icon: ClipboardList },
-    { id: 'calendar', label: 'Événements', icon: Calendar },
-    { id: 'reports', label: 'Rapports', icon: BarChart2 },
-  ],
-  student: [
-    { id: 'overview', label: 'Vue d’ensemble', icon: GraduationCap },
-    { id: 'schedule', label: 'Mon emploi du temps', icon: ClipboardList },
-    { id: 'courses', label: 'Mes cours', icon: BookOpen },
-    { id: 'canteen', label: 'Cantine', icon: Utensils },
-    { id: 'transport', label: 'Transport', icon: Car },
-    { id: 'calendar', label: 'Calendrier', icon: Calendar },
-  ],
-  staff: [
-    { id: 'overview', label: 'Vue d’ensemble', icon: GraduationCap },
-    { id: 'payments', label: 'Paiements', icon: Wallet },
-    { id: 'reports', label: 'Rapports', icon: BarChart2 },
-  ],
-};
 
 const roleTitles: Record<UserRole, string> = {
   admin: 'Tableau de bord',
@@ -334,6 +233,20 @@ const sectionConfig: Record<
     description:
       'Consultez le montant total à payer, ce qui a été réglé et le restant dû.',
     cta: '',
+  },
+  fee_schedules: {
+    kicker: 'Échéanciers',
+    title: 'Tarifs et tranches',
+    description:
+      'Configurez les montants de scolarité, cantine et transport avec des dates d’échéance précises.',
+    cta: 'Ajouter une tranche',
+  },
+  announcements: {
+    kicker: 'Communication',
+    title: 'Annonces officielles',
+    description:
+      'Publiez les réunions de parents, événements et informations institutionnelles pour les familles.',
+    cta: 'Publier une annonce',
   },
   grades: {
     kicker: 'Gestion des notes',
@@ -513,23 +426,18 @@ export const DashboardPage: React.FC = () => {
     }
   }, [role, navigate]);
 
-  const currentNavItems = role ? roleNavItems[role] : [];
+  const currentNavSectionIds = React.useMemo(
+    () => (role ? getDashboardSectionIds(role) : []),
+    [role],
+  );
   const [activeSection, setActiveSection] = React.useState<SectionId>('overview');
   const [currentStudentId, setCurrentStudentId] = React.useState<string | null>(() => getStoredStudentId());
 
-  const [adminNavOpen, setAdminNavOpen] = React.useState({
-    schoolSettings: true,
-    sis: true,
-    academics: true,
-    users: true,
-    more: false,
-  });
-
   React.useEffect(() => {
-    if (role && currentNavItems.length > 0 && !currentNavItems.some((i) => i.id === activeSection)) {
-      setActiveSection(currentNavItems[0].id);
+    if (role && currentNavSectionIds.length > 0 && !currentNavSectionIds.includes(activeSection)) {
+      setActiveSection(currentNavSectionIds[0]);
     }
-  }, [role, currentNavItems, activeSection]);
+  }, [role, currentNavSectionIds, activeSection]);
 
   const backendSync = isBackendApiConfigured();
   const teacherCreateFormRef = React.useRef<HTMLDivElement>(null);
@@ -576,8 +484,6 @@ export const DashboardPage: React.FC = () => {
     phone: '',
     homeroomClassIds: [],
   });
-  const [teacherSubjectPreset, setTeacherSubjectPreset] = React.useState('');
-
   const [newStudent, setNewStudent] =
     React.useState<NewStudentFormState>({
       name: '',
@@ -1007,7 +913,6 @@ export const DashboardPage: React.FC = () => {
         phone: '',
         homeroomClassIds: [],
       });
-      setTeacherSubjectPreset('');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -1344,595 +1249,11 @@ export const DashboardPage: React.FC = () => {
         </SidebarHeader>
 
         <SidebarContent>
-          {role === 'admin' ? (
-            <>
-              <SidebarGroup>
-                <SidebarGroupLabel>Général</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Tableau de bord'
-                        isActive={activeSection === 'overview'}
-                        onClick={() => setActiveSection('overview')}
-                      >
-                        <LayoutDashboard className='mr-1.5' />
-                        <span>Tableau de bord</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Tous les modules et réglages'
-                        isActive={activeSection === 'system_registry'}
-                        onClick={() => setActiveSection('system_registry')}
-                      >
-                        <Layers className='mr-1.5' />
-                        <span>Console système</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Espace enseignants'
-                        isActive={activeSection === 'teachers'}
-                        onClick={() => setActiveSection('teachers')}
-                      >
-                        <GraduationCap className='mr-1.5' />
-                        <span>Espace enseignants</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>SIS</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        type='button'
-                        className='font-medium'
-                        onClick={() =>
-                          setAdminNavOpen((p) => ({
-                            ...p,
-                            sis: !p.sis,
-                          }))
-                        }
-                      >
-                        <ChevronDown
-                          className={cn('mr-1 transition-transform', adminNavOpen.sis && 'rotate-180')}
-                        />
-                        <School className='mr-1.5' />
-                        <span>Dossiers & classes</span>
-                      </SidebarMenuButton>
-                      {adminNavOpen.sis ? (
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'sis'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('sis')}
-                              >
-                                Vue d’ensemble SIS
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'students'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('students')}
-                              >
-                                Élèves
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'parents'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('parents')}
-                              >
-                                Parents
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'classes'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('classes')}
-                              >
-                                Classes
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      ) : null}
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Pédagogie</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        type='button'
-                        className='font-medium'
-                        onClick={() =>
-                          setAdminNavOpen((p) => ({
-                            ...p,
-                            academics: !p.academics,
-                          }))
-                        }
-                      >
-                        <ChevronDown
-                          className={cn('mr-1 transition-transform', adminNavOpen.academics && 'rotate-180')}
-                        />
-                        <BookMarked className='mr-1.5' />
-                        <span>Matières & cours</span>
-                      </SidebarMenuButton>
-                      {adminNavOpen.academics ? (
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'matieres'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('matieres')}
-                              >
-                                Matières
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'courses'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('courses')}
-                              >
-                                Cours
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'schedule'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('schedule')}
-                              >
-                                Emploi du temps
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'curriculum'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('curriculum')}
-                              >
-                                Programmes
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      ) : null}
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Exploitation</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Présences'
-                        isActive={activeSection === 'attendance'}
-                        onClick={() => setActiveSection('attendance')}
-                      >
-                        <CheckSquare className='mr-1.5' />
-                        <span>Présences</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Examens'
-                        isActive={activeSection === 'exams'}
-                        onClick={() => setActiveSection('exams')}
-                      >
-                        <BarChart2 className='mr-1.5' />
-                        <span>Examens</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Finances'
-                        isActive={activeSection === 'payments'}
-                        onClick={() => setActiveSection('payments')}
-                      >
-                        <Wallet className='mr-1.5' />
-                        <span>Finances</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Gestion des accès</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        type='button'
-                        className='font-medium'
-                        onClick={() =>
-                          setAdminNavOpen((p) => ({
-                            ...p,
-                            users: !p.users,
-                          }))
-                        }
-                      >
-                        <ChevronDown
-                          className={cn('mr-1 transition-transform', adminNavOpen.users && 'rotate-180')}
-                        />
-                        <Shield className='mr-1.5' />
-                        <span>Utilisateurs & droits</span>
-                      </SidebarMenuButton>
-                      {adminNavOpen.users ? (
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'users'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('users')}
-                              >
-                                Utilisateurs
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'permissions'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('permissions')}
-                              >
-                                Droits
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      ) : null}
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Configuration</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        type='button'
-                        className='font-medium'
-                        tooltip='Paramètres'
-                        isActive={isSchoolSettingsSection(activeSection)}
-                        onClick={() =>
-                          setAdminNavOpen((p) => ({
-                            ...p,
-                            schoolSettings: !p.schoolSettings,
-                          }))
-                        }
-                      >
-                        <ChevronDown
-                          className={cn(
-                            'mr-1 transition-transform',
-                            adminNavOpen.schoolSettings && 'rotate-180',
-                          )}
-                        />
-                        <Cog className='mr-1.5' />
-                        <span>Paramètres</span>
-                      </SidebarMenuButton>
-                      {adminNavOpen.schoolSettings ? (
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_profile'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_profile')}
-                              >
-                                Profil de l’établissement
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_branding'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_branding')}
-                              >
-                                Image & apparence
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_academics'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_academics')}
-                              >
-                                Paramètres pédagogiques
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_attendance'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_attendance')}
-                              >
-                                Présences (réglages)
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_examinations'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_examinations')}
-                              >
-                                Examens & notation
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_finance'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_finance')}
-                              >
-                                Finances
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_communication'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_communication')}
-                              >
-                                Communication
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_security'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_security')}
-                              >
-                                Sécurité & confidentialité
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_compliance'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_compliance')}
-                              >
-                                Documents & conformité
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_automation'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_automation')}
-                              >
-                                Automatisation
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      ) : null}
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Facturation'
-                        isActive={activeSection === 'billing'}
-                        onClick={() => setActiveSection('billing')}
-                      >
-                        <Receipt className='mr-1.5' />
-                        <span>Facturation</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Plus</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        type='button'
-                        className='font-medium'
-                        onClick={() =>
-                          setAdminNavOpen((p) => ({
-                            ...p,
-                            more: !p.more,
-                          }))
-                        }
-                      >
-                        <ChevronDown
-                          className={cn('mr-1 transition-transform', adminNavOpen.more && 'rotate-180')}
-                        />
-                        <MoreHorizontal className='mr-1.5' />
-                        <span>Campus & services</span>
-                      </SidebarMenuButton>
-                      {adminNavOpen.more ? (
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'calendar'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('calendar')}
-                              >
-                                Calendrier
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'rooms'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('rooms')}
-                              >
-                                Salles
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'canteen'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('canteen')}
-                              >
-                                Cantine
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'transport'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('transport')}
-                              >
-                                Transport
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'reports'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('reports')}
-                              >
-                                Rapports
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      ) : null}
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            </>
-          ) : (
-            <SidebarGroup>
-              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {currentNavItems.map((item) => (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        tooltip={item.label}
-                        isActive={activeSection === item.id}
-                        onClick={() => setActiveSection(item.id)}
-                      >
-                        <item.icon className='mr-1.5' />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )}
+          <DashboardSidebarNav
+            role={role}
+            activeSection={activeSection}
+            onSelectSection={setActiveSection}
+          />
         </SidebarContent>
 
         <SidebarSeparator />
@@ -2058,14 +1379,13 @@ export const DashboardPage: React.FC = () => {
             <TeachersSection
               teachers={teachers}
               classes={classes}
+              matieres={matieres}
               newTeacher={newTeacher}
               setNewTeacher={setNewTeacher}
-              teacherSubjectPreset={teacherSubjectPreset}
-              setTeacherSubjectPreset={setTeacherSubjectPreset}
               onCreateTeacher={handleCreateTeacher}
               onUpdateTeacher={handleUpdateTeacher}
               onDeleteTeacher={handleDeleteTeacher}
-              subjectOptions={SUBJECT_OPTIONS}
+              onOpenMatieres={() => setActiveSection('matieres')}
               getClassName={getClassName}
               createFormRef={teacherCreateFormRef}
             />

@@ -1,9 +1,8 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 
 import { RouteMap } from '@/components/RouteMap';
-import { fetchRoadRoute } from '@/lib/osrm';
-import { TRANSPORT_NODES } from '@/lib/transportGraph';
 import { DriversSection } from '@/pages/dashboard/DriversSection';
+import { RouteBuilderPanel, type BuiltRoute } from '@/pages/dashboard/RouteBuilderPanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,12 +18,12 @@ import {
 
 import type {
   NewTransportRouteFormState,
-  NewDriverFormState,
   SetStateAction,
   Student,
   Driver,
   TransportRoute,
 } from './dashboardTypes';
+import type { DriverCreatePayload } from './DriverCreateWizard';
 
 type TransportSectionProps = {
   routes: TransportRoute[];
@@ -33,9 +32,8 @@ type TransportSectionProps = {
   setNewRoute: SetStateAction<NewTransportRouteFormState>;
   onCreateRoute: (e: React.FormEvent, payload?: { waypoints: { lat: number; lng: number; name: string }[]; routePolyline: [number, number][] }) => void;
   onUpdateRouteStudents?: (routeId: string, studentIds: string[]) => void;
-  newDriver?: NewDriverFormState;
-  setNewDriver?: SetStateAction<NewDriverFormState>;
-  onCreateDriver?: (e: React.FormEvent) => void | Promise<void>;
+  defaultPhoneCountry?: string;
+  onCreateDriver?: (payload: DriverCreatePayload) => Promise<void>;
   onDeleteDriver?: (id: string) => void | Promise<void>;
   readOnly?: boolean;
   students?: Student[];
@@ -50,8 +48,7 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
   setNewRoute,
   onCreateRoute,
   onUpdateRouteStudents,
-  newDriver,
-  setNewDriver,
+  defaultPhoneCountry,
   onCreateDriver,
   onDeleteDriver,
   readOnly = false,
@@ -59,253 +56,20 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
   currentStudentId,
   onStudentIdChange,
 }) => {
-  const [startStopId, setStartStopId] = React.useState<string>('');
-  const [endStopId, setEndStopId] = React.useState<string>('');
-  const [stopIds, setStopIds] = React.useState<string[]>([]);
-  const [selectionMode, setSelectionMode] = React.useState<'start' | 'stop' | 'end'>('start');
-  const [startQuery, setStartQuery] = React.useState('');
-  const [endQuery, setEndQuery] = React.useState('');
-  const [stopQuery, setStopQuery] = React.useState('');
-  const [stops, setStops] = React.useState(TRANSPORT_NODES);
-  const [roadRoutePositions, setRoadRoutePositions] = React.useState<
-    [number, number][] | null
-  >(null);
-  const [routeLoading, setRouteLoading] = React.useState(false);
-
-  const pathNodeIds = useMemo(() => {
-    if (!startStopId || !endStopId) return [];
-    const ids = [startStopId, ...stopIds, endStopId];
-    const uniqueIds: string[] = [];
-    for (const id of ids) {
-      if (!uniqueIds.includes(id)) uniqueIds.push(id);
-    }
-    return uniqueIds;
-  }, [startStopId, endStopId, stopIds]);
-
-  React.useEffect(() => {
-    // Ensure start/end are not duplicated in intermediate stops
-    setStopIds((prev) =>
-      prev.filter((id) => id !== startStopId && id !== endStopId),
-    );
-  }, [startStopId, endStopId]);
-
-  // Auto-advance from departure to arrival mode when departure is set
-  React.useEffect(() => {
-    if (startStopId && selectionMode === 'start') {
-      setSelectionMode('end');
-    }
-  }, [startStopId, selectionMode]);
-
-  // Display mode: when departure is set, never show 'start' as active (prevents stuck button)
-  const displayMode = startStopId && selectionMode === 'start' ? 'end' : selectionMode;
-
-  React.useEffect(() => {
-    if (pathNodeIds.length < 2) {
-      setRoadRoutePositions(null);
-      return;
-    }
-    const waypoints = pathNodeIds
-      .map((id) => stops.find((n) => n.id === id))
-      .filter(Boolean)
-      .map((n) => ({ lat: n!.lat, lng: n!.lng }));
-    setRouteLoading(true);
-    fetchRoadRoute(waypoints)
-      .then((positions) => setRoadRoutePositions(positions))
-      .catch(() => setRoadRoutePositions(null))
-      .finally(() => setRouteLoading(false));
-  }, [pathNodeIds, stops]);
-
-  const startName =
-    stops.find((n) => n.id === startStopId)?.name ?? '—';
-  const endName =
-    stops.find((n) => n.id === endStopId)?.name ?? '—';
-
-  const handleStartQuerySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Blur the submit button immediately so it doesn't stay stuck in pressed state
-    const submitter = (e.nativeEvent as SubmitEvent).submitter;
-    if (submitter instanceof HTMLElement) submitter.blur();
-    const query = startQuery.trim();
-    if (!query) return;
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query,
-        )}&limit=1`,
-        {
-          headers: {
-            'Accept-Language': 'fr',
-          },
-        },
-      );
-      if (!res.ok) return;
-      const data = (await res.json()) as Array<{
-        lat: string;
-        lon: string;
-        display_name: string;
-      }>;
-      if (!data.length) return;
-      const best = data[0];
-      const id = `custom-${Date.now()}`;
-      const newStop = {
-        id,
-        name: best.display_name,
-        lat: parseFloat(best.lat),
-        lng: parseFloat(best.lon),
-      };
-      setStops((prev) => [...prev, newStop]);
-      setStartStopId(id);
-      setSelectionMode('end'); // Auto-advance so next action defines arrival
-    } catch {
-      // ignore network errors for now
-    }
-  };
-
-  const handleEndQuerySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const submitter = (e.nativeEvent as SubmitEvent).submitter;
-    if (submitter instanceof HTMLElement) submitter.blur();
-    const query = endQuery.trim();
-    if (!query) return;
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query,
-        )}&limit=1`,
-        {
-          headers: {
-            'Accept-Language': 'fr',
-          },
-        },
-      );
-      if (!res.ok) return;
-      const data = (await res.json()) as Array<{
-        lat: string;
-        lon: string;
-        display_name: string;
-      }>;
-      if (!data.length) return;
-      const best = data[0];
-      const id = `custom-${Date.now()}`;
-      const newStop = {
-        id,
-        name: best.display_name,
-        lat: parseFloat(best.lat),
-        lng: parseFloat(best.lon),
-      };
-      setStops((prev) => [...prev, newStop]);
-      setEndStopId(id);
-    } catch {
-      // ignore network errors for now
-    }
-  };
-
-  const handleStopQuerySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const submitter = (e.nativeEvent as SubmitEvent).submitter;
-    if (submitter instanceof HTMLElement) submitter.blur();
-    const query = stopQuery.trim();
-    if (!query) return;
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query,
-        )}&limit=1`,
-        {
-          headers: {
-            'Accept-Language': 'fr',
-          },
-        },
-      );
-      if (!res.ok) return;
-      const data = (await res.json()) as Array<{
-        lat: string;
-        lon: string;
-        display_name: string;
-      }>;
-      if (!data.length) return;
-      const best = data[0];
-      const id = `custom-${Date.now()}`;
-      const newStop = {
-        id,
-        name: best.display_name,
-        lat: parseFloat(best.lat),
-        lng: parseFloat(best.lon),
-      };
-      setStops((prev) => [...prev, newStop]);
-      setStopIds((prev) => [...prev, id]);
-      setStopQuery('');
-    } catch {
-      // ignore network errors for now
-    }
-  };
-
-  const handleSelectNode = (id: string) => {
-    if (displayMode === 'start') {
-      setStartStopId(id);
-      setSelectionMode('end');
-      (document.activeElement as HTMLElement)?.blur?.();
-      return;
-    }
-    if (displayMode === 'end') {
-      setEndStopId(id);
-      return;
-    }
-    setStopIds((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
-    );
-  };
-
-  const handleMapClick = (lat: number, lng: number) => {
-    const id = `custom-${Date.now()}`;
-    const name = `Point (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
-    const newStop = { id, name, lat, lng };
-    setStops((prev) => [...prev, newStop]);
-    if (displayMode === 'start') {
-      setStartStopId(id);
-      setSelectionMode('end');
-      (document.activeElement as HTMLElement)?.blur?.();
-    } else if (displayMode === 'end') {
-      setEndStopId(id);
-    } else {
-      setStopIds((prev) => [...prev, id]);
-    }
-  };
-
-  const handleRemoveNode = (id: string) => {
-    setStops((prev) => prev.filter((n) => n.id !== id));
-    if (startStopId === id) setStartStopId('');
-    if (endStopId === id) setEndStopId('');
-    setStopIds((prev) => prev.filter((s) => s !== id));
-  };
-
-  const clearDeparture = () => setStartStopId('');
-  const clearArrival = () => setEndStopId('');
-  const removeIntermediateStop = (id: string) =>
-    setStopIds((prev) => prev.filter((s) => s !== id));
+  const [builtRoute, setBuiltRoute] = React.useState<BuiltRoute | null>(null);
 
   const handleSubmitRoute = (e: React.FormEvent) => {
-    const waypoints =
-      pathNodeIds.length >= 2
-        ? pathNodeIds
-            .map((id) => stops.find((n) => n.id === id))
-            .filter(Boolean)
-            .map((n) => ({ lat: n!.lat, lng: n!.lng, name: n!.name }))
-        : undefined;
-    const routePolyline =
-      roadRoutePositions && roadRoutePositions.length >= 2 ? roadRoutePositions : undefined;
-    onCreateRoute(e, waypoints && routePolyline ? { waypoints, routePolyline } : undefined);
+    onCreateRoute(e, builtRoute ?? undefined);
   };
 
   const routesWithTrajet = routes.filter((r) => r.routePolyline && r.routePolyline.length >= 2);
 
   return (
     <section className='space-y-5'>
-      {!readOnly && onCreateDriver && newDriver && setNewDriver && onDeleteDriver && (
+      {!readOnly && onCreateDriver && onDeleteDriver && (
         <DriversSection
           drivers={drivers}
-          newDriver={newDriver}
-          setNewDriver={setNewDriver}
+          defaultPhoneCountry={defaultPhoneCountry}
           onCreateDriver={onCreateDriver}
           onDeleteDriver={onDeleteDriver}
         />
@@ -420,8 +184,8 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
                 />
               </div>
               <p className='text-[10px] text-muted-foreground'>
-                Définir le départ et l&apos;arrivée sur la carte ci-dessous
-                avant d&apos;enregistrer pour que les parents voient le trajet.
+                Tracez l&apos;itinéraire sur la carte ci-dessous (au moins 2 arrêts) avant
+                d&apos;enregistrer pour que les parents voient le trajet.
               </p>
               <Button type='submit' size='sm' className='mt-1'>
                 Enregistrer le trajet
@@ -616,191 +380,11 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className='text-sm font-medium'>
-            Carte du trajet (algorithme de Dijkstra)
+            Carte du trajet
           </CardTitle>
-          <p className='text-xs text-muted-foreground mt-1'>
-            Utilisez les boutons ci-dessous pour choisir si le prochain clic
-            sur la carte définit un départ, un arrêt intermédiaire ou une
-            arrivée. Le plus court chemin est ensuite calculé avec
-            l&apos;algorithme de Dijkstra et tracé sur le réseau routier.
-          </p>
         </CardHeader>
-        <CardContent className='space-y-4'>
-          <form
-            className='grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_auto] text-[11px]'
-            onSubmit={handleStartQuerySubmit}
-          >
-            <div className='grid gap-1'>
-              <Label htmlFor='transport-start-query'>Départ (par nom)</Label>
-              <Input
-                id='transport-start-query'
-                value={startQuery}
-                onChange={(e) => setStartQuery(e.target.value)}
-                placeholder='Ex : École, Mairie...'
-              />
-            </div>
-            <div className='flex items-end'>
-              <Button type='submit' size='xs' className='mt-1'>
-                Définir le départ
-              </Button>
-            </div>
-          </form>
-          <form
-            className='grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_auto] text-[11px]'
-            onSubmit={handleEndQuerySubmit}
-          >
-            <div className='grid gap-1'>
-              <Label htmlFor='transport-end-query'>Arrivée (par nom)</Label>
-              <Input
-                id='transport-end-query'
-                value={endQuery}
-                onChange={(e) => setEndQuery(e.target.value)}
-                placeholder='Ex : École, Mairie...'
-              />
-            </div>
-            <div className='flex items-end'>
-              <Button type='submit' size='xs' className='mt-1'>
-                Définir l&apos;arrivée
-              </Button>
-            </div>
-          </form>
-          <form
-            className='grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_auto] text-[11px]'
-            onSubmit={handleStopQuerySubmit}
-          >
-            <div className='grid gap-1'>
-              <Label htmlFor='transport-stop-query'>Arrêt intermédiaire (par nom)</Label>
-              <Input
-                id='transport-stop-query'
-                value={stopQuery}
-                onChange={(e) => setStopQuery(e.target.value)}
-                placeholder='Ex : Mairie, Gare...'
-              />
-            </div>
-            <div className='flex items-end'>
-              <Button type='submit' size='xs' className='mt-1'>
-                Ajouter l&apos;arrêt
-              </Button>
-            </div>
-          </form>
-          <div className='flex flex-wrap items-center gap-2 text-[11px]'>
-            <span className='text-muted-foreground'>
-              Action du clic sur la carte :
-            </span>
-            <Button
-              type='button'
-              size='xs'
-              variant={displayMode === 'start' ? 'default' : 'outline'}
-              onClick={() => setSelectionMode('start')}
-            >
-              Définir le départ
-            </Button>
-            <Button
-              type='button'
-              size='xs'
-              variant={displayMode === 'stop' ? 'default' : 'outline'}
-              onClick={() => setSelectionMode('stop')}
-            >
-              Ajouter / retirer un arrêt
-            </Button>
-            <Button
-              type='button'
-              size='xs'
-              variant={displayMode === 'end' ? 'default' : 'outline'}
-              onClick={() => setSelectionMode('end')}
-            >
-              Définir l&apos;arrivée
-            </Button>
-          </div>
-          <p className='text-[11px] text-muted-foreground'>
-            Départ :{' '}
-            <span className='font-medium text-foreground'>{startName}</span>
-            {startStopId && (
-              <button
-                type='button'
-                className='ml-1 text-red-600 hover:underline'
-                onClick={clearDeparture}
-                aria-label='Supprimer le départ'
-              >
-                ×
-              </button>
-            )}{' '}
-            · Arrivée :{' '}
-            <span className='font-medium text-foreground'>{endName}</span>
-            {endStopId && (
-              <button
-                type='button'
-                className='ml-1 text-red-600 hover:underline'
-                onClick={clearArrival}
-                aria-label="Supprimer l'arrivée"
-              >
-                ×
-              </button>
-            )}
-          </p>
-          {!!stopIds.length && (
-            <p className='text-[11px] text-muted-foreground'>
-              Arrêts intermédiaires (ordre du trajet) :{' '}
-              {stopIds.map((id, idx) => {
-                const name = stops.find((n) => n.id === id)?.name ?? id;
-                return (
-                  <span key={id} className='mr-1 inline-flex items-center gap-0.5'>
-                    <span className='font-medium text-foreground'>
-                      Arrêt {idx + 1} : {name}
-                    </span>
-                    <button
-                      type='button'
-                      className='text-red-600 hover:underline'
-                      onClick={() => removeIntermediateStop(id)}
-                      aria-label={`Retirer arrêt ${idx + 1}`}
-                    >
-                      ×
-                    </button>
-                  </span>
-                );
-              })}
-            </p>
-          )}
-          {pathNodeIds.length >= 2 && (
-            <p className='text-[11px] text-muted-foreground'>
-              Trajet :{' '}
-              <span className='font-medium text-foreground'>
-                {pathNodeIds
-                  .map((id, idx) => {
-                    const name = stops.find((n) => n.id === id)?.name ?? '—';
-                    if (idx === 0) return `Départ (${name})`;
-                    if (idx === pathNodeIds.length - 1)
-                      return `Arrivée (${name})`;
-                    return `Arrêt ${idx} (${name})`;
-                  })
-                  .join(' → ')}
-              </span>
-              {roadRoutePositions && (
-                <span className='ml-1 text-[10px] text-muted-foreground'>
-                  · tracé sur les routes (OSRM)
-                </span>
-              )}
-            </p>
-          )}
-          {routeLoading && pathNodeIds.length >= 2 && (
-            <p className='text-[11px] text-muted-foreground'>
-              Calcul du tracé sur les routes…
-            </p>
-          )}
-          <RouteMap
-            nodes={stops}
-            pathNodeIds={pathNodeIds}
-            roadRoutePositions={roadRoutePositions}
-            startStopId={startStopId}
-            endStopId={endStopId}
-            stopIds={stopIds}
-            center={[7.54, -5.55]}
-            zoom={6}
-            className='h-[360px] w-full rounded-lg border border-border/70 overflow-hidden'
-            onSelectNode={handleSelectNode}
-            onMapClick={handleMapClick}
-            onRemoveNode={handleRemoveNode}
-          />
+        <CardContent>
+          <RouteBuilderPanel onChange={setBuiltRoute} />
         </CardContent>
       </Card>
       )}

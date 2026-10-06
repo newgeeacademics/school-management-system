@@ -28,6 +28,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
 }
 
 :root {
@@ -75,12 +76,100 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family:
-      'Plus Jakarta Sans',
-      ui-sans-serif,
-      system-ui,
-      sans-serif;
   }
+}
+
+@utility touch-target {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+@utility safe-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility safe-pt {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ------------------------------------------------------------------
+   Style refresh — typography, radius and shadows shared with the main
+   NewGee app. Colours stay on this app's own theme tokens above.
+   ------------------------------------------------------------------ */
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --radius: 0.875rem;
+  --brand-line-strong: color-mix(in srgb, var(--foreground) 22%, transparent);
+  --brand-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 36px rgba(15, 23, 42, 0.06);
+  --brand-shadow-lg: 0 2px 4px rgba(15, 23, 42, 0.04), 0 30px 70px rgba(15, 23, 42, 0.12);
+  --brand-focus: color-mix(in srgb, var(--ring) 20%, transparent);
+}
+
+.dark {
+  --brand-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.35);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .serif-accent {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Mapbox popups and controls — match the rounded, soft-shadow UI */
+.mapboxgl-popup-content {
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--foreground);
+  box-shadow: var(--brand-shadow-lg);
+}
+
+.mapboxgl-popup-tip {
+  filter: drop-shadow(0 2px 2px rgba(15, 23, 42, 0.06));
+}
+
+.mapboxgl-ctrl-group {
+  border-radius: 14px !important;
+  overflow: hidden;
+  box-shadow: var(--brand-shadow) !important;
+}
+
+.mapboxgl-ctrl-group button {
+  width: 36px;
+  height: 36px;
 }

@@ -49,7 +49,7 @@ export function PortalAnnouncementsView() {
 
   if (items.length === 0) {
     return (
-      <section className='rounded-2xl border border-border bg-card p-4 shadow-sm'>
+      <section className='portal-card p-4 md:p-5'>
         <p className='text-sm italic text-muted-foreground'>{t('portalAnnouncements.empty')}</p>
       </section>
     );
@@ -60,7 +60,7 @@ export function PortalAnnouncementsView() {
       {items.map((item) => (
         <article
           key={item.id}
-          className='rounded-2xl border border-border bg-card p-4 shadow-sm'
+          className='portal-card p-4 md:p-5'
         >
           <div className='flex items-start gap-3'>
             <Megaphone className='mt-0.5 size-5 shrink-0 text-primary' aria-hidden />

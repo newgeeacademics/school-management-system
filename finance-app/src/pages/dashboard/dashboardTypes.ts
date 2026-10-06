@@ -16,6 +16,8 @@ export type SectionId =
   | 'grades'
   | 'users'
   | 'payments'
+  | 'fee_schedules'
+  | 'announcements'
   | 'canteen'
   | 'transport'
   | 'reports'
@@ -42,6 +44,7 @@ export type Teacher = {
   subject: string;
   email?: string;
   phone?: string;
+  loginId?: string;
 };
 
 export type ClassItem = {

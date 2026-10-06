@@ -48,13 +48,13 @@ export const FileUploader = ({
     return (
       <>
         {previewUrl ? (
-          <div className='relative w-full rounded-xl border-2 border-blue-600/20 bg-gradient-to-r from-blue-50/50 to-blue-100/30 p-5'>
+          <div className='relative w-full rounded-xl border-2 border-primary/20 bg-accent/60 p-5'>
             <div className='flex flex-col sm:flex-row items-center gap-4'>
               <div className='relative flex-shrink-0'>
                 <img
                   src={previewUrl}
                   alt='Profile preview'
-                  className='w-24 h-24 sm:w-26 sm:h-26 transition-all rounded-full object-cover border-3 border-blue-600 shadow-lg'
+                  className='w-24 h-24 sm:w-26 sm:h-26 transition-all rounded-full object-cover border-3 border-primary shadow-lg'
                 />
               </div>
 
@@ -78,7 +78,7 @@ export const FileUploader = ({
             </div>
           </div>
         ) : (
-          <section className='relative w-full rounded-xl overflow-hidden border-2 border-dashed border-gray-200 bg-blue-50/40 hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-300 cursor-pointer'>
+          <section className='relative w-full rounded-xl overflow-hidden border-2 border-dashed border-gray-200 bg-accent/40 hover:border-ring hover:bg-accent/60 transition-all duration-300 cursor-pointer'>
             <input
               id={`file-upload-${type}`}
               type='file'
@@ -92,12 +92,12 @@ export const FileUploader = ({
             >
               <div className='flex flex-col sm:flex-row items-center gap-4 p-5'>
                 <div className='flex-shrink-0'>
-                  <div className='w-24 h-24 sm:w-26 sm:h-26 rounded-full bg-blue-100 flex items-center justify-center'>
-                    <User className='h-10 w-10 text-blue-600' />
+                  <div className='w-24 h-24 sm:w-26 sm:h-26 rounded-full bg-accent flex items-center justify-center'>
+                    <User className='h-10 w-10 text-ring' />
                   </div>
                 </div>
                 <div className='flex-1 text-center sm:text-left'>
-                  <p className='text-sm font-bold text-blue-600 mb-1'>
+                  <p className='text-sm font-bold text-ring mb-1'>
                     Click to upload photo
                   </p>
                   <p className='text-xs text-gray-900/60'>{maxSizeText}</p>
@@ -150,9 +150,9 @@ export const FileUploader = ({
             htmlFor={`file-upload-${type}`}
             className='cursor-pointer text-center w-full'
           >
-            <Upload className='h-12 w-12 mx-auto mb-3 text-blue-600' />
+            <Upload className='h-12 w-12 mx-auto mb-3 text-ring' />
             <p className='text-sm font-bold text-gray-900 mb-1'>
-              <span className='text-blue-600'>Click to upload</span>
+              <span className='text-ring'>Click to upload</span>
             </p>
             <p className='text-xs text-gray-900/60'>{maxSizeText}</p>
           </label>

@@ -1,28 +1,18 @@
 import React from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-import type {
-  Matiere,
-  NewMatiereFormState,
-  SetStateAction,
-} from './dashboardTypes';
+import type { Matiere } from './dashboardTypes';
+import { MatiereCreateWizard, type MatiereCreatePayload } from './MatiereCreateWizard';
 
 type MatieresSectionProps = {
   matieres: Matiere[];
-  newMatiere: NewMatiereFormState;
-  setNewMatiere: SetStateAction<NewMatiereFormState>;
-  onCreateMatiere: (e: React.FormEvent) => void;
+  onCreateMatiere: (payload: MatiereCreatePayload) => Promise<void>;
   readOnly?: boolean;
 };
 
 export const MatieresSection: React.FC<MatieresSectionProps> = ({
   matieres,
-  newMatiere,
-  setNewMatiere,
   onCreateMatiere,
   readOnly = false,
 }) => {
@@ -30,58 +20,34 @@ export const MatieresSection: React.FC<MatieresSectionProps> = ({
     <section className='space-y-5'>
       {!readOnly && (
         <Card>
-          <CardHeader>
-            <CardTitle className='text-sm font-medium'>
-              Créer une matière
-            </CardTitle>
+          <CardHeader className='pb-3'>
+            <CardTitle className='text-base'>Créer une matière</CardTitle>
+            <CardDescription className='text-xs'>
+              Parcours guidé en 2 étapes — nom puis validation.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form
-              className='flex flex-wrap items-end gap-3 text-xs'
-              onSubmit={onCreateMatiere}
-            >
-              <div className='grid min-w-[200px] gap-2'>
-                <Label htmlFor='matiere-name'>Nom de la matière</Label>
-                <Input
-                  id='matiere-name'
-                  value={newMatiere.name}
-                  onChange={(e) =>
-                    setNewMatiere((c) => ({ ...c, name: e.target.value }))
-                  }
-                  placeholder='Ex : Mathématiques, Français, SVT…'
-                  required
-                />
-              </div>
-              <Button type='submit' size='sm'>
-                Ajouter
-              </Button>
-            </form>
+            <MatiereCreateWizard onSubmit={onCreateMatiere} />
           </CardContent>
         </Card>
       )}
 
       <Card>
         <CardHeader>
-          <CardTitle className='text-sm font-medium'>
-            Matières définies
-          </CardTitle>
+          <CardTitle className='text-sm font-medium'>Matières ({matieres.length})</CardTitle>
         </CardHeader>
         <CardContent className='space-y-2 text-xs'>
           {matieres.length === 0 ? (
-            <p className='text-muted-foreground'>
-              Aucune matière définie pour le moment.
-            </p>
+            <p className='text-muted-foreground'>Aucune matière. Ajoutez-en une pour créer des cours.</p>
           ) : (
             <div className='flex flex-wrap gap-2'>
               {matieres.map((m) => (
-                <div
+                <span
                   key={m.id}
-                  className='rounded-md border border-border/80 px-3 py-2'
+                  className='rounded-full border border-border/80 px-3 py-1 text-sm font-medium'
                 >
-                  <p className='text-sm font-medium text-foreground'>
-                    {m.name}
-                  </p>
-                </div>
+                  {m.name}
+                </span>
               ))}
             </div>
           )}

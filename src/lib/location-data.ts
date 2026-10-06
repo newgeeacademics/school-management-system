@@ -84,12 +84,28 @@ function formatGroupedPairs(digits: string): string {
   return parts.join(' ').trim();
 }
 
+function extractLocalPhoneDigits(countryName: string, raw: string): string {
+  let digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+
+  const meta = getCountryPhoneMeta(countryName);
+  if (meta?.phonecode && digits.startsWith(meta.phonecode) && digits.length > meta.phonecode.length) {
+    digits = digits.slice(meta.phonecode.length);
+  }
+
+  const rules = getLocalPhoneRules(countryName);
+  if (rules?.localDigits === 10 && digits.length === 9 && !digits.startsWith('0')) {
+    digits = `0${digits}`;
+  }
+
+  const max = rules?.localDigits ?? 15;
+  return digits.slice(0, max);
+}
+
 /** Strip, cap length, and apply national formatting (e.g. CI → pairs). */
 export function normalizeLocalPhoneInput(countryName: string, raw: string): string {
-  const digits = raw.replace(/\D/g, '');
+  const trimmed = extractLocalPhoneDigits(countryName, raw);
   const rules = getLocalPhoneRules(countryName);
-  const max = rules?.localDigits ?? 15;
-  const trimmed = digits.slice(0, max);
   if (rules?.localDigits === 10) {
     return formatGroupedPairs(trimmed);
   }
@@ -101,7 +117,7 @@ export function localPhoneDigitCount(value: string): number {
 }
 
 export function isValidLocalPhone(countryName: string, localNumber: string): boolean {
-  const digits = localNumber.replace(/\D/g, '');
+  const digits = extractLocalPhoneDigits(countryName, localNumber);
   if (!digits) return false;
   const rules = getLocalPhoneRules(countryName);
   if (!rules) return digits.length >= 6;
@@ -131,18 +147,8 @@ export function getCountryPhoneMeta(countryName: string): CountryPhoneMeta | nul
 
 export function formatPhoneWithCountry(countryName: string, localNumber: string): string {
   const meta = getCountryPhoneMeta(countryName);
-  let digits = localNumber.replace(/\D/g, '');
+  const digits = extractLocalPhoneDigits(countryName, localNumber);
   if (!digits) return '';
   if (!meta) return localNumber.trim();
-
-  const rules = getLocalPhoneRules(countryName);
-  if (rules && digits.length > rules.localDigits) {
-    digits = digits.slice(0, rules.localDigits);
-  }
-
-  let local = digits;
-  if (local.startsWith(meta.phonecode)) {
-    local = local.slice(meta.phonecode.length);
-  }
-  return `+${meta.phonecode}${local}`;
+  return `+${meta.phonecode}${digits}`;
 }

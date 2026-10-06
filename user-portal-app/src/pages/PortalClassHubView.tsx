@@ -46,7 +46,7 @@ function ClassList({ onSelect }: { onSelect: (classId: string) => void }) {
             key={classe.id}
             type='button'
             onClick={() => onSelect(classe.id)}
-            className='rounded-xl border border-border bg-card p-4 text-left shadow-sm transition hover:border-primary/40 hover:bg-muted/30'
+            className='rounded-2xl border border-foreground/[0.06] bg-card p-4 text-left shadow-[var(--brand-shadow)] transition hover:border-primary/40 hover:bg-muted/30'
           >
             <p className='font-semibold text-foreground'>{classe.name}</p>
             <p className='mt-1 text-xs text-muted-foreground'>
@@ -148,7 +148,7 @@ function AttendanceTab({ classId, className }: { classId: string; className: str
       {!data || data.students.length === 0 ? (
         <p className='text-sm italic text-muted-foreground'>{t('portalGrades.noStudents')}</p>
       ) : (
-        <ul className='divide-y rounded-xl border border-border bg-card'>
+        <ul className='divide-y rounded-2xl border border-foreground/[0.06] bg-card shadow-[var(--brand-shadow)]'>
           {data.students.map((row) => (
             <li key={row.studentId} className='flex flex-wrap items-center justify-between gap-3 px-4 py-3'>
               <span className='text-sm font-medium'>{row.studentName}</span>
@@ -307,7 +307,7 @@ function HomeworkTab({ classId, className }: { classId: string; className: strin
       ) : (
         <ul className='space-y-2'>
           {data?.items.map((item) => (
-            <li key={item.id} className='flex items-start justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3'>
+            <li key={item.id} className='flex items-start justify-between gap-3 rounded-2xl border border-foreground/[0.06] bg-card shadow-[var(--brand-shadow)] px-4 py-3'>
               <div>
                 <p className='font-medium text-foreground'>{item.title}</p>
                 {item.description ? (

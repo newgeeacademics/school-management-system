@@ -126,7 +126,7 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
                 placeholder={t('auth.enterUsername')}
                 value={usernameOrEmail}
                 onChange={(e) => setUsernameOrEmail(e.target.value)}
-                className='h-11 rounded-xl border-slate-200 focus-visible:ring-blue-500'
+                className='h-11 rounded-xl'
               />
             </div>
             <div className={isEmbedded ? 'auth-page__field' : 'space-y-2'}>
@@ -137,7 +137,7 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t('auth.enterPassword')}
-                className='h-11 rounded-xl border-slate-200 focus-visible:ring-blue-500'
+                className='h-11 rounded-xl'
               />
             </div>
 
@@ -149,7 +149,7 @@ export const SignInForm = ({ variant = 'full' }: { variant?: 'full' | 'embedded'
               <Button
                 type='submit'
                 size='lg'
-                className='w-full h-11 rounded-xl font-semibold bg-[#2563eb] hover:bg-[#1d4ed8]'
+                className='w-full h-12 rounded-full font-semibold'
                 disabled={isPending}
               >
                 {isPending ? t('auth.signingIn') : t('auth.signIn')}

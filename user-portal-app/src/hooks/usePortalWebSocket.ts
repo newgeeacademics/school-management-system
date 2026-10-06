@@ -55,17 +55,19 @@ export function usePortalWebSocket({ onRefresh, onChatMessage }: Options = {}) {
       return;
     }
 
-    const client = connectPortalWebSocket(session.token, {
-      onMessage: handleMessage,
-      onOpen: () => setConnected(true),
-      onClose: () => setConnected(false),
-      onError: () => setConnected(false),
-    });
-
-    clientRef.current = client;
+    const timer = window.setTimeout(() => {
+      const client = connectPortalWebSocket(session.token!, {
+        onMessage: handleMessage,
+        onOpen: () => setConnected(true),
+        onClose: () => setConnected(false),
+        onError: () => setConnected(false),
+      });
+      clientRef.current = client;
+    }, 1500);
 
     return () => {
-      client?.close();
+      window.clearTimeout(timer);
+      clientRef.current?.close();
       clientRef.current = null;
       setConnected(false);
     };
