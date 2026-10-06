@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type ReactNode } from 'react';
 import Map, { Layer, Marker, Popup, Source } from 'react-map-gl/mapbox';
 import type { MapRef } from 'react-map-gl/mapbox';
+
+import { LocateFixed, Minus, Plus } from 'lucide-react';
 
 import { getMapboxStyle, getMapboxToken } from './mapbox';
 
@@ -72,7 +74,54 @@ export type FramableMap = {
   setZoom: (zoom: number) => unknown;
   fitBounds: (bounds: [[number, number], [number, number]], options?: { padding?: number; maxZoom?: number }) => unknown;
   resize: () => unknown;
+  zoomIn: () => unknown;
+  zoomOut: () => unknown;
 };
+
+/**
+ * Floating zoom / recenter buttons, styled like a navigation app.
+ * Inline styles: Tailwind only scans each app's own src/, not shared/.
+ */
+const controlButton: CSSProperties = {
+  width: 44,
+  height: 44,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'var(--card, #fff)',
+  color: 'var(--foreground, #0f172a)',
+  border: 'none',
+  cursor: 'pointer',
+};
+const controlCard: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+  borderRadius: 12,
+  border: '1px solid rgb(15 23 42 / 0.1)',
+  boxShadow: '0 6px 18px rgb(15 23 42 / 0.14)',
+};
+
+export function MapControls({ getMap, onRecenter }: { getMap: () => FramableMap | null | undefined; onRecenter: () => void }) {
+  return (
+    <div style={{ position: 'absolute', right: 12, top: 12, zIndex: 5, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={controlCard}>
+        <button type="button" style={controlButton} aria-label="Zoomer" onClick={() => getMap()?.zoomIn()}>
+          <Plus size={20} />
+        </button>
+        <span style={{ height: 1, background: 'rgb(15 23 42 / 0.1)' }} />
+        <button type="button" style={controlButton} aria-label="Dézoomer" onClick={() => getMap()?.zoomOut()}>
+          <Minus size={20} />
+        </button>
+      </div>
+      <div style={controlCard}>
+        <button type="button" style={controlButton} aria-label="Recentrer sur le trajet" onClick={onRecenter}>
+          <LocateFixed size={20} />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /** Center, overlays data and framing, independent of the map engine. */
 export function useTrackingMapData({ waypoints, routePolyline, livePosition, students = [] }: TrackingMapProps) {
@@ -254,8 +303,11 @@ export function TrackingMap(props: TrackingMapProps) {
     frame(mapRef.current?.getMap() as unknown as FramableMap | undefined);
   }, [props.routePolyline, livePosition, studentsWithPosition]);
 
+  const getMap = () => mapRef.current?.getMap() as unknown as FramableMap | undefined;
   return (
     <div className={className}>
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <MapControls getMap={getMap} onRecenter={() => frame(getMap())} />
       <Map
         ref={mapRef}
         mapboxAccessToken={getMapboxToken()}
@@ -278,6 +330,7 @@ export function TrackingMap(props: TrackingMapProps) {
           routeGeoJson={routeGeoJson}
         />
       </Map>
+      </div>
     </div>
   );
 }
