@@ -1,6 +1,7 @@
 import type React from 'react';
 import { BASE_URL, ACCESS_TOKEN_KEY, isApiUrlFromEnv } from '@/constants';
 import { parseApiErrorResponse, wrapFetchError } from '@/lib/api-error';
+import { SESSION_EXPIRED_MESSAGE, handleExpiredSession, readJsonBody } from '@/lib/session-expiry';
 import type { School } from '@/types';
 import type {
   AppUser,
@@ -47,11 +48,15 @@ export async function adminApiFetch<T>(path: string, init: RequestInit = {}): Pr
 
   try {
     const res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
+    if (res.status === 401 && token && !path.startsWith('/api/auth/')) {
+      handleExpiredSession();
+      throw new Error(SESSION_EXPIRED_MESSAGE);
+    }
     if (!res.ok) {
       throw new Error(await parseApiErrorResponse(res, `Erreur API ${res.status}`));
     }
     if (res.status === 204) return undefined as T;
-    return res.json() as Promise<T>;
+    return readJsonBody<T>(res);
   } catch (err) {
     throw wrapFetchError(err, 'Erreur de communication avec le serveur');
   }
@@ -65,6 +70,14 @@ export type AuthLoginResponse = {
   role: string;
   schoolId?: string;
 };
+
+/** Exchange a Google Identity Services ID token for a NewGee session. */
+export async function loginWithGoogle(idToken: string) {
+  return adminApiFetch<AuthLoginResponse>('/api/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ idToken }),
+  });
+}
 
 export async function loginAdmin(email: string, password: string) {
   return adminApiFetch<AuthLoginResponse>('/api/auth/login', {
