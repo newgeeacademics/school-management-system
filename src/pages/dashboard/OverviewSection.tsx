@@ -27,6 +27,17 @@ type OverviewSectionProps = {
   transportRoutes?: TransportRoute[];
 };
 
+const MONTH_FORMAT = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
+const WEEKDAY_FORMAT = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+/** Parse "YYYY-MM-DD" (or any ISO date) as a local calendar day; null when invalid. */
+function parseEventDay(value: string | undefined): Date | null {
+  if (!value) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  const date = match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export const OverviewSection: React.FC<OverviewSectionProps> = ({
   classes,
   teachers,
@@ -39,6 +50,19 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
   receipts,
   transportRoutes,
 }) => {
+  const upcomingEvents = React.useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return events
+      .map((event) => ({ event, day: parseEventDay(event.date) }))
+      .filter(({ day }) => day === null || day >= today)
+      .sort((a, b) => {
+        if (!a.day || !b.day) return a.day ? -1 : b.day ? 1 : 0;
+        return a.day.getTime() - b.day.getTime() || (a.event.time ?? '').localeCompare(b.event.time ?? '');
+      })
+      .slice(0, 4);
+  }, [events]);
+
   const hasPaymentData =
     (typeof remindersCount === 'number' && remindersCount > 0) ||
     (receipts != null && receipts.length > 0);
@@ -161,20 +185,30 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className='space-y-3 text-sm'>
-            {events.length === 0 ? (
+            {upcomingEvents.length === 0 ? (
               <p className='text-xs text-muted-foreground'>Aucun événement à venir.</p>
             ) : null}
-            {events.slice(0, 3).map((event) => (
+            {upcomingEvents.map(({ event, day }) => (
               <div
                 key={event.id}
-                className='flex items-start justify-between gap-2'
+                className='flex items-start justify-between gap-3'
               >
-                <div>
-                  <p className='font-medium'>{event.label}</p>
-                  <p className='text-xs text-muted-foreground'>
-                    {event.date}
-                    {event.time ? ` • ${event.time}` : ''}
-                  </p>
+                <div className='flex min-w-0 items-start gap-3'>
+                  {day ? (
+                    <span className='flex w-11 shrink-0 flex-col items-center rounded-xl bg-blue-50 py-1 text-blue-700'>
+                      <span className='text-[10px] font-semibold uppercase leading-tight'>
+                        {MONTH_FORMAT.format(day)}
+                      </span>
+                      <span className='text-base font-bold leading-tight'>{day.getDate()}</span>
+                    </span>
+                  ) : null}
+                  <div className='min-w-0'>
+                    <p className='truncate font-medium'>{event.label || 'Événement'}</p>
+                    <p className='text-xs text-muted-foreground'>
+                      {day ? WEEKDAY_FORMAT.format(day) : event.date || 'Date à confirmer'}
+                      {event.time ? ` • ${event.time}` : ''}
+                    </p>
+                  </div>
                 </div>
                 <Badge variant='outline' className='text-[11px]'>
                   {event.type}

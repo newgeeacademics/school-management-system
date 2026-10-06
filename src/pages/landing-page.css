@@ -98,9 +98,9 @@ body.landing-mobile-menu-open .landing__header {
 }
 
 .landing__logo {
-  height: 96px;
+  height: 40px;
   width: auto;
-  max-width: 340px;
+  max-width: 200px;
   object-fit: contain;
   display: block;
   border: none;
@@ -109,8 +109,8 @@ body.landing-mobile-menu-open .landing__header {
 }
 
 .landing__logo--footer {
-  height: 76px;
-  max-width: 300px;
+  height: 48px;
+  max-width: 220px;
 }
 
 .landing__nav {
@@ -128,6 +128,7 @@ body.landing-mobile-menu-open .landing__header {
 .landing__nav-link {
   display: none;
   padding: 8px 14px;
+  white-space: nowrap;
   font-size: 0.88rem;
   font-weight: 500;
   color: var(--landing-muted);
@@ -1392,7 +1393,7 @@ body.landing-mobile-menu-open .landing__header {
   font-size: 0.95rem;
 }
 
-@media (max-width: 899px) {
+@media (max-width: 1179px) {
   .landing__header-inner {
     align-items: center;
     gap: 12px;
@@ -1405,15 +1406,19 @@ body.landing-mobile-menu-open .landing__header {
   }
 
   .landing__header-inner .landing__logo {
-    height: 72px;
-    max-width: 240px;
+    height: 36px;
+    max-width: 180px;
   }
 }
 
-@media (min-width: 900px) {
+@media (min-width: 1180px) {
+  .landing__header-inner {
+    max-width: 1280px;
+  }
+
   .landing__logo {
-    height: 112px;
-    max-width: 400px;
+    height: 44px;
+    max-width: 220px;
   }
 
   .landing__nav-desktop {

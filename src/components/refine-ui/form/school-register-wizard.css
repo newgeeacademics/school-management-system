@@ -38,9 +38,9 @@
 }
 
 .school-register__logo-img {
-  height: 140px;
+  height: 52px;
   width: auto;
-  max-width: 440px;
+  max-width: 220px;
   object-fit: contain;
   display: block;
   margin-inline: auto;
@@ -526,14 +526,52 @@
   }
 
   .school-register__logo-img {
-    height: 120px;
-    max-width: 360px;
+    height: 44px;
+    max-width: 200px;
   }
 }
 
 @media (min-width: 900px) {
   .school-register__logo-img {
-    height: 152px;
-    max-width: 480px;
+    height: 56px;
+    max-width: 240px;
   }
+}
+
+/* Step progress */
+.school-register__progress {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+  margin: 4px auto 18px;
+}
+
+.school-register__progress-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--brand-ink-soft, #64748b);
+}
+
+.school-register__progress-track {
+  display: flex;
+  gap: 6px;
+}
+
+.school-register__progress-seg {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--brand-line, #e2e8f0);
+  transition: background 0.35s ease;
+}
+
+.school-register__progress-seg.is-done {
+  background: var(--brand-blue, #2563eb);
+}
+
+.school-register__progress-seg.is-current {
+  background: linear-gradient(90deg, var(--brand-blue, #2563eb), #60a5fa);
 }

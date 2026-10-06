@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 
 import { ACCESS_TOKEN_KEY } from '@/constants';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { disableGoogleAutoSelect } from '@/lib/google-auth';
 import {
   clearAuthSession,
   getStoredRole,
@@ -204,7 +206,7 @@ import { UsersSection } from './dashboard/UsersSection';
 import { GradesSection } from './dashboard/GradesSection';
 import { isSchoolSettingsSection, SchoolSettingsContent } from './dashboard/SchoolSettingsPanels';
 import { SystemRegistrySection } from './dashboard/SystemRegistrySection';
-import logoSrc from '@/assets/logo/newgee-logo.png';
+import logoSrc from '@/assets/logo/newgee-logo-tight.png';
 import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 
 import './dashboard-shell.css';
@@ -1935,6 +1937,15 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
+  const reportAttendanceSaveError = (err: unknown) => {
+    console.error(err);
+    toast.error(
+      err instanceof Error && err.message
+        ? `Présence non enregistrée : ${err.message}`
+        : 'Présence non enregistrée. Vérifiez votre connexion et réessayez.'
+    );
+  };
+
   const handleAttendanceStatusChange = (record: AttendanceRecord, isUpdate: boolean) => {
     if (!requireBackend()) return;
     const payload = {
@@ -1945,7 +1956,7 @@ export const DashboardPage: React.FC = () => {
     };
     const isBackendId = record.id && !record.id.startsWith('att-');
     if (isUpdate && isBackendId) {
-      void updateAttendanceOnBackend(record.id, payload).catch((err) => console.error(err));
+      void updateAttendanceOnBackend(record.id, payload).catch(reportAttendanceSaveError);
       return;
     }
     void createAttendanceOnBackend(payload)
@@ -1961,10 +1972,11 @@ export const DashboardPage: React.FC = () => {
           ),
         );
       })
-      .catch((err) => console.error(err));
+      .catch(reportAttendanceSaveError);
   };
 
   const handleLogout = () => {
+    disableGoogleAutoSelect();
     clearAuthSession();
     navigate('/login');
   };
@@ -2671,6 +2683,7 @@ export const DashboardPage: React.FC = () => {
         </header>
 
         <main className='dashboard-content flex-1 space-y-6'>
+          <ErrorBoundary compact resetKey={activeSection}>
           {activeSection === 'system_registry' && (
             <SystemRegistrySection
               sectionConfig={sectionConfig}
@@ -3026,6 +3039,7 @@ export const DashboardPage: React.FC = () => {
               receipts={paymentReceipts}
             />
           )}
+          </ErrorBoundary>
         </main>
       </SidebarInset>
 
