@@ -5,6 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 import {
   TrackingMap as MapboxTrackingMap,
+  MapControls,
   TrackingOverlays,
   useTrackingMapData,
   type FramableMap,
@@ -25,8 +26,11 @@ function OpenTrackingMap(props: TrackingMapProps) {
     frame(mapRef.current?.getMap() as unknown as FramableMap | undefined);
   }, [props.routePolyline, livePosition, studentsWithPosition]);
 
+  const getMap = () => mapRef.current?.getMap() as unknown as FramableMap | undefined;
   return (
     <div className={className}>
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <MapControls getMap={getMap} onRecenter={() => frame(getMap())} />
       <Map
         ref={mapRef}
         initialViewState={initialViewState}
@@ -49,6 +53,7 @@ function OpenTrackingMap(props: TrackingMapProps) {
           routeGeoJson={routeGeoJson}
         />
       </Map>
+      </div>
     </div>
   );
 }
