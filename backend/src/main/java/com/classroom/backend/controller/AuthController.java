@@ -2,6 +2,7 @@ package com.classroom.backend.controller;
 
 import com.classroom.backend.dto.auth.AuthResponse;
 import com.classroom.backend.dto.auth.ForgotPasswordRequest;
+import com.classroom.backend.dto.auth.GoogleLoginRequest;
 import com.classroom.backend.dto.auth.LoginRequest;
 import com.classroom.backend.dto.auth.RegisterRequest;
 import com.classroom.backend.dto.auth.RegisterSchoolRequest;
@@ -47,6 +48,12 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(response);
+    }
+
+    /** Sign in with Google (ID token from Google Identity Services). */
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponse> loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request) {
+        return ResponseEntity.ok(authService.loginWithGoogle(request.getIdToken()));
     }
 
     /** Check whether a legal registration / RCCM number is already used. */

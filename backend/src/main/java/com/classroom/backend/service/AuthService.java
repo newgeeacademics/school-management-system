@@ -7,6 +7,7 @@ import com.classroom.backend.model.AppUser;
 import com.classroom.backend.model.School;
 import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.AppUserRepository;
+import com.classroom.backend.security.GoogleIdTokenVerifier;
 import com.classroom.backend.security.JwtTokenProvider;
 import com.classroom.backend.service.email.EmailNotificationService;
 import com.classroom.backend.util.PhoneAccountUtil;
@@ -31,6 +32,7 @@ public class AuthService {
     private final EmailNotificationService emailNotificationService;
     private final AccountIdentifierService accountIdentifierService;
     private final UserEmailAuthService userEmailAuthService;
+    private final GoogleIdTokenVerifier googleIdTokenVerifier;
 
     @Transactional
     public AuthResponse registerSchool(RegisterSchoolRequest request) {
@@ -123,6 +125,42 @@ public class AuthService {
                 .role(user.getRole())
                 .schoolId(user.getSchoolId())
                 .emailVerified(user.isEmailVerified())
+                .passwordSetupRequired(false)
+                .build();
+    }
+
+    /**
+     * Sign in with a Google ID token. Google proves the e-mail address; access still requires
+     * an existing NewGee account with that address (accounts are provisioned by the school).
+     */
+    @Transactional
+    public AuthResponse loginWithGoogle(String idToken) {
+        GoogleIdTokenVerifier.GoogleIdentity google = googleIdTokenVerifier.verify(idToken);
+        AppUser user = appUserRepository.findByEmailIgnoreCase(google.email())
+                .orElseThrow(() -> new BadCredentialsException(
+                        "Aucun compte NewGee n'est associé à " + google.email() + "."));
+
+        if (!user.isEmailVerified()) {
+            user.setEmailVerified(true);
+        }
+        if (user.isPasswordSetupRequired()) {
+            // Invitation accepted through Google: no password to choose before entering the app.
+            user.setPasswordSetupRequired(false);
+        }
+        user = appUserRepository.save(user);
+
+        String token = jwtTokenProvider.generateTokenFromUsername(
+                accountIdentifierService.canonicalPrincipalName(user));
+
+        return AuthResponse.builder()
+                .token(token)
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .loginId(user.getLoginId())
+                .role(user.getRole())
+                .schoolId(user.getSchoolId())
+                .emailVerified(true)
                 .passwordSetupRequired(false)
                 .build();
     }

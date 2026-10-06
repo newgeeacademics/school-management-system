@@ -35,6 +35,8 @@ services:
         value: brevo
       - key: BREVO_API_KEY
         sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
       - key: APP_EMAIL_FROM
         value: NewGee <contact@newgeeacademy.com>
       - key: APP_EMAIL_SUBJECT_PREFIX
