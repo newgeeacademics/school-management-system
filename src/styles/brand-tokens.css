@@ -1,0 +1,23 @@
+/* NewGee brand tokens (shared with the classroom app) used by the login and error screens. */
+:root {
+  --font-display: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  --brand-canvas: #f8fafc;
+  --brand-canvas-deep: #f1f5f9;
+  --brand-panel: #ffffff;
+  --brand-ink: #0f172a;
+  --brand-ink-soft: #64748b;
+  --brand-ink-faint: #94a3b8;
+  --brand-line: #e2e8f0;
+  --brand-line-strong: #cbd5e1;
+  --brand-hairline: rgba(15, 23, 42, 0.07);
+  --brand-blue: #2563eb;
+  --brand-blue-deep: #1d4ed8;
+  --brand-blue-soft: #eff6ff;
+  --brand-blue-light: #dbeafe;
+  --brand-green: #16a34a;
+  --brand-green-soft: #dcfce7;
+  --brand-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 36px rgba(15, 23, 42, 0.06);
+  --brand-shadow-lg: 0 2px 4px rgba(15, 23, 42, 0.04), 0 30px 70px rgba(15, 23, 42, 0.12);
+  --brand-focus: rgba(37, 99, 235, 0.18);
+  --brand-ease: cubic-bezier(0.16, 0.84, 0.44, 1);
+}

@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import { getMainAppOrigin } from '@/lib/school-app-url';
 import { isBackendApiConfigured, requestPasswordReset } from '@/lib/api';
-import logoSrc from '@/assets/logo/newgee-logo.png';
+import logoSrc from '@/assets/logo/newgee-logo-tight.png';
 
 import './auth-page.css';
 
