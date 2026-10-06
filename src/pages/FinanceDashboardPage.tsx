@@ -48,7 +48,12 @@ function FinanceNav({ section, userName, onSelect, onLogout, className }: Financ
   return (
     <div className={cn('flex h-full flex-col', className)}>
       <div className='flex items-center gap-2 border-b border-violet-800/60 px-4 py-4'>
-        <AppLogo markClassName='app-logo__mark--compact' name='NewGee Finance' />
+        {/* The logo is dark blue: a white tile keeps it readable on the purple sidebar. */}
+        <AppLogo
+          className='rounded-xl bg-white px-2.5 py-1.5 shadow-sm'
+          markClassName='app-logo__mark--compact'
+          name='NewGee Finance'
+        />
         <div>
           <p className='text-[10px] text-violet-300'>Back-office trésorerie</p>
         </div>
