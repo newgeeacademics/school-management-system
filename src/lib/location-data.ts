@@ -1,4 +1,5 @@
-import { City, Country } from 'country-state-city';
+// Import per-module: the city database (~7.7 MB) is only fetched when a country's cities are needed.
+import Country from 'country-state-city/lib/country';
 
 export type CountryOption = {
   code: string;
@@ -24,14 +25,20 @@ export function getCountryCodeByName(countryName: string): string {
   return getCountries().find((c) => c.name === countryName)?.code ?? '';
 }
 
-export function getCitiesByCountryName(countryName: string): string[] {
+const citiesCache = new Map<string, string[]>();
+
+export async function loadCitiesByCountryName(countryName: string): Promise<string[]> {
   const code = getCountryCodeByName(countryName);
   if (!code) return [];
-  return getCitiesByCountryCode(code);
+  return loadCitiesByCountryCode(code);
 }
 
-export function getCitiesByCountryCode(countryCode: string): string[] {
+export async function loadCitiesByCountryCode(countryCode: string): Promise<string[]> {
   if (!countryCode) return [];
+  const cached = citiesCache.get(countryCode);
+  if (cached) return cached;
+
+  const { default: City } = await import('country-state-city/lib/city');
   const seen = new Set<string>();
   const cities: string[] = [];
   for (const city of City.getCitiesOfCountry(countryCode) ?? []) {
@@ -40,7 +47,9 @@ export function getCitiesByCountryCode(countryCode: string): string[] {
       cities.push(city.name);
     }
   }
-  return cities.sort((a, b) => a.localeCompare(b, 'fr'));
+  cities.sort((a, b) => a.localeCompare(b, 'fr'));
+  citiesCache.set(countryCode, cities);
+  return cities;
 }
 
 export type CountryPhoneMeta = {

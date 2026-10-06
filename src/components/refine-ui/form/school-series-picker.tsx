@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import { getSeriesOptionsForSystem } from '@/lib/school-series';
+import { typeCodeIncludes } from '@/lib/school-profile';
 
 type SchoolSeriesPickerProps = {
   system: string;
@@ -33,7 +34,7 @@ export function SchoolSeriesPicker({ system, schoolType, value, onChange }: Scho
     onChange(value.filter((s) => s !== item));
   };
 
-  if (schoolType !== 'lycee') {
+  if (!typeCodeIncludes(schoolType, 'lycee')) {
     return (
       <div className='school-register__field'>
         <span>{t('school.series')}</span>

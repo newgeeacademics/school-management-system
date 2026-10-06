@@ -1,4 +1,4 @@
-import logoSrc from '@/assets/logo/newgee-logo.png';
+import logoSrc from '@/assets/logo/newgee-logo-tight.png';
 import { cn } from '@/lib/utils';
 
 type AppLogoProps = {
