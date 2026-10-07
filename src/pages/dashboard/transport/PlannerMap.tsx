@@ -12,10 +12,9 @@ import OpenMap, {
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Crosshair, Minus, Plus, School } from 'lucide-react';
 
-import { getMapboxStyle, getMapboxToken, hasMapboxToken } from '../../../../shared/mapbox';
+import { useMapSourceFallback } from '../../../../shared/map-sources';
+import { MapStatus } from '../../../../shared/MapStatus';
 
-/** Free OpenStreetMap vector tiles (no key), used when VITE_MAPBOX_TOKEN is not set. */
-const OPEN_MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 const COUNTRY_VIEW = { latitude: 7.54, longitude: -5.55, zoom: 6 };
 
 export type PlannerPoint = { id: string; name: string; lat: number; lng: number };
@@ -90,7 +89,8 @@ const ctrlBtn: React.CSSProperties = {
 /** Map for planning a bus line: tap to add a stop, numbered pins, road path, school pin. */
 export function PlannerMap(props: PlannerMapProps) {
   const { stops, school, polyline, padding, onAddStop, onSelectStop, selectedId, className } = props;
-  const useMapbox = hasMapboxToken();
+  const base = useMapSourceFallback();
+  const useMapbox = base.source?.engine === 'mapbox';
   const Map = (useMapbox ? MapboxMap : OpenMap) as unknown as React.ComponentType<Record<string, unknown>>;
   const Marker = (useMapbox ? MapboxMarker : OpenMarker) as unknown as React.ComponentType<Record<string, unknown>>;
   const Source = (useMapbox ? MapboxSource : OpenSource) as unknown as React.ComponentType<Record<string, unknown>>;
@@ -131,16 +131,19 @@ export function PlannerMap(props: PlannerMapProps) {
 
   return (
     <div className={className} style={{ position: 'relative' }}>
+      <MapStatus ready={base.ready} failed={base.failed} onRetry={base.retry} />
+      {base.source ? (
       <Map
+        key={base.source.id}
         ref={mapRef}
         initialViewState={initialViewState}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={useMapbox ? getMapboxStyle() : OPEN_MAP_STYLE}
-        {...(useMapbox ? { mapboxAccessToken: getMapboxToken() } : {})}
+        {...base.mapProps}
         attributionControl={{ compact: true }}
         cursor={onAddStop ? 'crosshair' : 'grab'}
         onClick={(e: { lngLat: { lat: number; lng: number } }) => onAddStop?.(e.lngLat.lat, e.lngLat.lng)}
         onLoad={() => {
+          base.mapProps.onLoad();
           getMap()?.resize();
           frame(getMap(), allPoints, padding);
           window.requestAnimationFrame(() => frame(getMap(), allPoints, padding));
@@ -198,6 +201,7 @@ export function PlannerMap(props: PlannerMapProps) {
           </Marker>
         ) : null}
       </Map>
+      ) : null}
 
       <div
         style={{
