@@ -320,22 +320,7 @@ export async function loadDashboardFromBackend(setters: DashboardBackendSetters)
       note: c.note ? String(c.note) : undefined,
     }))
   );
-  setters.setTransportRoutes(
-    transport.map((t) => {
-      const studentsOnRoute = Array.isArray(t.students) ? t.students : [];
-      return {
-        id: String(t.id),
-        name: String(t.name ?? ''),
-        driverName: String(t.driverName ?? ''),
-        departureTime: String(t.departureTime ?? ''),
-        returnTime: t.returnTime ? String(t.returnTime) : undefined,
-        note: t.note ? String(t.note) : undefined,
-        studentIds: studentsOnRoute
-          .map((s) => relationId(s))
-          .filter((id): id is string => Boolean(id)),
-      };
-    })
-  );
+  setters.setTransportRoutes(transport.map(mapTransportFromApi));
   setters.setParents(
     parents.map((p) => ({
       id: String(p.id),
@@ -512,17 +497,69 @@ export async function createScheduleOnBackend(item: {
   });
 }
 
+function parseRoutePolyline(raw: unknown): [number, number][] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const points = raw
+    .filter((p): p is number[] => Array.isArray(p) && p.length >= 2)
+    .map((p) => [Number(p[0]), Number(p[1])] as [number, number]);
+  return points.length >= 2 ? points : undefined;
+}
+
+export function mapTransportFromApi(t: Record<string, unknown>): TransportRoute {
+  const studentsOnRoute = Array.isArray(t.students) ? t.students : [];
+  const waypointsRaw = Array.isArray(t.waypoints) ? t.waypoints : [];
+  let routePolyline: [number, number][] | undefined;
+  if (typeof t.routePolylineJson === 'string' && t.routePolylineJson) {
+    try {
+      routePolyline = parseRoutePolyline(JSON.parse(t.routePolylineJson));
+    } catch {
+      routePolyline = undefined;
+    }
+  } else {
+    routePolyline = parseRoutePolyline(t.routePolyline);
+  }
+  return {
+    id: String(t.id),
+    name: String(t.name ?? ''),
+    driverName: String(t.driverName ?? ''),
+    departureTime: String(t.departureTime ?? ''),
+    returnTime: t.returnTime ? String(t.returnTime) : undefined,
+    note: t.note ? String(t.note) : undefined,
+    studentIds: studentsOnRoute
+      .map((s) => relationId(s))
+      .filter((id): id is string => Boolean(id)),
+    waypoints: waypointsRaw.map((wp) => {
+      const w = wp as Record<string, unknown>;
+      return {
+        lat: Number(w.lat ?? 0),
+        lng: Number(w.lng ?? 0),
+        name: String(w.name ?? ''),
+      };
+    }),
+    routePolyline,
+  };
+}
+
 export async function createTransportOnBackend(item: {
   name: string;
-  driverName: string;
+  driverName?: string;
+  driverId?: string;
   departureTime: string;
   returnTime?: string;
   note?: string;
-}) {
-  return adminApiFetch('/api/transport', {
+  waypoints?: { lat: number; lng: number; name: string }[];
+  routePolyline?: [number, number][];
+  studentIds?: string[];
+}): Promise<TransportRoute> {
+  const data = await adminApiFetch<Record<string, unknown>>('/api/transport', {
     method: 'POST',
     body: JSON.stringify(item),
   });
+  return mapTransportFromApi(data);
+}
+
+export async function deleteTransportOnBackend(routeId: string): Promise<void> {
+  await adminApiFetch(`/api/transport/${routeId}`, { method: 'DELETE' });
 }
 
 export async function updateTransportStudentsOnBackend(routeId: string, studentIds: string[]) {
