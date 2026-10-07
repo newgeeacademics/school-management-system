@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bus, Clock, Loader2, MapPin, Plus, Route as RouteIcon, Trash2, User, Users, X } from 'lucide-react';
+import { Bus, Clock, Flag, Loader2, MapPin, Plus, Route as RouteIcon, Trash2, User, Users, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -127,7 +127,7 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
         </Card>
       )}
 
-      <div className='overflow-hidden rounded-2xl border bg-card shadow-sm'>
+      <div className='overflow-hidden rounded-2xl border bg-card'>
         <div className='flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4'>
           <div className='flex flex-wrap items-center gap-x-6 gap-y-2'>
             <Stat icon={<RouteIcon className='size-4' />} value={routes.length} label={routes.length > 1 ? 'lignes' : 'ligne'} />
@@ -210,6 +210,12 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
                           {nStudents} élève{nStudents > 1 ? 's' : ''}
                         </span>
                       </p>
+                      {nStops >= 2 ? (
+                        <p className='mt-1 truncate text-xs text-muted-foreground'>
+                          {route.waypoints![0].name} <span className='text-foreground/40'>→</span>{' '}
+                          <span className='font-medium text-foreground'>{route.waypoints![nStops - 1].name}</span>
+                        </p>
+                      ) : null}
                       {nStops === 0 && !readOnly ? (
                         <p className='mt-1 text-[11px] text-amber-700'>Pas de tracé : recréez la ligne pour la voir sur la carte.</p>
                       ) : null}
@@ -270,7 +276,11 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
                   <p className='font-semibold text-slate-900'>{selected.name}</p>
                   <p className='mt-0.5 flex items-center gap-1 text-slate-500'>
                     <Clock className='size-3' />
-                    {mapStops[0]?.name} → {mapSchool ? 'école' : mapStops[mapStops.length - 1]?.name}
+                    Départ : {mapStops[0]?.name}
+                  </p>
+                  <p className='mt-0.5 flex items-center gap-1 text-slate-500'>
+                    <Flag className='size-3 text-red-600' />
+                    Arrivée : {mapSchool ? mapSchool.name : mapStops[mapStops.length - 1]?.name}
                   </p>
                 </div>
               ) : null}
