@@ -65,12 +65,18 @@ type FirebaseGoogle = { signIn: () => Promise<string> };
 let firebasePromise: Promise<FirebaseGoogle> | null = null;
 
 const FIREBASE_ERRORS: Record<string, string> = {
-  'auth/unauthorized-domain':
-    'Ce site n’est pas autorisé dans Firebase (Authentication → Settings → Authorized domains).',
-  'auth/operation-not-allowed': 'Activez le fournisseur Google dans Firebase (Authentication → Sign-in method).',
+  'auth/unauthorized-domain': 'La connexion Google n’est pas encore activée pour ce site.',
+  'auth/operation-not-allowed': 'La connexion Google n’est pas encore activée pour ce site.',
+  'auth/invalid-api-key': 'La connexion Google n’est pas encore activée pour ce site.',
   'auth/popup-blocked': 'Le navigateur a bloqué la fenêtre Google : autorisez les pop-ups puis réessayez.',
-  'auth/network-request-failed': 'Connexion internet indisponible.',
-  'auth/invalid-api-key': 'Clé Firebase invalide (VITE_FIREBASE_API_KEY).',
+  'auth/network-request-failed': 'Impossible de joindre Google. Vérifiez votre connexion internet.',
+};
+
+/** Setup hints for administrators, logged to the browser console only. */
+const FIREBASE_SETUP_HINTS: Record<string, string> = {
+  'auth/unauthorized-domain': 'Add this domain in Firebase → Authentication → Settings → Authorized domains.',
+  'auth/operation-not-allowed': 'Enable Google in Firebase → Authentication → Sign-in method.',
+  'auth/invalid-api-key': 'Check VITE_FIREBASE_API_KEY on Vercel.',
 };
 
 /** Raised when the person simply closed the Google window. */
@@ -86,7 +92,7 @@ export function loadFirebaseGoogle(): Promise<FirebaseGoogle> {
   firebasePromise = Promise.all([import('firebase/app'), import('firebase/auth')])
     .then(([firebaseApp, firebaseAuth]) => {
       const config = getFirebaseConfig();
-      if (!config) throw new Error('Firebase non configuré.');
+      if (!config) throw new Error('La connexion Google n’est pas encore activée pour ce site.');
       const app = firebaseApp.getApps().find((a) => a.name === 'newgee') ?? firebaseApp.initializeApp(config, 'newgee');
       const auth = firebaseAuth.getAuth(app);
       // Firebase only proves the Google identity; the NewGee session is the API's JWT.
@@ -105,14 +111,16 @@ export function loadFirebaseGoogle(): Promise<FirebaseGoogle> {
             if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
               throw new GoogleSignInCancelled();
             }
-            throw new Error(FIREBASE_ERRORS[code] ?? `Connexion Google impossible (${code || (err as Error)?.message || 'erreur inconnue'}).`);
+            console.warn(`[Google sign-in] ${code || 'error'}`, FIREBASE_SETUP_HINTS[code] ?? '', err);
+            throw new Error(FIREBASE_ERRORS[code] ?? 'Connexion Google impossible pour le moment. Réessayez.');
           }
         },
       };
     })
     .catch((err: unknown) => {
       firebasePromise = null;
-      throw err instanceof Error ? err : new Error('Impossible de charger la connexion Google.');
+      console.warn('[Google sign-in] Firebase failed to load', err);
+      throw new Error('Impossible de charger la connexion Google. Vérifiez votre connexion internet.');
     });
   return firebasePromise;
 }
