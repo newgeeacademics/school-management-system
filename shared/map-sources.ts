@@ -63,6 +63,16 @@ export function useMapSourceFallback() {
 
   const indexRef = useRef(0);
   const advancedFrom = useRef(-1);
+  const [mapboxProblem, setMapboxProblem] = useState<string | null>(null);
+
+  const noteFailure = useCallback(
+    (reason: string) => {
+      if (sources[indexRef.current]?.engine !== 'mapbox') return;
+      setMapboxProblem(reason);
+      console.warn(`[carte] Mapbox indisponible : ${reason}. Bascule sur une carte gratuite.`);
+    },
+    [sources],
+  );
 
   /** Move past the current source, once (many failures may report the same source). */
   const next = useCallback(() => {
@@ -78,9 +88,12 @@ export function useMapSourceFallback() {
     readyRef.current = false;
     setReady(false);
     if (index >= sources.length) return;
-    const timer = window.setTimeout(next, NO_TILE_TIMEOUT_MS);
+    const timer = window.setTimeout(() => {
+      if (!readyRef.current) noteFailure(`aucune tuile reçue en ${NO_TILE_TIMEOUT_MS / 1000} s`);
+      next();
+    }, NO_TILE_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
-  }, [index, sources.length, next]);
+  }, [index, sources.length, next, noteFailure]);
 
   const markReady = useCallback(() => {
     if (readyRef.current) return;
@@ -93,6 +106,13 @@ export function useMapSourceFallback() {
   return {
     source,
     ready,
+    /** For admins: why the map is not Mapbox (null when Mapbox works or no key is set). */
+    diagnostic: hasMapboxToken()
+      ? mapboxProblem
+        ? `Mapbox : ${mapboxProblem}`
+        : null
+      : 'Mapbox : aucune clé VITE_MAPBOX_TOKEN dans ce déploiement',
+    sourceId: source?.id ?? null,
     failed: index >= sources.length,
     retry: () => {
       advancedFrom.current = -1;
@@ -104,8 +124,15 @@ export function useMapSourceFallback() {
       },
       // A style that cannot load (bad token, blocked host) fails before 'load'.
       // Tile errors carry a source and are left to the no-tile timer.
-      onError: (e: { sourceId?: string; tile?: unknown }) => {
-        if (!styleLoaded.current && !e.sourceId && !e.tile) next();
+      onError: (e: { sourceId?: string; tile?: unknown; error?: { message?: string; status?: number } }) => {
+        if (styleLoaded.current || e.sourceId || e.tile) return;
+        const status = e.error?.status;
+        noteFailure(
+          status === 401 || status === 403
+            ? `clé refusée par Mapbox (${status}) — vérifiez la clé et ses URL autorisées`
+            : e.error?.message || 'style Mapbox impossible à charger',
+        );
+        next();
       },
       // The first base-map tile that actually arrives proves this source works
       // (GeoJSON overlays such as the route line are tiled locally and prove nothing).
