@@ -52,7 +52,7 @@ export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' 
 
   const onGoogleCredential = async (idToken: string) => {
     if (!isBackendApiConfigured()) {
-      toast.error('API backend non configurée sur ce déploiement.', { richColors: true });
+      toast.error('Service de connexion indisponible pour le moment.', { richColors: true });
       return;
     }
     setIsPending(true);
@@ -78,7 +78,7 @@ export function TrackingSignInForm({ variant = 'embedded' }: { variant?: 'full' 
 
     try {
       if (!isBackendApiConfigured()) {
-        toast.error('API backend non configurée sur ce déploiement.', { richColors: true });
+        toast.error('Service de connexion indisponible pour le moment.', { richColors: true });
         setIsPending(false);
         return;
       }

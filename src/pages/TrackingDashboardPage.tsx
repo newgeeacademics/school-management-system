@@ -497,6 +497,8 @@ function RouteDetails({
                   <span className={cn('pt-0.5 text-sm', passed ? 'text-muted-foreground line-through decoration-foreground/20' : next ? 'font-semibold' : '')}>
                     {stop.name || `Arrêt ${i + 1}`}
                     {next ? <span className='ml-2 text-xs font-medium text-primary'>prochain</span> : null}
+                    {last && !next ? <span className='ml-2 text-xs font-medium text-muted-foreground'>arrivée</span> : null}
+                    {i === 0 && !passed && !next ? <span className='ml-2 text-xs font-medium text-muted-foreground'>départ</span> : null}
                   </span>
                 </li>
               );
