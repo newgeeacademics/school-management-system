@@ -1,6 +1,7 @@
 /**
- * Google Identity Services (Sign in with Google).
- * Enabled when VITE_GOOGLE_CLIENT_ID is set; the ID token is verified by the API at POST /api/auth/google.
+ * Sign in with Google, two ways (the API verifies either token at POST /api/auth/google):
+ * - Firebase Authentication, when VITE_FIREBASE_API_KEY and VITE_FIREBASE_PROJECT_ID are set (preferred);
+ * - Google Identity Services, when VITE_GOOGLE_CLIENT_ID is set.
  */
 
 const GIS_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
@@ -40,8 +41,80 @@ export function getGoogleClientId(): string {
   return import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ?? '';
 }
 
+export type FirebaseWebConfig = { apiKey: string; authDomain: string; projectId: string; appId?: string };
+
+/** Values from Firebase console → Project settings → Your apps → Web app (firebaseConfig). */
+export function getFirebaseConfig(): FirebaseWebConfig | null {
+  const apiKey = import.meta.env.VITE_FIREBASE_API_KEY?.trim() ?? '';
+  const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID?.trim() ?? '';
+  if (!apiKey || !projectId) return null;
+  const authDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim() || `${projectId}.firebaseapp.com`;
+  const appId = import.meta.env.VITE_FIREBASE_APP_ID?.trim() || undefined;
+  return { apiKey, authDomain, projectId, appId };
+}
+
+export function isFirebaseAuthConfigured(): boolean {
+  return getFirebaseConfig() !== null;
+}
+
 export function isGoogleAuthConfigured(): boolean {
-  return getGoogleClientId() !== '';
+  return isFirebaseAuthConfigured() || getGoogleClientId() !== '';
+}
+
+type FirebaseGoogle = { signIn: () => Promise<string> };
+let firebasePromise: Promise<FirebaseGoogle> | null = null;
+
+const FIREBASE_ERRORS: Record<string, string> = {
+  'auth/unauthorized-domain':
+    'Ce site n’est pas autorisé dans Firebase (Authentication → Settings → Authorized domains).',
+  'auth/operation-not-allowed': 'Activez le fournisseur Google dans Firebase (Authentication → Sign-in method).',
+  'auth/popup-blocked': 'Le navigateur a bloqué la fenêtre Google : autorisez les pop-ups puis réessayez.',
+  'auth/network-request-failed': 'Connexion internet indisponible.',
+  'auth/invalid-api-key': 'Clé Firebase invalide (VITE_FIREBASE_API_KEY).',
+};
+
+/** Raised when the person simply closed the Google window. */
+export class GoogleSignInCancelled extends Error {}
+
+/**
+ * Loads Firebase Auth (lazily, so it costs nothing until the login page) and returns a
+ * function opening the Google popup. Load it before the click: browsers only allow
+ * pop-ups opened straight from a click.
+ */
+export function loadFirebaseGoogle(): Promise<FirebaseGoogle> {
+  if (firebasePromise) return firebasePromise;
+  firebasePromise = Promise.all([import('firebase/app'), import('firebase/auth')])
+    .then(([firebaseApp, firebaseAuth]) => {
+      const config = getFirebaseConfig();
+      if (!config) throw new Error('Firebase non configuré.');
+      const app = firebaseApp.getApps().find((a) => a.name === 'newgee') ?? firebaseApp.initializeApp(config, 'newgee');
+      const auth = firebaseAuth.getAuth(app);
+      // Firebase only proves the Google identity; the NewGee session is the API's JWT.
+      void firebaseAuth.setPersistence(auth, firebaseAuth.inMemoryPersistence);
+      return {
+        signIn: async () => {
+          const provider = new firebaseAuth.GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: 'select_account' });
+          try {
+            const result = await firebaseAuth.signInWithPopup(auth, provider);
+            const idToken = await result.user.getIdToken();
+            void firebaseAuth.signOut(auth);
+            return idToken;
+          } catch (err) {
+            const code = (err as { code?: string })?.code ?? '';
+            if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+              throw new GoogleSignInCancelled();
+            }
+            throw new Error(FIREBASE_ERRORS[code] ?? `Connexion Google impossible (${code || (err as Error)?.message || 'erreur inconnue'}).`);
+          }
+        },
+      };
+    })
+    .catch((err: unknown) => {
+      firebasePromise = null;
+      throw err instanceof Error ? err : new Error('Impossible de charger la connexion Google.');
+    });
+  return firebasePromise;
 }
 
 let scriptPromise: Promise<GoogleAccountsId> | null = null;
