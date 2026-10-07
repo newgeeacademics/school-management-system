@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bus, Clock, Flag, Loader2, MapPin, Plus, Route as RouteIcon, Trash2, User, Users, X } from 'lucide-react';
+import { Bus, Clock, Flag, Loader2, MapPin, Pencil, Plus, Route as RouteIcon, Trash2, User, Users, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +29,8 @@ type TransportSectionProps = {
   classes?: ClassItem[];
   onCreateRoute?: (payload: NewRoutePayload) => Promise<boolean>;
   onUpdateRouteStudents?: (routeId: string, studentIds: string[]) => void | Promise<void>;
+  /** Saves edits to an existing line (stops, path, pupils, driver, times). */
+  onUpdateRoute?: (route: TransportRoute, payload: NewRoutePayload) => Promise<boolean>;
   onDeleteRoute?: (routeId: string) => void | Promise<void>;
   readOnly?: boolean;
   students?: Student[];
@@ -61,6 +63,7 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
   classes = [],
   onCreateRoute,
   onUpdateRouteStudents,
+  onUpdateRoute,
   onDeleteRoute,
   readOnly = false,
   students = [],
@@ -68,6 +71,8 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
   onStudentIdChange,
 }) => {
   const [creating, setCreating] = React.useState(false);
+  const [editingRoute, setEditingRoute] = React.useState<TransportRoute | null>(null);
+  const canEdit = !readOnly && Boolean(onUpdateRoute);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [editingStudents, setEditingStudents] = React.useState<TransportRoute | null>(null);
 
@@ -216,11 +221,35 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
                           <span className='font-medium text-foreground'>{route.waypoints![nStops - 1].name}</span>
                         </p>
                       ) : null}
-                      {nStops === 0 && !readOnly ? (
-                        <p className='mt-1 text-[11px] text-amber-700'>Pas de tracé : recréez la ligne pour la voir sur la carte.</p>
+                      {nStops === 0 && canEdit ? (
+                        <button
+                          type='button'
+                          className='mt-2 inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100'
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingRoute(route);
+                          }}
+                        >
+                          <MapPin className='size-3.5' />
+                          Tracer le trajet sur la carte
+                        </button>
                       ) : null}
-                      {active && !readOnly && (onUpdateRouteStudents || onDeleteRoute) ? (
-                        <div className='mt-3 flex gap-2'>
+                      {active && !readOnly && (onUpdateRouteStudents || onDeleteRoute || canEdit) ? (
+                        <div className='mt-3 flex flex-wrap gap-2'>
+                          {canEdit ? (
+                            <Button
+                              size='sm'
+                              variant='outline'
+                              className='h-8 rounded-lg'
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingRoute(route);
+                              }}
+                            >
+                              <Pencil className='mr-1.5 size-3.5' />
+                              Modifier
+                            </Button>
+                          ) : null}
                           {onUpdateRouteStudents ? (
                             <Button
                               size='sm'
@@ -292,9 +321,16 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
 
       {canManage && onCreateRoute ? (
         <RouteCreator
-          open={creating}
-          onClose={() => setCreating(false)}
+          open={creating || Boolean(editingRoute)}
+          initial={editingRoute}
+          onClose={() => {
+            setCreating(false);
+            setEditingRoute(null);
+          }}
           onSave={async (payload) => {
+            if (editingRoute) {
+              return onUpdateRoute ? onUpdateRoute(editingRoute, payload) : false;
+            }
             const ok = await onCreateRoute(payload);
             if (ok) setSelectedId(null);
             return ok;
@@ -303,7 +339,7 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
           students={students}
           classNameById={classNameById}
           routeCount={routes.length}
-          assignedElsewhere={riderLine()}
+          assignedElsewhere={riderLine(editingRoute?.id)}
         />
       ) : null}
 

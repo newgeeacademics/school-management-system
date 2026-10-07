@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { fetchLatestSchoolFromBackend } from '@/lib/dashboard-backend';
 
-import type { Student } from '../dashboardTypes';
+import type { Student, TransportRoute } from '../dashboardTypes';
 
 type Driver = { id: string; name: string };
 import { PlannerMap, type PlannerPoint } from './PlannerMap';
@@ -50,7 +50,19 @@ type RouteCreatorProps = {
   routeCount: number;
   /** Students already riding another line (shown, not hidden). */
   assignedElsewhere?: Record<string, string>;
+  /** Existing line to edit (prefilled; saving updates it). */
+  initial?: TransportRoute | null;
 };
+
+/** "7h00", "07:00", "7h" -> "07:00" for <input type="time">; '' when unreadable. */
+function toTimeInput(value: string | undefined, fallback: string): string {
+  const m = /^(\d{1,2})\s*[h:]\s*(\d{2})?/i.exec(value?.trim() ?? '');
+  if (!m) return fallback;
+  const h = Number(m[1]);
+  const min = Number(m[2] ?? 0);
+  if (h > 23 || min > 59) return fallback;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}
 
 type Step = 1 | 2 | 3;
 
@@ -72,6 +84,7 @@ export function RouteCreator({
   classNameById,
   routeCount,
   assignedElsewhere,
+  initial,
 }: RouteCreatorProps) {
   const [step, setStep] = React.useState<Step>(1);
   const [stops, setStops] = React.useState<PlannerPoint[]>([]);
@@ -99,12 +112,33 @@ export function RouteCreator({
 
   const isDesktop = useMediaQuery('(min-width: 1024px)');
 
-  // Reset every time the creator opens.
+  // Reset (or prefill from the line being edited) every time the creator opens.
   React.useEffect(() => {
     if (!open) return;
+    setSelectedStop(null);
+    setQuery('');
+    setResults([]);
+    if (initial) {
+      const wps = initial.waypoints ?? [];
+      const last = wps[wps.length - 1];
+      const endsAtSchool = Boolean(last && /^école\b/i.test(last.name.trim()));
+      setStops((endsAtSchool ? wps.slice(0, -1) : wps).map((w) => ({ id: nextId(), ...w })));
+      setEndAtSchool(wps.length === 0 || endsAtSchool);
+      setStudentIds(initial.studentIds ?? []);
+      const initialDriverId = (initial as { driverId?: string }).driverId;
+      const knownDriver = Boolean(initialDriverId && drivers.some((d) => d.id === initialDriverId));
+      setDriverId(knownDriver ? initialDriverId! : '');
+      setDriverName(knownDriver ? '' : initial.driverName ?? '');
+      setDepartureTime(toTimeInput(initial.departureTime, '06:45'));
+      setReturnTime(initial.returnTime ? toTimeInput(initial.returnTime, '') : '');
+      setName(initial.name);
+      setNameTouched(true);
+      setStep(1);
+      return;
+    }
     setStep(1);
     setStops([]);
-    setSelectedStop(null);
+    setEndAtSchool(true);
     setStudentIds([]);
     setDriverId(drivers.length === 1 ? drivers[0].id : '');
     setDriverName('');
@@ -112,10 +146,8 @@ export function RouteCreator({
     setReturnTime('16:30');
     setName('');
     setNameTouched(false);
-    setQuery('');
-    setResults([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, initial]);
 
   // The school is always the arrival: fetch its GPS position once.
   React.useEffect(() => {
@@ -237,7 +269,7 @@ export function RouteCreator({
     : { top: 80, right: 40, bottom: 40, left: 40 };
 
   return (
-    <div className='fixed inset-0 z-50 flex flex-col bg-slate-100 lg:block' role='dialog' aria-modal='true' aria-label='Nouvelle ligne de ramassage'>
+    <div className='fixed inset-0 z-50 flex flex-col bg-slate-100 lg:block' role='dialog' aria-modal='true' aria-label={initial ? `Modifier ${initial.name}` : 'Nouvelle ligne de ramassage'}>
       {/* Map */}
       <div className='relative h-[42vh] shrink-0 lg:absolute lg:inset-0 lg:h-auto'>
         <PlannerMap
@@ -269,7 +301,9 @@ export function RouteCreator({
       {/* Panel */}
       <aside className='relative z-10 flex min-h-0 flex-1 flex-col bg-white shadow-2xl lg:absolute lg:bottom-4 lg:left-4 lg:top-4 lg:w-[400px] lg:rounded-2xl'>
         <header className='border-b px-5 pb-3 pt-4'>
-          <p className='text-[11px] font-semibold uppercase tracking-wider text-orange-600'>Nouvelle ligne</p>
+          <p className='truncate text-[11px] font-semibold uppercase tracking-wider text-orange-600'>
+            {initial ? `Modifier · ${initial.name}` : 'Nouvelle ligne'}
+          </p>
           <ol className='mt-2 flex items-center gap-1.5'>
             {STEPS.map((s, i) => {
               const done = step > s.id;
@@ -581,7 +615,7 @@ export function RouteCreator({
               onClick={() => void handleSave()}
             >
               {saving ? <Loader2 className='mr-2 size-4 animate-spin' /> : <Check className='mr-2 size-4' />}
-              {driverOk ? 'Créer la ligne' : 'Choisissez un chauffeur'}
+              {!driverOk ? 'Choisissez un chauffeur' : initial ? 'Enregistrer' : 'Créer la ligne'}
             </Button>
           )}
         </footer>

@@ -558,6 +558,34 @@ export async function createTransportOnBackend(item: {
   return mapTransportFromApi(data);
 }
 
+/** Updates a line (stops, path, driver, times), then its pupils. */
+export async function updateTransportOnBackend(
+  routeId: string,
+  item: {
+    name: string;
+    driverName?: string;
+    driverId?: string;
+    departureTime: string;
+    returnTime?: string;
+    note?: string;
+    waypoints?: { lat: number; lng: number; name: string }[];
+    routePolyline?: [number, number][];
+    studentIds?: string[];
+  },
+): Promise<TransportRoute> {
+  const { studentIds, ...route } = item;
+  const data = await adminApiFetch<Record<string, unknown>>(`/api/transport/${routeId}`, {
+    method: 'PUT',
+    body: JSON.stringify(route),
+  });
+  if (!studentIds) return mapTransportFromApi(data);
+  const withStudents = await adminApiFetch<Record<string, unknown>>(`/api/transport/${routeId}/students`, {
+    method: 'PATCH',
+    body: JSON.stringify(studentIds),
+  });
+  return mapTransportFromApi(withStudents);
+}
+
 export async function deleteTransportOnBackend(routeId: string): Promise<void> {
   await adminApiFetch(`/api/transport/${routeId}`, { method: 'DELETE' });
 }
