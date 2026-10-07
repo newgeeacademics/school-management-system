@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   GoogleSignInCancelled,
   getGoogleClientId,
   isFirebaseAuthConfigured,
   isGoogleAuthConfigured,
+  isPhoneAuthConfigured,
   loadFirebaseGoogle,
   loadGoogleIdentity,
+  sendPhoneCode,
+  type PhoneVerification,
 } from '@/lib/google-auth';
 
 type Props = {
@@ -21,9 +24,166 @@ type Props = {
 export function GoogleSignInButton({ onCredential, disabled = false }: Props) {
   if (!isGoogleAuthConfigured()) return null;
   return isFirebaseAuthConfigured() ? (
-    <FirebaseGoogleButton onCredential={onCredential} disabled={disabled} />
+    <>
+      <FirebaseGoogleButton onCredential={onCredential} disabled={disabled} />
+      {isPhoneAuthConfigured() ? <PhoneSignIn onCredential={onCredential} disabled={disabled} /> : null}
+    </>
   ) : (
     <GisGoogleButton onCredential={onCredential} disabled={disabled} />
+  );
+}
+
+const fieldStyle: React.CSSProperties = {
+  width: '100%',
+  height: 44,
+  padding: '0 14px',
+  borderRadius: 12,
+  border: '1px solid #d0d5dd',
+  background: '#fff',
+  color: '#101828',
+  fontSize: 16,
+  outline: 'none',
+};
+
+const primaryStyle = (enabled: boolean): React.CSSProperties => ({
+  width: '100%',
+  height: 44,
+  borderRadius: 9999,
+  border: 'none',
+  background: '#101828',
+  color: '#fff',
+  fontSize: 14,
+  fontWeight: 600,
+  cursor: enabled ? 'pointer' : 'default',
+  opacity: enabled ? 1 : 0.5,
+});
+
+const linkStyle: React.CSSProperties = {
+  border: 'none',
+  background: 'none',
+  padding: 0,
+  color: '#2563eb',
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: 'pointer',
+};
+
+/** Sign in with a code received by SMS (Firebase phone verification). */
+function PhoneSignIn({ onCredential, disabled }: Props) {
+  const [step, setStep] = useState<'closed' | 'phone' | 'code'>('closed');
+  const [phone, setPhone] = useState('+225 ');
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const verificationRef = useRef<PhoneVerification | null>(null);
+  const recaptchaRef = useRef<HTMLDivElement>(null);
+
+  const sendCode = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!recaptchaRef.current || phone.replace(/\D/g, '').length < 8) {
+      setError('Indiquez votre numéro de téléphone complet.');
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    try {
+      verificationRef.current = await sendPhoneCode(phone, recaptchaRef.current);
+      setCode('');
+      setStep('code');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const verification = verificationRef.current;
+    if (!verification || code.replace(/\D/g, '').length < 6) {
+      setError('Saisissez les 6 chiffres reçus par SMS.');
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    try {
+      onCredential(await verification.confirm(code));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className='google-signin' style={{ marginTop: 10 }}>
+      <div ref={recaptchaRef} />
+      {step === 'closed' ? (
+        <div style={{ textAlign: 'center' }}>
+          <button type='button' style={linkStyle} disabled={disabled} onClick={() => setStep('phone')}>
+            Recevoir un code par SMS
+          </button>
+        </div>
+      ) : step === 'phone' ? (
+        <form onSubmit={sendCode} style={{ display: 'grid', gap: 8 }}>
+          <label htmlFor='sms-phone' style={{ fontSize: 13, fontWeight: 600, color: '#344054' }}>
+            Votre numéro de téléphone
+          </label>
+          <input
+            id='sms-phone'
+            type='tel'
+            inputMode='tel'
+            autoComplete='tel'
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder='+225 07 00 00 00 00'
+            style={fieldStyle}
+            autoFocus
+          />
+          <button type='submit' style={primaryStyle(!busy && !disabled)} disabled={busy || disabled}>
+            {busy ? 'Envoi du code…' : 'Recevoir le code'}
+          </button>
+          <div style={{ textAlign: 'center' }}>
+            <button type='button' style={{ ...linkStyle, color: '#667085' }} onClick={() => setStep('closed')}>
+              Annuler
+            </button>
+          </div>
+        </form>
+      ) : (
+        <form onSubmit={confirmCode} style={{ display: 'grid', gap: 8 }}>
+          <label htmlFor='sms-code' style={{ fontSize: 13, fontWeight: 600, color: '#344054' }}>
+            Code reçu au {phone.trim()}
+          </label>
+          <input
+            id='sms-code'
+            inputMode='numeric'
+            autoComplete='one-time-code'
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder='••••••'
+            style={{ ...fieldStyle, textAlign: 'center', letterSpacing: '0.5em', fontSize: 20, fontWeight: 700 }}
+            autoFocus
+          />
+          <button type='submit' style={primaryStyle(!busy && !disabled && code.length === 6)} disabled={busy || disabled}>
+            {busy ? 'Vérification…' : 'Se connecter'}
+          </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <button type='button' style={{ ...linkStyle, color: '#667085' }} onClick={() => setStep('phone')}>
+              Changer de numéro
+            </button>
+            <button type='button' style={linkStyle} disabled={busy} onClick={() => void sendCode()}>
+              Renvoyer le code
+            </button>
+          </div>
+        </form>
+      )}
+      {error ? (
+        <p role='status' className='google-signin__error'>
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
