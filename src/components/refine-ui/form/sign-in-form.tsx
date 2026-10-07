@@ -83,7 +83,7 @@ export const SignInForm = () => {
       completeLogin(await loginWithGoogle(idToken));
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
-      setFormError(/introuvable|not found|aucun|no account/i.test(message) ? t('auth.googleNoAccount') : message || t('auth.googleFailed'));
+      setFormError(message || t('auth.googleFailed'));
     } finally {
       setIsPending(false);
     }
