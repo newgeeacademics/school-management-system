@@ -1,13 +1,10 @@
-import React, { useMemo } from 'react';
+import React from 'react';
+import { Bus, Clock, Loader2, MapPin, Plus, Route as RouteIcon, Trash2, User, Users, X } from 'lucide-react';
 
-import { RouteMap } from '@/components/RouteMap';
-import { fetchRoadRoute } from '@/lib/osrm';
-import { geocodePlace } from '@shared/mapbox';
-import { TRANSPORT_NODES } from '@/lib/transportGraph';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 import {
   Select,
@@ -17,338 +14,104 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import type {
-  NewTransportRouteFormState,
-  TransportRoute,
-  SetStateAction,
-  Student,
-} from './dashboardTypes';
+import type { ClassItem, Student, TransportRoute } from './dashboardTypes';
+
+type Driver = { id: string; name: string };
+import { PlannerMap, type PlannerPoint } from './transport/PlannerMap';
+import { RouteCreator, type NewRoutePayload } from './transport/RouteCreator';
+import { StudentPicker } from './transport/StudentPicker';
+
+export type { NewRoutePayload };
 
 type TransportSectionProps = {
   routes: TransportRoute[];
-  newRoute: NewTransportRouteFormState;
-  setNewRoute: SetStateAction<NewTransportRouteFormState>;
-  onCreateRoute: (e: React.FormEvent, payload?: { waypoints: { lat: number; lng: number; name: string }[]; routePolyline: [number, number][] }) => void;
-  onUpdateRouteStudents?: (routeId: string, studentIds: string[]) => void;
+  drivers?: Driver[];
+  classes?: ClassItem[];
+  onCreateRoute?: (payload: NewRoutePayload) => Promise<boolean>;
+  onUpdateRouteStudents?: (routeId: string, studentIds: string[]) => void | Promise<void>;
+  onDeleteRoute?: (routeId: string) => void | Promise<void>;
   readOnly?: boolean;
   students?: Student[];
   currentStudentId?: string | null;
   onStudentIdChange?: (id: string) => void;
 };
 
+/** "07:00" / "7h00" -> "7h00" for display. */
+function prettyTime(value?: string) {
+  if (!value) return '';
+  const m = /^(\d{1,2})[:h](\d{2})/.exec(value.trim());
+  return m ? `${Number(m[1])}h${m[2]}` : value;
+}
+
+function isSchoolStop(name: string | undefined) {
+  return Boolean(name && /^école\b/i.test(name.trim()));
+}
+
+function routeMapPoints(route: TransportRoute | undefined): { stops: PlannerPoint[]; school: PlannerPoint | null } {
+  const wps = route?.waypoints ?? [];
+  const last = wps[wps.length - 1];
+  const school = last && isSchoolStop(last.name) ? { id: 'school', ...last } : null;
+  const stops = (school ? wps.slice(0, -1) : wps).map((w, i) => ({ id: `wp-${i}`, ...w }));
+  return { stops, school };
+}
+
 export const TransportSection: React.FC<TransportSectionProps> = ({
   routes,
-  newRoute,
-  setNewRoute,
+  drivers = [],
+  classes = [],
   onCreateRoute,
   onUpdateRouteStudents,
+  onDeleteRoute,
   readOnly = false,
   students = [],
   currentStudentId,
   onStudentIdChange,
 }) => {
-  const [startStopId, setStartStopId] = React.useState<string>('');
-  const [endStopId, setEndStopId] = React.useState<string>('');
-  const [stopIds, setStopIds] = React.useState<string[]>([]);
-  const [selectionMode, setSelectionMode] = React.useState<'start' | 'stop' | 'end'>('start');
-  const [startQuery, setStartQuery] = React.useState('');
-  const [endQuery, setEndQuery] = React.useState('');
-  const [stopQuery, setStopQuery] = React.useState('');
-  const [stops, setStops] = React.useState(TRANSPORT_NODES);
-  const [roadRoutePositions, setRoadRoutePositions] = React.useState<
-    [number, number][] | null
-  >(null);
-  const [routeLoading, setRouteLoading] = React.useState(false);
+  const [creating, setCreating] = React.useState(false);
+  const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const [editingStudents, setEditingStudents] = React.useState<TransportRoute | null>(null);
 
-  const pathNodeIds = useMemo(() => {
-    if (!startStopId || !endStopId) return [];
-    const ids = [startStopId, ...stopIds, endStopId];
-    const uniqueIds: string[] = [];
-    for (const id of ids) {
-      if (!uniqueIds.includes(id)) uniqueIds.push(id);
-    }
-    return uniqueIds;
-  }, [startStopId, endStopId, stopIds]);
+  const selected = routes.find((r) => r.id === selectedId) ?? routes[0];
+  const { stops: mapStops, school: mapSchool } = routeMapPoints(selected);
+  const mapPolyline =
+    selected?.routePolyline && selected.routePolyline.length >= 2
+      ? selected.routePolyline
+      : (selected?.waypoints ?? []).map((w) => [w.lat, w.lng] as [number, number]);
 
-  React.useEffect(() => {
-    // Ensure start/end are not duplicated in intermediate stops
-    setStopIds((prev) =>
-      prev.filter((id) => id !== startStopId && id !== endStopId),
-    );
-  }, [startStopId, endStopId]);
+  const classNameById = React.useMemo(
+    () => Object.fromEntries(classes.map((c) => [c.id, c.name])),
+    [classes],
+  );
+  const studentName = (id: string) => students.find((s) => s.id === id)?.name ?? 'Élève';
 
-  // Auto-advance from departure to arrival mode when departure is set
-  React.useEffect(() => {
-    if (startStopId && selectionMode === 'start') {
-      setSelectionMode('end');
-    }
-  }, [startStopId, selectionMode]);
+  const riderLine = React.useCallback(
+    (excludeRouteId?: string) => {
+      const out: Record<string, string> = {};
+      for (const r of routes) {
+        if (r.id === excludeRouteId) continue;
+        for (const id of r.studentIds ?? []) out[id] = r.name;
+      }
+      return out;
+    },
+    [routes],
+  );
 
-  // Display mode: when departure is set, never show 'start' as active (prevents stuck button)
-  const displayMode = startStopId && selectionMode === 'start' ? 'end' : selectionMode;
-
-  React.useEffect(() => {
-    if (pathNodeIds.length < 2) {
-      setRoadRoutePositions(null);
-      return;
-    }
-    const waypoints = pathNodeIds
-      .map((id) => stops.find((n) => n.id === id))
-      .filter(Boolean)
-      .map((n) => ({ lat: n!.lat, lng: n!.lng }));
-    setRouteLoading(true);
-    fetchRoadRoute(waypoints)
-      .then((positions) => setRoadRoutePositions(positions))
-      .catch(() => setRoadRoutePositions(null))
-      .finally(() => setRouteLoading(false));
-  }, [pathNodeIds, stops]);
-
-  const startName =
-    stops.find((n) => n.id === startStopId)?.name ?? '—';
-  const endName =
-    stops.find((n) => n.id === endStopId)?.name ?? '—';
-
-  const addStopFromQuery = async (query: string) => {
-    const place = await geocodePlace(query);
-    if (!place) return null;
-    const id = `custom-${Date.now()}`;
-    return { id, name: place.name, lat: place.lat, lng: place.lng };
-  };
-
-  const handleStartQuerySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const submitter = (e.nativeEvent as SubmitEvent).submitter;
-    if (submitter instanceof HTMLElement) submitter.blur();
-    const query = startQuery.trim();
-    if (!query) return;
-    try {
-      const newStop = await addStopFromQuery(query);
-      if (!newStop) return;
-      setStops((prev) => [...prev, newStop]);
-      setStartStopId(newStop.id);
-      setSelectionMode('end');
-    } catch {
-      // ignore network errors for now
-    }
-  };
-
-  const handleEndQuerySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const submitter = (e.nativeEvent as SubmitEvent).submitter;
-    if (submitter instanceof HTMLElement) submitter.blur();
-    const query = endQuery.trim();
-    if (!query) return;
-    try {
-      const newStop = await addStopFromQuery(query);
-      if (!newStop) return;
-      setStops((prev) => [...prev, newStop]);
-      setEndStopId(newStop.id);
-    } catch {
-      // ignore network errors for now
-    }
-  };
-
-  const handleStopQuerySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const submitter = (e.nativeEvent as SubmitEvent).submitter;
-    if (submitter instanceof HTMLElement) submitter.blur();
-    const query = stopQuery.trim();
-    if (!query) return;
-    try {
-      const newStop = await addStopFromQuery(query);
-      if (!newStop) return;
-      setStops((prev) => [...prev, newStop]);
-      setStopIds((prev) => [...prev, newStop.id]);
-      setStopQuery('');
-    } catch {
-      // ignore network errors for now
-    }
-  };
-
-  const handleSelectNode = (id: string) => {
-    if (displayMode === 'start') {
-      setStartStopId(id);
-      setSelectionMode('end');
-      (document.activeElement as HTMLElement)?.blur?.();
-      return;
-    }
-    if (displayMode === 'end') {
-      setEndStopId(id);
-      return;
-    }
-    setStopIds((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
-    );
-  };
-
-  const handleMapClick = (lat: number, lng: number) => {
-    const id = `custom-${Date.now()}`;
-    const name = `Point (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
-    const newStop = { id, name, lat, lng };
-    setStops((prev) => [...prev, newStop]);
-    if (displayMode === 'start') {
-      setStartStopId(id);
-      setSelectionMode('end');
-      (document.activeElement as HTMLElement)?.blur?.();
-    } else if (displayMode === 'end') {
-      setEndStopId(id);
-    } else {
-      setStopIds((prev) => [...prev, id]);
-    }
-  };
-
-  const handleRemoveNode = (id: string) => {
-    setStops((prev) => prev.filter((n) => n.id !== id));
-    if (startStopId === id) setStartStopId('');
-    if (endStopId === id) setEndStopId('');
-    setStopIds((prev) => prev.filter((s) => s !== id));
-  };
-
-  const clearDeparture = () => setStartStopId('');
-  const clearArrival = () => setEndStopId('');
-  const removeIntermediateStop = (id: string) =>
-    setStopIds((prev) => prev.filter((s) => s !== id));
-
-  const handleSubmitRoute = (e: React.FormEvent) => {
-    const waypoints =
-      pathNodeIds.length >= 2
-        ? pathNodeIds
-            .map((id) => stops.find((n) => n.id === id))
-            .filter(Boolean)
-            .map((n) => ({ lat: n!.lat, lng: n!.lng, name: n!.name }))
-        : undefined;
-    const routePolyline =
-      roadRoutePositions && roadRoutePositions.length >= 2 ? roadRoutePositions : undefined;
-    onCreateRoute(e, waypoints && routePolyline ? { waypoints, routePolyline } : undefined);
-  };
-
-  const routesWithTrajet = routes.filter((r) => r.routePolyline && r.routePolyline.length >= 2);
+  const riders = new Set(routes.flatMap((r) => r.studentIds ?? [])).size;
+  const canManage = !readOnly && Boolean(onCreateRoute);
 
   return (
     <section className='space-y-5'>
-      {!readOnly && (
-      <div className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)]'>
-        <Card>
-          <CardHeader>
-            <CardTitle className='text-sm font-medium'>
-              Ajouter un trajet / ligne
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form
-              className='space-y-3 text-xs'
-              onSubmit={handleSubmitRoute}
-            >
-              <div className='grid gap-2 sm:grid-cols-2'>
-                <div className='grid gap-2'>
-                  <Label htmlFor='transport-name'>Nom de la ligne</Label>
-                  <Input
-                    id='transport-name'
-                    value={newRoute.name}
-                    onChange={(e) =>
-                      setNewRoute((r) => ({ ...r, name: e.target.value }))
-                    }
-                    placeholder='Ex : Ligne A, Centre – École'
-                    required
-                  />
-                </div>
-                <div className='grid gap-2'>
-                  <Label htmlFor='transport-driver'>Conducteur</Label>
-                  <Input
-                    id='transport-driver'
-                    value={newRoute.driverName}
-                    onChange={(e) =>
-                      setNewRoute((r) => ({ ...r, driverName: e.target.value }))
-                    }
-                    placeholder='Nom du conducteur'
-                    required
-                  />
-                </div>
-              </div>
-              <div className='grid gap-2 sm:grid-cols-2'>
-                <div className='grid gap-2'>
-                  <Label htmlFor='transport-departure'>Heure de départ</Label>
-                  <Input
-                    id='transport-departure'
-                    value={newRoute.departureTime}
-                    onChange={(e) =>
-                      setNewRoute((r) => ({
-                        ...r,
-                        departureTime: e.target.value,
-                      }))
-                    }
-                    placeholder='Ex : 7h00, 7h30'
-                    required
-                  />
-                </div>
-                <div className='grid gap-2'>
-                  <Label htmlFor='transport-return'>Heure de retour</Label>
-                  <Input
-                    id='transport-return'
-                    value={newRoute.returnTime}
-                    onChange={(e) =>
-                      setNewRoute((r) => ({ ...r, returnTime: e.target.value }))
-                    }
-                    placeholder='Ex : 16h30 (optionnel)'
-                  />
-                </div>
-              </div>
-              <div className='grid gap-2'>
-                <Label htmlFor='transport-note'>Note (optionnel)</Label>
-                <Input
-                  id='transport-note'
-                  value={newRoute.note}
-                  onChange={(e) =>
-                    setNewRoute((r) => ({ ...r, note: e.target.value }))
-                  }
-                  placeholder='Ex : Passage par la mairie'
-                />
-              </div>
-              <p className='text-[10px] text-muted-foreground'>
-                Définir le départ et l&apos;arrivée sur la carte ci-dessous
-                avant d&apos;enregistrer pour que les parents voient le trajet.
-              </p>
-              <Button type='submit' size='sm' className='mt-1'>
-                Enregistrer le trajet
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className='text-sm font-medium'>
-              Résumé du transport
-            </CardTitle>
-          </CardHeader>
-          <CardContent className='space-y-2 text-xs text-muted-foreground'>
-            <p>
-              Lignes enregistrées :{' '}
-              <span className='font-medium text-foreground'>
-                {routes.length}
-              </span>
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-      )}
-
       {readOnly && onStudentIdChange && students.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className='text-sm font-medium'>
-              Mon profil élève
-            </CardTitle>
-            <p className='text-xs text-muted-foreground mt-1'>
+            <CardTitle className='text-sm font-medium'>Mon profil élève</CardTitle>
+            <p className='mt-1 text-xs text-muted-foreground'>
               Sélectionnez votre profil pour afficher les trajets qui vous sont assignés.
             </p>
           </CardHeader>
           <CardContent>
             <Label className='text-xs'>Je suis</Label>
-            <Select
-              value={currentStudentId ?? ''}
-              onValueChange={onStudentIdChange}
-            >
+            <Select value={currentStudentId ?? ''} onValueChange={onStudentIdChange}>
               <SelectTrigger className='mt-1 max-w-xs'>
                 <SelectValue placeholder='Choisir un élève…' />
               </SelectTrigger>
@@ -364,331 +127,260 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className='text-sm font-medium'>
-            Lignes de ramassage
-          </CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-2 text-xs'>
-          {routes.length === 0 ? (
-            <p className='text-muted-foreground'>
-              {readOnly && onStudentIdChange
-                ? currentStudentId
-                  ? 'Aucun trajet ne vous est assigné. Demandez à l\'établissement de vous ajouter à un véhicule.'
-                  : 'Choisissez votre profil élève ci-dessus pour voir vos trajets.'
-                : 'Aucun trajet enregistré. Ajoutez des lignes ci-dessus.'}
-            </p>
-          ) : (
-            <div className='grid gap-2 md:grid-cols-2 lg:grid-cols-3'>
-              {routes.map((route) => (
-                <div
-                  key={route.id}
-                  className='rounded-md border border-border/80 px-3 py-2'
-                >
-                  <p className='text-sm font-medium text-foreground'>
-                    {route.name}
-                  </p>
-                  <p className='text-[11px] text-muted-foreground'>
-                    Conducteur : {route.driverName}
-                  </p>
-                  <p className='text-[11px] text-muted-foreground'>
-                    Départ : {route.departureTime}
-                    {route.returnTime
-                      ? ` · Retour : ${route.returnTime}`
-                      : ''}
-                  </p>
-                  {route.note && (
-                    <p className='mt-1 text-[11px] text-muted-foreground italic'>
-                      {route.note}
-                    </p>
-                  )}
-                  {!readOnly && onUpdateRouteStudents && (
-                    <div className='mt-2 pt-2 border-t border-border/60'>
-                      <p className='text-[11px] text-muted-foreground mb-1'>
-                        Élèves dans ce véhicule
-                      </p>
-                      <div className='flex flex-wrap gap-1'>
-                        {(route.studentIds ?? []).map((id) => {
-                          const s = students.find((st) => st.id === id);
-                          return (
-                            <span
-                              key={id}
-                              className='inline-flex items-center gap-0.5 rounded bg-muted px-1.5 py-0.5 text-[11px]'
-                            >
-                              {s?.name ?? id}
-                              <button
-                                type='button'
-                                className='text-red-600 hover:underline'
-                                onClick={() =>
-                                  onUpdateRouteStudents(
-                                    route.id,
-                                    (route.studentIds ?? []).filter((x) => x !== id),
-                                  )
-                                }
-                                aria-label={`Retirer ${s?.name ?? id}`}
-                              >
-                                ×
-                              </button>
-                            </span>
-                          );
-                        })}
-                        {students.some((s) => !(route.studentIds ?? []).includes(s.id)) ? (
-                          <Select
-                            key={`${route.id}-${(route.studentIds ?? []).length}`}
-                            value=''
-                            onValueChange={(value) => {
-                              if (!value) return;
-                              onUpdateRouteStudents(route.id, [
-                                ...(route.studentIds ?? []),
-                                value,
-                              ]);
-                            }}
-                          >
-                            <SelectTrigger className='h-6 w-auto min-w-[100px] text-[11px] border-dashed'>
-                              <SelectValue placeholder='+ Ajouter un élève' />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {students
-                                .filter((s) => !(route.studentIds ?? []).includes(s.id))
-                                .map((s) => (
-                                  <SelectItem key={s.id} value={s.id}>
-                                    {s.name}
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                        ) : students.length > 0 ? (
-                          <span className='text-[10px] text-muted-foreground'>
-                            Tous assignés
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {readOnly ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className='text-sm font-medium'>
-              Carte des trajets
-            </CardTitle>
-            <p className='text-xs text-muted-foreground mt-1'>
-              Trajets de ramassage scolaire enregistrés par l&apos;établissement.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <RouteMap
-              nodes={[]}
-              pathNodeIds={[]}
-              savedRoutes={routesWithTrajet.map((r) => ({
-                polyline: r.routePolyline!,
-                waypoints: r.waypoints,
-              }))}
-              center={[7.54, -5.55]}
-              zoom={6}
-              className='h-[360px] w-full rounded-lg border border-border/70 overflow-hidden'
-            />
-          </CardContent>
-        </Card>
-      ) : (
-      <Card>
-        <CardHeader>
-          <CardTitle className='text-sm font-medium'>
-            Carte du trajet (algorithme de Dijkstra)
-          </CardTitle>
-          <p className='text-xs text-muted-foreground mt-1'>
-            Utilisez les boutons ci-dessous pour choisir si le prochain clic
-            sur la carte définit un départ, un arrêt intermédiaire ou une
-            arrivée. Le plus court chemin est ensuite calculé avec
-            l&apos;algorithme de Dijkstra et tracé sur le réseau routier.
-          </p>
-        </CardHeader>
-        <CardContent className='space-y-4'>
-          <form
-            className='grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_auto] text-[11px]'
-            onSubmit={handleStartQuerySubmit}
-          >
-            <div className='grid gap-1'>
-              <Label htmlFor='transport-start-query'>Départ (par nom)</Label>
-              <Input
-                id='transport-start-query'
-                value={startQuery}
-                onChange={(e) => setStartQuery(e.target.value)}
-                placeholder='Ex : École, Mairie...'
-              />
-            </div>
-            <div className='flex items-end'>
-              <Button type='submit' size='xs' className='mt-1'>
-                Définir le départ
-              </Button>
-            </div>
-          </form>
-          <form
-            className='grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_auto] text-[11px]'
-            onSubmit={handleEndQuerySubmit}
-          >
-            <div className='grid gap-1'>
-              <Label htmlFor='transport-end-query'>Arrivée (par nom)</Label>
-              <Input
-                id='transport-end-query'
-                value={endQuery}
-                onChange={(e) => setEndQuery(e.target.value)}
-                placeholder='Ex : École, Mairie...'
-              />
-            </div>
-            <div className='flex items-end'>
-              <Button type='submit' size='xs' className='mt-1'>
-                Définir l&apos;arrivée
-              </Button>
-            </div>
-          </form>
-          <form
-            className='grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_auto] text-[11px]'
-            onSubmit={handleStopQuerySubmit}
-          >
-            <div className='grid gap-1'>
-              <Label htmlFor='transport-stop-query'>Arrêt intermédiaire (par nom)</Label>
-              <Input
-                id='transport-stop-query'
-                value={stopQuery}
-                onChange={(e) => setStopQuery(e.target.value)}
-                placeholder='Ex : Mairie, Gare...'
-              />
-            </div>
-            <div className='flex items-end'>
-              <Button type='submit' size='xs' className='mt-1'>
-                Ajouter l&apos;arrêt
-              </Button>
-            </div>
-          </form>
-          <div className='flex flex-wrap items-center gap-2 text-[11px]'>
-            <span className='text-muted-foreground'>
-              Action du clic sur la carte :
-            </span>
-            <Button
-              type='button'
-              size='xs'
-              variant={displayMode === 'start' ? 'default' : 'outline'}
-              onClick={() => setSelectionMode('start')}
-            >
-              Définir le départ
-            </Button>
-            <Button
-              type='button'
-              size='xs'
-              variant={displayMode === 'stop' ? 'default' : 'outline'}
-              onClick={() => setSelectionMode('stop')}
-            >
-              Ajouter / retirer un arrêt
-            </Button>
-            <Button
-              type='button'
-              size='xs'
-              variant={displayMode === 'end' ? 'default' : 'outline'}
-              onClick={() => setSelectionMode('end')}
-            >
-              Définir l&apos;arrivée
-            </Button>
+      <div className='overflow-hidden rounded-2xl border bg-card shadow-sm'>
+        <div className='flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4'>
+          <div className='flex flex-wrap items-center gap-x-6 gap-y-2'>
+            <Stat icon={<RouteIcon className='size-4' />} value={routes.length} label={routes.length > 1 ? 'lignes' : 'ligne'} />
+            {!readOnly ? (
+              <>
+                <Stat icon={<Users className='size-4' />} value={riders} label={riders > 1 ? 'élèves transportés' : 'élève transporté'} />
+              </>
+            ) : null}
           </div>
-          <p className='text-[11px] text-muted-foreground'>
-            Départ :{' '}
-            <span className='font-medium text-foreground'>{startName}</span>
-            {startStopId && (
-              <button
-                type='button'
-                className='ml-1 text-red-600 hover:underline'
-                onClick={clearDeparture}
-                aria-label='Supprimer le départ'
-              >
-                ×
-              </button>
-            )}{' '}
-            · Arrivée :{' '}
-            <span className='font-medium text-foreground'>{endName}</span>
-            {endStopId && (
-              <button
-                type='button'
-                className='ml-1 text-red-600 hover:underline'
-                onClick={clearArrival}
-                aria-label="Supprimer l'arrivée"
-              >
-                ×
-              </button>
-            )}
-          </p>
-          {!!stopIds.length && (
-            <p className='text-[11px] text-muted-foreground'>
-              Arrêts intermédiaires (ordre du trajet) :{' '}
-              {stopIds.map((id, idx) => {
-                const name = stops.find((n) => n.id === id)?.name ?? id;
+          {canManage ? (
+            <Button className='h-10 rounded-xl bg-orange-600 px-4 text-white hover:bg-orange-700' onClick={() => setCreating(true)}>
+              <Plus className='mr-1.5 size-4' />
+              Nouvelle ligne
+            </Button>
+          ) : null}
+        </div>
+
+        {routes.length === 0 ? (
+          <div className='flex flex-col items-center gap-3 px-6 py-14 text-center'>
+            <span className='flex size-14 items-center justify-center rounded-2xl bg-orange-50 text-orange-600'>
+              <Bus className='size-7' />
+            </span>
+            <p className='text-base font-semibold'>
+              {readOnly
+                ? onStudentIdChange && !currentStudentId
+                  ? 'Choisissez votre profil élève ci-dessus.'
+                  : 'Aucun trajet ne vous est assigné.'
+                : 'Aucune ligne de ramassage'}
+            </p>
+            {canManage ? (
+              <>
+                <p className='max-w-sm text-sm text-muted-foreground'>
+                  Touchez la carte pour placer les arrêts, cochez les élèves, choisissez le chauffeur : c’est prêt
+                  en une minute.
+                </p>
+                <Button className='mt-1 h-11 rounded-xl bg-orange-600 px-5 text-white hover:bg-orange-700' onClick={() => setCreating(true)}>
+                  <Plus className='mr-1.5 size-4' />
+                  Créer la première ligne
+                </Button>
+              </>
+            ) : null}
+          </div>
+        ) : (
+          <div className='grid lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]'>
+            <ul className='max-h-[520px] divide-y overflow-y-auto lg:border-r'>
+              {routes.map((route) => {
+                const active = selected?.id === route.id;
+                const nStops = route.waypoints?.length ?? 0;
+                const nStudents = route.studentIds?.length ?? 0;
                 return (
-                  <span key={id} className='mr-1 inline-flex items-center gap-0.5'>
-                    <span className='font-medium text-foreground'>
-                      Arrêt {idx + 1} : {name}
-                    </span>
-                    <button
-                      type='button'
-                      className='text-red-600 hover:underline'
-                      onClick={() => removeIntermediateStop(id)}
-                      aria-label={`Retirer arrêt ${idx + 1}`}
+                  <li key={route.id}>
+                    <div
+                      role='button'
+                      tabIndex={0}
+                      onClick={() => setSelectedId(route.id)}
+                      onKeyDown={(e) => e.key === 'Enter' && setSelectedId(route.id)}
+                      className={cn(
+                        'cursor-pointer px-5 py-4 transition',
+                        active ? 'bg-orange-50/70 shadow-[inset_3px_0_0_#ea580c]' : 'hover:bg-muted/40',
+                      )}
                     >
-                      ×
-                    </button>
-                  </span>
+                      <div className='flex items-start justify-between gap-2'>
+                        <p className='font-semibold text-foreground'>{route.name}</p>
+                        <span className='shrink-0 rounded-full bg-slate-900 px-2 py-0.5 text-[11px] font-semibold text-white'>
+                          {prettyTime(route.departureTime)}
+                          {route.returnTime ? ` · ${prettyTime(route.returnTime)}` : ''}
+                        </span>
+                      </div>
+                      <p className='mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground'>
+                        <span className='inline-flex items-center gap-1'>
+                          <User className='size-3.5' />
+                          {route.driverName || '—'}
+                        </span>
+                        <span className='inline-flex items-center gap-1'>
+                          <MapPin className='size-3.5' />
+                          {nStops} arrêt{nStops > 1 ? 's' : ''}
+                        </span>
+                        <span className='inline-flex items-center gap-1'>
+                          <Users className='size-3.5' />
+                          {nStudents} élève{nStudents > 1 ? 's' : ''}
+                        </span>
+                      </p>
+                      {nStops === 0 && !readOnly ? (
+                        <p className='mt-1 text-[11px] text-amber-700'>Pas de tracé : recréez la ligne pour la voir sur la carte.</p>
+                      ) : null}
+                      {active && !readOnly && (onUpdateRouteStudents || onDeleteRoute) ? (
+                        <div className='mt-3 flex gap-2'>
+                          {onUpdateRouteStudents ? (
+                            <Button
+                              size='sm'
+                              variant='outline'
+                              className='h-8 rounded-lg'
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingStudents(route);
+                              }}
+                            >
+                              <Users className='mr-1.5 size-3.5' />
+                              Élèves
+                            </Button>
+                          ) : null}
+                          {onDeleteRoute ? (
+                            <Button
+                              size='sm'
+                              variant='ghost'
+                              className='h-8 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700'
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm(`Supprimer la ligne « ${route.name} » ?`)) void onDeleteRoute(route.id);
+                              }}
+                            >
+                              <Trash2 className='mr-1.5 size-3.5' />
+                              Supprimer
+                            </Button>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {active && readOnly && nStudents > 0 ? (
+                        <p className='mt-2 text-xs text-muted-foreground'>
+                          {(route.studentIds ?? []).map(studentName).join(', ')}
+                        </p>
+                      ) : null}
+                    </div>
+                  </li>
                 );
               })}
-            </p>
-          )}
-          {pathNodeIds.length >= 2 && (
-            <p className='text-[11px] text-muted-foreground'>
-              Trajet :{' '}
-              <span className='font-medium text-foreground'>
-                {pathNodeIds
-                  .map((id, idx) => {
-                    const name = stops.find((n) => n.id === id)?.name ?? '—';
-                    if (idx === 0) return `Départ (${name})`;
-                    if (idx === pathNodeIds.length - 1)
-                      return `Arrivée (${name})`;
-                    return `Arrêt ${idx} (${name})`;
-                  })
-                  .join(' → ')}
-              </span>
-              {roadRoutePositions && (
-                <span className='ml-1 text-[10px] text-muted-foreground'>
-                  · tracé sur les routes (OSRM)
-                </span>
-              )}
-            </p>
-          )}
-          {routeLoading && pathNodeIds.length >= 2 && (
-            <p className='text-[11px] text-muted-foreground'>
-              Calcul du tracé sur les routes…
-            </p>
-          )}
-          <RouteMap
-            nodes={stops}
-            pathNodeIds={pathNodeIds}
-            roadRoutePositions={roadRoutePositions}
-            startStopId={startStopId}
-            endStopId={endStopId}
-            stopIds={stopIds}
-            center={[7.54, -5.55]}
-            zoom={6}
-            className='h-[360px] w-full rounded-lg border border-border/70 overflow-hidden'
-            onSelectNode={handleSelectNode}
-            onMapClick={handleMapClick}
-            onRemoveNode={handleRemoveNode}
-          />
-        </CardContent>
-      </Card>
-      )}
+            </ul>
+            <div className='relative h-[360px] lg:h-[520px]'>
+              <PlannerMap
+                key={selected?.id}
+                className='h-full w-full'
+                stops={mapStops}
+                school={mapSchool}
+                polyline={mapPolyline}
+                padding={{ top: 70, right: 70, bottom: 90, left: 50 }}
+              />
+              {selected && mapStops.length > 0 ? (
+                <div className='pointer-events-none absolute bottom-3 left-3 max-w-[70%] rounded-xl bg-white/95 px-3 py-2 text-xs shadow-md'>
+                  <p className='font-semibold text-slate-900'>{selected.name}</p>
+                  <p className='mt-0.5 flex items-center gap-1 text-slate-500'>
+                    <Clock className='size-3' />
+                    {mapStops[0]?.name} → {mapSchool ? 'école' : mapStops[mapStops.length - 1]?.name}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
+      </div>
+
+
+      {canManage && onCreateRoute ? (
+        <RouteCreator
+          open={creating}
+          onClose={() => setCreating(false)}
+          onSave={async (payload) => {
+            const ok = await onCreateRoute(payload);
+            if (ok) setSelectedId(null);
+            return ok;
+          }}
+          drivers={drivers}
+          students={students}
+          classNameById={classNameById}
+          routeCount={routes.length}
+          assignedElsewhere={riderLine()}
+        />
+      ) : null}
+
+      {editingStudents && onUpdateRouteStudents ? (
+        <StudentsDialog
+          route={editingStudents}
+          students={students}
+          classNameById={classNameById}
+          assignedElsewhere={riderLine(editingStudents.id)}
+          onClose={() => setEditingStudents(null)}
+          onSave={async (ids) => {
+            await onUpdateRouteStudents(editingStudents.id, ids);
+            setEditingStudents(null);
+          }}
+        />
+      ) : null}
     </section>
   );
 };
+
+function Stat({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) {
+  return (
+    <div className='flex items-center gap-2'>
+      <span className='flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground'>{icon}</span>
+      <p className='text-sm'>
+        <span className='text-lg font-bold text-foreground'>{value}</span>{' '}
+        <span className='text-muted-foreground'>{label}</span>
+      </p>
+    </div>
+  );
+}
+
+function StudentsDialog({
+  route,
+  students,
+  classNameById,
+  assignedElsewhere,
+  onClose,
+  onSave,
+}: {
+  route: TransportRoute;
+  students: Student[];
+  classNameById: Record<string, string>;
+  assignedElsewhere: Record<string, string>;
+  onClose: () => void;
+  onSave: (ids: string[]) => Promise<void>;
+}) {
+  const [ids, setIds] = React.useState<string[]>(route.studentIds ?? []);
+  const [saving, setSaving] = React.useState(false);
+  return (
+    <div className='fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 sm:items-center' onClick={onClose}>
+      <div
+        className='flex max-h-[85vh] w-full max-w-md flex-col rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl'
+        onClick={(e) => e.stopPropagation()}
+        role='dialog'
+        aria-modal='true'
+        aria-label={`Élèves de ${route.name}`}
+      >
+        <header className='flex items-center justify-between border-b px-5 py-4'>
+          <div>
+            <p className='text-[11px] font-semibold uppercase tracking-wider text-orange-600'>Élèves</p>
+            <p className='font-semibold text-slate-900'>{route.name}</p>
+          </div>
+          <button type='button' onClick={onClose} className='flex size-9 items-center justify-center rounded-full hover:bg-slate-100' aria-label='Fermer'>
+            <X className='size-5' />
+          </button>
+        </header>
+        <div className='min-h-0 flex-1 overflow-y-auto px-5 py-4'>
+          <StudentPicker students={students} value={ids} onChange={setIds} classNameById={classNameById} assignedElsewhere={assignedElsewhere} />
+        </div>
+        <footer className='border-t px-5 py-3'>
+          <Button
+            className='h-11 w-full rounded-xl bg-slate-900 text-white hover:bg-slate-800'
+            disabled={saving}
+            onClick={async () => {
+              setSaving(true);
+              try {
+                await onSave(ids);
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            {saving ? <Loader2 className='mr-2 size-4 animate-spin' /> : null}
+            Enregistrer · {ids.length} élève{ids.length > 1 ? 's' : ''}
+          </Button>
+        </footer>
+      </div>
+    </div>
+  );
+}

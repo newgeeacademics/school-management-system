@@ -36,6 +36,7 @@ import {
   createStudentOnBackend,
   createTeacherOnBackend,
   createTransportOnBackend,
+  deleteTransportOnBackend,
   createDriverOnBackend,
   createUserOnBackend,
   deleteAnnouncementOnBackend,
@@ -128,7 +129,6 @@ import {
   type NewEventFormState,
   type NewPaymentReceiptFormState,
   type NewPaymentReminderFormState,
-  type NewTransportRouteFormState,
   type AppUserRole,
   type ParentContact,
   type PaymentReceipt,
@@ -176,7 +176,7 @@ import type { MatiereCreatePayload } from './dashboard/MatiereCreateWizard';
 import type { CanteenCreatePayload } from './dashboard/CanteenCreateWizard';
 import type { ScheduleSlotCreatePayload } from './dashboard/ScheduleSlotCreateWizard';
 import type { FeeInstallmentCreatePayload } from './dashboard/FeeInstallmentCreateWizard';
-import { TransportSection } from './dashboard/TransportSection';
+import { TransportSection, type NewRoutePayload } from './dashboard/TransportSection';
 import { ReportsSection } from './dashboard/ReportsSection';
 import { PermissionsSection } from './dashboard/PermissionsSection';
 import { UsersSection } from './dashboard/UsersSection';
@@ -330,8 +330,8 @@ const sectionConfig: Record<
     kicker: 'Transport des élèves',
     title: 'Trajets et cars',
     description:
-      'Suivez les lignes de ramassage scolaire : conducteur, horaires et remarques.',
-    cta: 'Ajouter un trajet',
+      'Placez les arrêts sur la carte, cochez les élèves, choisissez le chauffeur.',
+    cta: '',
   },
   reports: {
     kicker: 'Rapports et synthèses',
@@ -754,15 +754,6 @@ export const DashboardPage: React.FC = () => {
 
   const [transportRoutes, setTransportRoutes] = React.useState<TransportRoute[]>([]);
   const [drivers, setDrivers] = React.useState<Driver[]>([]);
-  const [newTransportRoute, setNewTransportRoute] =
-    React.useState<NewTransportRouteFormState>({
-      name: '',
-      driverId: '',
-      driverName: '',
-      departureTime: '',
-      returnTime: '',
-      note: '',
-    });
   const current =
     (role && roleSectionOverrides[role]?.[activeSection]) ?? sectionConfig[activeSection];
 
@@ -1054,35 +1045,25 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleCreateTransportRoute = async (
-    e: React.FormEvent,
-    payload?: { waypoints?: { lat: number; lng: number; name: string }[]; routePolyline?: [number, number][] },
-  ) => {
-    e.preventDefault();
-    const hasDriver = newTransportRoute.driverId.trim() || newTransportRoute.driverName.trim();
-    if (!newTransportRoute.name.trim() || !hasDriver || !newTransportRoute.departureTime.trim()) return;
+  const handleCreateTransportRoute = async (payload: NewRoutePayload): Promise<boolean> => {
+    if (!requireBackend()) return false;
+    try {
+      const created = await createTransportOnBackend(payload);
+      setTransportRoutes((prev) => [...prev, created]);
+      toast.success(`${created.name} créée`);
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+      return false;
+    }
+  };
+
+  const handleDeleteTransportRoute = async (routeId: string) => {
     if (!requireBackend()) return;
     try {
-      const created = await createTransportOnBackend({
-        name: newTransportRoute.name.trim(),
-        driverId: newTransportRoute.driverId.trim() || undefined,
-        driverName: newTransportRoute.driverName.trim() || undefined,
-        departureTime: newTransportRoute.departureTime.trim(),
-        returnTime: newTransportRoute.returnTime.trim() || undefined,
-        note: newTransportRoute.note.trim() || undefined,
-        waypoints: payload?.waypoints,
-        routePolyline: payload?.routePolyline,
-      });
-      setTransportRoutes((prev) => [...prev, created]);
-      setNewTransportRoute({
-        name: '',
-        driverId: '',
-        driverName: '',
-        departureTime: '',
-        returnTime: '',
-        note: '',
-      });
-      toast.success('Trajet enregistré');
+      await deleteTransportOnBackend(routeId);
+      setTransportRoutes((prev) => prev.filter((r) => r.id !== routeId));
+      toast.success('Ligne supprimée');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -2175,9 +2156,9 @@ export const DashboardPage: React.FC = () => {
             <TransportSection
               routes={transportRoutesForView}
               drivers={drivers}
-              newRoute={newTransportRoute}
-              setNewRoute={setNewTransportRoute}
+              classes={classes}
               onCreateRoute={handleCreateTransportRoute}
+              onDeleteRoute={handleDeleteTransportRoute}
               onUpdateRouteStudents={handleUpdateRouteStudents}
               defaultPhoneCountry={schoolProfile?.country}
               onCreateDriver={handleCreateDriver}

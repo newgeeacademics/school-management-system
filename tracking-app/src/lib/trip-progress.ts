@@ -7,6 +7,8 @@ const MIN_RELIABLE_SPEED_KMH = 5;
 
 export type TripProgress = {
   nextStop: LiveWaypoint;
+  /** Index of nextStop in the waypoints (earlier stops are passed). */
+  nextIndex: number;
   /** Straight-line distance from the bus to the next stop. */
   kmToNextStop: number;
   /** Distance to the last stop (the school, or the last drop-off), through the remaining stops. */
@@ -56,6 +58,7 @@ export function tripProgress(position: LivePosition | null, waypoints: LiveWaypo
 
   return {
     nextStop: waypoints[next],
+    nextIndex: next,
     kmToNextStop,
     kmRemaining,
     minutesToNextStop: Math.max(1, Math.round((kmToNextStop / speed) * 60)),

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Bus, ChevronDown, Clock, LogOut, MapPin, Radio, Users } from 'lucide-react';
+import { Bus, Check, ChevronDown, Clock, LogOut, MapPin, Radio, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
 import { TrackingMap } from '@/components/TrackingMap';
@@ -32,6 +32,7 @@ export function TrackingDashboardPage() {
   const [driverMode, setDriverMode] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const watchIdRef = useRef<number | null>(null);
+  const refreshSelectedRef = useRef<() => Promise<void>>(async () => undefined);
 
   const selected = routes.find((r) => r.routeId === selectedId) ?? routes[0] ?? null;
 
@@ -53,6 +54,7 @@ export function TrackingDashboardPage() {
 
   useEffect(() => {
     if (!sheetOpen) return;
+    void refreshSelectedRef.current();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setSheetOpen(false);
     };
@@ -108,7 +110,8 @@ export function TrackingDashboardPage() {
     try {
       const updated = await startTrip(selected.routeId);
       setRoutes((prev) => prev.map((r) => (r.routeId === updated.routeId ? updated : r)));
-      toast.success('Trajet démarré');
+      setDriverMode(true);
+      toast.success('Trajet démarré · position partagée');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -175,15 +178,22 @@ export function TrackingDashboardPage() {
     };
   }, [driverMode, selected, session, pushPosition]);
 
+  // A driver reopening the app during an active trip keeps sharing the bus position.
+  const tripActiveForDriver = canDrive(session) && selected?.tripStatus === 'ACTIVE';
+  useEffect(() => {
+    if (tripActiveForDriver) setDriverMode(true);
+  }, [tripActiveForDriver]);
+
   const refreshSelected = async () => {
     if (!selected) return;
     try {
       const updated = await fetchLiveRoute(selected.routeId);
       setRoutes((prev) => prev.map((r) => (r.routeId === updated.routeId ? updated : r)));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
+    } catch {
+      // the websocket keeps the view current; a failed refresh is not worth a toast
     }
   };
+  refreshSelectedRef.current = refreshSelected;
 
   const isLive = selected?.tripStatus === 'ACTIVE' && selected?.livePosition != null;
   const canPickRoute = routes.length > 1;
@@ -201,20 +211,17 @@ export function TrackingDashboardPage() {
     return route.routeName;
   };
 
+  const progress = isLive && selected ? tripProgress(selected.livePosition, selected.waypoints) : null;
+
   const details = selected ? (
     <RouteDetails
       selected={selected}
       isLive={isLive}
-      canDrive={canDrive(session)}
-      driverMode={driverMode}
-      onRefresh={() => void refreshSelected()}
-      onStartTrip={() => void handleStartTrip()}
-      onToggleGps={() => setDriverMode((v) => !v)}
-      onStopTrip={() => void handleStopTrip()}
+      nextIndex={progress?.nextIndex ?? null}
+      gpsSharing={driverMode && canDrive(session)}
     />
   ) : null;
 
-  const progress = isLive && selected ? tripProgress(selected.livePosition, selected.waypoints) : null;
   const toNext = progress ? formatDistance(progress.kmToNextStop) : null;
   const speedKmh = selected?.livePosition?.speedKmh;
   const onBoard = selected?.students.filter((s) => s.trackingStatus === 'ON_BUS') ?? [];
@@ -403,10 +410,7 @@ export function TrackingDashboardPage() {
               ) : (
                 <Button
                   className='h-12 w-28 shrink-0 rounded-xl text-base font-bold'
-                  onClick={() => {
-                    void handleStartTrip();
-                    setDriverMode(true);
-                  }}
+                  onClick={() => void handleStartTrip()}
                 >
                   Démarrer
                 </Button>
@@ -422,87 +426,104 @@ export function TrackingDashboardPage() {
 function RouteDetails({
   selected,
   isLive,
-  canDrive: showDriver,
-  driverMode,
-  onRefresh,
-  onStartTrip,
-  onToggleGps,
-  onStopTrip,
+  nextIndex,
+  gpsSharing,
 }: {
   selected: LiveRoute;
   isLive: boolean;
-  canDrive: boolean;
-  driverMode: boolean;
-  onRefresh: () => void;
-  onStartTrip: () => void;
-  onToggleGps: () => void;
-  onStopTrip: () => void;
+  nextIndex: number | null;
+  gpsSharing: boolean;
 }) {
+  const stops = selected.waypoints;
   return (
     <>
-      <div className='rounded-2xl border border-foreground/[0.06] bg-card shadow-[var(--brand-shadow)] p-4'>
-        <h2 className='font-display text-lg font-bold tracking-tight'>{selected.routeName}</h2>
-        <p className='mt-1 text-sm text-muted-foreground'>Chauffeur : {selected.driverName}</p>
-        <p className='text-sm text-muted-foreground'>
-          Départ : {selected.departureTime}
-          {selected.returnTime ? ` · Retour : ${selected.returnTime}` : ''}
-        </p>
-        <div className='mt-3 flex items-center gap-2'>
+      <div className='rounded-2xl border border-foreground/[0.06] bg-card p-4 shadow-[var(--brand-shadow)]'>
+        <div className='flex items-start justify-between gap-3'>
+          <div className='min-w-0'>
+            <h2 className='font-display text-lg font-bold tracking-tight'>{selected.routeName}</h2>
+            <p className='mt-0.5 text-sm text-muted-foreground'>
+              {selected.driverName} · départ {selected.departureTime}
+              {selected.returnTime ? ` · retour ${selected.returnTime}` : ''}
+            </p>
+          </div>
           <span
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+            className={cn(
+              'inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium',
               isLive ? 'bg-green-100 text-green-800' : 'bg-muted text-muted-foreground'
-            }`}
+            )}
           >
             <Radio className='size-3' />
             {isLive ? 'En direct' : 'Hors ligne'}
           </span>
-          <Button variant='ghost' size='sm' onClick={onRefresh}>
-            Actualiser
-          </Button>
         </div>
+        {gpsSharing ? (
+          <p className='mt-3 rounded-xl bg-green-50 px-3 py-2 text-xs font-medium text-green-800'>
+            Votre position est partagée avec les familles jusqu’à « Terminer ».
+          </p>
+        ) : null}
       </div>
 
+      {stops.length > 0 ? (
+        <div className='rounded-2xl border border-foreground/[0.06] bg-card p-4 shadow-[var(--brand-shadow)]'>
+          <h3 className='mb-3 flex items-center gap-2 text-sm font-semibold'>
+            <MapPin className='size-4' />
+            Arrêts
+          </h3>
+          <ol className='relative space-y-0'>
+            {stops.map((stop, i) => {
+              const passed = nextIndex != null && i < nextIndex;
+              const next = nextIndex === i;
+              const last = i === stops.length - 1;
+              return (
+                <li key={`${stop.lat}-${stop.lng}-${i}`} className='relative flex gap-3 pb-3 last:pb-0'>
+                  {!last ? (
+                    <span
+                      className={cn('absolute left-[11px] top-6 h-[calc(100%-12px)] w-0.5', passed ? 'bg-primary' : 'bg-foreground/10')}
+                      aria-hidden
+                    />
+                  ) : null}
+                  <span
+                    className={cn(
+                      'relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
+                      passed
+                        ? 'bg-primary text-primary-foreground'
+                        : next
+                          ? 'bg-card text-primary ring-2 ring-primary'
+                          : 'bg-muted text-muted-foreground'
+                    )}
+                  >
+                    {passed ? <Check className='size-3.5' strokeWidth={3} /> : i + 1}
+                  </span>
+                  <span className={cn('pt-0.5 text-sm', passed ? 'text-muted-foreground line-through decoration-foreground/20' : next ? 'font-semibold' : '')}>
+                    {stop.name || `Arrêt ${i + 1}`}
+                    {next ? <span className='ml-2 text-xs font-medium text-primary'>prochain</span> : null}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      ) : null}
+
       {selected.students.length > 0 && (
-        <div className='rounded-2xl border border-foreground/[0.06] bg-card shadow-[var(--brand-shadow)] p-4'>
+        <div className='rounded-2xl border border-foreground/[0.06] bg-card p-4 shadow-[var(--brand-shadow)]'>
           <h3 className='mb-3 flex items-center gap-2 text-sm font-semibold'>
             <Users className='size-4' />
-            Élèves sur ce trajet
+            Élèves ({selected.students.length})
           </h3>
-          <ul className='space-y-2'>
+          <ul className='grid gap-2 sm:grid-cols-2'>
             {selected.students.map((student) => (
-              <li key={student.id} className='rounded-xl bg-muted/60 px-3 py-2 text-sm'>
-                <span className='font-medium'>{student.name}</span>
-                {student.className && (
-                  <span className='block text-xs text-muted-foreground'>{student.className}</span>
-                )}
+              <li key={student.id} className='flex items-center justify-between gap-2 rounded-xl bg-muted/60 px-3 py-2 text-sm'>
+                <span className='min-w-0'>
+                  <span className='block truncate font-medium'>{student.name}</span>
+                  {student.className && <span className='block text-xs text-muted-foreground'>{student.className}</span>}
+                </span>
+                {student.trackingStatus === 'ON_BUS' ? (
+                  <span className='shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-800'>à bord</span>
+                ) : null}
               </li>
             ))}
           </ul>
-        </div>
-      )}
-
-      {showDriver && (
-        <div className='rounded-2xl border border-foreground/[0.06] bg-card shadow-[var(--brand-shadow)] p-4'>
-          <h3 className='mb-3 text-sm font-semibold'>Mode chauffeur</h3>
-          <div className='grid grid-cols-1 gap-2'>
-            <Button size='sm' className='w-full touch-target' onClick={onStartTrip}>
-              Démarrer le trajet
-            </Button>
-            <Button
-              size='sm'
-              variant={driverMode ? 'default' : 'outline'}
-              className='w-full touch-target'
-              onClick={onToggleGps}
-            >
-              {driverMode ? 'GPS actif' : 'Partager ma position'}
-            </Button>
-            <Button size='sm' variant='destructive' className='w-full touch-target' onClick={onStopTrip}>
-              Terminer
-            </Button>
-          </div>
-          <p className='mt-2 text-xs text-muted-foreground'>
-            Activez le GPS pour envoyer la position du bus en temps réel aux parents et enseignants.
-          </p>
         </div>
       )}
     </>
