@@ -2,6 +2,7 @@ import React from 'react';
 
 import { isCompleteEmail } from '@/components/refine-ui/form/email-with-at-separator';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
+import { phoneNeedsVerification, usePhoneVerificationVersion } from '@/lib/phone-verification';
 import { PhoneWithDialCode } from '@/components/refine-ui/form/phone-with-dial-code';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -84,20 +85,21 @@ export function UserCreateWizard({ defaultPhoneCountry, onSubmit }: UserCreateWi
       (form.phone.trim() && isValidLocalPhone(form.phoneCountry, form.phone)),
   );
 
+  const phoneVerificationVersion = usePhoneVerificationVersion();
   const canContinue = React.useCallback(
     (currentStep: number) => {
       switch (currentStep) {
         case 1:
           return Boolean(form.name.trim());
         case 2:
-          return hasContact && isValidOptionalLocalPhone(form.phoneCountry, form.phone);
+          return hasContact && isValidOptionalLocalPhone(form.phoneCountry, form.phone) && !phoneNeedsVerification(form.phoneCountry, form.phone);
         case 3:
           return hasContact;
         default:
           return false;
       }
     },
-    [form, hasContact],
+    [form, hasContact, phoneVerificationVersion],
   );
 
   const handleSubmit = async (e: React.FormEvent) => {

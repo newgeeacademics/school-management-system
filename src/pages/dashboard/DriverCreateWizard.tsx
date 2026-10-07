@@ -3,6 +3,7 @@ import React from 'react';
 import { LoginIdPreview } from '@/components/dashboard/LoginIdPreview';
 import { isCompleteEmail } from '@/components/refine-ui/form/email-with-at-separator';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
+import { phoneNeedsVerification, usePhoneVerificationVersion } from '@/lib/phone-verification';
 import { PhoneWithDialCode } from '@/components/refine-ui/form/phone-with-dial-code';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -75,20 +76,21 @@ export function DriverCreateWizard({ defaultPhoneCountry, onSubmit }: DriverCrea
       (form.phone.trim() && isValidLocalPhone(form.phoneCountry, form.phone)),
   );
 
+  const phoneVerificationVersion = usePhoneVerificationVersion();
   const canContinue = React.useCallback(
     (currentStep: number) => {
       switch (currentStep) {
         case 1:
           return Boolean(form.firstName.trim() && form.lastName.trim());
         case 2:
-          return hasContact && isValidOptionalLocalPhone(form.phoneCountry, form.phone);
+          return hasContact && isValidOptionalLocalPhone(form.phoneCountry, form.phone) && !phoneNeedsVerification(form.phoneCountry, form.phone);
         case 3:
           return hasContact;
         default:
           return false;
       }
     },
-    [form, hasContact],
+    [form, hasContact, phoneVerificationVersion],
   );
 
   const handleSubmit = async (e: React.FormEvent) => {

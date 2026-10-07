@@ -21,6 +21,7 @@ import {
   isCompleteEmail,
 } from '@/components/refine-ui/form/email-with-at-separator';
 import { PhoneWithDialCode } from '@/components/refine-ui/form/phone-with-dial-code';
+import { phoneNeedsVerification, usePhoneVerificationVersion } from '@/lib/phone-verification';
 import { RegistrationNumberField, type RegistrationNumberStatus } from '@/components/refine-ui/form/registration-number-field';
 import { SchoolLanguagesPicker } from '@/components/refine-ui/form/school-languages-picker';
 import { SchoolOpeningHoursPicker } from '@/components/refine-ui/form/school-opening-hours-picker';
@@ -169,6 +170,7 @@ export function SchoolRegisterWizard() {
     internalNotes: '',
   });
 
+  const phoneVerificationVersion = usePhoneVerificationVersion();
   const canContinue = useCallback(
     (s: number): boolean => {
       switch (s) {
@@ -181,9 +183,11 @@ export function SchoolRegisterWizard() {
         case 4:
           return Boolean(
             isValidLocalPhone(school.country, school.phone) &&
+              !phoneNeedsVerification(school.country, school.phone) &&
               isCompleteEmail(school.officialEmail) &&
               school.directorName.trim() &&
-              isValidLocalPhone(school.country, school.directorPhone)
+              isValidLocalPhone(school.country, school.directorPhone) &&
+              !phoneNeedsVerification(school.country, school.directorPhone)
           );
         case 5:
           return Boolean(
@@ -203,7 +207,9 @@ export function SchoolRegisterWizard() {
           return (
             regOk &&
             isValidOptionalLocalPhone(school.country, school.billingPhone) &&
-            isValidOptionalLocalPhone(school.country, school.emergencyContactPhone)
+            !phoneNeedsVerification(school.country, school.billingPhone) &&
+            isValidOptionalLocalPhone(school.country, school.emergencyContactPhone) &&
+            !phoneNeedsVerification(school.country, school.emergencyContactPhone)
           );
         }
         case 7:
@@ -217,7 +223,7 @@ export function SchoolRegisterWizard() {
           return false;
       }
     },
-    [credentials, logoFiles.length, registrationNumberStatus, school]
+    [credentials, logoFiles.length, registrationNumberStatus, school, phoneVerificationVersion]
   );
 
   const canFinish = useMemo(() => {
