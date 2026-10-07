@@ -37,6 +37,8 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
       - key: APP_EMAIL_FROM
         value: NewGee <contact@newgeeacademy.com>
       - key: APP_EMAIL_SUBJECT_PREFIX

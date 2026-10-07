@@ -1,56 +1,32 @@
 # Sign in with Google
 
-The classroom app (`/login`) now has a **Continue with Google** button. It uses
-[Google Identity Services](https://developers.google.com/identity/gsi/web): the
-browser gets a signed Google **ID token**, sends it to the API, and the API
-verifies it and returns the usual NewGee session (same JSON as `/api/auth/login`).
+Every app's login page has a **Continuer avec Google** button. It works with
+**Firebase Authentication** (recommended) or, alternatively, a plain Google OAuth
+client ID. Google only proves who the person is: the Google e-mail must match an
+existing NewGee account (no account is created automatically).
 
-Google only proves *who* the person is. Access still comes from NewGee: the
-Google e-mail must match an existing account (accounts are still provisioned by
-the school). No account is created automatically.
+## Firebase (recommended)
 
-```
-Browser ──(Google popup)──▶ Google ──ID token──▶ Browser
-Browser ──POST /api/auth/google { idToken }──▶ API ──verify signature/aud/exp──▶ AuthResponse (JWT)
-```
+1. Firebase console → **Authentication → Sign-in method** → enable **Google**.
+2. **Authentication → Settings → Authorized domains** → add every site showing the
+   button (www.newgeeacademy.com, newgeeacademy.com, admin., portal., finance., the
+   tracker's domain). `localhost` is there by default.
+3. **Project settings → General → Your apps** → add a **Web app** if there is none, and
+   copy from its `firebaseConfig`:
+   - `apiKey` → `VITE_FIREBASE_API_KEY`
+   - `authDomain` → `VITE_FIREBASE_AUTH_DOMAIN`
+   - `projectId` → `VITE_FIREBASE_PROJECT_ID`
+4. **Vercel** (each project: classroom, admin, portal, finance, tracking): add those three
+   variables, then redeploy.
+5. **Render** (API): add `FIREBASE_PROJECT_ID` = the same `projectId`.
 
-## 1. Google Cloud Console (once)
+The browser signs in through Firebase, sends the Firebase ID token to
+`POST /api/auth/google`, and the API verifies it (signature, issuer
+`https://securetoken.google.com/<projectId>`, audience `<projectId>`, expiry) before
+returning the usual NewGee session.
 
-1. **APIs & Services → OAuth consent screen**: set app name *NewGee*, support
-   e-mail and logo, then publish it.
-2. **Credentials → Create credentials → OAuth client ID → Web application**.
-3. **Authorized JavaScript origins**: add every site that shows the button, e.g.
-   - `https://www.newgeeacademy.com`
-   - `https://portal.newgeeacademy.com` (when the portal gets the button)
-   - `http://localhost:5173` (local dev)
-   No redirect URI is needed (popup mode).
-4. Copy the **client ID** (`…apps.googleusercontent.com`).
+## Without Firebase
 
-## 2. Frontend (this app, Vercel)
-
-Set `VITE_GOOGLE_CLIENT_ID=<client id>` on the Vercel project and redeploy.
-Without it the button is simply hidden, so it is safe to deploy first.
-
-## 3. Backend (Render)
-
-Implemented in `backend/`: `POST /api/auth/google` (`AuthController`),
-`GoogleIdTokenVerifier` (signature via Google's JWKS, issuer, audience,
-expiry) and `AuthService.loginWithGoogle`. It signs in the existing account
-whose e-mail matches the Google account; it never creates accounts.
-
-Set on Render: `GOOGLE_CLIENT_ID=<same client id>` (comma-separate several
-IDs if another app uses its own client). Without it the endpoint answers
-that Google sign-in is not configured.
-
-## 4. Other apps (admin, user portal, finance, tracking)
-
-Each app has the same button on its login page, built from the same pieces:
-
-- `src/lib/google-auth.ts` (script loader)
-- `src/components/auth/GoogleSignInButton.tsx` (button)
-- a `loginWithGoogle(idToken)` call to `POST /api/auth/google`, then the app's
-  existing "save session" code, exactly as `sign-in-form.tsx` does here.
-
-Each app only needs its origin added to the OAuth client and
-`VITE_GOOGLE_CLIENT_ID` set on its Vercel project. The role check stays
-per-app (console = `ADMIN`, portal = student/parent/teacher, …).
+Set `VITE_GOOGLE_CLIENT_ID` (Vercel) and `GOOGLE_CLIENT_ID` (Render) to an OAuth web
+client ID from Google Cloud Console → APIs & Services → Credentials, with your sites
+as Authorized JavaScript origins. Firebase is used instead when both are set.

@@ -7,6 +7,7 @@ import com.classroom.backend.model.AppUser;
 import com.classroom.backend.model.School;
 import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.AppUserRepository;
+import com.classroom.backend.security.FirebaseIdTokenVerifier;
 import com.classroom.backend.security.GoogleIdTokenVerifier;
 import com.classroom.backend.security.JwtTokenProvider;
 import com.classroom.backend.service.email.EmailNotificationService;
@@ -33,6 +34,7 @@ public class AuthService {
     private final AccountIdentifierService accountIdentifierService;
     private final UserEmailAuthService userEmailAuthService;
     private final GoogleIdTokenVerifier googleIdTokenVerifier;
+    private final FirebaseIdTokenVerifier firebaseIdTokenVerifier;
 
     @Transactional
     public AuthResponse registerSchool(RegisterSchoolRequest request) {
@@ -134,8 +136,24 @@ public class AuthService {
      * an existing NewGee account with that address (accounts are provisioned by the school).
      */
     @Transactional
+    /** Reads the (not yet verified) issuer only to pick the right verifier. */
+    private static boolean isFirebaseToken(String idToken) {
+        try {
+            String[] parts = idToken.split("\\.");
+            if (parts.length < 2) return false;
+            String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]), java.nio.charset.StandardCharsets.UTF_8);
+            return payload.contains("\"" + FirebaseIdTokenVerifier.ISSUER_PREFIX.replace("/", "\\/"))
+                    || payload.contains("\"" + FirebaseIdTokenVerifier.ISSUER_PREFIX);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
     public AuthResponse loginWithGoogle(String idToken) {
-        GoogleIdTokenVerifier.GoogleIdentity google = googleIdTokenVerifier.verify(idToken);
+        // Tokens from Firebase Authentication are issued by securetoken.google.com; others come from Google directly.
+        GoogleIdTokenVerifier.GoogleIdentity google = isFirebaseToken(idToken)
+                ? firebaseIdTokenVerifier.verify(idToken)
+                : googleIdTokenVerifier.verify(idToken);
         AppUser user = appUserRepository.findByEmailIgnoreCase(google.email())
                 .orElseThrow(() -> new BadCredentialsException(
                         "Aucun compte NewGee n'est associé à " + google.email() + "."));
