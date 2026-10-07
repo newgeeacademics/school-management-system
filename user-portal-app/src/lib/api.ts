@@ -1,5 +1,6 @@
 import { ACCESS_TOKEN_KEY, BASE_URL, isBackendApiConfigured } from '@/constants';
 import { clearPortalSession } from '@/lib/auth';
+import { USER_ERRORS, messageForStatus, readServerMessage } from '@/lib/user-errors';
 
 export { isBackendApiConfigured };
 
@@ -39,26 +40,25 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   try {
     res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
   } catch {
-    throw new ApiError(
-      'Impossible de joindre le serveur. Vérifiez votre connexion internet puis réessayez.',
-      0
-    );
+    throw new ApiError(USER_ERRORS.network, 0);
   }
   if (res.status === 401 && token && !path.startsWith('/api/auth/')) {
     handleExpiredPortalSession();
     throw new ApiError('Votre session a expiré. Reconnectez-vous.', 401);
   }
   if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    const message =
-      (body && typeof body === 'object' && 'error' in body && String(body.error)) ||
-      `Request failed (${res.status})`;
-    throw new ApiError(message, res.status);
+    const serverMessage = await readServerMessage(res);
+    if (import.meta.env.DEV && serverMessage) console.warn(`[API ${res.status}]`, serverMessage);
+    throw new ApiError(messageForStatus(res.status, serverMessage, { login: path.startsWith('/api/auth/') }), res.status);
   }
   if (res.status === 204) return undefined as T;
   // Some endpoints answer 200 with an empty body.
   const text = await res.text();
-  return (text ? JSON.parse(text) : undefined) as T;
+  try {
+    return (text ? JSON.parse(text) : undefined) as T;
+  } catch {
+    throw new ApiError(USER_ERRORS.badResponse, res.status);
+  }
 }
 
 let portalSessionExpiryHandled = false;

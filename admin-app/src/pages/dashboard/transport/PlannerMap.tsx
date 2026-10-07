@@ -10,7 +10,7 @@ import OpenMap, {
   Source as OpenSource,
 } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Crosshair, Minus, Plus, School } from 'lucide-react';
+import { Crosshair, Flag, Minus, Plus, School } from 'lucide-react';
 
 import { useMapSourceFallback } from '@shared/map-sources';
 import { MapStatus } from '@shared/MapStatus';
@@ -190,25 +190,32 @@ export function PlannerMap(props: PlannerMapProps) {
           </Source>
         ) : null}
 
-        {stops.map((stop, index) => (
-          <Marker key={stop.id} latitude={stop.lat} longitude={stop.lng} anchor='center'>
-            <div
-              role='button'
-              title={stop.name}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectStop?.(stop.id);
-              }}
-              style={pinStyle(index === 0 ? '#16a34a' : '#2563eb', selectedId === stop.id)}
-            >
-              {index + 1}
-            </div>
-          </Marker>
-        ))}
+        {stops.map((stop, index) => {
+          // Without the school, the last stop is the final destination.
+          const isDestination = !school && stops.length > 1 && index === stops.length - 1;
+          return (
+            <Marker key={stop.id} latitude={stop.lat} longitude={stop.lng} anchor='center'>
+              <div
+                role='button'
+                title={isDestination ? `Arrivée · ${stop.name}` : index === 0 ? `Départ · ${stop.name}` : stop.name}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelectStop?.(stop.id);
+                }}
+                style={{
+                  ...pinStyle(isDestination ? '#dc2626' : index === 0 ? '#16a34a' : '#2563eb', selectedId === stop.id),
+                  ...(isDestination ? { borderRadius: 10 } : {}),
+                }}
+              >
+                {isDestination ? <Flag size={14} /> : index + 1}
+              </div>
+            </Marker>
+          );
+        })}
 
         {school ? (
           <Marker latitude={school.lat} longitude={school.lng} anchor='bottom'>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} title={school.name}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} title={`Arrivée · ${school.name}`}>
               <div
                 style={{
                   ...pinStyle('#ea580c', false),

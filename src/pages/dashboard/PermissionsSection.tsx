@@ -73,7 +73,7 @@ export function PermissionsSection({ onOpenUsers }: Props) {
 
   const handleSave = async () => {
     if (!isBackendApiConfigured()) {
-      toast.error('API non configurée');
+      toast.error('Service indisponible pour le moment.');
       return;
     }
     setSaving(true);

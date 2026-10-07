@@ -765,7 +765,7 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateTransportRoute = async (payload: NewRoutePayload): Promise<boolean> => {
     if (!backendSync) {
-      toast.error('API non configurée : impossible d’enregistrer la ligne.');
+      toast.error('Service indisponible : la ligne n’a pas pu être enregistrée.');
       return false;
     }
     try {
@@ -1531,19 +1531,19 @@ export const DashboardPage: React.FC = () => {
 
           {activeSection === 'sis' && (
             <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-              <Card className='cursor-pointer transition-shadow hover:shadow-md' onClick={() => setActiveSection('students')}>
+              <Card className='cursor-pointer transition-colors hover:ring-foreground/15' onClick={() => setActiveSection('students')}>
                 <CardHeader>
                   <CardTitle className='text-base'>Élèves</CardTitle>
                   <CardDescription>Dossiers, affectations et listes par classe.</CardDescription>
                 </CardHeader>
               </Card>
-              <Card className='cursor-pointer transition-shadow hover:shadow-md' onClick={() => setActiveSection('parents')}>
+              <Card className='cursor-pointer transition-colors hover:ring-foreground/15' onClick={() => setActiveSection('parents')}>
                 <CardHeader>
                   <CardTitle className='text-base'>Parents & tuteurs</CardTitle>
                   <CardDescription>Contacts et rattachements aux élèves.</CardDescription>
                 </CardHeader>
               </Card>
-              <Card className='cursor-pointer transition-shadow hover:shadow-md' onClick={() => setActiveSection('classes')}>
+              <Card className='cursor-pointer transition-colors hover:ring-foreground/15' onClick={() => setActiveSection('classes')}>
                 <CardHeader>
                   <CardTitle className='text-base'>Classes</CardTitle>
                   <CardDescription>Structure des niveaux et effectifs.</CardDescription>

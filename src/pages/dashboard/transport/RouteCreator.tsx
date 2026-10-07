@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowUp,
   Check,
+  Flag,
   Loader2,
   MapPin,
   MousePointerClick,
@@ -344,7 +345,10 @@ export function RouteCreator({
                     Touchez la carte à chaque point de ramassage, dans l’ordre du trajet.
                   </li>
                 ) : null}
-                {stops.map((stop, index) => (
+                {stops.map((stop, index) => {
+                  const isDestination = !arrival && stops.length > 1 && index === stops.length - 1;
+                  const role = isDestination ? 'Arrivée' : index === 0 ? 'Départ' : null;
+                  return (
                   <li
                     key={stop.id}
                     className={cn(
@@ -355,20 +359,27 @@ export function RouteCreator({
                   >
                     <span
                       className={cn(
-                        'flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white',
-                        index === 0 ? 'bg-green-600' : 'bg-blue-600',
+                        'flex size-7 shrink-0 items-center justify-center text-xs font-bold text-white',
+                        isDestination ? 'rounded-lg bg-red-600' : index === 0 ? 'rounded-full bg-green-600' : 'rounded-full bg-blue-600',
                       )}
                     >
-                      {index + 1}
+                      {isDestination ? <Flag className='size-3.5' /> : index + 1}
                     </span>
-                    <input
-                      value={stop.name}
-                      onChange={(e) =>
-                        setStops((prev) => prev.map((s) => (s.id === stop.id ? { ...s, name: e.target.value } : s)))
-                      }
-                      className='min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-900 outline-none'
-                      aria-label={`Nom de l’arrêt ${index + 1}`}
-                    />
+                    <span className='min-w-0 flex-1'>
+                      {role ? (
+                        <span className={cn('block text-[10px] font-semibold uppercase', isDestination ? 'text-red-700' : 'text-green-700')}>
+                          {role}
+                        </span>
+                      ) : null}
+                      <input
+                        value={stop.name}
+                        onChange={(e) =>
+                          setStops((prev) => prev.map((s) => (s.id === stop.id ? { ...s, name: e.target.value } : s)))
+                        }
+                        className='w-full min-w-0 bg-transparent text-sm font-medium text-slate-900 outline-none'
+                        aria-label={`Nom de l’arrêt ${index + 1}`}
+                      />
+                    </span>
                     <div className='flex shrink-0 items-center'>
                       <IconBtn label='Monter' disabled={index === 0} onClick={() => moveStop(index, -1)}>
                         <ArrowUp className='size-3.5' />
@@ -381,7 +392,8 @@ export function RouteCreator({
                       </IconBtn>
                     </div>
                   </li>
-                ))}
+                  );
+                })}
 
                 {school ? (
                   <li
@@ -409,8 +421,8 @@ export function RouteCreator({
                   </li>
                 ) : (
                   <li className='rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800'>
-                    Position GPS de l’école inconnue : le dernier arrêt sera l’arrivée. Ajoutez-la dans
-                    Paramètres → Établissement pour qu’elle soit ajoutée automatiquement.
+                    Le dernier point placé est la destination finale. Ajoutez la position GPS de l’école dans
+                    Paramètres → Établissement pour qu’elle devienne l’arrivée automatiquement.
                   </li>
                 )}
               </ol>

@@ -58,7 +58,7 @@ export function FinanceOverviewPanel({ overview, loading }: Props) {
 
       <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
         {cards.map((card) => (
-          <Card key={card.label} className='border-violet-100/80 shadow-sm'>
+          <Card key={card.label} className='border-violet-100/80'>
             <CardHeader className='flex flex-row items-start justify-between pb-2'>
               <CardTitle className='text-xs font-medium text-muted-foreground leading-snug pr-2'>
                 {card.label}
