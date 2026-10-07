@@ -35,7 +35,7 @@ import type {
 } from '@/pages/dashboard/dashboardTypes';
 
 export const BACKEND_REQUIRED_MESSAGE =
-  'Connexion au serveur requise. Démarrez le backend (port 8080) ou définissez VITE_API_URL puis redémarrez le front.';
+  'Connexion au serveur impossible pour le moment. Réessayez dans un instant.';
 
 /** True when the app has a resolved API base URL (local dev default or env). */
 export function isBackendApiConfigured(): boolean {

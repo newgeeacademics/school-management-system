@@ -71,7 +71,7 @@
   --brand-blue-light: #dbeafe;
   --brand-green: #16a34a;
   --brand-green-soft: #dcfce7;
-  --brand-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 36px rgba(15, 23, 42, 0.06);
+  --brand-shadow: none;
   --brand-shadow-lg: 0 2px 4px rgba(15, 23, 42, 0.04), 0 30px 70px rgba(15, 23, 42, 0.12);
   --brand-focus: rgba(37, 99, 235, 0.18);
   --brand-ease: cubic-bezier(0.16, 0.84, 0.44, 1);
@@ -121,7 +121,7 @@
   --brand-line-strong: rgba(148, 163, 184, 0.6);
   --brand-hairline: rgba(148, 163, 184, 0.2);
   --brand-blue-soft: #0b1220;
-  --brand-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.35);
+  --brand-shadow: none;
 
   --background: #020617;
   --foreground: #e5e7eb;
