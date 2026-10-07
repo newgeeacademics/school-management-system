@@ -263,6 +263,7 @@ export const TransportSection: React.FC<TransportSectionProps> = ({
                 school={mapSchool}
                 polyline={mapPolyline}
                 padding={{ top: 70, right: 70, bottom: 90, left: 50 }}
+                showDiagnostic={!readOnly}
               />
               {selected && mapStops.length > 0 ? (
                 <div className='pointer-events-none absolute bottom-3 left-3 max-w-[70%] rounded-xl bg-white/95 px-3 py-2 text-xs shadow-md'>
