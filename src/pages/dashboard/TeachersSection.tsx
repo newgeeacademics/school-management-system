@@ -1,5 +1,8 @@
 import React from 'react';
 import { Plus, Users } from 'lucide-react';
+import { toast } from 'sonner';
+import { PhoneSmsCheck } from '@/components/auth/PhoneSmsCheck';
+import { phoneNeedsVerification } from '@/lib/phone-verification';
 
 import { EntityCrudActions } from '@/components/dashboard/EntityCrudActions';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
@@ -239,6 +242,11 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
 
   const saveEdit = () => {
     if (!editingId || !draft.name.trim() || !draft.subject.trim()) return;
+    const original = teachers.find((t) => t.id === editingId)?.phone ?? '';
+    if (draft.phone.replace(/\D/g, '') !== original.replace(/\D/g, '') && phoneNeedsVerification(draft.phone)) {
+      toast.error('Confirmez le nouveau numéro par SMS avant d’enregistrer.');
+      return;
+    }
     void Promise.resolve(
       onUpdateTeacher(editingId, {
         name: draft.name.trim(),
@@ -279,7 +287,17 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
           </div>
         </CardHeader>
         <CardContent>
-          <form className='space-y-4' onSubmit={onCreateTeacher}>
+          <form
+            className='space-y-4'
+            onSubmit={(e) => {
+              if (phoneNeedsVerification(newTeacher.phone)) {
+                e.preventDefault();
+                toast.error('Confirmez le numéro de téléphone par SMS avant de créer le compte.');
+                return;
+              }
+              onCreateTeacher(e);
+            }}
+          >
             <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
               <div className='grid gap-2 sm:col-span-2'>
                 <Label htmlFor='teacher-name'>Nom complet *</Label>
@@ -320,6 +338,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                   onChange={(e) => setNewTeacher((t) => ({ ...t, phone: e.target.value }))}
                   placeholder='+225 07 00 00 00 00'
                 />
+                <PhoneSmsCheck phone={newTeacher.phone} />
               </div>
               <div className='grid gap-2'>
                 <Label htmlFor='teacher-password'>Mot de passe portail</Label>
@@ -402,6 +421,7 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
                           onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))}
                           placeholder='Téléphone'
                         />
+                        <PhoneSmsCheck phone={draft.phone} />
                         <InputPassword
                           value={draft.password}
                           onChange={(e) => setDraft((d) => ({ ...d, password: e.target.value }))}
