@@ -16,6 +16,8 @@ public interface AppUserRepository extends JpaRepository<AppUser, String> {
 
     Optional<AppUser> findByPhone(String phone);
 
+    List<AppUser> findByPhoneEndingWith(String suffix);
+
     Optional<AppUser> findByLoginIdIgnoreCase(String loginId);
 
     boolean existsByLoginIdIgnoreCase(String loginId);

@@ -21,6 +21,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -136,6 +138,29 @@ public class AuthService {
      * an existing NewGee account with that address (accounts are provisioned by the school).
      */
     @Transactional
+    private AppUser findByVerifiedEmail(String email) {
+        return appUserRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new BadCredentialsException("Aucun compte NewGee n'est associé à " + email + "."));
+    }
+
+    /**
+     * Account for a phone number confirmed by SMS (E.164, e.g. +2250700000000). Numbers saved
+     * without the country code are matched on their last 9 digits, only when that is unambiguous.
+     */
+    private AppUser findByVerifiedPhone(String e164) {
+        String normalized = PhoneAccountUtil.normalizePhone(e164);
+        return appUserRepository.findByPhone(normalized)
+                .or(() -> appUserRepository.findByPhone(normalized.replace("+", "")))
+                .or(() -> {
+                    String digits = normalized.replaceAll("[^0-9]", "");
+                    if (digits.length() < 9) return java.util.Optional.empty();
+                    List<AppUser> matches = appUserRepository.findByPhoneEndingWith(digits.substring(digits.length() - 9));
+                    return matches.size() == 1 ? java.util.Optional.of(matches.get(0)) : java.util.Optional.empty();
+                })
+                .orElseThrow(() -> new BadCredentialsException(
+                        "Aucun compte NewGee n'est associé à ce numéro. Demandez à l'établissement de l'enregistrer."));
+    }
+
     /** Reads the (not yet verified) issuer only to pick the right verifier. */
     private static boolean isFirebaseToken(String idToken) {
         try {
@@ -151,18 +176,21 @@ public class AuthService {
 
     public AuthResponse loginWithGoogle(String idToken) {
         // Tokens from Firebase Authentication are issued by securetoken.google.com; others come from Google directly.
-        GoogleIdTokenVerifier.GoogleIdentity google = isFirebaseToken(idToken)
-                ? firebaseIdTokenVerifier.verify(idToken)
-                : googleIdTokenVerifier.verify(idToken);
-        AppUser user = appUserRepository.findByEmailIgnoreCase(google.email())
-                .orElseThrow(() -> new BadCredentialsException(
-                        "Aucun compte NewGee n'est associé à " + google.email() + "."));
+        AppUser user;
+        if (isFirebaseToken(idToken)) {
+            FirebaseIdTokenVerifier.FirebaseIdentity identity = firebaseIdTokenVerifier.verify(idToken);
+            user = identity.isPhone()
+                    ? findByVerifiedPhone(identity.phoneNumber())
+                    : findByVerifiedEmail(identity.email());
+        } else {
+            user = findByVerifiedEmail(googleIdTokenVerifier.verify(idToken).email());
+        }
 
         if (!user.isEmailVerified()) {
             user.setEmailVerified(true);
         }
         if (user.isPasswordSetupRequired()) {
-            // Invitation accepted through Google: no password to choose before entering the app.
+            // Invitation accepted through Google or SMS: no password to choose before entering the app.
             user.setPasswordSetupRequired(false);
         }
         user = appUserRepository.save(user);

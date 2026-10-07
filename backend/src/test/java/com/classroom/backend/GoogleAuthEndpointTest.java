@@ -38,6 +38,15 @@ class GoogleAuthEndpointTest {
     }
 
     @Test
+    void rejectsForgedFirebasePhoneToken() throws Exception {
+        // Unsigned token claiming an SMS-verified number: must not sign anyone in.
+        mockMvc.perform(post("/api/auth/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"idToken\":\"eyJhbGciOiJub25lIn0.eyJpc3MiOiAiaHR0cHM6Ly9zZWN1cmV0b2tlbi5nb29nbGUuY29tL3Rlc3QtcHJvamVjdCIsICJhdWQiOiAidGVzdC1wcm9qZWN0IiwgInBob25lX251bWJlciI6ICIrMjI1MDcwMDAwMDAwMCIsICJzdWIiOiAieCIsICJleHAiOiA5OTk5OTk5OTk5LCAiZmlyZWJhc2UiOiB7InNpZ25faW5fcHJvdmlkZXIiOiAicGhvbmUifX0.\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void requiresIdToken() throws Exception {
         mockMvc.perform(post("/api/auth/google")
                         .contentType(MediaType.APPLICATION_JSON)

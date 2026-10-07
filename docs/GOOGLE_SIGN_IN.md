@@ -25,6 +25,22 @@ The browser signs in through Firebase, sends the Firebase ID token to
 `https://securetoken.google.com/<projectId>`, audience `<projectId>`, expiry) before
 returning the usual NewGee session.
 
+## Sign in by SMS (Firebase phone verification)
+
+With Firebase configured, login pages also offer **Recevoir un code par SMS**: the person
+enters their number, receives a 6-digit code, and is signed in. The API matches the
+verified number (`+225…`) to the phone saved on an existing account (numbers saved
+without the country code are matched on their last 9 digits when unambiguous).
+
+1. Firebase console → **Authentication → Sign-in method → Phone** → enable.
+2. Real SMS need the **Blaze** (pay-as-you-go) plan; on the free plan, add **test phone
+   numbers** with fixed codes on the same page.
+3. The same **Authorized domains** as above apply.
+4. Optional (Vercel): `VITE_DEFAULT_PHONE_PREFIX` (default `+225`) for numbers typed
+   without a country code; `VITE_FIREBASE_PHONE_AUTH=false` hides the SMS option.
+
+No extra backend variable: `FIREBASE_PROJECT_ID` covers Google and SMS.
+
 ## Without Firebase
 
 Set `VITE_GOOGLE_CLIENT_ID` (Vercel) and `GOOGLE_CLIENT_ID` (Render) to an OAuth web

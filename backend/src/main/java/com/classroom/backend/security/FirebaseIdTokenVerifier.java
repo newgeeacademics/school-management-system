@@ -34,9 +34,16 @@ public class FirebaseIdTokenVerifier {
         return !projectId.isEmpty();
     }
 
-    public GoogleIdTokenVerifier.GoogleIdentity verify(String idToken) {
+    /** Who Firebase vouches for: a verified Google e-mail, or a phone number confirmed by SMS. */
+    public record FirebaseIdentity(String provider, String email, String phoneNumber, String name, String subject) {
+        public boolean isPhone() {
+            return "phone".equals(provider);
+        }
+    }
+
+    public FirebaseIdentity verify(String idToken) {
         if (!isConfigured()) {
-            throw new IllegalStateException("Connexion Google (Firebase) non configurée sur le serveur (FIREBASE_PROJECT_ID).");
+            throw new IllegalStateException("Connexion Firebase non configurée sur le serveur (FIREBASE_PROJECT_ID).");
         }
         JwtConsumer consumer = new JwtConsumerBuilder()
                 .setVerificationKeyResolver(keyResolver)
@@ -48,27 +55,37 @@ public class FirebaseIdTokenVerifier {
                 .build();
         String email;
         Object emailVerified;
+        String phone;
         String name;
         String subject;
-        Object provider = null;
+        String provider = null;
         try {
             JwtClaims claims = consumer.processToClaims(idToken);
             email = claims.getStringClaimValue("email");
             emailVerified = claims.getClaimValue("email_verified");
+            phone = claims.getStringClaimValue("phone_number");
             name = claims.getStringClaimValue("name");
             subject = claims.getSubject();
             Object firebase = claims.getClaimValue("firebase");
-            if (firebase instanceof Map<?, ?> map) provider = map.get("sign_in_provider");
+            if (firebase instanceof Map<?, ?> map && map.get("sign_in_provider") != null) {
+                provider = String.valueOf(map.get("sign_in_provider"));
+            }
         } catch (Exception e) {
-            throw new BadCredentialsException("Jeton de connexion Google invalide ou expiré.");
+            throw new BadCredentialsException("Session de connexion invalide ou expirée. Réessayez.");
         }
-        if (provider != null && !"google.com".equals(String.valueOf(provider))) {
-            throw new BadCredentialsException("Seule la connexion Google est acceptée.");
+        if ("phone".equals(provider)) {
+            if (phone == null || phone.isBlank()) {
+                throw new BadCredentialsException("Numéro de téléphone non vérifié.");
+            }
+            return new FirebaseIdentity(provider, null, phone.trim(), name, subject);
+        }
+        if (!"google.com".equals(provider)) {
+            throw new BadCredentialsException("Mode de connexion non accepté.");
         }
         boolean verified = Boolean.TRUE.equals(emailVerified) || "true".equals(String.valueOf(emailVerified));
         if (email == null || email.isBlank() || !verified) {
             throw new BadCredentialsException("Adresse Google non vérifiée.");
         }
-        return new GoogleIdTokenVerifier.GoogleIdentity(email.trim(), name, subject);
+        return new FirebaseIdentity(provider, email.trim(), null, name, subject);
     }
 }
