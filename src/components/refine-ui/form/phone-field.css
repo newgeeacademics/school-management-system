@@ -78,3 +78,75 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* SMS confirmation under a phone field */
+.phone-check {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 0.8rem;
+}
+.phone-check__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.phone-check__hint {
+  color: #667085;
+  margin: 0;
+}
+.phone-check__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  border: 1px solid #d0d5dd;
+  background: #fff;
+  color: #1d4ed8;
+  font-weight: 600;
+  cursor: pointer;
+}
+.phone-check__btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.phone-check__btn--primary {
+  border-color: #101828;
+  background: #101828;
+  color: #fff;
+}
+.phone-check__code {
+  width: 150px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid #d0d5dd;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-align: center;
+}
+.phone-check__link {
+  border: none;
+  background: none;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.phone-check__error {
+  color: #b42318;
+  margin: 0;
+}
+.phone-check--ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  color: #067647;
+  font-weight: 600;
+}

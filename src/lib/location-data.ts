@@ -20,9 +20,42 @@ export function getCountries(): CountryOption[] {
   return cachedCountries;
 }
 
+function simplify(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z]/g, '');
+}
+
+/**
+ * Country code for a name written in any usual way: the list's own name
+ * ("Cote D'Ivoire (Ivory Coast)"), the English or French short form
+ * ("Ivory Coast", "Côte d'Ivoire") or the ISO code ("CI").
+ */
 export function getCountryCodeByName(countryName: string): string {
-  if (!countryName) return '';
-  return getCountries().find((c) => c.name === countryName)?.code ?? '';
+  const wanted = countryName?.trim();
+  if (!wanted) return '';
+  const countries = getCountries();
+  const exact = countries.find((c) => c.name === wanted);
+  if (exact) return exact.code;
+  if (/^[A-Za-z]{2}$/.test(wanted)) {
+    const byCode = countries.find((c) => c.code === wanted.toUpperCase());
+    if (byCode) return byCode.code;
+  }
+  const key = simplify(wanted);
+  const match = countries.find((c) => {
+    const full = simplify(c.name);
+    const parts = c.name.split(/[()]/).map(simplify).filter(Boolean);
+    return full === key || parts.includes(key);
+  });
+  return match?.code ?? '';
+}
+
+/** The list's own spelling of a country name (so selects show it), or the input unchanged. */
+export function canonicalCountryName(countryName: string): string {
+  const code = getCountryCodeByName(countryName);
+  return getCountries().find((c) => c.code === code)?.name ?? countryName;
 }
 
 const citiesCache = new Map<string, string[]>();

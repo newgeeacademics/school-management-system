@@ -3,6 +3,7 @@ import React from 'react';
 import { LoginIdPreview } from '@/components/dashboard/LoginIdPreview';
 import { NONE_SELECT_VALUE } from '@/components/dashboard/EntityCrudActions';
 import { isCompleteEmail } from '@/components/refine-ui/form/email-with-at-separator';
+import { phoneNeedsVerification, usePhoneVerificationVersion } from '@/lib/phone-verification';
 import { PhoneWithDialCode } from '@/components/refine-ui/form/phone-with-dial-code';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -98,6 +99,7 @@ export function StudentCreateWizard({
     [licensedStudentCount, enrolledCount],
   );
 
+  const phoneVerificationVersion = usePhoneVerificationVersion();
   const canContinue = React.useCallback(
     (currentStep: number) => {
       switch (currentStep) {
@@ -109,13 +111,14 @@ export function StudentCreateWizard({
           return (
             hasContact &&
             isValidOptionalLocalPhone(form.phoneCountry, form.phone) &&
+            !phoneNeedsVerification(form.phoneCountry, form.phone) &&
             !enrolledCheck.isOver
           );
         default:
           return false;
       }
     },
-    [form, hasContact, enrolledCheck.isOver],
+    [form, hasContact, enrolledCheck.isOver, phoneVerificationVersion],
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
