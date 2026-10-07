@@ -37,6 +37,8 @@ type PlannerMapProps = {
   onSelectStop?: (id: string) => void;
   selectedId?: string | null;
   className?: string;
+  /** Show why Mapbox is not used (for school admins). */
+  showDiagnostic?: boolean;
 };
 
 function frame(map: MinimalMap | undefined, points: { lat: number; lng: number }[], padding: PlannerMapProps['padding']) {
@@ -88,7 +90,7 @@ const ctrlBtn: React.CSSProperties = {
 
 /** Map for planning a bus line: tap to add a stop, numbered pins, road path, school pin. */
 export function PlannerMap(props: PlannerMapProps) {
-  const { stops, school, polyline, padding, onAddStop, onSelectStop, selectedId, className } = props;
+  const { stops, school, polyline, padding, onAddStop, onSelectStop, selectedId, className, showDiagnostic } = props;
   const base = useMapSourceFallback();
   const useMapbox = base.source?.engine === 'mapbox';
   const Map = (useMapbox ? MapboxMap : OpenMap) as unknown as React.ComponentType<Record<string, unknown>>;
@@ -132,6 +134,28 @@ export function PlannerMap(props: PlannerMapProps) {
   return (
     <div className={className} style={{ position: 'relative' }}>
       <MapStatus ready={base.ready} failed={base.failed} onRetry={base.retry} />
+      {showDiagnostic && base.diagnostic ? (
+        <div
+          title={base.diagnostic}
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 64,
+            zIndex: 2,
+            maxWidth: 'min(70%, 420px)',
+            padding: '6px 10px',
+            borderRadius: 10,
+            background: '#fffbeb',
+            border: '1px solid #fcd34d',
+            color: '#92400e',
+            fontSize: 11,
+            fontWeight: 600,
+            boxShadow: '0 2px 8px rgba(15,23,42,.12)',
+          }}
+        >
+          {base.diagnostic} · carte gratuite affichée
+        </div>
+      ) : null}
       {base.source ? (
       <Map
         key={base.source.id}
