@@ -782,6 +782,10 @@ export async function createTransportOnBackend(item: {
   return mapTransportFromApi(data);
 }
 
+export async function deleteTransportOnBackend(routeId: string): Promise<void> {
+  await adminApiFetch(`/api/transport/${routeId}`, { method: 'DELETE' });
+}
+
 export async function updateTransportStudentsOnBackend(
   routeId: string,
   studentIds: string[],

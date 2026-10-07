@@ -135,7 +135,6 @@ export function DriverCreateWizard({ defaultPhoneCountry, onSubmit }: DriverCrea
                 id='driver-wizard-first-name'
                 value={form.firstName}
                 onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-                autoFocus
               />
             </div>
             <div className='grid gap-2'>

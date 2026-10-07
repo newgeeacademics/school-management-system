@@ -1,5 +1,5 @@
 import React from 'react';
-import { Car, Trash2 } from 'lucide-react';
+import { Car, Plus, Trash2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,19 +20,40 @@ export const DriversSection: React.FC<DriversSectionProps> = ({
   onCreateDriver,
   onDeleteDriver,
 }) => {
+  const [adding, setAdding] = React.useState(drivers.length === 0);
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className='flex flex-row items-start justify-between gap-3 space-y-0'>
+        <div className='space-y-1.5'>
         <CardTitle className='text-sm font-medium flex items-center gap-2'>
           <Car className='size-4' />
           Chauffeurs
         </CardTitle>
         <CardDescription className='text-xs'>
-          Parcours guidé en 3 étapes — identité, compte tracker GPS, validation.
+          Chaque chauffeur reçoit un compte pour l’application de suivi GPS.
         </CardDescription>
+        </div>
+        <Button
+          type='button'
+          variant={adding ? 'ghost' : 'outline'}
+          size='sm'
+          className='h-8 shrink-0 rounded-lg'
+          onClick={() => setAdding((v) => !v)}
+        >
+          {adding ? <X className='mr-1 size-3.5' /> : <Plus className='mr-1 size-3.5' />}
+          {adding ? 'Fermer' : 'Ajouter'}
+        </Button>
       </CardHeader>
       <CardContent className='space-y-4'>
-        <DriverCreateWizard defaultPhoneCountry={defaultPhoneCountry} onSubmit={onCreateDriver} />
+        {adding ? (
+          <DriverCreateWizard
+            defaultPhoneCountry={defaultPhoneCountry}
+            onSubmit={async (payload) => {
+              await onCreateDriver(payload);
+              setAdding(false);
+            }}
+          />
+        ) : null}
 
         {drivers.length === 0 ? (
           <p className='text-xs text-muted-foreground'>Aucun chauffeur enregistré.</p>
