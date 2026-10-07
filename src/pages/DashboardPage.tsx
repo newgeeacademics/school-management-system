@@ -31,6 +31,7 @@ import {
   createTeacherOnBackend,
   createTransportOnBackend,
   deleteTransportOnBackend,
+  updateTransportOnBackend,
   createUserOnBackend,
   deleteTeacherOnBackend,
   isBackendApiConfigured,
@@ -779,6 +780,22 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
+  const handleUpdateTransportRoute = async (route: TransportRoute, payload: NewRoutePayload): Promise<boolean> => {
+    if (route.id.startsWith('tr-')) {
+      toast.error('Cette ligne n’a pas été enregistrée sur le serveur : recréez-la.');
+      return false;
+    }
+    try {
+      const updated = await updateTransportOnBackend(route.id, payload);
+      setTransportRoutes((prev) => prev.map((r) => (r.id === route.id ? updated : r)));
+      toast.success(`${updated.name} mise à jour`);
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+      return false;
+    }
+  };
+
   const handleDeleteTransportRoute = async (routeId: string) => {
     if (!backendSync) return;
     try {
@@ -1497,6 +1514,7 @@ export const DashboardPage: React.FC = () => {
               classes={classes}
               onCreateRoute={handleCreateTransportRoute}
               onDeleteRoute={handleDeleteTransportRoute}
+              onUpdateRoute={handleUpdateTransportRoute}
               onUpdateRouteStudents={handleUpdateRouteStudents}
               readOnly={role === 'parent' || role === 'student'}
               students={students}
