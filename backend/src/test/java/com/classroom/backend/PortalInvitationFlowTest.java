@@ -22,7 +22,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = "spring.profiles.active=default")
 @TestPropertySource(properties = {
         "app.jwt.secret=test-jwt-secret-min-256-bits-for-unit-tests-only-xxxxxxxx",
-        "app.jwt.expiration-ms=86400000"
+        "app.jwt.expiration-ms=86400000",
+        // Own database: the demo seeder only fills an empty database, so creating a school here
+        // must not stop it from seeding the shared one other tests log in with.
+        "spring.datasource.url=jdbc:h2:mem:invitationflowdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
 })
 @AutoConfigureMockMvc
 class PortalInvitationFlowTest {
@@ -38,12 +41,18 @@ class PortalInvitationFlowTest {
 
     @Test
     void inviteTeacherThenActivateWithToken() throws Exception {
-        MvcResult login = mockMvc.perform(post("/api/auth/login")
+        // This test runs without demo data, so it registers its own school and uses that admin.
+        String schoolName = "Lycée Invitation " + UUID.randomUUID();
+        MvcResult registration = mockMvc.perform(post("/api/auth/register-school")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"admin@classroom.com\",\"password\":\"admin123\"}"))
-                .andExpect(status().isOk())
+                        .content(objectMapper.writeValueAsString(java.util.Map.of(
+                                "name", "Directeur " + schoolName,
+                                "email", "admin." + UUID.randomUUID() + "@example.com",
+                                "password", "secret123",
+                                "school", java.util.Map.of("name", schoolName, "type", "LYCEE")))))
+                .andExpect(status().isCreated())
                 .andReturn();
-        String adminJwt = objectMapper.readTree(login.getResponse().getContentAsString()).get("token").asText();
+        String adminJwt = objectMapper.readTree(registration.getResponse().getContentAsString()).get("token").asText();
 
         String email = "invite." + UUID.randomUUID() + "@example.com";
         String teacherBody = String.format(
