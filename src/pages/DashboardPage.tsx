@@ -1,8 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CircleHelp } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AppLogo } from '@/components/AppLogo';
+import { GuidedTour, useGuidedTour } from '@/components/GuidedTour';
+import { CONSOLE_ADMIN_TOUR, CONSOLE_MEMBER_TOUR, CONSOLE_TOUR_KEY } from '@/lib/tour-steps';
 
 import { ACCESS_TOKEN_KEY } from '@/constants';
 import {
@@ -416,6 +419,8 @@ export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const role = getStoredRole();
   const sessionUser = getStoredUser();
+  const tour = useGuidedTour(CONSOLE_TOUR_KEY, sessionUser?.id ?? sessionUser?.email);
+  const tourSteps = role === 'admin' || role === 'staff' ? CONSOLE_ADMIN_TOUR : CONSOLE_MEMBER_TOUR;
 
   React.useEffect(() => {
     if (!role) {
@@ -1301,6 +1306,10 @@ export const DashboardPage: React.FC = () => {
               </p>
             </div>
             <div className='flex items-center gap-2'>
+              <Button type='button' variant='outline' size='sm' onClick={tour.openTour}>
+                <CircleHelp className='size-4' aria-hidden />
+                Guide
+              </Button>
               {current.cta ? (
                 <Button
                   size='sm'
@@ -1426,6 +1435,7 @@ export const DashboardPage: React.FC = () => {
               newMatiere={newMatiere}
               setNewMatiere={setNewMatiere}
               onCreateMatiere={handleCreateMatiere}
+              readOnly={role !== 'admin' && role !== 'staff'}
             />
           )}
 
@@ -1634,6 +1644,7 @@ export const DashboardPage: React.FC = () => {
           )}
         </main>
       </SidebarInset>
+      <GuidedTour open={tour.open} onClose={tour.closeTour} steps={tourSteps} />
     </SidebarProvider>
   );
 };
