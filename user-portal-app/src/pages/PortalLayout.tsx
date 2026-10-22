@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, LogOut, RefreshCw } from 'lucide-react';
+import { Bell, CircleHelp, LogOut, RefreshCw } from 'lucide-react';
+import { GuidedTour, useGuidedTour } from '@/components/GuidedTour';
 import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
 import { PortalBottomNav } from '@/components/PortalBottomNav';
 import { PortalMoreSectionsSheet } from '@/components/PortalMoreSectionsSheet';
@@ -16,6 +17,7 @@ import {
 } from '@/lib/portal-bottom-nav';
 import { fetchPortalNotifications } from '@/lib/portal-notifications';
 import { sectionFromPath, sectionLabelKey, sectionMeta, sectionsForRole } from '@/lib/portal-sections';
+import { PORTAL_TOUR_KEY, portalTourLabels, portalTourSteps } from '@/lib/tour-steps';
 import { cn } from '@/lib/utils';
 
 function PortalLayoutInner() {
@@ -23,6 +25,7 @@ function PortalLayoutInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const session = getPortalSession();
+  const tour = useGuidedTour(PORTAL_TOUR_KEY, session?.userId ?? session?.email, Boolean(session));
   const activeSection = sectionFromPath(location.pathname);
   const meta = sectionMeta(activeSection);
   const {
@@ -151,6 +154,17 @@ function PortalLayoutInner() {
                   ) : null}
                 </Button>
               ) : null}
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                className='size-9'
+                onClick={tour.openTour}
+                aria-label={t('portalTour.guide')}
+                title={t('portalTour.guide')}
+              >
+                <CircleHelp className='size-[18px] text-muted-foreground' aria-hidden />
+              </Button>
               {usesBackend ? (
                 <Button
                   type='button'
@@ -230,6 +244,13 @@ function PortalLayoutInner() {
           onSelect={handleMoreSelect}
         />
       </div>
+
+      <GuidedTour
+        open={tour.open}
+        onClose={tour.closeTour}
+        steps={portalTourSteps(session.role, t)}
+        labels={portalTourLabels(t)}
+      />
     </div>
   );
 }

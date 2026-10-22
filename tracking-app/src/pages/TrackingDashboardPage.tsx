@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Bus, Check, ChevronDown, Clock, LogOut, MapPin, Radio, Users } from 'lucide-react';
+import { Bus, Check, ChevronDown, CircleHelp, Clock, LogOut, MapPin, Radio, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { GuidedTour, useGuidedTour } from '@/components/GuidedTour';
 import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
 import { TrackingMap } from '@/components/TrackingMap';
 import { cn } from '@/lib/utils';
@@ -21,11 +22,13 @@ import {
   type LiveRoute,
 } from '@/lib/tracking-api';
 import { connectTrackingWebSocket } from '@/lib/tracking-websocket';
+import { TRACKING_DRIVER_TOUR, TRACKING_FOLLOW_TOUR, TRACKING_TOUR_KEY } from '@/lib/tour-steps';
 import { formatDistance, tripProgress } from '@/lib/trip-progress';
 
 export function TrackingDashboardPage() {
   const navigate = useNavigate();
   const session = getTrackingSession() as TrackingSession;
+  const tour = useGuidedTour(TRACKING_TOUR_KEY, session.userId ?? session.email);
   const [routes, setRoutes] = useState<LiveRoute[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -289,6 +292,9 @@ export function TrackingDashboardPage() {
               </>
             )}
           </div>
+          <Button variant='ghost' size='icon' className='touch-target shrink-0' onClick={tour.openTour} aria-label='Guide'>
+            <CircleHelp className='size-5' />
+          </Button>
           <Button variant='ghost' size='icon' className='touch-target shrink-0' onClick={handleLogout} aria-label='Déconnexion'>
             <LogOut className='size-5' />
           </Button>
@@ -419,6 +425,12 @@ export function TrackingDashboardPage() {
           </div>
         </footer>
       ) : null}
+
+      <GuidedTour
+        open={tour.open}
+        onClose={tour.closeTour}
+        steps={isDriver ? TRACKING_DRIVER_TOUR : TRACKING_FOLLOW_TOUR}
+      />
     </div>
   );
 }
