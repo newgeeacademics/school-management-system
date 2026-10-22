@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  CircleHelp,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -10,6 +11,7 @@ import {
 import { toast } from 'sonner';
 
 import { AppLogo } from '@/components/AppLogo';
+import { GuidedTour, useGuidedTour } from '@/components/GuidedTour';
 import { FinanceOverviewPanel } from '@/components/finance/FinanceOverviewPanel';
 import { PayrollPanel } from '@/components/finance/PayrollPanel';
 import { Button } from '@/components/ui/button';
@@ -28,6 +30,7 @@ import {
 import { canWriteFinance } from '@/lib/finance-role';
 import { getStoredRole } from '@/lib/auth';
 import type { FinanceOverview, FinanceSectionId, PayrollPayment, TeacherOption } from '@/types/finance';
+import { FINANCE_TOUR, FINANCE_TOUR_KEY } from '@/lib/tour-steps';
 import { cn } from '@/lib/utils';
 
 const NAV: { id: FinanceSectionId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -96,6 +99,7 @@ function FinanceNav({ section, userName, onSelect, onLogout, className }: Financ
 export function FinanceDashboardPage() {
   const navigate = useNavigate();
   const user = getStoredUser();
+  const tour = useGuidedTour(FINANCE_TOUR_KEY, user?.id ?? user?.email);
   const [section, setSection] = React.useState<FinanceSectionId>('overview');
   const [navOpen, setNavOpen] = React.useState(false);
   const [overview, setOverview] = React.useState<FinanceOverview | null>(null);
@@ -215,6 +219,10 @@ export function FinanceDashboardPage() {
                 {role === 'staff' && ' · Personnel autorisé à saisir les paiements'}
               </p>
             </div>
+            <Button type='button' variant='outline' size='sm' className='shrink-0' onClick={tour.openTour}>
+              <CircleHelp className='size-4' aria-hidden />
+              Guide
+            </Button>
           </div>
         </header>
         <div className='flex-1 overflow-auto p-4 md:p-6'>
@@ -250,6 +258,7 @@ export function FinanceDashboardPage() {
           Les recettes proviennent des reçus de frais scolaires enregistrés dans la console admin.
         </footer>
       </main>
+      <GuidedTour open={tour.open} onClose={tour.closeTour} steps={FINANCE_TOUR} />
     </div>
   );
 }
