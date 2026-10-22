@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { typeCodeIncludes } from '@/lib/school-profile';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
-import logoSrc from '@/assets/logo/newgee-logo.png';
+import logoSrc from '@/assets/logo/newgee-logo-tight.png';
 import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { FileUploader } from '@/components/refine-ui/form/file-uploader';
@@ -20,6 +21,7 @@ import {
   isCompleteEmail,
 } from '@/components/refine-ui/form/email-with-at-separator';
 import { PhoneWithDialCode } from '@/components/refine-ui/form/phone-with-dial-code';
+import { phoneNeedsVerification, usePhoneVerificationVersion } from '@/lib/phone-verification';
 import { RegistrationNumberField, type RegistrationNumberStatus } from '@/components/refine-ui/form/registration-number-field';
 import { SchoolLanguagesPicker } from '@/components/refine-ui/form/school-languages-picker';
 import { SchoolOpeningHoursPicker } from '@/components/refine-ui/form/school-opening-hours-picker';
@@ -28,7 +30,7 @@ import { SchoolSeriesPicker } from '@/components/refine-ui/form/school-series-pi
 import type { EvaluationTypeId } from '@/lib/school-grading-types';
 import {
   formatPhoneWithCountry,
-  getCitiesByCountryName,
+  loadCitiesByCountryName,
   getCountries,
   isValidLocalPhone,
   isValidOptionalLocalPhone,
@@ -65,6 +67,9 @@ const SCHOOL_TYPES = [
   { value: 'primaire', labelKey: 'school.typePrimaire' },
   { value: 'college', labelKey: 'school.typeCollege' },
   { value: 'lycee', labelKey: 'school.typeLycee' },
+  { value: 'college_lycee', labelKey: 'school.typeCollegeLycee' },
+  { value: 'primaire_college', labelKey: 'school.typePrimaireCollege' },
+  { value: 'primaire_college_lycee', labelKey: 'school.typeGroupeScolaire' },
 ] as const;
 
 const SYSTEMS = [
@@ -115,7 +120,7 @@ type SchoolState = {
 };
 
 export function SchoolRegisterWizard() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
@@ -165,6 +170,7 @@ export function SchoolRegisterWizard() {
     internalNotes: '',
   });
 
+  const phoneVerificationVersion = usePhoneVerificationVersion();
   const canContinue = useCallback(
     (s: number): boolean => {
       switch (s) {
@@ -177,9 +183,11 @@ export function SchoolRegisterWizard() {
         case 4:
           return Boolean(
             isValidLocalPhone(school.country, school.phone) &&
+              !phoneNeedsVerification(school.country, school.phone) &&
               isCompleteEmail(school.officialEmail) &&
               school.directorName.trim() &&
-              isValidLocalPhone(school.country, school.directorPhone)
+              isValidLocalPhone(school.country, school.directorPhone) &&
+              !phoneNeedsVerification(school.country, school.directorPhone)
           );
         case 5:
           return Boolean(
@@ -199,7 +207,9 @@ export function SchoolRegisterWizard() {
           return (
             regOk &&
             isValidOptionalLocalPhone(school.country, school.billingPhone) &&
-            isValidOptionalLocalPhone(school.country, school.emergencyContactPhone)
+            !phoneNeedsVerification(school.country, school.billingPhone) &&
+            isValidOptionalLocalPhone(school.country, school.emergencyContactPhone) &&
+            !phoneNeedsVerification(school.country, school.emergencyContactPhone)
           );
         }
         case 7:
@@ -213,7 +223,7 @@ export function SchoolRegisterWizard() {
           return false;
       }
     },
-    [credentials, logoFiles.length, registrationNumberStatus, school]
+    [credentials, logoFiles.length, registrationNumberStatus, school, phoneVerificationVersion]
   );
 
   const canFinish = useMemo(() => {
@@ -224,10 +234,21 @@ export function SchoolRegisterWizard() {
   }, [canContinue]);
 
   const countries = useMemo(() => getCountries(), []);
-  const cityOptions = useMemo(
-    () => getCitiesByCountryName(school.country),
-    [school.country]
-  );
+  const [cityOptions, setCityOptions] = useState<string[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    setCityOptions([]);
+    loadCitiesByCountryName(school.country)
+      .then((cities) => {
+        if (!cancelled) setCityOptions(cities);
+      })
+      .catch(() => {
+        // Free-text city input stays available if the city list cannot load.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [school.country]);
 
   const handleSchoolInput =
     (key: keyof SchoolState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -239,7 +260,7 @@ export function SchoolRegisterWizard() {
     setSchool((prev) => ({
       ...prev,
       schoolType,
-      series: schoolType === 'lycee' ? prev.series : [],
+      series: typeCodeIncludes(schoolType, 'lycee') ? prev.series : [],
     }));
   };
 
@@ -767,6 +788,31 @@ export function SchoolRegisterWizard() {
           </div>
 
           <img src={logoSrc} alt='NewGee' className='school-register__logo-img school-register__logo-img--header' />
+          <div className='school-register__progress'>
+            <span className='school-register__progress-label'>
+              {locale === 'en' ? `Step ${step} of ${TOTAL_STEPS}` : `Étape ${step} sur ${TOTAL_STEPS}`}
+            </span>
+            <div
+              className='school-register__progress-track'
+              role='progressbar'
+              aria-valuemin={1}
+              aria-valuemax={TOTAL_STEPS}
+              aria-valuenow={step}
+            >
+              {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+                <span
+                  key={i}
+                  className={
+                    i + 1 < step
+                      ? 'school-register__progress-seg is-done'
+                      : i + 1 === step
+                        ? 'school-register__progress-seg is-current'
+                        : 'school-register__progress-seg'
+                  }
+                />
+              ))}
+            </div>
+          </div>
           <h1 className='school-register__title'>{title}</h1>
           <p className='school-register__subtitle'>{subtitle}</p>
         </div>

@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -16,18 +17,28 @@ public class AnnouncementService {
 
     private final AnnouncementRepository announcementRepository;
     private final SchoolCommunicationService schoolCommunicationService;
+    private final SchoolContextService schoolContextService;
+    private final PortalScopeResolver portalScopeResolver;
 
+    /** Console list: the logged-in admin's establishment only. */
     public List<Announcement> findAll() {
-        return announcementRepository.findAllByOrderByPublishedAtDesc();
+        return announcementRepository.findBySchoolIdOrderByPublishedAtDesc(schoolContextService.requireCurrentSchoolId());
     }
 
+    /** Portal list: published announcements of the user's establishment(s). */
     public List<Announcement> findPublished() {
-        return announcementRepository.findByPublishedTrueOrderByPublishedAtDesc();
+        Set<String> schoolIds = portalScopeResolver.resolveForCurrentUser().schoolIds();
+        if (schoolIds.isEmpty()) {
+            return List.of();
+        }
+        return announcementRepository.findBySchoolIdInAndPublishedTrueOrderByPublishedAtDesc(schoolIds);
     }
 
     public Announcement findById(String id) {
-        return announcementRepository.findById(id)
+        Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Announcement not found: " + id));
+        schoolContextService.assertSchoolAccess(announcement.getSchoolId());
+        return announcement;
     }
 
     @Transactional
@@ -39,6 +50,7 @@ public class AnnouncementService {
                 .location(request.getLocation())
                 .published(request.isPublished())
                 .publishedAt(Instant.now())
+                .schoolId(schoolContextService.requireCurrentSchoolId())
                 .build();
         Announcement saved = announcementRepository.save(announcement);
         maybeNotifyByEmail(saved, request.isNotifyByEmail());
@@ -69,6 +81,6 @@ public class AnnouncementService {
 
     @Transactional
     public void delete(String id) {
-        announcementRepository.deleteById(id);
+        announcementRepository.delete(findById(id));
     }
 }

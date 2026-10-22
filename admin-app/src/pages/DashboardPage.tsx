@@ -33,6 +33,8 @@ import {
   createStudentOnBackend,
   createTeacherOnBackend,
   createTransportOnBackend,
+  deleteTransportOnBackend,
+  updateTransportOnBackend,
   createUserOnBackend,
   deleteTeacherOnBackend,
   isBackendApiConfigured,
@@ -92,7 +94,6 @@ import {
   type NewSlotFormState,
   type NewStudentFormState,
   type NewTeacherFormState,
-  type NewTransportRouteFormState,
   type NewUserFormState,
   type ParentContact,
   type PaymentReceipt,
@@ -120,7 +121,7 @@ import { RoomsSection } from './dashboard/RoomsSection';
 import { ScheduleSection } from './dashboard/ScheduleSection';
 import { StudentsSection } from './dashboard/StudentsSection';
 import { TeachersSection } from './dashboard/TeachersSection';
-import { TransportSection } from './dashboard/TransportSection';
+import { TransportSection, type NewRoutePayload } from './dashboard/TransportSection';
 import { ReportsSection } from './dashboard/ReportsSection';
 import { UsersSection } from './dashboard/UsersSection';
 import { GradesSection } from './dashboard/GradesSection';
@@ -269,8 +270,8 @@ const sectionConfig: Record<
     kicker: 'Transport des élèves',
     title: 'Trajets et cars',
     description:
-      'Suivez les lignes de ramassage scolaire : conducteur, horaires et remarques.',
-    cta: 'Ajouter un trajet',
+      'Placez les arrêts sur la carte, cochez les élèves, choisissez le chauffeur.',
+    cta: '',
   },
   reports: {
     kicker: 'Rapports et synthèses',
@@ -580,14 +581,6 @@ export const DashboardPage: React.FC = () => {
     });
 
   const [transportRoutes, setTransportRoutes] = React.useState<TransportRoute[]>([]);
-  const [newTransportRoute, setNewTransportRoute] =
-    React.useState<NewTransportRouteFormState>({
-      name: '',
-      driverName: '',
-      departureTime: '',
-      returnTime: '',
-      note: '',
-    });
 
   const current =
     (role && roleSectionOverrides[role]?.[activeSection]) ?? sectionConfig[activeSection];
@@ -776,43 +769,47 @@ export const DashboardPage: React.FC = () => {
     });
   };
 
-  const handleCreateTransportRoute = (
-    e: React.FormEvent,
-    payload?: { waypoints?: { lat: number; lng: number; name: string }[]; routePolyline?: [number, number][] },
-  ) => {
-    e.preventDefault();
-    if (!newTransportRoute.name.trim() || !newTransportRoute.driverName.trim() || !newTransportRoute.departureTime.trim()) return;
-    const id = `tr-${Date.now()}`;
-    setTransportRoutes((prev) => [
-      ...prev,
-      {
-        id,
-        name: newTransportRoute.name.trim(),
-        driverName: newTransportRoute.driverName.trim(),
-        departureTime: newTransportRoute.departureTime.trim(),
-        returnTime: newTransportRoute.returnTime.trim() || undefined,
-        note: newTransportRoute.note.trim() || undefined,
-        waypoints: payload?.waypoints,
-        routePolyline: payload?.routePolyline,
-        studentIds: [],
-      },
-    ]);
-    if (backendSync) {
-      void createTransportOnBackend({
-        name: newTransportRoute.name.trim(),
-        driverName: newTransportRoute.driverName.trim(),
-        departureTime: newTransportRoute.departureTime.trim(),
-        returnTime: newTransportRoute.returnTime.trim() || undefined,
-        note: newTransportRoute.note.trim() || undefined,
-      }).catch((err) => console.error(err));
+  const handleCreateTransportRoute = async (payload: NewRoutePayload): Promise<boolean> => {
+    if (!backendSync) {
+      toast.error('Service indisponible : la ligne n’a pas pu être enregistrée.');
+      return false;
     }
-    setNewTransportRoute({
-      name: '',
-      driverName: '',
-      departureTime: '',
-      returnTime: '',
-      note: '',
-    });
+    try {
+      const created = await createTransportOnBackend(payload);
+      setTransportRoutes((prev) => [...prev, created]);
+      toast.success(`${created.name} créée`);
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+      return false;
+    }
+  };
+
+  const handleUpdateTransportRoute = async (route: TransportRoute, payload: NewRoutePayload): Promise<boolean> => {
+    if (route.id.startsWith('tr-')) {
+      toast.error('Cette ligne n’a pas été enregistrée sur le serveur : recréez-la.');
+      return false;
+    }
+    try {
+      const updated = await updateTransportOnBackend(route.id, payload);
+      setTransportRoutes((prev) => prev.map((r) => (r.id === route.id ? updated : r)));
+      toast.success(`${updated.name} mise à jour`);
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+      return false;
+    }
+  };
+
+  const handleDeleteTransportRoute = async (routeId: string) => {
+    if (!backendSync) return;
+    try {
+      await deleteTransportOnBackend(routeId);
+      setTransportRoutes((prev) => prev.filter((r) => r.id !== routeId));
+      toast.success('Ligne supprimée');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+    }
   };
 
   const handleUpdateRouteStudents = (routeId: string, studentIds: string[]) => {
@@ -1524,9 +1521,10 @@ export const DashboardPage: React.FC = () => {
           {activeSection === 'transport' && (
             <TransportSection
               routes={transportRoutesForView}
-              newRoute={newTransportRoute}
-              setNewRoute={setNewTransportRoute}
+              classes={classes}
               onCreateRoute={handleCreateTransportRoute}
+              onDeleteRoute={handleDeleteTransportRoute}
+              onUpdateRoute={handleUpdateTransportRoute}
               onUpdateRouteStudents={handleUpdateRouteStudents}
               readOnly={role === 'parent' || role === 'student'}
               students={students}
@@ -1561,19 +1559,19 @@ export const DashboardPage: React.FC = () => {
 
           {activeSection === 'sis' && (
             <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-              <Card className='cursor-pointer transition-shadow hover:shadow-md' onClick={() => setActiveSection('students')}>
+              <Card className='cursor-pointer transition-colors hover:ring-foreground/15' onClick={() => setActiveSection('students')}>
                 <CardHeader>
                   <CardTitle className='text-base'>Élèves</CardTitle>
                   <CardDescription>Dossiers, affectations et listes par classe.</CardDescription>
                 </CardHeader>
               </Card>
-              <Card className='cursor-pointer transition-shadow hover:shadow-md' onClick={() => setActiveSection('parents')}>
+              <Card className='cursor-pointer transition-colors hover:ring-foreground/15' onClick={() => setActiveSection('parents')}>
                 <CardHeader>
                   <CardTitle className='text-base'>Parents & tuteurs</CardTitle>
                   <CardDescription>Contacts et rattachements aux élèves.</CardDescription>
                 </CardHeader>
               </Card>
-              <Card className='cursor-pointer transition-shadow hover:shadow-md' onClick={() => setActiveSection('classes')}>
+              <Card className='cursor-pointer transition-colors hover:ring-foreground/15' onClick={() => setActiveSection('classes')}>
                 <CardHeader>
                   <CardTitle className='text-base'>Classes</CardTitle>
                   <CardDescription>Structure des niveaux et effectifs.</CardDescription>

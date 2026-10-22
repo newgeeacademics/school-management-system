@@ -10,4 +10,6 @@ import java.util.List;
 public interface AnnouncementRepository extends JpaRepository<Announcement, String> {
     List<Announcement> findByPublishedTrueOrderByPublishedAtDesc();
     List<Announcement> findAllByOrderByPublishedAtDesc();
+    List<Announcement> findBySchoolIdOrderByPublishedAtDesc(String schoolId);
+    List<Announcement> findBySchoolIdInAndPublishedTrueOrderByPublishedAtDesc(java.util.Collection<String> schoolIds);
 }

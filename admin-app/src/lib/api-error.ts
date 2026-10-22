@@ -1,35 +1,20 @@
-export async function parseApiErrorResponse(res: Response, fallback: string): Promise<string> {
-  const body = await res.json().catch(() => null);
-  if (body && typeof body === 'object') {
-    const record = body as Record<string, unknown>;
-    if (typeof record.error === 'string') return record.error;
-    if (typeof record.message === 'string') return record.message;
-    if (record.details && typeof record.details === 'object') {
-      const first = Object.values(record.details as Record<string, string>)[0];
-      if (typeof first === 'string') return first;
-    }
-  }
+import { UserFacingError, messageForStatus, readServerMessage, toUserMessage } from '@/lib/user-errors';
 
-  if (res.status === 404) {
-    return `API introuvable (${res.status}). Vérifiez VITE_API_URL sur Vercel admin et le déploiement Render (/health).`;
-  }
-  if (res.status === 403) {
-    return `Accès refusé (${res.status}). Ajoutez l’URL Vercel admin dans APP_CORS_ALLOWED_ORIGINS sur Render.`;
-  }
-  if (res.status === 401) {
-    return 'Email ou mot de passe incorrect.';
-  }
-  return `${fallback} (HTTP ${res.status})`;
+/**
+ * Message for a failed API response, safe to show: the status decides the message and the
+ * server's text is kept only when it is a plain sentence about the person's input.
+ */
+export async function parseApiErrorResponse(res: Response, _fallback?: string): Promise<string> {
+  const serverMessage = await readServerMessage(res);
+  if (import.meta.env.DEV && serverMessage) console.warn(`[API ${res.status}]`, serverMessage);
+  return messageForStatus(res.status, serverMessage, { login: /\/api\/auth\//.test(res.url) });
 }
 
+/** Any failure (network, unreadable response, API error) as an error whose message can be shown. */
 export function wrapFetchError(err: unknown, fallback: string): Error {
-  if (err instanceof TypeError && /fetch|network|failed/i.test(err.message)) {
-    return new Error(
-      'Impossible de joindre le serveur API. Vérifiez VITE_API_URL et que Render est actif.'
-    );
-  }
-  if (err instanceof Error) return err;
-  return new Error(fallback);
+  if (err instanceof UserFacingError) return err;
+  if (import.meta.env.DEV) console.warn('[API]', err);
+  return new UserFacingError(toUserMessage(err, fallback));
 }
 
 export function isAdminRole(role: unknown): boolean {

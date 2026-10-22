@@ -1,8 +1,15 @@
+import { existsSync } from 'fs';
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { appPwa } from '../shared/vite-pwa';
+
+// `shared/` sits next to the app on the deploy branch and one level up in the monorepo.
+const sharedDir = existsSync(path.resolve(__dirname, 'shared'))
+  ? path.resolve(__dirname, 'shared')
+  : path.resolve(__dirname, '../shared');
+
+const { appPwa } = await import(path.join(sharedDir, 'vite-pwa.ts'));
 
 export default defineConfig({
   plugins: [
@@ -18,6 +25,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@shared': sharedDir,
     },
   },
   server: {

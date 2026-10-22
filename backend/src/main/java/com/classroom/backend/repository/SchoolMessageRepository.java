@@ -10,4 +10,6 @@ import java.util.List;
 public interface SchoolMessageRepository extends JpaRepository<SchoolMessage, String> {
 
     List<SchoolMessage> findAllByOrderBySentAtDesc();
+
+    List<SchoolMessage> findBySchoolIdInOrderBySentAtDesc(java.util.Collection<String> schoolIds);
 }

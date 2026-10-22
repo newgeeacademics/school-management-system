@@ -108,6 +108,8 @@ function SelectItem({
   children,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Item>) {
+  // Radix throws on an empty value; a record with a blank name (room, class…) must not crash the page.
+  if (props.value === '') return null;
   return (
     <SelectPrimitive.Item
       data-slot="select-item"

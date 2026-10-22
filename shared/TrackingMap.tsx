@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type ReactNode } from 'react';
 import Map, { Layer, Marker, Popup, Source } from 'react-map-gl/mapbox';
 import type { MapRef } from 'react-map-gl/mapbox';
-import { LngLatBounds } from 'mapbox-gl';
 
-import { getMapboxStyle, getMapboxToken, hasMapboxToken } from './mapbox';
+import { LocateFixed, Minus, Plus } from 'lucide-react';
+
+import { getMapboxStyle, getMapboxToken } from './mapbox';
 
 export type TrackingWaypoint = { id: string; name: string; lat: number; lng: number };
 export type TrackingPosition = { lat: number; lng: number; speedKmh?: number | null };
@@ -16,7 +17,10 @@ export type TrackingStudent = {
   trackingStatus?: string | null;
 };
 
+/** Côte d'Ivoire, shown whole until a route or the bus gives the map something to frame. */
 const defaultCenter = { lat: 7.54, lng: -5.55 };
+const COUNTRY_ZOOM = 6;
+const ROUTE_ZOOM = 13;
 
 function stopDot(color: string) {
   return (
@@ -54,7 +58,7 @@ function emojiPin(bg: string, emoji: string, size: number) {
   );
 }
 
-type TrackingMapProps = {
+export type TrackingMapProps = {
   waypoints: TrackingWaypoint[];
   routePolyline: number[][];
   livePosition: TrackingPosition | null;
@@ -64,18 +68,64 @@ type TrackingMapProps = {
   className?: string;
 };
 
-export function TrackingMap({
-  waypoints,
-  routePolyline,
-  livePosition,
-  driverPosition = null,
-  students = [],
-  liveActive = true,
-  className = 'h-full w-full',
-}: TrackingMapProps) {
-  const mapRef = useRef<MapRef>(null);
-  const token = getMapboxToken();
+/** Minimal map handle shared by Mapbox GL and MapLibre GL. */
+export type FramableMap = {
+  setCenter: (center: [number, number]) => unknown;
+  setZoom: (zoom: number) => unknown;
+  fitBounds: (bounds: [[number, number], [number, number]], options?: { padding?: number; maxZoom?: number }) => unknown;
+  resize: () => unknown;
+  zoomIn: () => unknown;
+  zoomOut: () => unknown;
+};
 
+/**
+ * Floating zoom / recenter buttons, styled like a navigation app.
+ * Inline styles: Tailwind only scans each app's own src/, not shared/.
+ */
+const controlButton: CSSProperties = {
+  width: 44,
+  height: 44,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'var(--card, #fff)',
+  color: 'var(--foreground, #0f172a)',
+  border: 'none',
+  cursor: 'pointer',
+};
+const controlCard: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+  borderRadius: 12,
+  border: '1px solid rgb(15 23 42 / 0.1)',
+  boxShadow: '0 6px 18px rgb(15 23 42 / 0.14)',
+};
+
+export function MapControls({ getMap, onRecenter }: { getMap: () => FramableMap | null | undefined; onRecenter: () => void }) {
+  return (
+    <div style={{ position: 'absolute', right: 12, top: 12, zIndex: 5, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={controlCard}>
+        <button type="button" style={controlButton} aria-label="Zoomer" onClick={() => getMap()?.zoomIn()}>
+          <Plus size={20} />
+        </button>
+        <span style={{ height: 1, background: 'rgb(15 23 42 / 0.1)' }} />
+        <button type="button" style={controlButton} aria-label="Dézoomer" onClick={() => getMap()?.zoomOut()}>
+          <Minus size={20} />
+        </button>
+      </div>
+      <div style={controlCard}>
+        <button type="button" style={controlButton} aria-label="Recentrer sur le trajet" onClick={onRecenter}>
+          <LocateFixed size={20} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Center, overlays data and framing, independent of the map engine. */
+export function useTrackingMapData({ waypoints, routePolyline, livePosition, students = [] }: TrackingMapProps) {
+  const hasSubject = livePosition != null || waypoints.length > 0;
   const center =
     livePosition != null
       ? { lat: livePosition.lat, lng: livePosition.lng }
@@ -83,8 +133,12 @@ export function TrackingMap({
         ? { lat: waypoints[0].lat, lng: waypoints[0].lng }
         : defaultCenter;
 
-  const studentsWithPosition = students.filter(
-    (s) => s.lat != null && s.lng != null && Number.isFinite(s.lat) && Number.isFinite(s.lng),
+  const studentsWithPosition = useMemo(
+    () =>
+      students.filter(
+        (s) => s.lat != null && s.lng != null && Number.isFinite(s.lat) && Number.isFinite(s.lng),
+      ),
+    [students],
   );
 
   const routeGeoJson = useMemo(() => {
@@ -99,8 +153,8 @@ export function TrackingMap({
     };
   }, [routePolyline]);
 
-  useEffect(() => {
-    const map = mapRef.current?.getMap();
+  /** Frames the route, bus and pupils; call when the map loads and whenever they change. */
+  const frame = (map: FramableMap | undefined | null) => {
     if (!map) return;
     const points: [number, number][] = routePolyline.map((p) => [p[0], p[1]] as [number, number]);
     if (livePosition) points.push([livePosition.lat, livePosition.lng]);
@@ -111,86 +165,172 @@ export function TrackingMap({
       map.setZoom(14);
       return;
     }
-    const bounds = new LngLatBounds();
-    points.forEach(([lat, lng]) => bounds.extend([lng, lat]));
-    map.fitBounds(bounds, { padding: 40, maxZoom: 15 });
-  }, [routePolyline, livePosition, studentsWithPosition]);
-
-  if (!hasMapboxToken()) {
-    return (
-      <div className={`${className} flex items-center justify-center bg-muted/40 p-4 text-center text-sm text-muted-foreground`}>
-        Add <code className="mx-1">VITE_MAPBOX_TOKEN</code> to <code>.env.local</code>
-      </div>
+    const lats = points.map((p) => p[0]);
+    const lngs = points.map((p) => p[1]);
+    map.fitBounds(
+      [
+        [Math.min(...lngs), Math.min(...lats)],
+        [Math.max(...lngs), Math.max(...lats)],
+      ],
+      { padding: 60, maxZoom: 15 },
     );
-  }
+  };
 
+  return {
+    initialViewState: { longitude: center.lng, latitude: center.lat, zoom: hasSubject ? ROUTE_ZOOM : COUNTRY_ZOOM },
+    studentsWithPosition,
+    routeGeoJson,
+    frame,
+  };
+}
+
+/** Marker / Popup / Source / Layer from whichever react-map-gl build renders the map. */
+export type MapComponents = {
+  Marker: ComponentType<{
+    longitude: number;
+    latitude: number;
+    anchor?: 'center';
+    onClick?: (event: { originalEvent: { stopPropagation: () => void } }) => void;
+    children?: ReactNode;
+  }>;
+  Popup: ComponentType<{ longitude: number; latitude: number; closeButton?: boolean; anchor?: 'bottom'; children?: ReactNode }>;
+  Source: ComponentType<{ id: string; type: 'geojson'; data: unknown; children?: ReactNode }>;
+  /** Layer props differ slightly between the two builds; both accept the route-line layer. */
+  Layer: ComponentType<Record<string, unknown>>;
+};
+
+/** Route line, stops, pupils, bus and driver markers. */
+export function TrackingOverlays({
+  components: { Marker, Popup, Source, Layer },
+  waypoints,
+  livePosition,
+  driverPosition = null,
+  liveActive = true,
+  studentsWithPosition,
+  routeGeoJson,
+}: {
+  components: MapComponents;
+  waypoints: TrackingWaypoint[];
+  livePosition: TrackingPosition | null;
+  driverPosition?: TrackingPosition | null;
+  liveActive?: boolean;
+  studentsWithPosition: TrackingStudent[];
+  routeGeoJson: unknown;
+}) {
+  // One label at a time, opened by tapping a marker; the bus label shows by default.
+  const [openId, setOpenId] = useState<string | null>('bus');
+  const toggle = (id: string) => (event: { originalEvent: { stopPropagation: () => void } }) => {
+    event.originalEvent.stopPropagation();
+    setOpenId((current) => (current === id ? null : id));
+  };
   return (
-    <div className={className}>
-      <Map
-        ref={mapRef}
-        mapboxAccessToken={token}
-        initialViewState={{ longitude: center.lng, latitude: center.lat, zoom: 13 }}
-        style={{ width: '100%', height: '100%' }}
-        mapStyle={getMapboxStyle()}
-        onLoad={() => mapRef.current?.getMap()?.resize()}
-      >
-        {routeGeoJson && (
-          <Source id="route" type="geojson" data={routeGeoJson}>
-            <Layer
-              id="route-line"
-              type="line"
-              layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-              paint={{ 'line-color': '#2563eb', 'line-width': 6, 'line-opacity': 0.9 }}
-            />
-          </Source>
-        )}
+    <>
+      {routeGeoJson != null && (
+        <Source id="route" type="geojson" data={routeGeoJson}>
+          <Layer
+            id="route-line"
+            type="line"
+            layout={{ 'line-cap': 'round', 'line-join': 'round' }}
+            paint={{ 'line-color': '#2563eb', 'line-width': 6, 'line-opacity': 0.9 }}
+          />
+        </Source>
+      )}
 
-        {waypoints.map((wp, idx) => (
-          <Marker key={wp.id} longitude={wp.lng} latitude={wp.lat} anchor="center">
-            {stopDot(idx === 0 ? '#22c55e' : idx === waypoints.length - 1 ? '#ef4444' : '#3b82f6')}
+      {waypoints.map((wp, idx) => (
+        <Marker key={wp.id} longitude={wp.lng} latitude={wp.lat} anchor="center" onClick={toggle(`stop-${wp.id}`)}>
+          {stopDot(idx === 0 ? '#22c55e' : idx === waypoints.length - 1 ? '#ef4444' : '#3b82f6')}
+          {openId === `stop-${wp.id}` ? (
             <Popup longitude={wp.lng} latitude={wp.lat} closeButton={false} anchor="bottom">
               {wp.name}
             </Popup>
-          </Marker>
-        ))}
+          ) : null}
+        </Marker>
+      ))}
 
-        {studentsWithPosition.map((student) => (
-          <Marker key={`student-${student.id}`} longitude={student.lng!} latitude={student.lat!} anchor="center">
-            {emojiPin(student.trackingStatus === 'ON_BUS' ? '#ea580c' : '#0ea5e9', '🎒', 22)}
-            <Popup longitude={student.lng!} latitude={student.lat!} closeButton={false} anchor="bottom">
-              {student.name}
-              {student.className ? <span className="block text-xs text-muted-foreground">{student.className}</span> : null}
-              <span className="block text-xs">
-                {student.trackingStatus === 'ON_BUS' ? 'À bord du bus' : 'Point de ramassage'}
-              </span>
-            </Popup>
-          </Marker>
-        ))}
+      {studentsWithPosition.map((student) => (
+        <Marker key={`student-${student.id}`} longitude={student.lng!} latitude={student.lat!} anchor="center" onClick={toggle(`student-${student.id}`)}>
+          {emojiPin(student.trackingStatus === 'ON_BUS' ? '#ea580c' : '#0ea5e9', '🎒', 22)}
+          {openId === `student-${student.id}` ? (
+          <Popup longitude={student.lng!} latitude={student.lat!} closeButton={false} anchor="bottom">
+            {student.name}
+            {student.className ? <span className="block text-xs text-muted-foreground">{student.className}</span> : null}
+            <span className="block text-xs">
+              {student.trackingStatus === 'ON_BUS' ? 'À bord du bus' : 'Point de ramassage'}
+            </span>
+          </Popup>
+          ) : null}
+        </Marker>
+      ))}
 
-        {livePosition && (
-          <Marker longitude={livePosition.lng} latitude={livePosition.lat} anchor="center">
-            {emojiPin(liveActive ? '#ea580c' : '#64748b', '🚌', 28)}
-            <Popup longitude={livePosition.lng} latitude={livePosition.lat} closeButton={false} anchor="bottom">
-              {liveActive ? 'Bus en route' : 'Dernière position'}
-              {livePosition.speedKmh != null && (
-                <span className="block text-xs">{Math.round(livePosition.speedKmh)} km/h</span>
-              )}
-            </Popup>
-          </Marker>
-        )}
+      {livePosition && (
+        <Marker longitude={livePosition.lng} latitude={livePosition.lat} anchor="center" onClick={toggle('bus')}>
+          {emojiPin(liveActive ? '#ea580c' : '#64748b', '🚌', 28)}
+          {openId === 'bus' ? (
+          <Popup longitude={livePosition.lng} latitude={livePosition.lat} closeButton={false} anchor="bottom">
+            {liveActive ? 'Bus en route' : 'Dernière position'}
+            {livePosition.speedKmh != null && (
+              <span className="block text-xs">{Math.round(livePosition.speedKmh)} km/h</span>
+            )}
+          </Popup>
+          ) : null}
+        </Marker>
+      )}
 
-        {driverPosition &&
-          (livePosition == null ||
-            Math.abs(driverPosition.lat - livePosition.lat) > 0.0001 ||
-            Math.abs(driverPosition.lng - livePosition.lng) > 0.0001) && (
-          <Marker longitude={driverPosition.lng} latitude={driverPosition.lat} anchor="center">
-            {emojiPin('#7c3aed', '👤', 26)}
+      {driverPosition &&
+        (livePosition == null ||
+          Math.abs(driverPosition.lat - livePosition.lat) > 0.0001 ||
+          Math.abs(driverPosition.lng - livePosition.lng) > 0.0001) && (
+        <Marker longitude={driverPosition.lng} latitude={driverPosition.lat} anchor="center" onClick={toggle('driver')}>
+          {emojiPin('#7c3aed', '👤', 26)}
+          {openId === 'driver' ? (
             <Popup longitude={driverPosition.lng} latitude={driverPosition.lat} closeButton={false} anchor="bottom">
               Chauffeur
             </Popup>
-          </Marker>
-        )}
+          ) : null}
+        </Marker>
+      )}
+    </>
+  );
+}
+
+/** Mapbox GL map (used when VITE_MAPBOX_TOKEN is set). */
+export function TrackingMap(props: TrackingMapProps) {
+  const { className = 'h-full w-full', waypoints, livePosition, driverPosition = null, liveActive = true } = props;
+  const mapRef = useRef<MapRef>(null);
+  const { initialViewState, studentsWithPosition, routeGeoJson, frame } = useTrackingMapData(props);
+
+  useEffect(() => {
+    frame(mapRef.current?.getMap() as unknown as FramableMap | undefined);
+  }, [props.routePolyline, livePosition, studentsWithPosition]);
+
+  const getMap = () => mapRef.current?.getMap() as unknown as FramableMap | undefined;
+  return (
+    <div className={className}>
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <MapControls getMap={getMap} onRecenter={() => frame(getMap())} />
+      <Map
+        ref={mapRef}
+        mapboxAccessToken={getMapboxToken()}
+        initialViewState={initialViewState}
+        style={{ width: '100%', height: '100%' }}
+        mapStyle={getMapboxStyle()}
+        onLoad={() => {
+          const map = mapRef.current?.getMap();
+          map?.resize();
+          frame(map as unknown as FramableMap | undefined);
+        }}
+      >
+        <TrackingOverlays
+          components={{ Marker, Popup, Source, Layer } as unknown as MapComponents}
+          waypoints={waypoints}
+          livePosition={livePosition}
+          driverPosition={driverPosition}
+          liveActive={liveActive}
+          studentsWithPosition={studentsWithPosition}
+          routeGeoJson={routeGeoJson}
+        />
       </Map>
+      </div>
     </div>
   );
 }

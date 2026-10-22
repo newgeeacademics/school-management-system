@@ -21,6 +21,23 @@ import {
   persistSchoolPatchOnBackend,
 } from '@/lib/dashboard-backend';
 import type { School } from '@/types';
+import {
+  cyclesForTypeCode,
+  getSchoolProfile,
+  normalizeTypeCode,
+  saveSchoolProfile,
+  schoolTypeLabel,
+  type RegistrationSchoolType,
+} from '@/lib/school-profile';
+
+const SCHOOL_TYPE_CHOICES: { value: RegistrationSchoolType; label: string }[] = [
+  { value: 'primaire', label: 'Primaire' },
+  { value: 'college', label: 'Collège' },
+  { value: 'lycee', label: 'Lycée' },
+  { value: 'college_lycee', label: 'Collège + Lycée' },
+  { value: 'primaire_college', label: 'Primaire + Collège' },
+  { value: 'primaire_college_lycee', label: 'Groupe scolaire (Primaire + Collège + Lycée)' },
+];
 import type { SectionId } from './dashboardTypes';
 import { SCHOOL_SETTINGS_IDS } from './schoolSettingsSections';
 
@@ -59,7 +76,7 @@ function buildProfileFormFromSchool(school: Partial<School> | null) {
   return {
     name: str(school?.name),
     legalName: str(school?.legalName),
-    type: str(school?.type),
+    type: normalizeTypeCode(str(school?.type)) ?? '',
     system: str(school?.system),
     registrationNumber: str(school?.registrationNumber),
     accreditationRef: str(school?.accreditationRef),
@@ -262,6 +279,17 @@ function SchoolProfilePanel({
         return;
       }
       await persistSchoolPatchOnBackend(patch);
+      // Keep the dashboard's cached profile (levels, cycles) in sync with the new type.
+      const typeCode = normalizeTypeCode(form.type);
+      const cached = getSchoolProfile();
+      if (cached && typeCode && cached.typeCode !== typeCode) {
+        saveSchoolProfile({
+          ...cached,
+          typeCode,
+          type: schoolTypeLabel(typeCode),
+          cycles: cyclesForTypeCode(typeCode),
+        });
+      }
       onSaved();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Enregistrement impossible', { richColors: true });
@@ -290,7 +318,21 @@ function SchoolProfilePanel({
               <Input value={form.legalName} onChange={update('legalName')} placeholder='Raison sociale officielle' />
             </Field>
             <Field label='Type d’établissement'>
-              <Input value={form.type} onChange={update('type')} placeholder='primaire, collège, lycée' />
+              <Select
+                value={form.type || undefined}
+                onValueChange={(value) => setForm((prev) => ({ ...prev, type: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='Choisir les cycles enseignés' />
+                </SelectTrigger>
+                <SelectContent>
+                  {SCHOOL_TYPE_CHOICES.map((choice) => (
+                    <SelectItem key={choice.value} value={choice.value}>
+                      {choice.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
             <Field label='Système éducatif'>
               <Input value={form.system} onChange={update('system')} placeholder='ivoirien, français, anglais…' />

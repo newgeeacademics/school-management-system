@@ -35,6 +35,10 @@ public class SchoolMessage {
     @Column(name = "class_id")
     private String classId;
 
+    /** Establishment that sent the message (portal users only see their own school's messages). */
+    @Column(name = "school_id")
+    private String schoolId;
+
     @Column(nullable = false)
     private Instant sentAt;
 }

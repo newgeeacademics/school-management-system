@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 
 import { RouteMap } from '@/components/RouteMap';
 import { fetchRoadRoute } from '@/lib/osrm';
-import { geocodePlace } from '../../../../shared/mapbox';
+import { geocodePlace } from '@shared/mapbox';
 import { TRANSPORT_NODES } from '@/lib/transportGraph';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

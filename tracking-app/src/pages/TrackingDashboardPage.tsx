@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ChevronUp, CircleHelp, LogOut, MapPin, Radio, Users } from 'lucide-react';
+import { Bus, Check, ChevronDown, CircleHelp, Clock, LogOut, MapPin, Radio, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
-import { AppLogo } from '@/components/AppLogo';
 import { GuidedTour, useGuidedTour } from '@/components/GuidedTour';
+import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
 import { TrackingMap } from '@/components/TrackingMap';
 import { cn } from '@/lib/utils';
 import {
@@ -24,6 +23,7 @@ import {
 } from '@/lib/tracking-api';
 import { connectTrackingWebSocket } from '@/lib/tracking-websocket';
 import { TRACKING_DRIVER_TOUR, TRACKING_FOLLOW_TOUR, TRACKING_TOUR_KEY } from '@/lib/tour-steps';
+import { formatDistance, tripProgress } from '@/lib/trip-progress';
 
 export function TrackingDashboardPage() {
   const navigate = useNavigate();
@@ -35,6 +35,7 @@ export function TrackingDashboardPage() {
   const [driverMode, setDriverMode] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const watchIdRef = useRef<number | null>(null);
+  const refreshSelectedRef = useRef<() => Promise<void>>(async () => undefined);
 
   const selected = routes.find((r) => r.routeId === selectedId) ?? routes[0] ?? null;
 
@@ -56,6 +57,7 @@ export function TrackingDashboardPage() {
 
   useEffect(() => {
     if (!sheetOpen) return;
+    void refreshSelectedRef.current();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setSheetOpen(false);
     };
@@ -111,7 +113,8 @@ export function TrackingDashboardPage() {
     try {
       const updated = await startTrip(selected.routeId);
       setRoutes((prev) => prev.map((r) => (r.routeId === updated.routeId ? updated : r)));
-      toast.success('Trajet démarré');
+      setDriverMode(true);
+      toast.success('Trajet démarré · position partagée');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -178,15 +181,22 @@ export function TrackingDashboardPage() {
     };
   }, [driverMode, selected, session, pushPosition]);
 
+  // A driver reopening the app during an active trip keeps sharing the bus position.
+  const tripActiveForDriver = canDrive(session) && selected?.tripStatus === 'ACTIVE';
+  useEffect(() => {
+    if (tripActiveForDriver) setDriverMode(true);
+  }, [tripActiveForDriver]);
+
   const refreshSelected = async () => {
     if (!selected) return;
     try {
       const updated = await fetchLiveRoute(selected.routeId);
       setRoutes((prev) => prev.map((r) => (r.routeId === updated.routeId ? updated : r)));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur');
+    } catch {
+      // the websocket keeps the view current; a failed refresh is not worth a toast
     }
   };
+  refreshSelectedRef.current = refreshSelected;
 
   const isLive = selected?.tripStatus === 'ACTIVE' && selected?.livePosition != null;
   const canPickRoute = routes.length > 1;
@@ -204,40 +214,90 @@ export function TrackingDashboardPage() {
     return route.routeName;
   };
 
+  const progress = isLive && selected ? tripProgress(selected.livePosition, selected.waypoints) : null;
+
   const details = selected ? (
     <RouteDetails
       selected={selected}
       isLive={isLive}
-      canDrive={canDrive(session)}
-      driverMode={driverMode}
-      onRefresh={() => void refreshSelected()}
-      onStartTrip={() => void handleStartTrip()}
-      onToggleGps={() => setDriverMode((v) => !v)}
-      onStopTrip={() => void handleStopTrip()}
+      nextIndex={progress?.nextIndex ?? null}
+      gpsSharing={driverMode && canDrive(session)}
     />
   ) : null;
 
+  const toNext = progress ? formatDistance(progress.kmToNextStop) : null;
+  const speedKmh = selected?.livePosition?.speedKmh;
+  const onBoard = selected?.students.filter((s) => s.trackingStatus === 'ON_BUS') ?? [];
+  const isDriver = canDrive(session);
+  const tripActive = selected?.tripStatus === 'ACTIVE';
+
+  const hudCells: [string, string, string][] = !selected
+    ? []
+    : isLive && progress
+      ? [
+          ['arrivée', String(progress.minutesRemaining), 'min'],
+          ['restant', formatDistance(progress.kmRemaining).value, formatDistance(progress.kmRemaining).unit],
+          ['vitesse', speedKmh != null ? String(Math.round(speedKmh)) : '—', 'km/h'],
+        ]
+      : [
+          ['départ', selected.departureTime || '—', ''],
+          ['arrêts', String(selected.waypoints.length), ''],
+          ['élèves', String(selected.students.length), ''],
+        ];
+
   return (
     <div className='fixed inset-0 flex flex-col overflow-hidden bg-background'>
-      <header className='safe-pt z-30 shrink-0 border-b border-foreground/[0.06] bg-card/90 backdrop-blur-md backdrop-saturate-150'>
-        <div className='flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4'>
-          <div className='flex min-w-0 items-center gap-2 sm:gap-3'>
-            <AppLogo markClassName='app-logo__mark--compact' name='NewGee Transport' />
-            <div className='min-w-0'>
-              <h1 className='truncate font-display text-base font-bold tracking-tight'>Suivi Transport</h1>
-              <p className='truncate text-xs text-muted-foreground'>{session.name ?? session.email}</p>
-            </div>
+      {/* Heads-up banner: what matters right now, readable at a glance. */}
+      <header className='safe-pt z-30 shrink-0 border-b border-foreground/[0.06] bg-card'>
+        <div className='flex items-center gap-3 px-4 py-3'>
+          <span
+            className={cn(
+              'flex size-14 shrink-0 items-center justify-center rounded-xl',
+              isLive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            )}
+            aria-hidden
+          >
+            {!selected ? <MapPin className='size-7' /> : isLive ? <Bus className='size-7' /> : <Clock className='size-7' />}
+          </span>
+          <div className='min-w-0 flex-1' aria-live='polite'>
+            {loading ? (
+              <p className='font-display text-xl font-bold tracking-tight'>Chargement…</p>
+            ) : !selected ? (
+              <>
+                <p className='font-display text-xl font-bold tracking-tight'>Aucun trajet</p>
+                <p className='truncate text-sm text-muted-foreground'>{emptyCopy}</p>
+              </>
+            ) : isLive && progress && toNext ? (
+              <>
+                <p className='font-display text-[2rem] font-extrabold leading-none tracking-tight tabular-nums'>
+                  {toNext.value}
+                  <span className='ml-1 font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground'>{toNext.unit}</span>
+                </p>
+                <p className='mt-1 truncate text-sm text-muted-foreground'>
+                  Prochain arrêt · <span className='font-semibold text-foreground'>{progress.nextStop.name}</span>
+                </p>
+              </>
+            ) : isLive ? (
+              <>
+                <p className='font-display text-xl font-bold tracking-tight'>Bus en route</p>
+                <p className='truncate text-sm text-muted-foreground'>{selected.routeName}</p>
+              </>
+            ) : (
+              <>
+                <p className='font-display text-xl font-bold tracking-tight'>En attente du départ</p>
+                <p className='truncate text-sm text-muted-foreground'>
+                  {selected.departureTime ? `Départ prévu à ${selected.departureTime} · ` : ''}
+                  {selected.routeName}
+                </p>
+              </>
+            )}
           </div>
-          <div className='flex shrink-0 items-center gap-2'>
-            <Button variant='outline' size='sm' className='touch-target shrink-0' onClick={tour.openTour}>
-              <CircleHelp className='size-4' aria-hidden />
-              <span className='hidden sm:inline'>Guide</span>
-            </Button>
-            <Button variant='outline' size='sm' className='touch-target shrink-0' onClick={handleLogout}>
-              <LogOut className='size-4' />
-              <span className='hidden sm:inline'>Déconnexion</span>
-            </Button>
-          </div>
+          <Button variant='ghost' size='icon' className='touch-target shrink-0' onClick={tour.openTour} aria-label='Guide'>
+            <CircleHelp className='size-5' />
+          </Button>
+          <Button variant='ghost' size='icon' className='touch-target shrink-0' onClick={handleLogout} aria-label='Déconnexion'>
+            <LogOut className='size-5' />
+          </Button>
         </div>
       </header>
 
@@ -258,84 +318,118 @@ export function TrackingDashboardPage() {
           className='absolute inset-0 h-full w-full [&_.mapboxgl-map]:h-full [&_.mapboxgl-canvas]:h-full'
         />
 
-        {loading ? (
-          <p className='absolute left-3 top-3 z-10 rounded-full bg-card/95 px-4 py-2 text-sm text-muted-foreground shadow-[var(--brand-shadow)]'>
-            Chargement des trajets…
-          </p>
-        ) : !selected ? (
-          <div className='absolute inset-x-4 top-4 z-10 mx-auto max-w-md rounded-[22px] border border-foreground/[0.06] bg-card/95 p-6 text-center shadow-[var(--brand-shadow-lg)] backdrop-blur'>
-            <MapPin className='mx-auto mb-3 size-10 text-muted-foreground' />
-            <p className='font-medium'>Aucun trajet assigné</p>
-            <p className='mt-1 text-sm text-muted-foreground'>{emptyCopy}</p>
-          </div>
-        ) : (
+        {sheetOpen && selected ? (
           <>
-            {sheetOpen ? (
-              <button
-                type='button'
-                className='absolute inset-0 z-20 bg-slate-950/30 backdrop-blur-[2px]'
-                aria-label='Fermer le trajet'
-                onClick={() => setSheetOpen(false)}
-              />
-            ) : null}
-
+            <button
+              type='button'
+              className='absolute inset-0 z-20 bg-slate-950/30 backdrop-blur-[2px]'
+              aria-label='Fermer les détails'
+              onClick={() => setSheetOpen(false)}
+            />
             <div
-              className={cn(
-                'absolute inset-x-0 bottom-0 z-30 mx-auto flex w-full max-w-lg flex-col rounded-t-[28px] border border-b-0 border-foreground/[0.06] bg-card shadow-[0_-12px_40px_rgb(15_23_42/0.16)] transition-[max-height] duration-300 ease-[cubic-bezier(.16,.84,.44,1)]',
-                sheetOpen ? 'max-h-[80svh]' : 'max-h-[7.5rem]'
-              )}
+              className='absolute inset-x-0 bottom-0 z-30 mx-auto flex max-h-[75%] w-full max-w-lg flex-col rounded-t-[28px] border border-b-0 border-foreground/[0.06] bg-card shadow-[0_-12px_40px_rgb(15_23_42/0.16)]'
               role='dialog'
-              aria-modal={sheetOpen}
-              aria-label={selected.routeName}
+              aria-modal='true'
+              aria-label={`Détails · ${selected.routeName}`}
             >
               <button
                 type='button'
-                className='flex w-full flex-col items-center px-5 pt-2.5 pb-3'
-                onClick={() => setSheetOpen((open) => !open)}
-                aria-expanded={sheetOpen}
+                className='flex w-full items-center justify-between gap-2 px-5 pb-3 pt-4 text-left'
+                onClick={() => setSheetOpen(false)}
               >
-                <span className='mb-2.5 h-1.5 w-12 rounded-full bg-muted-foreground/25' />
-                <span className='flex w-full items-center justify-between gap-2 text-left'>
-                  <span className='min-w-0'>
-                    <span className='block truncate font-display text-base font-bold tracking-tight'>{selected.routeName}</span>
-                    <span className='inline-flex items-center gap-1.5 text-xs text-muted-foreground'>
-                      <span className={cn('size-1.5 rounded-full', isLive ? 'bg-green-500' : 'bg-muted-foreground/50')} />
-                      {isLive ? 'En direct' : 'Hors ligne'}
-                    </span>
-                  </span>
-                  <ChevronUp
-                    className={cn('size-5 shrink-0 text-muted-foreground transition-transform', !sheetOpen && 'rotate-180')}
-                  />
-                </span>
+                <span className='font-display text-base font-bold tracking-tight'>Détails du trajet</span>
+                <ChevronDown className='size-5 text-muted-foreground' />
               </button>
-              {sheetOpen ? (
-                <div className='min-h-0 space-y-3 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))]'>
-                  {canPickRoute ? (
-                    <div className='flex gap-2 overflow-x-auto pb-1'>
-                      {routes.map((route) => (
-                        <Button
-                          key={route.routeId}
-                          variant={selected.routeId === route.routeId ? 'default' : 'outline'}
-                          size='sm'
-                          className='shrink-0 touch-target'
-                          onClick={() => setSelectedId(route.routeId)}
-                        >
-                          {routeChipLabel(route)}
-                        </Button>
-                      ))}
-                    </div>
-                  ) : null}
-                  {details}
-                </div>
-              ) : null}
+              <div className='min-h-0 space-y-3 overflow-y-auto px-4 pb-4'>
+                {canPickRoute ? (
+                  <div className='flex gap-2 overflow-x-auto pb-1'>
+                    {routes.map((route) => (
+                      <Button
+                        key={route.routeId}
+                        variant={selected.routeId === route.routeId ? 'default' : 'outline'}
+                        size='sm'
+                        className='shrink-0 touch-target'
+                        onClick={() => setSelectedId(route.routeId)}
+                      >
+                        {routeChipLabel(route)}
+                      </Button>
+                    ))}
+                  </div>
+                ) : null}
+                {details}
+              </div>
             </div>
           </>
-        )}
+        ) : null}
       </main>
+
+      {/* Bottom heads-up strip: three readings and the one action that matters. */}
+      {selected ? (
+        <footer className='z-30 shrink-0 border-t border-foreground/[0.06] bg-card px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3'>
+          <div className='mb-3 flex items-center gap-2 text-xs'>
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold',
+                isLive ? 'bg-green-100 text-green-800' : 'bg-muted text-muted-foreground'
+              )}
+            >
+              <span className={cn('size-1.5 rounded-full', isLive ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground/50')} />
+              {isLive ? 'En direct' : 'Hors ligne'}
+            </span>
+            <span className='min-w-0 flex-1 truncate text-muted-foreground'>
+              {session.role === 'parent' && onBoard.length > 0
+                ? `${onBoard.map((s) => s.name).join(', ')} à bord`
+                : `${selected.routeName} · ${selected.driverName}`}
+            </span>
+            <button
+              type='button'
+              className='shrink-0 font-semibold text-primary underline-offset-4 hover:underline'
+              onClick={() => setSheetOpen(true)}
+            >
+              Détails
+            </button>
+          </div>
+          <div className='flex items-end gap-3'>
+            <dl className='grid flex-1 grid-cols-3 divide-x divide-foreground/10'>
+              {hudCells.map(([label, value, unit]) => (
+                <div key={label} className='min-w-0 px-2.5 first:pl-0'>
+                  <dt className='font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground'>{label}</dt>
+                  <dd
+                    className={cn(
+                      'mt-1 whitespace-nowrap font-display font-extrabold leading-none tracking-tight tabular-nums',
+                      value.length > 3 ? 'text-[1.4rem]' : 'text-[1.75rem]'
+                    )}
+                  >
+                    {value}
+                    {unit ? (
+                      <span className='ml-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground'>{unit}</span>
+                    ) : null}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            {isDriver ? (
+              tripActive ? (
+                <Button variant='destructive' className='h-12 w-28 shrink-0 rounded-xl text-base font-bold' onClick={() => void handleStopTrip()}>
+                  Terminer
+                </Button>
+              ) : (
+                <Button
+                  className='h-12 w-28 shrink-0 rounded-xl text-base font-bold'
+                  onClick={() => void handleStartTrip()}
+                >
+                  Démarrer
+                </Button>
+              )
+            ) : null}
+          </div>
+        </footer>
+      ) : null}
+
       <GuidedTour
         open={tour.open}
         onClose={tour.closeTour}
-        steps={session.role === 'driver' ? TRACKING_DRIVER_TOUR : TRACKING_FOLLOW_TOUR}
+        steps={isDriver ? TRACKING_DRIVER_TOUR : TRACKING_FOLLOW_TOUR}
       />
     </div>
   );
@@ -344,87 +438,106 @@ export function TrackingDashboardPage() {
 function RouteDetails({
   selected,
   isLive,
-  canDrive: showDriver,
-  driverMode,
-  onRefresh,
-  onStartTrip,
-  onToggleGps,
-  onStopTrip,
+  nextIndex,
+  gpsSharing,
 }: {
   selected: LiveRoute;
   isLive: boolean;
-  canDrive: boolean;
-  driverMode: boolean;
-  onRefresh: () => void;
-  onStartTrip: () => void;
-  onToggleGps: () => void;
-  onStopTrip: () => void;
+  nextIndex: number | null;
+  gpsSharing: boolean;
 }) {
+  const stops = selected.waypoints;
   return (
     <>
-      <div className='rounded-2xl border border-foreground/[0.06] bg-card shadow-[var(--brand-shadow)] p-4'>
-        <h2 className='font-display text-lg font-bold tracking-tight'>{selected.routeName}</h2>
-        <p className='mt-1 text-sm text-muted-foreground'>Chauffeur : {selected.driverName}</p>
-        <p className='text-sm text-muted-foreground'>
-          Départ : {selected.departureTime}
-          {selected.returnTime ? ` · Retour : ${selected.returnTime}` : ''}
-        </p>
-        <div className='mt-3 flex items-center gap-2'>
+      <div className='rounded-2xl border border-foreground/[0.06] bg-card p-4 shadow-[var(--brand-shadow)]'>
+        <div className='flex items-start justify-between gap-3'>
+          <div className='min-w-0'>
+            <h2 className='font-display text-lg font-bold tracking-tight'>{selected.routeName}</h2>
+            <p className='mt-0.5 text-sm text-muted-foreground'>
+              {selected.driverName} · départ {selected.departureTime}
+              {selected.returnTime ? ` · retour ${selected.returnTime}` : ''}
+            </p>
+          </div>
           <span
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+            className={cn(
+              'inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium',
               isLive ? 'bg-green-100 text-green-800' : 'bg-muted text-muted-foreground'
-            }`}
+            )}
           >
             <Radio className='size-3' />
             {isLive ? 'En direct' : 'Hors ligne'}
           </span>
-          <Button variant='ghost' size='sm' onClick={onRefresh}>
-            Actualiser
-          </Button>
         </div>
+        {gpsSharing ? (
+          <p className='mt-3 rounded-xl bg-green-50 px-3 py-2 text-xs font-medium text-green-800'>
+            Votre position est partagée avec les familles jusqu’à « Terminer ».
+          </p>
+        ) : null}
       </div>
 
+      {stops.length > 0 ? (
+        <div className='rounded-2xl border border-foreground/[0.06] bg-card p-4 shadow-[var(--brand-shadow)]'>
+          <h3 className='mb-3 flex items-center gap-2 text-sm font-semibold'>
+            <MapPin className='size-4' />
+            Arrêts
+          </h3>
+          <ol className='relative space-y-0'>
+            {stops.map((stop, i) => {
+              const passed = nextIndex != null && i < nextIndex;
+              const next = nextIndex === i;
+              const last = i === stops.length - 1;
+              return (
+                <li key={`${stop.lat}-${stop.lng}-${i}`} className='relative flex gap-3 pb-3 last:pb-0'>
+                  {!last ? (
+                    <span
+                      className={cn('absolute left-[11px] top-6 h-[calc(100%-12px)] w-0.5', passed ? 'bg-primary' : 'bg-foreground/10')}
+                      aria-hidden
+                    />
+                  ) : null}
+                  <span
+                    className={cn(
+                      'relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
+                      passed
+                        ? 'bg-primary text-primary-foreground'
+                        : next
+                          ? 'bg-card text-primary ring-2 ring-primary'
+                          : 'bg-muted text-muted-foreground'
+                    )}
+                  >
+                    {passed ? <Check className='size-3.5' strokeWidth={3} /> : i + 1}
+                  </span>
+                  <span className={cn('pt-0.5 text-sm', passed ? 'text-muted-foreground line-through decoration-foreground/20' : next ? 'font-semibold' : '')}>
+                    {stop.name || `Arrêt ${i + 1}`}
+                    {next ? <span className='ml-2 text-xs font-medium text-primary'>prochain</span> : null}
+                    {last && !next ? <span className='ml-2 text-xs font-medium text-muted-foreground'>arrivée</span> : null}
+                    {i === 0 && !passed && !next ? <span className='ml-2 text-xs font-medium text-muted-foreground'>départ</span> : null}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      ) : null}
+
       {selected.students.length > 0 && (
-        <div className='rounded-2xl border border-foreground/[0.06] bg-card shadow-[var(--brand-shadow)] p-4'>
+        <div className='rounded-2xl border border-foreground/[0.06] bg-card p-4 shadow-[var(--brand-shadow)]'>
           <h3 className='mb-3 flex items-center gap-2 text-sm font-semibold'>
             <Users className='size-4' />
-            Élèves sur ce trajet
+            Élèves ({selected.students.length})
           </h3>
-          <ul className='space-y-2'>
+          <ul className='grid gap-2 sm:grid-cols-2'>
             {selected.students.map((student) => (
-              <li key={student.id} className='rounded-xl bg-muted/60 px-3 py-2 text-sm'>
-                <span className='font-medium'>{student.name}</span>
-                {student.className && (
-                  <span className='block text-xs text-muted-foreground'>{student.className}</span>
-                )}
+              <li key={student.id} className='flex items-center justify-between gap-2 rounded-xl bg-muted/60 px-3 py-2 text-sm'>
+                <span className='min-w-0'>
+                  <span className='block truncate font-medium'>{student.name}</span>
+                  {student.className && <span className='block text-xs text-muted-foreground'>{student.className}</span>}
+                </span>
+                {student.trackingStatus === 'ON_BUS' ? (
+                  <span className='shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-800'>à bord</span>
+                ) : null}
               </li>
             ))}
           </ul>
-        </div>
-      )}
-
-      {showDriver && (
-        <div className='rounded-2xl border border-foreground/[0.06] bg-card shadow-[var(--brand-shadow)] p-4'>
-          <h3 className='mb-3 text-sm font-semibold'>Mode chauffeur</h3>
-          <div className='grid grid-cols-1 gap-2'>
-            <Button size='sm' className='w-full touch-target' onClick={onStartTrip}>
-              Démarrer le trajet
-            </Button>
-            <Button
-              size='sm'
-              variant={driverMode ? 'default' : 'outline'}
-              className='w-full touch-target'
-              onClick={onToggleGps}
-            >
-              {driverMode ? 'GPS actif' : 'Partager ma position'}
-            </Button>
-            <Button size='sm' variant='destructive' className='w-full touch-target' onClick={onStopTrip}>
-              Terminer
-            </Button>
-          </div>
-          <p className='mt-2 text-xs text-muted-foreground'>
-            Activez le GPS pour envoyer la position du bus en temps réel aux parents et enseignants.
-          </p>
         </div>
       )}
     </>

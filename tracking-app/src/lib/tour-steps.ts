@@ -1,4 +1,4 @@
-import { BellRing, Bus, ChevronsUp, MapPin, Navigation, Play, Sparkles, Square } from 'lucide-react';
+import { BellRing, Bus, Gauge, ListChecks, MapPin, Play, Sparkles, Square } from 'lucide-react';
 
 import type { GuidedTourStep } from '@/components/GuidedTour';
 
@@ -12,6 +12,12 @@ export const TRACKING_FOLLOW_TOUR: GuidedTourStep[] = [
     body: 'Suivez le bus scolaire en direct, de son départ jusqu’à l’arrivée.',
   },
   {
+    icon: Gauge,
+    title: 'L’essentiel en haut',
+    body:
+      'Le bandeau du haut indique où en est le bus : en attente du départ, en route, ou la distance jusqu’au prochain arrêt.',
+  },
+  {
     icon: MapPin,
     title: 'Lire la carte',
     body: 'La carte montre le trajet du bus et ses arrêts :',
@@ -22,42 +28,43 @@ export const TRACKING_FOLLOW_TOUR: GuidedTourStep[] = [
     ],
   },
   {
-    icon: ChevronsUp,
+    icon: ListChecks,
     title: 'Le détail du trajet',
     body:
-      'Touchez le panneau en bas de l’écran pour l’ouvrir : chauffeur, horaires de départ et de retour, élèves du trajet et statut « En direct » ou « Hors ligne ».',
+      'En bas de l’écran, trois repères résument le trajet. Touchez « Détails » pour voir le chauffeur, les horaires et la liste des arrêts.',
   },
   {
     icon: BellRing,
     title: 'Soyez prévenu',
     body:
-      'Activez les notifications quand le bandeau vous le propose : vous serez alerté quand le bus démarre ou termine son trajet. Rouvrez ce guide avec le bouton « Guide ».',
+      'Activez les notifications quand le bandeau vous le propose : vous serez alerté quand le bus démarre ou termine son trajet. Rouvrez ce guide avec le bouton d’aide en haut à droite.',
   },
 ];
 
-/** Drivers: running a trip and sharing the bus position. */
+/** Drivers (and staff or teachers who drive): running a trip and sharing the bus position. */
 export const TRACKING_DRIVER_TOUR: GuidedTourStep[] = [
   {
     icon: Bus,
     title: 'Bienvenue, chauffeur',
     body:
-      'Depuis cette page, vous démarrez votre trajet et partagez la position du bus avec les parents et l’école.',
+      'Depuis cette page, vous démarrez votre trajet et partagez la position du bus avec les familles et l’école.',
   },
   {
     icon: Play,
-    title: '1. Démarrez le trajet',
-    body: 'Ouvrez le panneau en bas de l’écran, puis touchez « Démarrer le trajet » au moment du départ.',
+    title: '1. Démarrez au départ',
+    body:
+      'Touchez « Démarrer » en bas de l’écran au moment du départ et autorisez la localisation. Votre position est alors partagée en direct.',
   },
   {
-    icon: Navigation,
-    title: '2. Partagez votre position',
+    icon: MapPin,
+    title: '2. Pendant la route',
     body:
-      'Touchez « Partager ma position » et autorisez la localisation. Gardez la page ouverte pendant la route : la position est envoyée en direct.',
+      'Gardez la page ouverte. Le bandeau du haut indique la distance jusqu’au prochain arrêt ; « Détails » affiche la liste des arrêts.',
   },
   {
     icon: Square,
     title: '3. Terminez à l’arrivée',
     body:
-      'Touchez « Terminer » une fois arrivé : les parents sont prévenus que le trajet est fini. Rouvrez ce guide avec le bouton « Guide ».',
+      'Touchez « Terminer » une fois arrivé : le partage s’arrête et les familles sont prévenues. Rouvrez ce guide avec le bouton d’aide en haut à droite.',
   },
 ];

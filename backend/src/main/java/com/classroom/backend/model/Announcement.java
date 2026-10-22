@@ -33,4 +33,8 @@ public class Announcement {
 
     @Column(nullable = false)
     private Instant publishedAt;
+
+    /** Establishment that owns the announcement. */
+    @Column(name = "school_id")
+    private String schoolId;
 }

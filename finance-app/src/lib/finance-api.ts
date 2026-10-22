@@ -1,5 +1,6 @@
 import { ACCESS_TOKEN_KEY, BASE_URL } from '@/constants';
 import { parseApiErrorResponse, wrapFetchError } from '@/lib/api-error';
+import { SESSION_EXPIRED_MESSAGE, handleExpiredSession, readJsonBody } from '@/lib/session-expiry';
 import type { FinanceOverview, PayrollEmployeeType, PayrollPayment, TeacherOption } from '@/types/finance';
 
 export function isBackendApiConfigured(): boolean {
@@ -22,11 +23,15 @@ export async function financeApiFetch<T>(path: string, init: RequestInit = {}): 
 
   try {
     const res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
+    if (res.status === 401 && token && !path.startsWith('/api/auth/')) {
+      handleExpiredSession();
+      throw new Error(SESSION_EXPIRED_MESSAGE);
+    }
     if (!res.ok) {
       throw new Error(await parseApiErrorResponse(res, `Erreur API ${res.status}`));
     }
     if (res.status === 204) return undefined as T;
-    return res.json() as Promise<T>;
+    return readJsonBody<T>(res);
   } catch (err) {
     throw wrapFetchError(err, 'Erreur de communication avec le serveur');
   }
@@ -40,6 +45,14 @@ export type AuthLoginResponse = {
   role: string;
   schoolId?: string;
 };
+
+/** Exchange a Google Identity Services ID token for a NewGee session. */
+export async function loginWithGoogle(idToken: string) {
+  return financeApiFetch<AuthLoginResponse>('/api/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ idToken }),
+  });
+}
 
 export async function loginAdmin(email: string, password: string) {
   return financeApiFetch<AuthLoginResponse>('/api/auth/login', {

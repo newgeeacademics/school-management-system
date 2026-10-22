@@ -8,6 +8,7 @@ import lombok.Data;
 public class CommunicationResultResponse {
 
     private int recipientsCount;
+    /** E-mails handed to the mail provider (sending continues in the background). */
     private int emailsSent;
     private boolean emailConfigured;
     private boolean portalPublished;

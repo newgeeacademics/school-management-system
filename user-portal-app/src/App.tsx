@@ -1,4 +1,5 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Toaster } from 'sonner';
 import { UserPortalLoginPage } from '@/pages/UserPortalLoginPage';
 import { UserPortalForgotPasswordPage } from '@/pages/UserPortalForgotPasswordPage';
@@ -10,11 +11,18 @@ import { PortalClassHubView } from '@/pages/PortalClassHubView';
 import { PortalLayout } from '@/pages/PortalLayout';
 import { PortalSessionGate } from '@/components/PortalSessionGate';
 
+/** One broken page never blanks the portal; navigating elsewhere clears the error. */
+function RouteErrorBoundary({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  return <ErrorBoundary resetKey={location.pathname}>{children}</ErrorBoundary>;
+}
+
 export function App() {
   return (
     <>
       <Toaster richColors position='top-center' />
       <BrowserRouter>
+        <RouteErrorBoundary>
         <Routes>
           <Route path='/' element={<Navigate to='/connexion' replace />} />
           <Route path='/connexion' element={<UserPortalLoginPage />} />
@@ -50,6 +58,7 @@ export function App() {
           </Route>
           <Route path='*' element={<Navigate to='/connexion' replace />} />
         </Routes>
+        </RouteErrorBoundary>
       </BrowserRouter>
     </>
   );

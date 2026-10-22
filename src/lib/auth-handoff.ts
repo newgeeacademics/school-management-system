@@ -8,9 +8,13 @@ export function buildDashboardHandoffUrl(token: string): string {
   return url.pathname + url.search;
 }
 
+const HANDOFF_PATHS = new Set(['/login', '/dashboard']);
+
 /** Accept JWT from ?token= on /login or /dashboard after registration. */
 export function consumeRegistrationTokenFromUrl(): boolean {
   if (typeof window === 'undefined') return false;
+  // /reset-password and /verify-email also carry ?token= (single-use e-mail tokens, not JWTs).
+  if (!HANDOFF_PATHS.has(window.location.pathname)) return false;
 
   const params = new URLSearchParams(window.location.search);
   const token = params.get('token');

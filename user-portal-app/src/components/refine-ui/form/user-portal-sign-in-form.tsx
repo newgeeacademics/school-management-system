@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Lock } from 'lucide-react';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import { isGoogleAuthConfigured } from '@/lib/google-auth';
 import { Input } from '@/components/ui/input';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { Label } from '@/components/ui/label';
@@ -9,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { getAdminLoginUrl } from '@/lib/school-app-url';
 import { setPortalSession } from '@/lib/auth';
 import {
+  loginWithGoogle,
   loginWithIdentifier,
   setupInitialPassword,
   isBackendApiConfigured,
@@ -29,6 +33,25 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
   const [isPending, setIsPending] = useState(false);
   const isEmbedded = variant === 'embedded';
   const isSetupMode = setupToken != null;
+  const [searchParams] = useSearchParams();
+  const sessionExpired = searchParams.get('expired') === '1';
+
+  const onGoogleCredential = async (idToken: string) => {
+    if (!isBackendApiConfigured()) {
+      toast.error(t('userPortal.backendRequired'), { richColors: true });
+      return;
+    }
+    setIsPending(true);
+    try {
+      finishLogin(await loginWithGoogle(idToken));
+    } catch (err) {
+      toast.error(err instanceof Error && err.message ? err.message : t('userPortal.loginInvalid'), {
+        richColors: true,
+      });
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   const adminLoginUrl = getAdminLoginUrl();
 
@@ -145,6 +168,20 @@ export function UserPortalSignInForm({ variant = 'full' }: { variant?: 'full' | 
         </div>
 
         <div className={isEmbedded ? 'auth-page__form' : 'mt-6 space-y-5'}>
+          {sessionExpired && !isSetupMode ? (
+            <div role='status' className='auth-alert auth-alert--warning'>
+              <Lock className='h-4 w-4 shrink-0' />
+              <span>Votre session a expiré. Reconnectez-vous pour continuer.</span>
+            </div>
+          ) : null}
+          {!isSetupMode && isGoogleAuthConfigured() ? (
+            <>
+              <GoogleSignInButton onCredential={onGoogleCredential} disabled={isPending} />
+              <div className='auth-divider'>
+                <span>ou</span>
+              </div>
+            </>
+          ) : null}
           <form onSubmit={onSubmit} className={isEmbedded ? 'contents' : 'space-y-5'}>
             {!isSetupMode ? (
               <>

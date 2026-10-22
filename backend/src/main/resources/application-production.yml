@@ -18,6 +18,13 @@ server:
 app:
   seed:
     enabled: false
+  # Sign in with Google: OAuth web client ID(s), comma-separated. Empty disables /api/auth/google.
+  google:
+    client-ids: ${GOOGLE_CLIENT_ID:}
+  # Google sign-in through Firebase Authentication: the Firebase project ID.
+  firebase:
+    project-id: ${FIREBASE_PROJECT_ID:}
+
   jwt:
     secret: ${APP_JWT_SECRET}
     expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}

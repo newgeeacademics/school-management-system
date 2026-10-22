@@ -9,7 +9,7 @@ import { getMainAppOrigin } from '@/lib/school-app-url';
 import { fetchActivationPreview, isBackendApiConfigured, setupInitialPassword } from '@/lib/api';
 import { setPortalSession } from '@/lib/auth';
 import { backendRoleToPortal, defaultPortalPath } from '@/lib/portal-role';
-import logoSrc from '@/assets/logo/newgee-logo.png';
+import logoSrc from '@/assets/logo/newgee-logo-tight.png';
 
 import './auth-page.css';
 

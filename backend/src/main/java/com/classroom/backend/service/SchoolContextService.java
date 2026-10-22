@@ -36,6 +36,26 @@ public class SchoolContextService {
         return Optional.empty();
     }
 
+    /** School id of the logged-in user, whatever their role (admin, staff, teacher…). */
+    public Optional<String> getCurrentUserSchoolId() {
+        return getCurrentUser()
+                .map(AppUser::getSchoolId)
+                .filter(schoolId -> !schoolId.isBlank());
+    }
+
+    /** The logged-in user, if the request is authenticated. */
+    public Optional<AppUser> getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(accountIdentifierService.requireByPrincipalName(auth.getName()));
+        } catch (Exception ignored) {
+            return Optional.empty();
+        }
+    }
+
     /** Required for dashboard mutations and listings scoped to one establishment. */
     public String requireCurrentSchoolId() {
         return getCurrentSchoolId().orElseThrow(() -> new IllegalStateException(

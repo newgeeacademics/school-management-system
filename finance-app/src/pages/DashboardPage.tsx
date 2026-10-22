@@ -1553,19 +1553,19 @@ export const DashboardPage: React.FC = () => {
 
           {activeSection === 'sis' && (
             <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-              <Card className='cursor-pointer transition-shadow hover:shadow-md' onClick={() => setActiveSection('students')}>
+              <Card className='cursor-pointer transition-colors hover:ring-foreground/15' onClick={() => setActiveSection('students')}>
                 <CardHeader>
                   <CardTitle className='text-base'>Élèves</CardTitle>
                   <CardDescription>Dossiers, affectations et listes par classe.</CardDescription>
                 </CardHeader>
               </Card>
-              <Card className='cursor-pointer transition-shadow hover:shadow-md' onClick={() => setActiveSection('parents')}>
+              <Card className='cursor-pointer transition-colors hover:ring-foreground/15' onClick={() => setActiveSection('parents')}>
                 <CardHeader>
                   <CardTitle className='text-base'>Parents & tuteurs</CardTitle>
                   <CardDescription>Contacts et rattachements aux élèves.</CardDescription>
                 </CardHeader>
               </Card>
-              <Card className='cursor-pointer transition-shadow hover:shadow-md' onClick={() => setActiveSection('classes')}>
+              <Card className='cursor-pointer transition-colors hover:ring-foreground/15' onClick={() => setActiveSection('classes')}>
                 <CardHeader>
                   <CardTitle className='text-base'>Classes</CardTitle>
                   <CardDescription>Structure des niveaux et effectifs.</CardDescription>

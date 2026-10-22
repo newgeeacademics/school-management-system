@@ -2,6 +2,7 @@ import React from 'react';
 
 import { LoginIdPreview } from '@/components/dashboard/LoginIdPreview';
 import { isCompleteEmail } from '@/components/refine-ui/form/email-with-at-separator';
+import { phoneNeedsVerification, usePhoneVerificationVersion } from '@/lib/phone-verification';
 import { PhoneWithDialCode } from '@/components/refine-ui/form/phone-with-dial-code';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -94,6 +95,7 @@ export function TeacherCreateWizard({
   const [form, setForm] = React.useState<FormState>(() => emptyForm(resolvedDefaultCountry));
   const [submitting, setSubmitting] = React.useState(false);
 
+  const phoneVerificationVersion = usePhoneVerificationVersion();
   const canContinue = React.useCallback(
     (currentStep: number) => {
       switch (currentStep) {
@@ -102,14 +104,14 @@ export function TeacherCreateWizard({
         case 2:
           return Boolean(form.subject.trim());
         case 3:
-          return isCompleteEmail(form.email);
+          return isCompleteEmail(form.email) && !phoneNeedsVerification(form.phoneCountry, form.phone);
         case 4:
           return true;
         default:
           return false;
       }
     },
-    [form],
+    [form, phoneVerificationVersion],
   );
 
   const handleSubmit = async (e: React.FormEvent) => {

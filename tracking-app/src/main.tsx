@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom/client';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './styles/globals.css';
 import { App } from './App';
+import { installSafeErrorToasts } from '@/lib/safe-toasts';
+
+installSafeErrorToasts();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

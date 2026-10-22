@@ -172,7 +172,7 @@ export async function downloadPortalEvaluationDocument(evaluationId: string, fil
   const res = await fetch(getEvaluationDocumentUrl(evaluationId), {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (!res.ok) throw new Error(`Download failed (${res.status})`);
+  if (!res.ok) throw new Error("Téléchargement impossible pour le moment. Réessayez.");
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

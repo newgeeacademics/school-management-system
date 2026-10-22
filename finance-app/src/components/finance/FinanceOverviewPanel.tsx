@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { FinanceOverview } from '@/types/finance';
 import { TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 
-const formatXof = (n: number) => `${n.toLocaleString('fr-FR')} XOF`;
+// Amounts are nullable Doubles on the API (e.g. no payment yet).
+const formatXof = (n: number | null | undefined) => `${(n ?? 0).toLocaleString('fr-FR')} XOF`;
 
 type Props = {
   overview: FinanceOverview | null;
@@ -57,7 +58,7 @@ export function FinanceOverviewPanel({ overview, loading }: Props) {
 
       <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
         {cards.map((card) => (
-          <Card key={card.label} className='border-violet-100/80 shadow-sm'>
+          <Card key={card.label} className='border-violet-100/80'>
             <CardHeader className='flex flex-row items-start justify-between pb-2'>
               <CardTitle className='text-xs font-medium text-muted-foreground leading-snug pr-2'>
                 {card.label}

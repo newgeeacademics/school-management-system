@@ -1,9 +1,11 @@
+import { toast } from 'sonner';
 import React from 'react';
 import { CreditCard, Plus, Users } from 'lucide-react';
 
 import { EntityCrudActions } from '@/components/dashboard/EntityCrudActions';
 import { InputPassword } from '@/components/refine-ui/form/input-password';
 import { PhoneWithDialCode } from '@/components/refine-ui/form/phone-with-dial-code';
+import { phoneNeedsVerification } from '@/lib/phone-verification';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -91,6 +93,12 @@ export const TeachersSection: React.FC<TeachersSectionProps> = ({
 
   const saveEdit = () => {
     if (!editingId || !draft.firstName.trim() || !draft.lastName.trim() || !draft.subject.trim()) return;
+    const original = teachers.find((t) => t.id === editingId)?.phone ?? '';
+    const nextPhone = formatPhoneWithCountry(draft.phoneCountry, draft.phone.trim()) || draft.phone.trim();
+    if (nextPhone.replace(/[^0-9]/g, '') !== original.replace(/[^0-9]/g, '') && phoneNeedsVerification(draft.phoneCountry, draft.phone)) {
+      toast.error('Confirmez le nouveau numéro par SMS avant d’enregistrer.');
+      return;
+    }
     void Promise.resolve(
       onUpdateTeacher(editingId, {
         firstName: draft.firstName.trim(),

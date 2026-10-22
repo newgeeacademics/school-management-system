@@ -38,6 +38,17 @@ public class PortalScopeResolver {
             return students.stream().map(Student::getId).collect(Collectors.toSet());
         }
 
+        /** Establishment(s) this portal user belongs to (account, children and classes). */
+        public Set<String> schoolIds() {
+            Set<String> ids = new HashSet<>();
+            if (user.getSchoolId() != null && !user.getSchoolId().isBlank()) {
+                ids.add(user.getSchoolId());
+            }
+            students.stream().map(Student::getSchoolId).filter(id -> id != null && !id.isBlank()).forEach(ids::add);
+            classes.stream().map(ClassItem::getSchoolId).filter(id -> id != null && !id.isBlank()).forEach(ids::add);
+            return ids;
+        }
+
         public void assertCanEdit() {
             if (!canEdit()) {
                 throw new IllegalStateException("Seuls les enseignants peuvent modifier les notes.");

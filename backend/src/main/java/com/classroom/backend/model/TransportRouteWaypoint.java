@@ -1,5 +1,6 @@
 package com.classroom.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,6 +13,8 @@ public class TransportRouteWaypoint {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    /** Back-reference only: serializing it would nest the route inside itself forever. */
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "route_id", nullable = false)
     private TransportRoute transportRoute;

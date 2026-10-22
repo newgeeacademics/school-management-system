@@ -8,6 +8,7 @@ import com.classroom.backend.model.*;
 import com.classroom.backend.model.enums.MessageAudience;
 import com.classroom.backend.model.enums.UserRole;
 import com.classroom.backend.repository.*;
+import com.classroom.backend.service.email.EmailDispatchService;
 import com.classroom.backend.service.email.EmailService;
 import com.classroom.backend.service.email.templates.BrandedMessageEmailTemplate;
 import lombok.RequiredArgsConstructor;
@@ -32,17 +33,25 @@ public class SchoolCommunicationService {
     private final ClassItemRepository classItemRepository;
     private final SchoolMessageRepository schoolMessageRepository;
     private final PortalScopeResolver portalScopeResolver;
+    private final SchoolContextService schoolContextService;
+    private final EmailDispatchService emailDispatchService;
 
     @Value("${app.public.portal-url:http://localhost:5174}")
     private String portalUrl;
 
+    /** Message from the establishment console: recipients are limited to the admin's school. */
     @Transactional
     public CommunicationResultResponse sendMessage(ParentMessageRequest request, String senderName) {
+        return sendMessage(request, senderName, schoolContextService.requireCurrentSchoolId());
+    }
+
+    @Transactional
+    public CommunicationResultResponse sendMessage(ParentMessageRequest request, String senderName, String schoolId) {
         MessageAudience audience = request.getAudience() != null
                 ? request.getAudience()
                 : MessageAudience.PARENTS;
 
-        Set<String> emails = resolveRecipientEmails(request, audience);
+        Set<String> emails = resolveRecipientEmails(request, audience, schoolId);
         int emailsSent = 0;
 
         if (request.isSendEmail()) {
@@ -57,6 +66,7 @@ public class SchoolCommunicationService {
                     .senderName(senderName != null && !senderName.isBlank() ? senderName.trim() : "Administration")
                     .audience(audience)
                     .classId(trimOrNull(request.getClassId()))
+                    .schoolId(schoolId)
                     .sentAt(Instant.now())
                     .build());
             portalPublished = true;
@@ -84,7 +94,8 @@ public class SchoolCommunicationService {
                 .append(normalizePortalUrl())
                 .append("/accueil/announcements");
 
-        Set<String> emails = collectAllFamilyEmails();
+        String schoolId = announcement.getSchoolId();
+        Set<String> emails = schoolId == null ? Set.of() : collectAllFamilyEmails(schoolId);
         int emailsSent = dispatchEmails(emails, subject, body.toString());
 
         return CommunicationResultResponse.builder()
@@ -111,7 +122,7 @@ public class SchoolCommunicationService {
         request.setSendEmail(true);
         request.setPublishOnPortal(true);
 
-        return sendMessage(request, teacher.getName());
+        return sendMessage(request, teacher.getName(), teacher.getSchoolId());
     }
 
     @Transactional(readOnly = true)
@@ -122,7 +133,12 @@ public class SchoolCommunicationService {
         Map<String, String> classNames = classItemRepository.findAll().stream()
                 .collect(Collectors.toMap(ClassItem::getId, ClassItem::getName, (a, b) -> a));
 
-        List<PortalMessageDto> items = schoolMessageRepository.findAllByOrderBySentAtDesc().stream()
+        Set<String> schoolIds = scope.schoolIds();
+        List<SchoolMessage> messages = schoolIds.isEmpty()
+                ? List.of()
+                : schoolMessageRepository.findBySchoolIdInOrderBySentAtDesc(schoolIds);
+
+        List<PortalMessageDto> items = messages.stream()
                 .filter(msg -> isMessageVisible(msg, scope.role(), accessibleClassIds))
                 .map(msg -> PortalMessageDto.builder()
                         .id(msg.getId())
@@ -160,33 +176,48 @@ public class SchoolCommunicationService {
         return false;
     }
 
-    private Set<String> resolveRecipientEmails(ParentMessageRequest request, MessageAudience audience) {
+    private Set<String> resolveRecipientEmails(ParentMessageRequest request, MessageAudience audience, String schoolId) {
+        if (schoolId == null || schoolId.isBlank()) {
+            throw new IllegalStateException("Aucun établissement associé à ce message.");
+        }
         return switch (audience) {
-            case ALL_FAMILIES -> collectAllFamilyEmails();
-            case PARENTS -> collectAllParentEmails();
+            case ALL_FAMILIES -> collectAllFamilyEmails(schoolId);
+            case PARENTS -> collectAllParentEmails(schoolId);
             case CLASS_PARENTS -> {
                 String classId = trimOrNull(request.getClassId());
                 if (classId == null) {
-                    throw new IllegalArgumentException("classId is required for CLASS_PARENTS audience.");
+                    throw new IllegalArgumentException("Choisissez une classe pour ce message.");
+                }
+                ClassItem classItem = classItemRepository.findById(classId)
+                        .orElseThrow(() -> new IllegalArgumentException("Classe introuvable."));
+                if (classItem.getSchoolId() != null && !classItem.getSchoolId().equals(schoolId)) {
+                    throw new IllegalStateException("Cette classe n'appartient pas à votre établissement.");
                 }
                 yield collectParentEmailsForClass(classId);
             }
         };
     }
 
-    private Set<String> collectAllFamilyEmails() {
+    private Set<String> collectAllFamilyEmails(String schoolId) {
         Set<String> emails = new LinkedHashSet<>();
-        emails.addAll(collectAllParentEmails());
-        emails.addAll(collectAllStudentEmails());
-        emails.addAll(collectAllTeacherEmails());
+        emails.addAll(collectAllParentEmails(schoolId));
+        emails.addAll(collectAllStudentEmails(schoolId));
+        emails.addAll(collectAllTeacherEmails(schoolId));
         return emails;
     }
 
-    private Set<String> collectAllParentEmails() {
-        return parentContactRepository.findAll().stream()
+    private Set<String> collectAllParentEmails(String schoolId) {
+        Set<String> emails = parentContactRepository.findBySchoolId(schoolId).stream()
                 .map(this::resolveParentEmail)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        // Parents saved without school_id are still reachable through their child's school.
+        studentRepository.findBySchoolId(schoolId).stream()
+                .flatMap(student -> parentContactRepository.findByStudentId(student.getId()).stream())
+                .map(this::resolveParentEmail)
+                .filter(Objects::nonNull)
+                .forEach(emails::add);
+        return emails;
     }
 
     private Set<String> collectParentEmailsForClass(String classId) {
@@ -197,15 +228,15 @@ public class SchoolCommunicationService {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private Set<String> collectAllStudentEmails() {
-        return studentRepository.findAll().stream()
+    private Set<String> collectAllStudentEmails(String schoolId) {
+        return studentRepository.findBySchoolId(schoolId).stream()
                 .map(this::resolveStudentEmail)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private Set<String> collectAllTeacherEmails() {
-        return teacherRepository.findAll().stream()
+    private Set<String> collectAllTeacherEmails(String schoolId) {
+        return teacherRepository.findBySchoolId(schoolId).stream()
                 .map(this::resolveTeacherEmail)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -247,6 +278,7 @@ public class SchoolCommunicationService {
         return null;
     }
 
+    /** Queues the e-mails for background delivery and returns how many were queued. */
     private int dispatchEmails(Set<String> emails, String subject, String body) {
         if (!emailService.isConfigured() || emails.isEmpty()) {
             return 0;
@@ -257,22 +289,8 @@ public class SchoolCommunicationService {
                 normalizePortalUrl(),
                 emailService.resolveEmailLogoUrl()
         );
-        int sent = 0;
-        for (String email : emails) {
-            try {
-                emailService.sendHtmlEmail(email, subject, html);
-                sent++;
-            } catch (Exception e) {
-                log.warn("Broadcast email failed for {}", email, e);
-                try {
-                    emailService.sendSimpleEmail(email, subject, body);
-                    sent++;
-                } catch (Exception ignored) {
-                    log.warn("Plain broadcast email also failed for {}", email);
-                }
-            }
-        }
-        return sent;
+        emailDispatchService.sendToAll(List.copyOf(emails), subject, html, body);
+        return emails.size();
     }
 
     private String buildResultMessage(int recipients, int sent, boolean sendEmailRequested) {
@@ -285,7 +303,7 @@ public class SchoolCommunicationService {
         if (recipients == 0) {
             return "Aucune adresse e-mail trouvée pour cette audience.";
         }
-        return sent + " e-mail(s) envoyé(s) sur " + recipients + " destinataire(s).";
+        return "Envoi en cours : " + sent + " e-mail(s) vers " + recipients + " destinataire(s).";
     }
 
     private String normalizePortalUrl() {

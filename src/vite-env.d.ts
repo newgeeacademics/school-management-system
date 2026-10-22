@@ -12,6 +12,8 @@ interface ImportMetaEnv {
   readonly VITE_CLOUDINARY_CLOUD_NAME: string | undefined;
   readonly VITE_CLOUDINARY_UPLOAD_PRESET: string | undefined;
   readonly VITE_MAPBOX_TOKEN: string | undefined;
+  /** Google OAuth web client ID — enables "Continue with Google" on /login. */
+  readonly VITE_GOOGLE_CLIENT_ID: string | undefined;
 }
 
 interface ImportMeta {
