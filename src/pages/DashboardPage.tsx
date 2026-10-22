@@ -2058,7 +2058,11 @@ export const DashboardPage: React.FC = () => {
           )}
 
           {activeSection === 'matieres' && (
-            <MatieresSection matieres={matieres} onCreateMatiere={handleCreateMatiere} />
+            <MatieresSection
+              matieres={matieres}
+              onCreateMatiere={handleCreateMatiere}
+              readOnly={role !== 'admin' && role !== 'staff'}
+            />
           )}
 
           {activeSection === 'rooms' && (

@@ -37,6 +37,11 @@ export const MatieresSection: React.FC<MatieresSectionProps> = ({
           <CardTitle className='text-sm font-medium'>Matières ({matieres.length})</CardTitle>
         </CardHeader>
         <CardContent className='space-y-2 text-xs'>
+          {readOnly ? (
+            <p className='text-muted-foreground'>
+              Seuls l’administrateur et le personnel de direction de l’établissement peuvent ajouter des matières.
+            </p>
+          ) : null}
           {matieres.length === 0 ? (
             <p className='text-muted-foreground'>Aucune matière. Ajoutez-en une pour créer des cours.</p>
           ) : (
