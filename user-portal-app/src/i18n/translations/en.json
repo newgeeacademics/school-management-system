@@ -332,5 +332,45 @@
     "uploadDoc": "Attach paper",
     "replaceDoc": "Replace",
     "downloadDoc": "Download"
+  },
+  "portalTour": {
+    "guide": "Guide",
+    "next": "Next",
+    "previous": "Back",
+    "skip": "Skip the guide",
+    "finish": "Let’s go",
+    "close": "Close the guide",
+    "stepOf": "Step {{current}} of {{total}}",
+    "welcomeTitle": "Welcome to your portal",
+    "replayHint": "Open this guide again at any time with the “Guide” button at the top of the page.",
+    "parent": {
+      "welcome": "Follow your child’s schooling in one place: grades, attendance, fees and messages from the school.",
+      "navTitle": "Finding your way",
+      "nav": "On a computer the menu is on the left; on a phone it’s at the bottom of the screen. “More” opens the other sections. If you have several children, pick one at the top of the page.",
+      "gradesTitle": "Grades and report cards",
+      "grades": "See the grades teachers publish and the report card for each term.",
+      "presenceTitle": "Attendance and fees",
+      "presence": "Check attendance and absences, and the school fee schedule with what is left to pay.",
+      "messagesTitle": "Stay informed",
+      "messages": "Read the school’s announcements and your notifications, and write to teachers from Messages."
+    },
+    "teacher": {
+      "welcome": "Your space for your classes: roll call, grades and talking with families.",
+      "classesTitle": "Your classes",
+      "classes": "In “Classes”, open a class to see its students and take today’s roll call.",
+      "gradesTitle": "Entering grades",
+      "grades": "In “Grades & report cards”, enter the grades for your assessments. The school administration approves them before families can see them.",
+      "messagesTitle": "Messages and announcements",
+      "messages": "Talk with parents and follow the school’s announcements. “More” opens your timetable and the other sections."
+    },
+    "student": {
+      "welcome": "Everything you need for school: timetable, grades and messages.",
+      "scheduleTitle": "Your timetable",
+      "schedule": "See your classes for the week, with times and rooms.",
+      "gradesTitle": "Your grades",
+      "grades": "Find your grades and report cards as soon as they are published.",
+      "messagesTitle": "Messages and announcements",
+      "messages": "Read the school’s announcements and your messages. “More” opens the other sections, like attendance."
+    }
   }
 }

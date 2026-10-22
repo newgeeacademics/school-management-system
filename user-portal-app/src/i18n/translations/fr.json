@@ -332,5 +332,45 @@
     "uploadDoc": "Joindre sujet",
     "replaceDoc": "Remplacer",
     "downloadDoc": "Télécharger"
+  },
+  "portalTour": {
+    "guide": "Guide",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "skip": "Passer le guide",
+    "finish": "C’est parti",
+    "close": "Fermer le guide",
+    "stepOf": "Étape {{current}} sur {{total}}",
+    "welcomeTitle": "Bienvenue sur votre portail",
+    "replayHint": "Rouvrez ce guide à tout moment avec le bouton « Guide » en haut de page.",
+    "parent": {
+      "welcome": "Suivez la scolarité de votre enfant au même endroit : notes, présences, frais et messages de l’école.",
+      "navTitle": "Se repérer",
+      "nav": "Sur ordinateur, le menu est à gauche ; sur téléphone, en bas de l’écran. « Plus » ouvre les autres sections. Si vous avez plusieurs enfants, choisissez-en un en haut de page.",
+      "gradesTitle": "Notes et bulletins",
+      "grades": "Retrouvez les notes publiées par les enseignants et les bulletins de chaque période.",
+      "presenceTitle": "Présences et frais",
+      "presence": "Consultez les présences et absences, et l’échéancier des frais scolaires avec ce qui reste à payer.",
+      "messagesTitle": "Restez informé",
+      "messages": "Lisez les annonces de l’école, vos notifications, et écrivez aux enseignants depuis Messages."
+    },
+    "teacher": {
+      "welcome": "Votre espace pour vos classes : appel, notes et échanges avec les familles.",
+      "classesTitle": "Vos classes",
+      "classes": "Dans « Classes », ouvrez une classe pour voir ses élèves et faire l’appel du jour.",
+      "gradesTitle": "Saisir les notes",
+      "grades": "Dans « Notes & bulletins », saisissez les notes de vos évaluations. L’administration de l’école les valide avant qu’elles soient visibles par les familles.",
+      "messagesTitle": "Messages et annonces",
+      "messages": "Échangez avec les parents et suivez les annonces de l’école. « Plus » donne accès à votre emploi du temps et aux autres sections."
+    },
+    "student": {
+      "welcome": "Tout ce dont tu as besoin pour ta scolarité : emploi du temps, notes et messages.",
+      "scheduleTitle": "Ton emploi du temps",
+      "schedule": "Consulte tes cours de la semaine, avec les horaires et les salles.",
+      "gradesTitle": "Tes notes",
+      "grades": "Retrouve tes notes et tes bulletins dès qu’ils sont publiés.",
+      "messagesTitle": "Messages et annonces",
+      "messages": "Lis les annonces de l’école et tes messages. « Plus » ouvre les autres sections, comme les présences."
+    }
   }
 }

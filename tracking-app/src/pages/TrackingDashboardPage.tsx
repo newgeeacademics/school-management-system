@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ChevronUp, LogOut, MapPin, Radio, Users } from 'lucide-react';
+import { ChevronUp, CircleHelp, LogOut, MapPin, Radio, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
 import { AppLogo } from '@/components/AppLogo';
+import { GuidedTour, useGuidedTour } from '@/components/GuidedTour';
 import { TrackingMap } from '@/components/TrackingMap';
 import { cn } from '@/lib/utils';
 import {
@@ -22,10 +23,12 @@ import {
   type LiveRoute,
 } from '@/lib/tracking-api';
 import { connectTrackingWebSocket } from '@/lib/tracking-websocket';
+import { TRACKING_DRIVER_TOUR, TRACKING_FOLLOW_TOUR, TRACKING_TOUR_KEY } from '@/lib/tour-steps';
 
 export function TrackingDashboardPage() {
   const navigate = useNavigate();
   const session = getTrackingSession() as TrackingSession;
+  const tour = useGuidedTour(TRACKING_TOUR_KEY, session.userId ?? session.email);
   const [routes, setRoutes] = useState<LiveRoute[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -225,10 +228,16 @@ export function TrackingDashboardPage() {
               <p className='truncate text-xs text-muted-foreground'>{session.name ?? session.email}</p>
             </div>
           </div>
-          <Button variant='outline' size='sm' className='touch-target shrink-0' onClick={handleLogout}>
-            <LogOut className='size-4' />
-            <span className='hidden sm:inline'>Déconnexion</span>
-          </Button>
+          <div className='flex shrink-0 items-center gap-2'>
+            <Button variant='outline' size='sm' className='touch-target shrink-0' onClick={tour.openTour}>
+              <CircleHelp className='size-4' aria-hidden />
+              <span className='hidden sm:inline'>Guide</span>
+            </Button>
+            <Button variant='outline' size='sm' className='touch-target shrink-0' onClick={handleLogout}>
+              <LogOut className='size-4' />
+              <span className='hidden sm:inline'>Déconnexion</span>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -323,6 +332,11 @@ export function TrackingDashboardPage() {
           </>
         )}
       </main>
+      <GuidedTour
+        open={tour.open}
+        onClose={tour.closeTour}
+        steps={session.role === 'driver' ? TRACKING_DRIVER_TOUR : TRACKING_FOLLOW_TOUR}
+      />
     </div>
   );
 }

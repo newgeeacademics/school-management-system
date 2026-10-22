@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { CircleHelp, LogOut } from 'lucide-react';
 
 import { ACCESS_TOKEN_KEY } from '@/constants';
 import {
@@ -69,6 +69,8 @@ import { toast } from 'sonner';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { GuidedTour, useGuidedTour } from '@/components/GuidedTour';
+import { CONSOLE_ADMIN_TOUR, CONSOLE_MEMBER_TOUR, CONSOLE_TOUR_KEY } from '@/lib/tour-steps';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Sidebar,
@@ -476,6 +478,8 @@ export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const role = getStoredRole();
   const sessionUser = getStoredUser();
+  const tour = useGuidedTour(CONSOLE_TOUR_KEY, sessionUser?.id ?? sessionUser?.email);
+  const tourSteps = role === 'admin' || role === 'staff' ? CONSOLE_ADMIN_TOUR : CONSOLE_MEMBER_TOUR;
 
   React.useEffect(() => {
     if (!role) {
@@ -1874,6 +1878,10 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div className='dashboard-header__actions'>
               <LanguageSwitcher compact showLabel />
+              <Button type='button' variant='outline' size='sm' onClick={tour.openTour}>
+                <CircleHelp className='size-4' aria-hidden />
+                Guide
+              </Button>
               {schoolProfile ? (
                 <>
                   <Badge
@@ -2263,6 +2271,7 @@ export const DashboardPage: React.FC = () => {
         card={teacherIdCardData}
         loading={teacherIdCardLoading}
       />
+      <GuidedTour open={tour.open} onClose={tour.closeTour} steps={tourSteps} />
     </SidebarProvider>
   );
 };
