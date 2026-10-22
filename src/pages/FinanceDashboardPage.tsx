@@ -68,9 +68,9 @@ function FinanceNav({ section, userName, onSelect, onLogout, className }: Financ
             type='button'
             onClick={() => onSelect(item.id)}
             className={cn(
-              'touch-target flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors',
+              'touch-target flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm transition-colors',
               section === item.id
-                ? 'bg-violet-600 text-white shadow-sm'
+                ? 'bg-violet-600 font-semibold text-white'
                 : 'text-violet-200 hover:bg-violet-900/60 hover:text-white',
             )}
           >
@@ -199,7 +199,7 @@ export function FinanceDashboardPage() {
       </Sheet>
 
       <main className='flex min-w-0 flex-1 flex-col'>
-        <header className='safe-pt border-b border-violet-100 bg-white px-4 py-3 md:px-6 md:py-4'>
+        <header className='safe-pt border-b border-foreground/[0.06] bg-white/90 px-4 py-3 backdrop-blur-md md:px-6 md:py-4'>
           <div className='flex items-start gap-3'>
             <Button
               type='button'
@@ -212,7 +212,7 @@ export function FinanceDashboardPage() {
               <Menu className='size-5' />
             </Button>
             <div className='min-w-0 flex-1'>
-              <h1 className='text-lg font-semibold text-foreground md:text-xl'>{sectionTitle}</h1>
+              <h1 className='font-display text-lg font-bold tracking-tight text-foreground md:text-2xl'>{sectionTitle}</h1>
               <p className='text-xs text-muted-foreground md:text-sm'>
                 Gestion des recettes, charges salariales et suivi de la rentabilité.
                 {role === 'teacher' && !canWrite && ' · Mode consultation'}
