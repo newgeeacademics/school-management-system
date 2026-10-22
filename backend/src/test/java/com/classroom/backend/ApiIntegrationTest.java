@@ -1,5 +1,6 @@
 package com.classroom.backend;
 
+import com.classroom.backend.security.JwtTokenProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
@@ -27,6 +28,9 @@ class ApiIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
     private static String adminToken;
     private static String teacherId;
     private static String classId;
@@ -45,6 +49,8 @@ class ApiIntegrationTest {
     private static String transportId;
     private static String schoolId;
     private static String attendanceId;
+    /** Teachers get a portal account, which needs an e-mail or phone; roll call is taken by the teacher. */
+    private static final String TEACHER_EMAIL = "teacher." + java.util.UUID.randomUUID() + "@example.com";
 
     private String authHeader() {
         return "Bearer " + adminToken;
@@ -84,7 +90,7 @@ class ApiIntegrationTest {
         MvcResult create = mockMvc.perform(post("/api/teachers")
                         .header("Authorization", authHeader())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Test Teacher\",\"subject\":\"Mathématiques\"}"))
+                        .content(String.format("{\"name\":\"Test Teacher\",\"subject\":\"Mathématiques\",\"email\":\"%s\"}", TEACHER_EMAIL)))
                 .andExpect(status().isCreated())
                 .andReturn();
         teacherId = objectMapper.readTree(create.getResponse().getContentAsString()).get("id").asText();
@@ -128,7 +134,9 @@ class ApiIntegrationTest {
     @Test
     @Order(12)
     void students_crud() throws Exception {
-        String body = String.format("{\"name\":\"Jean Dupont\",\"classId\":\"%s\"}", classId);
+        String body = String.format(
+                "{\"name\":\"Jean Dupont\",\"classId\":\"%s\",\"email\":\"student.%s@example.com\"}",
+                classId, java.util.UUID.randomUUID());
 
         MvcResult create = mockMvc.perform(post("/api/students")
                         .header("Authorization", authHeader())
@@ -250,8 +258,10 @@ class ApiIntegrationTest {
                 "{\"date\":\"2026-05-13\",\"classId\":\"%s\",\"studentId\":\"%s\",\"status\":\"PRESENT\"}",
                 classId, studentId);
 
+        // Roll call is taken by the class teacher (POST /api/attendance is TEACHER-only).
+        String teacherToken = "Bearer " + jwtTokenProvider.generateTokenFromUsername(TEACHER_EMAIL);
         MvcResult a = mockMvc.perform(post("/api/attendance")
-                        .header("Authorization", authHeader())
+                        .header("Authorization", teacherToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
