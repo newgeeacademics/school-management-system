@@ -1429,6 +1429,7 @@ export const DashboardPage: React.FC = () => {
               newMatiere={newMatiere}
               setNewMatiere={setNewMatiere}
               onCreateMatiere={handleCreateMatiere}
+              readOnly={role !== 'admin' && role !== 'staff'}
             />
           )}
 
