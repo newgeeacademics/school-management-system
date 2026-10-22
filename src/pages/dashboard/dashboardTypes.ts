@@ -47,6 +47,9 @@ export type Teacher = {
   staffId?: string;
   email?: string;
   phone?: string;
+  loginId?: string;
+  /** Classes where this teacher teaches (subject assignment). */
+  assignedClassIds?: string[];
 };
 
 export type Driver = {
@@ -78,6 +81,7 @@ export type Student = {
   phone?: string;
   matricule?: string;
   idCardNumber?: string;
+  loginId?: string;
 };
 
 export type ParentContact = {
@@ -88,6 +92,7 @@ export type ParentContact = {
   phone?: string;
   email?: string;
   studentId?: string;
+  loginId?: string;
 };
 
 export type Course = {
@@ -248,6 +253,7 @@ export type NewTeacherFormState = {
   password: string;
   phone: string;
   homeroomClassIds: string[];
+  assignedClassIds: string[];
 };
 
 export type NewStudentFormState = {
@@ -396,6 +402,7 @@ export type NewEvaluationFormState = {
 };
 
 export type NewPaymentReminderFormState = {
+  parentContactId: string;
   parentName: string;
   studentName: string;
   amount: string;
@@ -404,6 +411,7 @@ export type NewPaymentReminderFormState = {
 };
 
 export type NewPaymentReceiptFormState = {
+  parentContactId: string;
   parentName: string;
   studentName: string;
   amount: string;
@@ -419,6 +427,7 @@ export type AppUser = {
   email: string;
   phone?: string;
   role: AppUserRole;
+  loginId?: string;
 };
 
 export type NewUserFormState = {

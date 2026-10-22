@@ -5,6 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 import type {
   AttendanceRecord,
@@ -88,7 +95,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
   const rate = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
 
   return (
-    <section className='space-y-5'>
+    <section className='space-y-6'>
       <div className='grid gap-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]'>
         <Card>
           <CardHeader>
@@ -109,25 +116,28 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
               </div>
               <div className='grid gap-2 md:col-span-2'>
                 <Label htmlFor='attendance-class'>Classe (optionnel)</Label>
-                <select
-                  id='attendance-class'
-                  className='border border-slate-200 rounded-md px-2 py-1.5 text-xs bg-background'
-                  value={selectedClassId}
-                  onChange={(e) => setSelectedClassId(e.target.value)}
+                <Select
+                  value={selectedClassId || 'all'}
+                  onValueChange={(value) => setSelectedClassId(value === 'all' ? '' : value)}
                 >
-                  <option value=''>Toutes les classes</option>
-                  {classes.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id='attendance-class'>
+                    <SelectValue placeholder='Toutes les classes' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='all'>Toutes les classes</SelectItem>
+                    {classes.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className='border rounded-md divide-y max-h-[320px] overflow-auto'>
               {classStudents.length === 0 ? (
-                <div className='px-3 py-3 text-[11px] text-muted-foreground'>
+                <div className='px-3 py-3 text-xs text-muted-foreground'>
                   Aucune élève pour la sélection actuelle. Ajoutez d&apos;abord des
                   élèves dans la section dédiée.
                 </div>
@@ -141,7 +151,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                     >
                       <div className='flex flex-col'>
                         <span className='text-xs font-medium'>{student.name}</span>
-                        <span className='text-[11px] text-muted-foreground'>
+                        <span className='text-xs text-muted-foreground'>
                           {classes.find((c) => c.id === student.classId)?.name ??
                             'Classe non définie'}
                         </span>
@@ -155,8 +165,8 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                             variant={status === opt.value ? 'default' : 'outline'}
                             className={
                               status === opt.value
-                                ? `${opt.color} hover:${opt.color}/90 text-white border-transparent h-7 px-2 text-[11px]`
-                                : 'h-7 px-2 text-[11px]'
+                                ? `${opt.color} hover:${opt.color}/90 text-white border-transparent h-7 px-2 text-xs`
+                                : 'h-7 px-2 text-xs'
                             }
                             onClick={() => updateStatus(student.id, opt.value)}
                           >
@@ -188,7 +198,7 @@ export const AttendanceSection: React.FC<AttendanceSectionProps> = ({
                   {rate.toString().padStart(2, '0')}%
                 </p>
               </div>
-              <Badge variant='outline' className='text-[11px]'>
+              <Badge variant='outline' className='text-xs'>
                 {selectedClassId
                   ? classes.find((c) => c.id === selectedClassId)?.name ?? 'Classe'
                   : 'Tous niveaux'}

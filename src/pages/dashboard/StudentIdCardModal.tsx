@@ -22,18 +22,19 @@ type StudentIdCardModalProps = {
 };
 
 const CARD_PRINT_STYLES = `
-  body { font-family: system-ui, sans-serif; margin: 24px; }
-  .id-card { border: 2px solid #0d9488; border-radius: 14px; overflow: hidden; max-width: 340px; background: #fff; }
-  .id-card-header { background: linear-gradient(135deg, #0d9488, #0f766e); color: #fff; padding: 12px 16px; }
+  body { font-family: system-ui, sans-serif; margin: 24px; display: flex; justify-content: center; }
+  .id-card { border: 1px solid #e7e5e4; border-radius: 14px; overflow: hidden; max-width: 340px; width: 100%; background: #ffffff; }
+  .id-card-header { background: #0f766e; color: #f0fdfa; padding: 12px 16px; }
   .id-card-school { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
   .id-card-city { font-size: 10px; opacity: 0.9; margin-top: 2px; }
   .id-card-body { display: flex; gap: 12px; padding: 14px 16px; align-items: flex-start; }
-  .id-card-photo { width: 72px; height: 88px; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #f8fafc; flex-shrink: 0; }
-  .id-card-name { font-size: 17px; font-weight: 700; line-height: 1.2; }
-  .id-card-meta { font-size: 11px; color: #475569; margin-top: 4px; }
-  .id-card-number { font-family: monospace; font-size: 12px; background: #f1f5f9; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-top: 6px; }
-  .id-card-qr { text-align: center; padding: 10px 16px 14px; border-top: 1px solid #e2e8f0; }
-  .id-card-year { font-size: 10px; color: #64748b; text-align: center; padding-bottom: 10px; }
+  .id-card-photo { width: 72px; height: 88px; border: 2px dashed #d6d3d1; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #f5f0e8; flex-shrink: 0; }
+  .id-card-name { font-size: 17px; font-weight: 700; line-height: 1.2; color: #1c1917; }
+  .id-card-meta { font-size: 11px; color: #57534e; margin-top: 4px; }
+  .id-card-number { font-family: monospace; font-size: 12px; background: #f5f0e8; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-top: 6px; }
+  .id-card-qr { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 16px 14px; border-top: 1px solid #e7e5e4; }
+  .id-card-qr svg { display: block; margin: 0 auto; }
+  .id-card-year { font-size: 10px; color: #57534e; text-align: center; padding-bottom: 10px; }
 `;
 
 function StudentIdCardVisual({ card }: { card: StudentIdCardData }) {
@@ -41,8 +42,8 @@ function StudentIdCardVisual({ card }: { card: StudentIdCardData }) {
     [card.firstName, card.lastName].filter(Boolean).join(' ').trim() || card.studentName;
 
   return (
-    <div className='id-card overflow-hidden rounded-xl border-2 border-teal-600 bg-card shadow-sm'>
-      <div className='id-card-header bg-gradient-to-br from-teal-600 to-teal-800 px-4 py-3 text-white'>
+    <div className='id-card mx-auto w-full max-w-[340px] overflow-hidden rounded-xl border border-[#e7e5e4] bg-white shadow-sm'>
+      <div className='id-card-header bg-[#0f766e] px-4 py-3 text-[#f0fdfa]'>
         <p className='id-card-school text-xs font-bold uppercase tracking-wide'>
           {card.schoolName || 'Établissement'}
         </p>
@@ -56,7 +57,7 @@ function StudentIdCardVisual({ card }: { card: StudentIdCardData }) {
 
       <div className='id-card-body flex gap-3 px-4 py-3'>
         <div
-          className='id-card-photo flex size-[72px] shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-muted/40'
+          className='id-card-photo flex size-[72px] shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-[#d6d3d1] bg-[#f5f0e8]'
           aria-hidden
         >
           <User className='size-8 text-muted-foreground/50' />
@@ -72,8 +73,14 @@ function StudentIdCardVisual({ card }: { card: StudentIdCardData }) {
         </div>
       </div>
 
-      <div className='id-card-qr border-t border-border px-4 py-3 text-center'>
-        <QRCodeSVG value={card.qrPayload} size={120} level='M' includeMargin />
+      <div className='id-card-qr flex flex-col items-center justify-center border-t border-border px-4 py-3'>
+        <QRCodeSVG
+          value={card.qrPayload}
+          size={120}
+          level='M'
+          includeMargin
+          className='mx-auto block'
+        />
       </div>
 
       {card.academicYear ? (
@@ -122,7 +129,7 @@ export const StudentIdCardModal: React.FC<StudentIdCardModalProps> = ({
         {loading ? (
           <p className='py-8 text-center text-sm text-muted-foreground'>Génération…</p>
         ) : card ? (
-          <div ref={printRef} className='px-4'>
+          <div ref={printRef} className='flex justify-center px-4'>
             <StudentIdCardVisual card={card} />
           </div>
         ) : (

@@ -3,14 +3,24 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 import type {
   NewPaymentReceiptFormState,
   NewPaymentReminderFormState,
+  ParentContact,
   PaymentReceipt,
   PaymentReminder,
   SetStateAction,
+  Student,
+  AppUserRole,
 } from './dashboardTypes';
 
 type PaymentsSectionProps = {
@@ -18,6 +28,12 @@ type PaymentsSectionProps = {
   amountPaid: number;
   currency?: string;
   isAdmin?: boolean;
+  viewerRole?: AppUserRole;
+  parents?: ParentContact[];
+  students?: Student[];
+  linkedParentContacts?: ParentContact[];
+  selectedParentContactId?: string;
+  onParentContactChange?: (parentContactId: string) => void;
   reminders?: PaymentReminder[];
   receipts?: PaymentReceipt[];
   newReminder?: NewPaymentReminderFormState;
@@ -31,11 +47,45 @@ type PaymentsSectionProps = {
 const formatAmount = (value: number, currency: string) =>
   `${value.toLocaleString('fr-FR')} ${currency}`;
 
+function resolveStudentName(students: Student[], studentId?: string) {
+  if (!studentId) return '';
+  return students.find((s) => s.id === studentId)?.name ?? '';
+}
+
+function parentContactLabel(parent: ParentContact, students: Student[]) {
+  const child = resolveStudentName(students, parent.studentId);
+  return child ? `${parent.name} – ${child}` : parent.name;
+}
+
+function applyParentContact<T extends { parentContactId: string; parentName: string; studentName: string }>(
+  parentContactId: string,
+  parents: ParentContact[],
+  students: Student[],
+  base: T
+): T {
+  const contact = parents.find((p) => p.id === parentContactId);
+  if (!contact) {
+    return { ...base, parentContactId };
+  }
+  return {
+    ...base,
+    parentContactId,
+    parentName: contact.name,
+    studentName: resolveStudentName(students, contact.studentId),
+  };
+}
+
 export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
   totalDue,
   amountPaid,
   currency = 'XOF',
   isAdmin = false,
+  viewerRole,
+  parents = [],
+  students = [],
+  linkedParentContacts = [],
+  selectedParentContactId = '',
+  onParentContactChange,
   reminders = [],
   receipts = [],
   newReminder,
@@ -46,12 +96,37 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
   onCreateReceipt,
 }) => {
   const remaining = Math.max(0, totalDue - amountPaid);
+  const showFamilyPicker =
+    viewerRole === 'parent' && linkedParentContacts.length > 1 && onParentContactChange;
 
   return (
     <section className='space-y-5'>
       <p className='text-sm text-muted-foreground'>
-        Résumé de vos frais scolaires pour l&apos;année en cours.
+        {viewerRole === 'parent'
+          ? 'Résumé des frais scolaires pour votre famille.'
+          : "Résumé des frais scolaires pour l'année en cours."}
       </p>
+
+      {showFamilyPicker ? (
+        <div className='max-w-md'>
+          <Label htmlFor='payments-family'>Enfant / compte parent</Label>
+          <Select
+            value={selectedParentContactId}
+            onValueChange={onParentContactChange}
+          >
+            <SelectTrigger id='payments-family' className='mt-1'>
+              <SelectValue placeholder='Choisir un enfant' />
+            </SelectTrigger>
+            <SelectContent>
+              {linkedParentContacts.map((parent) => (
+                <SelectItem key={parent.id} value={parent.id}>
+                  {parentContactLabel(parent, students)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
 
       <div className='grid gap-4 md:grid-cols-3'>
         <Card>
@@ -113,15 +188,35 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
             >
               <div className='grid gap-2'>
                 <Label htmlFor='reminder-parent'>Parent</Label>
-                <Input
-                  id='reminder-parent'
-                  value={newReminder.parentName}
-                  onChange={(e) =>
-                    setNewReminder((r) => ({ ...r, parentName: e.target.value }))
-                  }
-                  placeholder='Nom du parent'
-                  required
-                />
+                {parents.length > 0 ? (
+                  <Select
+                    value={newReminder.parentContactId || undefined}
+                    onValueChange={(value) =>
+                      setNewReminder((r) => applyParentContact(value, parents, students, r))
+                    }
+                  >
+                    <SelectTrigger id='reminder-parent'>
+                      <SelectValue placeholder='Choisir un parent' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {parents.map((parent) => (
+                        <SelectItem key={parent.id} value={parent.id}>
+                          {parentContactLabel(parent, students)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id='reminder-parent'
+                    value={newReminder.parentName}
+                    onChange={(e) =>
+                      setNewReminder((r) => ({ ...r, parentName: e.target.value }))
+                    }
+                    placeholder='Nom du parent'
+                    required
+                  />
+                )}
               </div>
               <div className='grid gap-2'>
                 <Label htmlFor='reminder-student'>Enfant</Label>
@@ -132,6 +227,7 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
                     setNewReminder((r) => ({ ...r, studentName: e.target.value }))
                   }
                   placeholder={`Nom de l'élève (optionnel)`}
+                  readOnly={Boolean(newReminder.parentContactId)}
                 />
               </div>
               <div className='grid gap-2'>
@@ -199,15 +295,35 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
             >
               <div className='grid gap-2'>
                 <Label htmlFor='receipt-parent'>Parent</Label>
-                <Input
-                  id='receipt-parent'
-                  value={newReceipt.parentName}
-                  onChange={(e) =>
-                    setNewReceipt((r) => ({ ...r, parentName: e.target.value }))
-                  }
-                  placeholder='Nom du parent'
-                  required
-                />
+                {parents.length > 0 ? (
+                  <Select
+                    value={newReceipt.parentContactId || undefined}
+                    onValueChange={(value) =>
+                      setNewReceipt((r) => applyParentContact(value, parents, students, r))
+                    }
+                  >
+                    <SelectTrigger id='receipt-parent'>
+                      <SelectValue placeholder='Choisir un parent' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {parents.map((parent) => (
+                        <SelectItem key={parent.id} value={parent.id}>
+                          {parentContactLabel(parent, students)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id='receipt-parent'
+                    value={newReceipt.parentName}
+                    onChange={(e) =>
+                      setNewReceipt((r) => ({ ...r, parentName: e.target.value }))
+                    }
+                    placeholder='Nom du parent'
+                    required
+                  />
+                )}
               </div>
               <div className='grid gap-2'>
                 <Label htmlFor='receipt-student'>Enfant</Label>
@@ -218,6 +334,7 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
                     setNewReceipt((r) => ({ ...r, studentName: e.target.value }))
                   }
                   placeholder={`Nom de l'élève (optionnel)`}
+                  readOnly={Boolean(newReceipt.parentContactId)}
                 />
               </div>
               <div className='grid gap-2'>
@@ -288,17 +405,17 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
                   {reminders.map((r) => (
                     <div
                       key={r.id}
-                      className='rounded-md border border-border/70 px-3 py-2'
+                      className='dashboard-entity-card'
                     >
                       <p className='text-sm font-medium text-foreground'>
                         {r.parentName}
                         {r.studentName ? ` – ${r.studentName}` : ''}
                       </p>
-                      <p className='text-[11px] text-muted-foreground'>
+                      <p className='text-xs text-muted-foreground'>
                         Montant : {formatAmount(r.amount, currency)} • Échéance :{' '}
                         {r.dueDate || 'Non définie'}
                       </p>
-                      <p className='text-[11px] text-muted-foreground'>
+                      <p className='text-xs text-muted-foreground'>
                         Statut : {r.status}
                       </p>
                     </div>
@@ -324,17 +441,17 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
                   {receipts.map((r) => (
                     <div
                       key={r.id}
-                      className='rounded-md border border-border/70 px-3 py-2'
+                      className='dashboard-entity-card'
                     >
                       <p className='text-sm font-medium text-foreground'>
                         Reçu pour {r.parentName}
                         {r.studentName ? ` – ${r.studentName}` : ''}
                       </p>
-                      <p className='text-[11px] text-muted-foreground'>
+                      <p className='text-xs text-muted-foreground'>
                         Montant : {formatAmount(r.amount, currency)} • Date :{' '}
                         {r.date || 'Non définie'}
                       </p>
-                      <p className='text-[11px] text-muted-foreground'>
+                      <p className='text-xs text-muted-foreground'>
                         Référence : {r.reference || 'Générée automatiquement'}
                       </p>
                     </div>

@@ -1,3 +1,4 @@
+import { SCHOOL_TYPE_API_VALUES, normalizeTypeCode } from '@/lib/school-profile';
 import { BASE_URL } from '@/constants';
 import { parseApiErrorResponse, wrapFetchError } from '@/lib/api-error';
 
@@ -26,6 +27,8 @@ export type SchoolRegistrationPayload = {
     studentCount: string;
     teacherCount: string;
     series: string[];
+    gradingScale?: string;
+    evaluationTypes?: string[];
     registrationNumber?: string;
     languagesOffered?: string[];
     logoUrl: string;
@@ -34,15 +37,9 @@ export type SchoolRegistrationPayload = {
 
 export { isBackendApiConfigured } from '@/lib/dashboard-backend';
 
-const SCHOOL_TYPE_MAP: Record<string, string> = {
-  primaire: 'PRIMAIRE',
-  college: 'COLLEGE',
-  lycee: 'LYCEE',
-};
-
 function mapSchoolType(value: string): string | undefined {
-  if (!value) return undefined;
-  return SCHOOL_TYPE_MAP[value];
+  const code = normalizeTypeCode(value);
+  return code ? SCHOOL_TYPE_API_VALUES[code] : undefined;
 }
 
 function buildSchoolBody(school: SchoolRegistrationPayload['school'], email: string) {
@@ -66,6 +63,10 @@ function buildSchoolBody(school: SchoolRegistrationPayload['school'], email: str
     studentCount: school.studentCount ? Number(school.studentCount) : undefined,
     teacherCount: school.teacherCount ? Number(school.teacherCount) : undefined,
     series: school.series.length ? school.series.join(', ') : undefined,
+    gradingScale: school.gradingScale ? Number(school.gradingScale) : undefined,
+    evaluationTypes: school.evaluationTypes?.length
+      ? school.evaluationTypes.join(', ')
+      : undefined,
     registrationNumber: school.registrationNumber?.trim() || undefined,
     languagesOffered: school.languagesOffered?.length
       ? school.languagesOffered.join(', ')

@@ -1,29 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  BarChart2,
-  BookMarked,
-  BookOpen,
-  Calendar,
-  Car,
-  CheckSquare,
-  ChevronDown,
-  ClipboardList,
-  Cog,
-  GraduationCap,
-  LayoutDashboard,
-  Layers,
-  LogOut,
-  MoreHorizontal,
-  Receipt,
-  School,
-  Shield,
-  Users,
-  Utensils,
-  Wallet,
-} from 'lucide-react';
+import { CircleHelp, LogOut } from 'lucide-react';
 
 import { ACCESS_TOKEN_KEY } from '@/constants';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { disableGoogleAutoSelect } from '@/lib/google-auth';
 import {
   clearAuthSession,
   getStoredRole,
@@ -55,9 +36,12 @@ import {
   createStudentOnBackend,
   createTeacherOnBackend,
   createTransportOnBackend,
+  deleteTransportOnBackend,
+  updateTransportOnBackend,
   createDriverOnBackend,
   createUserOnBackend,
   deleteAnnouncementOnBackend,
+  fetchLatestSchoolFromBackend,
   fetchCommunicationStatusOnBackend,
   sendParentMessageOnBackend,
   deleteClassOnBackend,
@@ -89,29 +73,22 @@ import { toast } from 'sonner';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { GuidedTour, useGuidedTour } from '@/components/GuidedTour';
+import { CONSOLE_ADMIN_TOUR, CONSOLE_MEMBER_TOUR, CONSOLE_TOUR_KEY } from '@/lib/tour-steps';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { cn } from '@/lib/utils';
 import { formatTimeRange } from '@/lib/schedule-time';
+import { applySchoolBranding } from '@/lib/school-branding';
 import { UserPortalSidebarLink } from '@/components/UserPortalSidebarLink';
 
 import {
@@ -119,7 +96,10 @@ import {
   getSchoolProfile,
   getSystemBadgeClass,
   getSystemLabel,
+  saveSchoolProfile,
+  buildSchoolProfile,
   schoolTypesFromProfile,
+  cycleForLevel,
   type SchoolProfile,
 } from '@/lib/school-profile';
 
@@ -130,7 +110,6 @@ import {
   EVENT_TIME_PRESETS,
   levelOptionsForProfile,
   ROOM_TYPE_OPTIONS,
-  SUBJECT_OPTIONS,
   TIME_SLOT_OPTIONS,
   type SchoolType,
 } from './dashboard/dashboardConstants';
@@ -148,24 +127,11 @@ import {
   type NewAnnouncementFormState,
   type NewParentMessageFormState,
   type NewEvaluationFormState,
-  type NewFeeInstallmentFormState,
-  type NewCanteenItemFormState,
   type StudentIdCardData,
   type TeacherIdCardData,
-  type NewClassFormState,
-  type NewCourseFormState,
-  type NewMatiereFormState,
   type NewEventFormState,
-  type NewParentFormState,
   type NewPaymentReceiptFormState,
   type NewPaymentReminderFormState,
-  type NewRoomFormState,
-  type NewSlotFormState,
-  type NewStudentFormState,
-  type NewTeacherFormState,
-  type NewTransportRouteFormState,
-  type NewDriverFormState,
-  type NewUserFormState,
   type AppUserRole,
   type ParentContact,
   type PaymentReceipt,
@@ -180,13 +146,17 @@ import {
   type TransportRoute,
   type Driver,
 } from './dashboard/dashboardTypes';
+import { isCompleteEmail } from '@/components/refine-ui/form/email-with-at-separator';
 import { CommunicationsSection } from './dashboard/CommunicationsSection';
+import { DashboardSidebarNav } from './dashboard/DashboardSidebarNav';
+import { getDashboardSectionIds } from './dashboard/dashboardNavConfig';
 import { CalendarSection } from './dashboard/CalendarSection';
 import { FeeSchedulesSection } from './dashboard/FeeSchedulesSection';
 import { StudentIdCardModal } from './dashboard/StudentIdCardModal';
 import { TeacherIdCardModal } from './dashboard/TeacherIdCardModal';
 import { CanteenSection } from './dashboard/CanteenSection';
 import { ClassesSection } from './dashboard/ClassesSection';
+import { BillingSection } from './dashboard/BillingSection';
 import { CoursesSection } from './dashboard/CoursesSection';
 import { MatieresSection } from './dashboard/MatieresSection';
 import { OverviewSection } from './dashboard/OverviewSection';
@@ -197,91 +167,29 @@ import { RoomsSection } from './dashboard/RoomsSection';
 import { ScheduleSection } from './dashboard/ScheduleSection';
 import { StudentsSection } from './dashboard/StudentsSection';
 import { TeachersSection } from './dashboard/TeachersSection';
-import { TransportSection } from './dashboard/TransportSection';
+import type { TeacherCreatePayload } from './dashboard/TeacherCreateWizard';
+import type { StudentCreatePayload } from './dashboard/StudentCreateWizard';
+import type { ParentCreatePayload } from './dashboard/ParentCreateWizard';
+import type { ClassCreatePayload } from './dashboard/ClassCreateWizard';
+import type { DriverCreatePayload } from './dashboard/DriverCreateWizard';
+import type { CourseCreatePayload } from './dashboard/CourseCreateWizard';
+import type { UserCreatePayload } from './dashboard/UserCreateWizard';
+import type { RoomCreatePayload } from './dashboard/RoomCreateWizard';
+import type { MatiereCreatePayload } from './dashboard/MatiereCreateWizard';
+import type { CanteenCreatePayload } from './dashboard/CanteenCreateWizard';
+import type { ScheduleSlotCreatePayload } from './dashboard/ScheduleSlotCreateWizard';
+import type { FeeInstallmentCreatePayload } from './dashboard/FeeInstallmentCreateWizard';
+import { TransportSection, type NewRoutePayload } from './dashboard/TransportSection';
 import { ReportsSection } from './dashboard/ReportsSection';
 import { PermissionsSection } from './dashboard/PermissionsSection';
 import { UsersSection } from './dashboard/UsersSection';
 import { GradesSection } from './dashboard/GradesSection';
 import { isSchoolSettingsSection, SchoolSettingsContent } from './dashboard/SchoolSettingsPanels';
 import { SystemRegistrySection } from './dashboard/SystemRegistrySection';
-import logoSrc from '@/assets/logo/newgee-logo.png';
+import logoSrc from '@/assets/logo/newgee-logo-tight.png';
 import { LanguageSwitcher } from '@/components/refine-ui/layout/language-switcher';
 
 import './dashboard-shell.css';
-
-/** Every section an admin account can open (used for active-tab validation). */
-const ADMIN_SECTION_IDS: SectionId[] = [
-  'overview',
-  'system_registry',
-  'settings_profile',
-  'settings_branding',
-  'settings_academics',
-  'settings_attendance',
-  'settings_examinations',
-  'settings_finance',
-  'settings_communication',
-  'settings_security',
-  'settings_compliance',
-  'settings_automation',
-  'teachers',
-  'sis',
-  'students',
-  'parents',
-  'classes',
-  'matieres',
-  'courses',
-  'schedule',
-  'curriculum',
-  'attendance',
-  'exams',
-  'payments',
-  'fee_schedules',
-  'announcements',
-  'users',
-  'permissions',
-  'billing',
-  'calendar',
-  'rooms',
-  'canteen',
-  'transport',
-  'reports',
-];
-
-const roleNavItems: Record<UserRole, { id: SectionId; label: string; icon: React.ComponentType<any> }[]> = {
-  admin: ADMIN_SECTION_IDS.map((id) => ({ id, label: '', icon: GraduationCap })),
-  teacher: [
-    { id: 'overview', label: 'Vue d’ensemble', icon: GraduationCap },
-    { id: 'classes', label: 'Mes classes', icon: Users },
-    { id: 'grades', label: 'Notes & bulletins', icon: BarChart2 },
-    { id: 'attendance', label: 'Présences', icon: CheckSquare },
-    { id: 'schedule', label: 'Emploi du temps', icon: ClipboardList },
-    { id: 'calendar', label: 'Calendrier', icon: Calendar },
-  ],
-  parent: [
-    { id: 'overview', label: 'Vue d’ensemble', icon: GraduationCap },
-    { id: 'students', label: 'Mes enfants', icon: Users },
-    { id: 'canteen', label: 'Cantine', icon: Utensils },
-    { id: 'transport', label: 'Transport', icon: Car },
-    { id: 'payments', label: 'Paiements', icon: Wallet },
-    { id: 'schedule', label: 'Emplois du temps', icon: ClipboardList },
-    { id: 'calendar', label: 'Événements', icon: Calendar },
-    { id: 'reports', label: 'Rapports', icon: BarChart2 },
-  ],
-  student: [
-    { id: 'overview', label: 'Vue d’ensemble', icon: GraduationCap },
-    { id: 'schedule', label: 'Mon emploi du temps', icon: ClipboardList },
-    { id: 'courses', label: 'Mes cours', icon: BookOpen },
-    { id: 'canteen', label: 'Cantine', icon: Utensils },
-    { id: 'transport', label: 'Transport', icon: Car },
-    { id: 'calendar', label: 'Calendrier', icon: Calendar },
-  ],
-  staff: [
-    { id: 'overview', label: 'Vue d’ensemble', icon: GraduationCap },
-    { id: 'payments', label: 'Paiements', icon: Wallet },
-    { id: 'fee_schedules', label: 'Échéanciers', icon: Calendar },
-    { id: 'reports', label: 'Rapports', icon: BarChart2 },
-  ],
-};
 
 const roleTitles: Record<UserRole, string> = {
   admin: 'Tableau de bord',
@@ -425,8 +333,8 @@ const sectionConfig: Record<
     kicker: 'Transport des élèves',
     title: 'Trajets et cars',
     description:
-      'Suivez les lignes de ramassage scolaire : conducteur, horaires et remarques.',
-    cta: 'Ajouter un trajet',
+      'Placez les arrêts sur la carte, cochez les élèves, choisissez le chauffeur.',
+    cta: '',
   },
   reports: {
     kicker: 'Rapports et synthèses',
@@ -574,6 +482,8 @@ export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const role = getStoredRole();
   const sessionUser = getStoredUser();
+  const tour = useGuidedTour(CONSOLE_TOUR_KEY, sessionUser?.id ?? sessionUser?.email);
+  const tourSteps = role === 'admin' || role === 'staff' ? CONSOLE_ADMIN_TOUR : CONSOLE_MEMBER_TOUR;
 
   React.useEffect(() => {
     if (!role) {
@@ -585,23 +495,22 @@ export const DashboardPage: React.FC = () => {
     }
   }, [role, navigate]);
 
-  const currentNavItems = role ? roleNavItems[role] : [];
+  React.useEffect(() => {
+    applySchoolBranding();
+  }, []);
+
+  const currentNavSectionIds = React.useMemo(
+    () => (role ? getDashboardSectionIds(role) : []),
+    [role],
+  );
   const [activeSection, setActiveSection] = React.useState<SectionId>('overview');
   const [currentStudentId, setCurrentStudentId] = React.useState<string | null>(() => getStoredStudentId());
 
-  const [adminNavOpen, setAdminNavOpen] = React.useState({
-    schoolSettings: true,
-    sis: true,
-    academics: true,
-    users: true,
-    more: false,
-  });
-
   React.useEffect(() => {
-    if (role && currentNavItems.length > 0 && !currentNavItems.some((i) => i.id === activeSection)) {
-      setActiveSection(currentNavItems[0].id);
+    if (role && currentNavSectionIds.length > 0 && !currentNavSectionIds.includes(activeSection)) {
+      setActiveSection(currentNavSectionIds[0]);
     }
-  }, [role, currentNavItems, activeSection]);
+  }, [role, currentNavSectionIds, activeSection]);
 
   const backendSync = isBackendApiConfigured();
 
@@ -625,6 +534,14 @@ export const DashboardPage: React.FC = () => {
   const [schoolProfile, setSchoolProfile] = React.useState<SchoolProfile | null>(() =>
     getSchoolProfile()
   );
+  const [licensedStudentCount, setLicensedStudentCount] = React.useState<number | null>(() => {
+    const profile = getSchoolProfile();
+    return profile?.studentCount ?? null;
+  });
+  const [licensedTeacherCount, setLicensedTeacherCount] = React.useState<number | null>(() => {
+    const profile = getSchoolProfile();
+    return profile?.teacherCount ?? null;
+  });
   const schoolTypes = React.useMemo(
     () => schoolTypesFromProfile(schoolProfile) as SchoolType[],
     [schoolProfile]
@@ -643,9 +560,10 @@ export const DashboardPage: React.FC = () => {
 
     const hydrateProfile = async () => {
       const existing = getSchoolProfile();
-      if (existing) {
-        if (!cancelled) setSchoolProfile(existing);
-        return;
+      if (existing && !cancelled) {
+        setSchoolProfile(existing);
+        if (existing.studentCount != null) setLicensedStudentCount(existing.studentCount);
+        if (existing.teacherCount != null) setLicensedTeacherCount(existing.teacherCount);
       }
 
       try {
@@ -653,7 +571,11 @@ export const DashboardPage: React.FC = () => {
         const user = userRaw ? (JSON.parse(userRaw) as { schoolId?: string }) : null;
         if (user?.schoolId) {
           const fetched = await fetchAndCacheSchoolProfile(user.schoolId);
-          if (!cancelled && fetched) setSchoolProfile(fetched);
+          if (!cancelled && fetched) {
+            setSchoolProfile(fetched);
+            if (fetched.studentCount != null) setLicensedStudentCount(fetched.studentCount);
+            if (fetched.teacherCount != null) setLicensedTeacherCount(fetched.teacherCount);
+          }
         }
       } catch {
         // ignore
@@ -665,57 +587,42 @@ export const DashboardPage: React.FC = () => {
       cancelled = true;
     };
   }, []);
-  const [newClass, setNewClass] = React.useState<NewClassFormState>({
-    name: '',
-    schoolType: '',
-    level: '',
-    studentsCount: '',
-    homeroomTeacherId: '',
-  });
 
-  const [newTeacher, setNewTeacher] =
-    React.useState<NewTeacherFormState>({
-    firstName: '',
-    lastName: '',
-    subject: '',
-    staffId: '',
-    email: '',
-    password: '',
-    phone: '',
-    homeroomClassIds: [],
-  });
-  const [teacherSubjectPreset, setTeacherSubjectPreset] = React.useState('');
+  React.useEffect(() => {
+    if (!backendSync || role !== 'admin') return;
+    let cancelled = false;
+    void fetchLatestSchoolFromBackend()
+      .then((school) => {
+        if (cancelled || !school) return;
+        setLicensedStudentCount(school.studentCount ?? null);
+        setLicensedTeacherCount(school.teacherCount ?? null);
 
-  const [newStudent, setNewStudent] =
-    React.useState<NewStudentFormState>({
-      firstName: '',
-      lastName: '',
-      idCardNumber: '',
-      classId: '',
-      email: '',
-      phone: '',
-      password: '',
-    });
-
-  const [newParent, setNewParent] = React.useState<NewParentFormState>({
-    firstName: '',
-    lastName: '',
-    phone: '',
-    email: '',
-    password: '',
-    studentId: '',
-  });
-
-  const [newCourse, setNewCourse] =
-    React.useState<NewCourseFormState>({
-      name: '',
-      matiereId: '',
-      level: '',
-    });
-
-  const [newMatiere, setNewMatiere] =
-    React.useState<NewMatiereFormState>({ name: '' });
-
+        const profile = buildSchoolProfile({
+          id: school.id,
+          name: school.name ?? '',
+          type: school.type ?? '',
+          system: school.system,
+          country: school.country,
+          city: school.city,
+          studentCount: school.studentCount ?? null,
+          teacherCount: school.teacherCount ?? null,
+          series: Array.isArray(school.series) ? school.series : undefined,
+        });
+        if (profile) {
+          saveSchoolProfile(profile);
+          setSchoolProfile(profile);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLicensedStudentCount(null);
+          setLicensedTeacherCount(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [backendSync, role]);
   const [newEvent, setNewEvent] =
     React.useState<NewEventFormState>({
     label: '',
@@ -727,29 +634,7 @@ export const DashboardPage: React.FC = () => {
   const [eventTimePreset, setEventTimePreset] = React.useState('');
   const [eventLocationPreset, setEventLocationPreset] = React.useState('');
 
-  const [newSlot, setNewSlot] = React.useState<NewSlotFormState>({
-    classId: '',
-    courseId: '',
-    day: '',
-    timeStart: '08:00',
-    timeEnd: '09:00',
-    room: '',
-  });
-
-  const [newRoom, setNewRoom] = React.useState<NewRoomFormState>({
-    name: '',
-    type: '',
-    capacity: '',
-  });
-
   const [users, setUsers] = React.useState<AppUser[]>([]);
-  const [newUser, setNewUser] = React.useState<NewUserFormState>({
-    name: '',
-    email: '',
-    phone: '',
-    role: 'teacher',
-    password: '',
-  });
 
   const defaultAcademicYear = React.useMemo(() => {
     const y = new Date().getFullYear();
@@ -757,16 +642,6 @@ export const DashboardPage: React.FC = () => {
   }, []);
 
   const [feeInstallments, setFeeInstallments] = React.useState<FeeInstallment[]>([]);
-  const [newFeeInstallment, setNewFeeInstallment] = React.useState<NewFeeInstallmentFormState>({
-    category: 'Scolarité',
-    academicYear: defaultAcademicYear,
-    label: '',
-    amount: '',
-    periodStart: '',
-    periodEnd: '',
-    description: '',
-    sortOrder: '1',
-  });
 
   const [announcements, setAnnouncements] = React.useState<Announcement[]>([]);
   const [newAnnouncement, setNewAnnouncement] = React.useState<NewAnnouncementFormState>({
@@ -803,16 +678,68 @@ export const DashboardPage: React.FC = () => {
 
   const [paymentReminders, setPaymentReminders] = React.useState<PaymentReminder[]>([]);
   const [paymentReceipts, setPaymentReceipts] = React.useState<PaymentReceipt[]>([]);
+  const [selectedParentContactId, setSelectedParentContactId] = React.useState('');
+
+  const linkedParentContacts = React.useMemo(() => {
+    if (role !== 'parent' || !sessionUser) return [];
+    const email = sessionUser.email?.trim().toLowerCase();
+    const name = sessionUser.name?.trim().toLowerCase();
+    return parents.filter((parent) => {
+      const parentEmail = parent.email?.trim().toLowerCase();
+      const parentName = parent.name?.trim().toLowerCase();
+      return (email && parentEmail && parentEmail === email) || (name && parentName && parentName === name);
+    });
+  }, [role, sessionUser, parents]);
+
+  const activeParentContact = React.useMemo(() => {
+    if (linkedParentContacts.length === 0) return null;
+    return (
+      linkedParentContacts.find((parent) => parent.id === selectedParentContactId) ??
+      linkedParentContacts[0]
+    );
+  }, [linkedParentContacts, selectedParentContactId]);
+
+  React.useEffect(() => {
+    if (linkedParentContacts.length === 0) {
+      setSelectedParentContactId('');
+      return;
+    }
+    if (!linkedParentContacts.some((parent) => parent.id === selectedParentContactId)) {
+      setSelectedParentContactId(linkedParentContacts[0].id);
+    }
+  }, [linkedParentContacts, selectedParentContactId]);
+
+  const paymentRecordsForViewer = React.useMemo(() => {
+    if (role !== 'parent' || !activeParentContact) {
+      return { reminders: paymentReminders, receipts: paymentReceipts };
+    }
+    const childName = students.find((student) => student.id === activeParentContact.studentId)?.name;
+    const parentName = activeParentContact.name.trim().toLowerCase();
+    const matchesFamily = (parentNameValue: string, studentNameValue?: string) => {
+      if (parentNameValue.trim().toLowerCase() !== parentName) return false;
+      if (!childName || !studentNameValue) return true;
+      return studentNameValue.trim() === childName;
+    };
+    return {
+      reminders: paymentReminders.filter((reminder) =>
+        matchesFamily(reminder.parentName, reminder.studentName)
+      ),
+      receipts: paymentReceipts.filter((receipt) =>
+        matchesFamily(receipt.parentName, receipt.studentName)
+      ),
+    };
+  }, [role, activeParentContact, paymentReminders, paymentReceipts, students]);
 
   const parentFeesTotal = React.useMemo(
-    () => paymentReminders.reduce((sum, r) => sum + (r.amount || 0), 0),
-    [paymentReminders],
+    () => paymentRecordsForViewer.reminders.reduce((sum, r) => sum + (r.amount || 0), 0),
+    [paymentRecordsForViewer.reminders],
   );
   const parentFeesPaid = React.useMemo(
-    () => paymentReceipts.reduce((sum, r) => sum + (r.amount || 0), 0),
-    [paymentReceipts],
+    () => paymentRecordsForViewer.receipts.reduce((sum, r) => sum + (r.amount || 0), 0),
+    [paymentRecordsForViewer.receipts],
   );
   const [newReminder, setNewReminder] = React.useState<NewPaymentReminderFormState>({
+    parentContactId: '',
     parentName: '',
     studentName: '',
     amount: '',
@@ -820,6 +747,7 @@ export const DashboardPage: React.FC = () => {
     note: '',
   });
   const [newReceipt, setNewReceipt] = React.useState<NewPaymentReceiptFormState>({
+    parentContactId: '',
     parentName: '',
     studentName: '',
     amount: '',
@@ -828,35 +756,9 @@ export const DashboardPage: React.FC = () => {
   });
 
   const [canteenMenuItems, setCanteenMenuItems] = React.useState<CanteenMenuItem[]>([]);
-  const [newCanteenItem, setNewCanteenItem] =
-    React.useState<NewCanteenItemFormState>({
-      day: '',
-      mealType: 'Déjeuner',
-      dish: '',
-      note: '',
-    });
 
   const [transportRoutes, setTransportRoutes] = React.useState<TransportRoute[]>([]);
   const [drivers, setDrivers] = React.useState<Driver[]>([]);
-  const [newTransportRoute, setNewTransportRoute] =
-    React.useState<NewTransportRouteFormState>({
-      name: '',
-      driverId: '',
-      driverName: '',
-      departureTime: '',
-      returnTime: '',
-      note: '',
-    });
-  const [newDriver, setNewDriver] = React.useState<NewDriverFormState>({
-    firstName: '',
-    lastName: '',
-    staffId: '',
-    licenseNumber: '',
-    email: '',
-    password: '',
-    phone: '',
-  });
-
   const current =
     (role && roleSectionOverrides[role]?.[activeSection]) ?? sectionConfig[activeSection];
 
@@ -943,35 +845,30 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleCreateParent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newParent.firstName.trim() || !newParent.lastName.trim()) {
+  const handleCreateParent = async (payload: ParentCreatePayload) => {
+    if (!payload.firstName.trim() || !payload.lastName.trim()) {
       return;
     }
-    const payload = {
-      firstName: newParent.firstName.trim(),
-      lastName: newParent.lastName.trim(),
-      phone: newParent.phone.trim() || undefined,
-      email: newParent.email.trim() || undefined,
-      password: newParent.password.trim() || undefined,
-      studentId: newParent.studentId || undefined,
+    if (!payload.email?.trim()) {
+      toast.error("L'e-mail est requis pour envoyer le lien d'activation portail.");
+      return;
+    }
+    const body = {
+      firstName: payload.firstName.trim(),
+      lastName: payload.lastName.trim(),
+      phone: payload.phone?.trim() || undefined,
+      email: payload.email?.trim() || undefined,
+      studentId: payload.studentId || undefined,
     };
     try {
       if (!requireBackend()) return;
-      const created = await createParentOnBackend(payload);
+      const created = await createParentOnBackend(body);
       setParents((prev) => [...prev, created]);
       await syncPortalUsers();
-      toast.success('Parent et compte portail créés');
-      setNewParent({
-        firstName: '',
-        lastName: '',
-        phone: '',
-        email: '',
-        password: '',
-        studentId: '',
-      });
+      toast.success(`Parent créé — invitation envoyée à ${body.email}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
+      throw err;
     }
   };
 
@@ -1009,24 +906,23 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUser.name.trim() || (!newUser.email.trim() && !newUser.phone.trim())) return;
-    const payload = {
-      name: newUser.name.trim(),
-      email: newUser.email.trim() || undefined,
-      phone: newUser.phone.trim() || undefined,
-      role: newUser.role,
-      password: newUser.password?.trim() || undefined,
+  const handleCreateUser = async (payload: UserCreatePayload) => {
+    if (!payload.name.trim() || (!payload.email?.trim() && !payload.phone?.trim())) return;
+    const body = {
+      name: payload.name.trim(),
+      email: payload.email?.trim() || undefined,
+      phone: payload.phone?.trim() || undefined,
+      role: payload.role,
+      password: payload.password?.trim() || undefined,
     };
     try {
       if (!requireBackend()) return;
-      const created = await createUserOnBackend(payload);
+      const created = await createUserOnBackend(body);
       setUsers((prev) => [...prev, created]);
       toast.success('Utilisateur créé');
-      setNewUser({ name: '', email: '', phone: '', role: 'teacher', password: '' });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
+      throw err;
     }
   };
 
@@ -1057,12 +953,21 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateReminder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newReminder.parentName.trim() || !newReminder.amount.trim()) return;
+    const selectedParent = newReminder.parentContactId
+      ? parents.find((parent) => parent.id === newReminder.parentContactId)
+      : undefined;
+    const parentName = (newReminder.parentName || selectedParent?.name || '').trim();
+    const studentName =
+      newReminder.studentName.trim() ||
+      (selectedParent?.studentId
+        ? students.find((student) => student.id === selectedParent.studentId)?.name
+        : undefined);
+    if (!parentName || !newReminder.amount.trim()) return;
     if (!requireBackend()) return;
     const reminder = {
       id: `rem-${Date.now()}`,
-      parentName: newReminder.parentName.trim(),
-      studentName: newReminder.studentName.trim() || undefined,
+      parentName,
+      studentName: studentName || undefined,
       amount: Number(newReminder.amount || 0),
       dueDate: newReminder.dueDate,
       status: 'Envoyé' as const,
@@ -1076,6 +981,7 @@ export const DashboardPage: React.FC = () => {
       });
       setPaymentReminders((prev) => [...prev, reminder]);
       setNewReminder({
+        parentContactId: '',
         parentName: '',
         studentName: '',
         amount: '',
@@ -1089,14 +995,23 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateReceipt = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newReceipt.parentName.trim() || !newReceipt.amount.trim()) return;
+    const selectedParent = newReceipt.parentContactId
+      ? parents.find((parent) => parent.id === newReceipt.parentContactId)
+      : undefined;
+    const parentName = (newReceipt.parentName || selectedParent?.name || '').trim();
+    const studentName =
+      newReceipt.studentName.trim() ||
+      (selectedParent?.studentId
+        ? students.find((student) => student.id === selectedParent.studentId)?.name
+        : undefined);
+    if (!parentName || !newReceipt.amount.trim()) return;
     if (!requireBackend()) return;
     const reference =
       newReceipt.reference.trim() || `RECU-${new Date().getFullYear()}-${Date.now()}`;
     const receipt = {
       id: `rec-${Date.now()}`,
-      parentName: newReceipt.parentName.trim(),
-      studentName: newReceipt.studentName.trim() || undefined,
+      parentName,
+      studentName: studentName || undefined,
       amount: Number(newReceipt.amount || 0),
       date: newReceipt.date || new Date().toISOString().slice(0, 10),
       reference,
@@ -1105,6 +1020,7 @@ export const DashboardPage: React.FC = () => {
       await createPaymentReceiptOnBackend(receipt);
       setPaymentReceipts((prev) => [...prev, receipt]);
       setNewReceipt({
+        parentContactId: '',
         parentName: '',
         studentName: '',
         amount: '',
@@ -1116,60 +1032,59 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleCreateCanteenItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCanteenItem.dish.trim() || !newCanteenItem.day) return;
+  const handleCreateCanteenItem = async (payload: CanteenCreatePayload) => {
+    if (!payload.dish.trim() || !payload.day) return;
     if (!requireBackend()) return;
-    const item = {
-      id: `cant-${Date.now()}`,
-      day: newCanteenItem.day,
-      mealType: newCanteenItem.mealType,
-      dish: newCanteenItem.dish.trim(),
-      note: newCanteenItem.note.trim() || undefined,
-    };
     try {
-      await createCanteenOnBackend(item);
-      setCanteenMenuItems((prev) => [...prev, item]);
-      setNewCanteenItem({
-        day: '',
-        mealType: 'Déjeuner',
-        dish: '',
-        note: '',
+      const created = await createCanteenOnBackend({
+        day: payload.day,
+        mealType: payload.mealType,
+        dish: payload.dish.trim(),
+        note: payload.note?.trim() || undefined,
       });
+      setCanteenMenuItems((prev) => [...prev, created]);
+      toast.success('Plat ajouté au menu');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
+      throw err;
     }
   };
 
-  const handleCreateTransportRoute = async (
-    e: React.FormEvent,
-    payload?: { waypoints?: { lat: number; lng: number; name: string }[]; routePolyline?: [number, number][] },
-  ) => {
-    e.preventDefault();
-    const hasDriver = newTransportRoute.driverId.trim() || newTransportRoute.driverName.trim();
-    if (!newTransportRoute.name.trim() || !hasDriver || !newTransportRoute.departureTime.trim()) return;
+  const handleCreateTransportRoute = async (payload: NewRoutePayload): Promise<boolean> => {
+    if (!requireBackend()) return false;
+    try {
+      const created = await createTransportOnBackend(payload);
+      setTransportRoutes((prev) => [...prev, created]);
+      toast.success(`${created.name} créée`);
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+      return false;
+    }
+  };
+
+  const handleUpdateTransportRoute = async (route: TransportRoute, payload: NewRoutePayload): Promise<boolean> => {
+    if (route.id.startsWith('tr-')) {
+      toast.error('Cette ligne n’a pas été enregistrée sur le serveur : recréez-la.');
+      return false;
+    }
+    try {
+      const updated = await updateTransportOnBackend(route.id, payload);
+      setTransportRoutes((prev) => prev.map((r) => (r.id === route.id ? updated : r)));
+      toast.success(`${updated.name} mise à jour`);
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur');
+      return false;
+    }
+  };
+
+  const handleDeleteTransportRoute = async (routeId: string) => {
     if (!requireBackend()) return;
     try {
-      const created = await createTransportOnBackend({
-        name: newTransportRoute.name.trim(),
-        driverId: newTransportRoute.driverId.trim() || undefined,
-        driverName: newTransportRoute.driverName.trim() || undefined,
-        departureTime: newTransportRoute.departureTime.trim(),
-        returnTime: newTransportRoute.returnTime.trim() || undefined,
-        note: newTransportRoute.note.trim() || undefined,
-        waypoints: payload?.waypoints,
-        routePolyline: payload?.routePolyline,
-      });
-      setTransportRoutes((prev) => [...prev, created]);
-      setNewTransportRoute({
-        name: '',
-        driverId: '',
-        driverName: '',
-        departureTime: '',
-        returnTime: '',
-        note: '',
-      });
-      toast.success('Trajet enregistré');
+      await deleteTransportOnBackend(routeId);
+      setTransportRoutes((prev) => prev.filter((r) => r.id !== routeId));
+      toast.success('Ligne supprimée');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
     }
@@ -1192,33 +1107,28 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleCreateDriver = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newDriver.firstName.trim() || !newDriver.lastName.trim()) return;
+  const handleCreateDriver = async (payload: DriverCreatePayload) => {
+    if (!payload.firstName.trim() || !payload.lastName.trim()) return;
+    if (!payload.email?.trim() && !payload.phone?.trim()) {
+      toast.error('E-mail ou téléphone requis pour le compte tracker.');
+      return;
+    }
     if (!requireBackend()) return;
     try {
       const created = await createDriverOnBackend({
-        firstName: newDriver.firstName.trim(),
-        lastName: newDriver.lastName.trim(),
-        staffId: newDriver.staffId.trim() || undefined,
-        licenseNumber: newDriver.licenseNumber.trim() || undefined,
-        email: newDriver.email.trim() || undefined,
-        password: newDriver.password.trim() || undefined,
-        phone: newDriver.phone.trim() || undefined,
+        firstName: payload.firstName.trim(),
+        lastName: payload.lastName.trim(),
+        staffId: payload.staffId?.trim() || undefined,
+        licenseNumber: payload.licenseNumber?.trim() || undefined,
+        email: payload.email?.trim() || undefined,
+        password: payload.password?.trim() || undefined,
+        phone: payload.phone?.trim() || undefined,
       });
       setDrivers((prev) => [...prev, created]);
-      setNewDriver({
-        firstName: '',
-        lastName: '',
-        staffId: '',
-        licenseNumber: '',
-        email: '',
-        password: '',
-        phone: '',
-      });
       toast.success('Chauffeur créé — il peut se connecter au tracker');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
+      throw err;
     }
   };
 
@@ -1245,31 +1155,32 @@ export const DashboardPage: React.FC = () => {
         )
       : transportRoutes;
 
-  const handleCreateClass = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newClass.name.trim()) return;
+  const handleCreateClass = async (payload: ClassCreatePayload) => {
+    if (!payload.name.trim()) return;
+    // Multi-cycle schools (e.g. collège + lycée): the level decides the cycle ("2nde" → Lycée).
     const typeForLevel =
-      newClass.schoolType || (schoolTypes.length === 1 ? schoolTypes[0] : '');
-    let levelLabel = newClass.level.trim() || 'Niveau non défini';
-    if (typeForLevel && newClass.level.trim()) {
-      levelLabel = `${typeForLevel} - ${newClass.level.trim()}`;
+      cycleForLevel(schoolProfile, payload.level.trim()) ||
+      (schoolTypes.length === 1 ? schoolTypes[0] : '');
+    let levelLabel = payload.level.trim() || 'Niveau non défini';
+    if (typeForLevel && payload.level.trim()) {
+      levelLabel = `${typeForLevel} - ${payload.level.trim()}`;
     } else if (typeForLevel && levelOptions.length) {
       levelLabel = `${typeForLevel} - ${levelOptions[0]}`;
     }
-    const payload = {
-      name: newClass.name.trim(),
+    const body = {
+      name: payload.name.trim(),
       level: levelLabel,
-      studentsCount: Number(newClass.studentsCount || 0),
-      homeroomTeacherId: newClass.homeroomTeacherId || undefined,
+      studentsCount: payload.studentsCount,
+      homeroomTeacherId: payload.homeroomTeacherId || undefined,
     };
     try {
       if (!requireBackend()) return;
-      const created = await createClassOnBackend(payload);
+      const created = await createClassOnBackend(body);
       setClasses((prev) => [...prev, created]);
       toast.success('Classe créée');
-      setNewClass({ name: '', schoolType: '', level: '', studentsCount: '', homeroomTeacherId: '' });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
+      throw err;
     }
   };
 
@@ -1301,39 +1212,32 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleCreateTeacher = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTeacher.firstName.trim() || !newTeacher.lastName.trim()) return;
-    const payload = {
-      firstName: newTeacher.firstName.trim(),
-      lastName: newTeacher.lastName.trim(),
-      subject: newTeacher.subject.trim() || 'Matière à définir',
-      staffId: newTeacher.staffId.trim() || undefined,
-      email: newTeacher.email.trim() || undefined,
-      password: newTeacher.password.trim() || undefined,
-      phone: newTeacher.phone.trim() || undefined,
-      homeroomClassIds: newTeacher.homeroomClassIds,
+  const handleCreateTeacher = async (payload: TeacherCreatePayload) => {
+    if (!payload.firstName.trim() || !payload.lastName.trim()) return;
+    if (!isCompleteEmail(payload.email)) {
+      toast.error('E-mail invalide ou incomplet.');
+      return;
+    }
+    const body = {
+      firstName: payload.firstName.trim(),
+      lastName: payload.lastName.trim(),
+      subject: payload.subject.trim() || 'Matière à définir',
+      staffId: payload.staffId?.trim() || undefined,
+      email: payload.email.trim(),
+      phone: payload.phone?.trim() || undefined,
+      homeroomClassIds: payload.homeroomClassIds,
+      assignedClassIds: payload.assignedClassIds,
     };
     try {
       if (!requireBackend()) return;
-      const created = await createTeacherOnBackend(payload);
+      const created = await createTeacherOnBackend(body);
       setTeachers((prev) => [...prev, created]);
-      applyHomeroomClasses(created.id, payload.homeroomClassIds ?? []);
+      applyHomeroomClasses(created.id, body.homeroomClassIds ?? []);
       await syncPortalUsers();
-      toast.success('Enseignant créé avec compte portail');
-      setNewTeacher({
-        firstName: '',
-        lastName: '',
-        subject: '',
-        staffId: '',
-        email: '',
-        password: '',
-        phone: '',
-        homeroomClassIds: [],
-      });
-      setTeacherSubjectPreset('');
+      toast.success(`Enseignant créé — invitation envoyée à ${body.email}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
+      throw err;
     }
   };
 
@@ -1359,6 +1263,7 @@ export const DashboardPage: React.FC = () => {
       password?: string;
       phone?: string;
       homeroomClassIds?: string[];
+      assignedClassIds?: string[];
     }
   ) => {
     try {
@@ -1390,37 +1295,31 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleCreateStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newStudent.firstName.trim() || !newStudent.lastName.trim()) {
+  const handleCreateStudent = async (payload: StudentCreatePayload) => {
+    if (!payload.firstName.trim() || !payload.lastName.trim()) {
       return;
     }
-    const payload = {
-      firstName: newStudent.firstName.trim(),
-      lastName: newStudent.lastName.trim(),
-      idCardNumber: newStudent.idCardNumber.trim() || undefined,
-      classId: newStudent.classId || undefined,
-      email: newStudent.email.trim() || undefined,
-      phone: newStudent.phone.trim() || undefined,
-      password: newStudent.password.trim() || undefined,
+    if (!payload.email?.trim()) {
+      toast.error("L'e-mail est requis pour envoyer le lien d'activation portail.");
+      return;
+    }
+    const body = {
+      firstName: payload.firstName.trim(),
+      lastName: payload.lastName.trim(),
+      idCardNumber: payload.idCardNumber?.trim() || undefined,
+      classId: payload.classId || undefined,
+      email: payload.email?.trim() || undefined,
+      phone: payload.phone?.trim() || undefined,
     };
     try {
       if (!requireBackend()) return;
-      const created = await createStudentOnBackend(payload);
+      const created = await createStudentOnBackend(body);
       setStudents((prev) => [...prev, created]);
       await syncPortalUsers();
-      toast.success('Élève et compte portail créés');
-      setNewStudent({
-        firstName: '',
-        lastName: '',
-        idCardNumber: '',
-        classId: '',
-        email: '',
-        phone: '',
-        password: '',
-      });
+      toast.success(`Élève créé — invitation portail envoyée à ${body.email}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
+      throw err;
     }
   };
 
@@ -1518,34 +1417,25 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleCreateFeeInstallment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newFeeInstallment.label.trim() || !newFeeInstallment.amount.trim()) return;
-    const payload = {
-      category: newFeeInstallment.category,
-      academicYear: newFeeInstallment.academicYear.trim() || defaultAcademicYear,
-      label: newFeeInstallment.label.trim(),
-      amount: Number(newFeeInstallment.amount),
-      periodStart: newFeeInstallment.periodStart,
-      periodEnd: newFeeInstallment.periodEnd,
-      description: newFeeInstallment.description.trim() || undefined,
-      sortOrder: Number(newFeeInstallment.sortOrder || 1),
-    };
+  const handleCreateFeeInstallment = async (payload: FeeInstallmentCreatePayload) => {
+    if (!payload.label.trim() || !Number.isFinite(payload.amount)) return;
     try {
       if (!requireBackend()) return;
-      const created = await createFeeInstallmentOnBackend(payload);
+      const created = await createFeeInstallmentOnBackend({
+        category: payload.category,
+        academicYear: payload.academicYear.trim() || defaultAcademicYear,
+        label: payload.label.trim(),
+        amount: payload.amount,
+        periodStart: payload.periodStart,
+        periodEnd: payload.periodEnd,
+        description: payload.description,
+        sortOrder: payload.sortOrder,
+      });
       setFeeInstallments((prev) => [...prev, created]);
       toast.success('Tranche ajoutée');
-      setNewFeeInstallment((f) => ({
-        ...f,
-        label: '',
-        amount: '',
-        periodStart: '',
-        periodEnd: '',
-        description: '',
-      }));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
+      throw err;
     }
   };
 
@@ -1607,15 +1497,23 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
+  const [sendingParentMessage, setSendingParentMessage] = React.useState(false);
+
   const handleSendParentMessage = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (sendingParentMessage) return;
     if (!newParentMessage.subject.trim() || !newParentMessage.body.trim()) return;
+    if (!newParentMessage.sendEmail && !newParentMessage.publishOnPortal) {
+      toast.error('Choisissez au moins un canal : portail ou e-mail.');
+      return;
+    }
     if (newParentMessage.audience === 'CLASS_PARENTS' && !newParentMessage.classId) {
       toast.error('Choisissez une classe');
       return;
     }
+    if (!requireBackend()) return;
+    setSendingParentMessage(true);
     try {
-      if (!requireBackend()) return;
       const result = await sendParentMessageOnBackend({
         subject: newParentMessage.subject.trim(),
         body: newParentMessage.body.trim(),
@@ -1627,7 +1525,22 @@ export const DashboardPage: React.FC = () => {
         sendEmail: newParentMessage.sendEmail,
         publishOnPortal: newParentMessage.publishOnPortal,
       });
-      toast.success(result.message ?? 'Message envoyé');
+      const emailFailed =
+        newParentMessage.sendEmail && (result.emailsSent ?? 0) === 0 && !result.portalPublished;
+      const emailSkipped = newParentMessage.sendEmail && (result.emailsSent ?? 0) === 0;
+      if (emailFailed) {
+        toast.error(result.message ?? 'Aucun e-mail envoyé.');
+        return;
+      }
+      if (emailSkipped) {
+        toast.warning(
+          result.portalPublished
+            ? `Publié sur le portail. ${result.message ?? 'Aucun e-mail envoyé.'}`
+            : result.message ?? 'Aucun e-mail envoyé.'
+        );
+      } else {
+        toast.success(result.message ?? 'Message envoyé');
+      }
       setNewParentMessage({
         subject: '',
         body: '',
@@ -1638,6 +1551,8 @@ export const DashboardPage: React.FC = () => {
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
+    } finally {
+      setSendingParentMessage(false);
     }
   };
 
@@ -1666,43 +1581,33 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleCreateCourse = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCourse.matiereId) return;
+  const handleCreateCourse = async (payload: CourseCreatePayload) => {
+    if (!payload.matiereId) return;
     if (!requireBackend()) return;
-    const matiereName = getMatiereName(newCourse.matiereId);
-    const name =
-      newCourse.name.trim() || (matiereName !== '—' ? matiereName : 'Cours sans nom');
-    const course = {
-      id: `co-${Date.now()}`,
-      name,
-      matiereId: newCourse.matiereId,
-      level: newCourse.level.trim() || 'Niveau non défini',
-    };
     try {
-      await createCourseOnBackend({
-        name: course.name,
-        matiereId: course.matiereId,
-        level: course.level,
+      const created = await createCourseOnBackend({
+        name: payload.name,
+        matiereId: payload.matiereId,
+        level: payload.level.trim() || 'Niveau non défini',
       });
-      setCourses((prev) => [...prev, course]);
-      setNewCourse({ name: '', matiereId: '', level: '' });
+      setCourses((prev) => [...prev, created]);
+      toast.success('Cours créé');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
+      throw err;
     }
   };
 
-  const handleCreateMatiere = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMatiere.name.trim()) return;
+  const handleCreateMatiere = async (payload: MatiereCreatePayload) => {
+    if (!payload.name.trim()) return;
     if (!requireBackend()) return;
-    const matiere = { id: `mat-${Date.now()}`, name: newMatiere.name.trim() };
     try {
-      await createMatiereOnBackend(matiere.name);
-      setMatieres((prev) => [...prev, matiere]);
-      setNewMatiere({ name: '' });
+      const created = await createMatiereOnBackend(payload.name.trim());
+      setMatieres((prev) => [...prev, created]);
+      toast.success('Matière créée');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
+      throw err;
     }
   };
 
@@ -1710,23 +1615,15 @@ export const DashboardPage: React.FC = () => {
     e.preventDefault();
     if (!newEvent.label.trim()) return;
     if (!requireBackend()) return;
-    const event = {
-      id: `ev-${Date.now()}`,
-      label: newEvent.label.trim(),
-      date: newEvent.date.trim() || 'Date à définir',
-      time: newEvent.time.trim() || undefined,
-      location: newEvent.location.trim() || undefined,
-      type: newEvent.type,
-    };
     try {
-      await createEventOnBackend({
-        label: event.label,
-        date: event.date,
-        time: event.time,
-        location: event.location,
-        type: event.type,
+      const created = await createEventOnBackend({
+        label: newEvent.label.trim(),
+        date: newEvent.date.trim() || 'Date à définir',
+        time: newEvent.time.trim() || undefined,
+        location: newEvent.location.trim() || undefined,
+        type: newEvent.type,
       });
-      setEvents((prev) => [...prev, event]);
+      setEvents((prev) => [...prev, created]);
       setNewEvent({
         label: '',
         date: '',
@@ -1739,66 +1636,41 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleCreateSlot = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSlot.classId || !newSlot.day || !newSlot.timeStart || !newSlot.timeEnd) return;
-    const timeLabel = formatTimeRange(newSlot.timeStart, newSlot.timeEnd);
+  const handleCreateSlot = async (payload: ScheduleSlotCreatePayload) => {
+    if (!payload.classId || !payload.day || !payload.timeStart || !payload.timeEnd) return;
+    const timeLabel = formatTimeRange(payload.timeStart, payload.timeEnd);
     if (!timeLabel) return;
     if (!requireBackend()) return;
-    const slot = {
-      id: `sl-${Date.now()}`,
-      classId: newSlot.classId,
-      courseId: newSlot.courseId || undefined,
-      day: newSlot.day,
-      time: timeLabel,
-      room: newSlot.room || undefined,
-    };
     try {
-      await createScheduleOnBackend({
-        classId: slot.classId,
-        courseId: slot.courseId,
-        day: slot.day,
-        time: slot.time,
-        room: slot.room,
+      const created = await createScheduleOnBackend({
+        classId: payload.classId,
+        courseId: payload.courseId || undefined,
+        day: payload.day,
+        time: timeLabel,
+        room: payload.room || undefined,
       });
-      setSchedule((prev) => [...prev, slot]);
-      setNewSlot({
-        classId: '',
-        courseId: '',
-        day: '',
-        timeStart: '08:00',
-        timeEnd: '09:00',
-        room: '',
-      });
+      setSchedule((prev) => [...prev, created]);
+      toast.success('Créneau ajouté');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
+      throw err;
     }
   };
 
-  const handleCreateRoom = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newRoom.name.trim()) return;
+  const handleCreateRoom = async (payload: RoomCreatePayload) => {
+    if (!payload.name.trim()) return;
     if (!requireBackend()) return;
-    const room = {
-      id: `r-${Date.now()}`,
-      name: newRoom.name.trim(),
-      type: newRoom.type || 'Salle de classe',
-      capacity: newRoom.capacity ? Number(newRoom.capacity) : undefined,
-    };
     try {
-      await createRoomOnBackend({
-        name: room.name,
-        type: room.type,
-        capacity: room.capacity,
+      const created = await createRoomOnBackend({
+        name: payload.name.trim(),
+        type: payload.type || 'Salle de classe',
+        capacity: payload.capacity || undefined,
       });
-      setRooms((prev) => [...prev, room]);
-      setNewRoom({
-        name: '',
-        type: '',
-        capacity: '',
-      });
+      setRooms((prev) => [...prev, created]);
+      toast.success('Salle créée');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur');
+      throw err;
     }
   };
 
@@ -1808,20 +1680,18 @@ export const DashboardPage: React.FC = () => {
     if (!requireBackend()) return;
     const coef = Number(newEvaluation.coefficient || '1') || 1;
     const maxScore = Number(newEvaluation.maxScore || '20') || 20;
-    const evaluation = {
-      id: `ev-${Date.now()}`,
-      classId: newEvaluation.classId,
-      courseId: newEvaluation.courseId,
-      label: newEvaluation.label.trim(),
-      date: newEvaluation.date || new Date().toISOString().slice(0, 10),
-      period: newEvaluation.period,
-      type: newEvaluation.type,
-      coefficient: coef,
-      maxScore,
-    };
     try {
-      await createEvaluationOnBackend(evaluation);
-      setEvaluations((prev) => [...prev, evaluation]);
+      const created = await createEvaluationOnBackend({
+        classId: newEvaluation.classId,
+        courseId: newEvaluation.courseId,
+        label: newEvaluation.label.trim(),
+        date: newEvaluation.date || new Date().toISOString().slice(0, 10),
+        period: newEvaluation.period,
+        type: newEvaluation.type,
+        coefficient: coef,
+        maxScore,
+      });
+      setEvaluations((prev) => [...prev, created]);
       setNewEvaluation({
         classId: '',
         courseId: '',
@@ -1935,6 +1805,15 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
+  const reportAttendanceSaveError = (err: unknown) => {
+    console.error(err);
+    toast.error(
+      err instanceof Error && err.message
+        ? `Présence non enregistrée : ${err.message}`
+        : 'Présence non enregistrée. Vérifiez votre connexion et réessayez.'
+    );
+  };
+
   const handleAttendanceStatusChange = (record: AttendanceRecord, isUpdate: boolean) => {
     if (!requireBackend()) return;
     const payload = {
@@ -1945,7 +1824,7 @@ export const DashboardPage: React.FC = () => {
     };
     const isBackendId = record.id && !record.id.startsWith('att-');
     if (isUpdate && isBackendId) {
-      void updateAttendanceOnBackend(record.id, payload).catch((err) => console.error(err));
+      void updateAttendanceOnBackend(record.id, payload).catch(reportAttendanceSaveError);
       return;
     }
     void createAttendanceOnBackend(payload)
@@ -1961,10 +1840,11 @@ export const DashboardPage: React.FC = () => {
           ),
         );
       })
-      .catch((err) => console.error(err));
+      .catch(reportAttendanceSaveError);
   };
 
   const handleLogout = () => {
+    disableGoogleAutoSelect();
     clearAuthSession();
     navigate('/login');
   };
@@ -1982,615 +1862,11 @@ export const DashboardPage: React.FC = () => {
         </SidebarHeader>
 
         <SidebarContent>
-          {role === 'admin' ? (
-            <>
-              <SidebarGroup>
-                <SidebarGroupLabel>Général</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Tableau de bord'
-                        isActive={activeSection === 'overview'}
-                        onClick={() => setActiveSection('overview')}
-                      >
-                        <LayoutDashboard className='mr-1.5' />
-                        <span>Tableau de bord</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Tous les modules et réglages'
-                        isActive={activeSection === 'system_registry'}
-                        onClick={() => setActiveSection('system_registry')}
-                      >
-                        <Layers className='mr-1.5' />
-                        <span>Console système</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Espace enseignants'
-                        isActive={activeSection === 'teachers'}
-                        onClick={() => setActiveSection('teachers')}
-                      >
-                        <GraduationCap className='mr-1.5' />
-                        <span>Espace enseignants</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>SIS</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        type='button'
-                        className='font-medium'
-                        onClick={() =>
-                          setAdminNavOpen((p) => ({
-                            ...p,
-                            sis: !p.sis,
-                          }))
-                        }
-                      >
-                        <ChevronDown
-                          className={cn('mr-1 transition-transform', adminNavOpen.sis && 'rotate-180')}
-                        />
-                        <School className='mr-1.5' />
-                        <span>Dossiers & classes</span>
-                      </SidebarMenuButton>
-                      {adminNavOpen.sis ? (
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'sis'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('sis')}
-                              >
-                                Vue d’ensemble SIS
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'students'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('students')}
-                              >
-                                Élèves
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'parents'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('parents')}
-                              >
-                                Parents
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'classes'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('classes')}
-                              >
-                                Classes
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      ) : null}
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Pédagogie</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        type='button'
-                        className='font-medium'
-                        onClick={() =>
-                          setAdminNavOpen((p) => ({
-                            ...p,
-                            academics: !p.academics,
-                          }))
-                        }
-                      >
-                        <ChevronDown
-                          className={cn('mr-1 transition-transform', adminNavOpen.academics && 'rotate-180')}
-                        />
-                        <BookMarked className='mr-1.5' />
-                        <span>Matières & cours</span>
-                      </SidebarMenuButton>
-                      {adminNavOpen.academics ? (
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'matieres'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('matieres')}
-                              >
-                                Matières
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'courses'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('courses')}
-                              >
-                                Cours
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'schedule'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('schedule')}
-                              >
-                                Emploi du temps
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'curriculum'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('curriculum')}
-                              >
-                                Programmes
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      ) : null}
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Exploitation</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Présences'
-                        isActive={activeSection === 'attendance'}
-                        onClick={() => setActiveSection('attendance')}
-                      >
-                        <CheckSquare className='mr-1.5' />
-                        <span>Présences</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Examens'
-                        isActive={activeSection === 'exams'}
-                        onClick={() => setActiveSection('exams')}
-                      >
-                        <BarChart2 className='mr-1.5' />
-                        <span>Examens</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Finances'
-                        isActive={activeSection === 'payments'}
-                        onClick={() => setActiveSection('payments')}
-                      >
-                        <Wallet className='mr-1.5' />
-                        <span>Finances</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Échéanciers'
-                        isActive={activeSection === 'fee_schedules'}
-                        onClick={() => setActiveSection('fee_schedules')}
-                      >
-                        <Receipt className='mr-1.5' />
-                        <span>Échéanciers</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Annonces'
-                        isActive={activeSection === 'announcements'}
-                        onClick={() => setActiveSection('announcements')}
-                      >
-                        <BookMarked className='mr-1.5' />
-                        <span>Annonces</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Gestion des accès</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        type='button'
-                        className='font-medium'
-                        onClick={() =>
-                          setAdminNavOpen((p) => ({
-                            ...p,
-                            users: !p.users,
-                          }))
-                        }
-                      >
-                        <ChevronDown
-                          className={cn('mr-1 transition-transform', adminNavOpen.users && 'rotate-180')}
-                        />
-                        <Shield className='mr-1.5' />
-                        <span>Utilisateurs & droits</span>
-                      </SidebarMenuButton>
-                      {adminNavOpen.users ? (
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'users'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('users')}
-                              >
-                                Utilisateurs
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'permissions'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('permissions')}
-                              >
-                                Droits
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      ) : null}
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Configuration</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        type='button'
-                        className='font-medium'
-                        tooltip='Paramètres'
-                        isActive={isSchoolSettingsSection(activeSection)}
-                        onClick={() =>
-                          setAdminNavOpen((p) => ({
-                            ...p,
-                            schoolSettings: !p.schoolSettings,
-                          }))
-                        }
-                      >
-                        <ChevronDown
-                          className={cn(
-                            'mr-1 transition-transform',
-                            adminNavOpen.schoolSettings && 'rotate-180',
-                          )}
-                        />
-                        <Cog className='mr-1.5' />
-                        <span>Paramètres</span>
-                      </SidebarMenuButton>
-                      {adminNavOpen.schoolSettings ? (
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_profile'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_profile')}
-                              >
-                                Profil de l’établissement
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_branding'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_branding')}
-                              >
-                                Image & apparence
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_academics'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_academics')}
-                              >
-                                Paramètres pédagogiques
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_attendance'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_attendance')}
-                              >
-                                Présences (réglages)
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_examinations'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_examinations')}
-                              >
-                                Examens & notation
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_finance'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_finance')}
-                              >
-                                Finances
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_communication'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_communication')}
-                              >
-                                Communication
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_security'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_security')}
-                              >
-                                Sécurité & confidentialité
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_compliance'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_compliance')}
-                              >
-                                Documents & conformité
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'settings_automation'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('settings_automation')}
-                              >
-                                Automatisation
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      ) : null}
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        tooltip='Facturation'
-                        isActive={activeSection === 'billing'}
-                        onClick={() => setActiveSection('billing')}
-                      >
-                        <Receipt className='mr-1.5' />
-                        <span>Facturation</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Plus</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        type='button'
-                        className='font-medium'
-                        onClick={() =>
-                          setAdminNavOpen((p) => ({
-                            ...p,
-                            more: !p.more,
-                          }))
-                        }
-                      >
-                        <ChevronDown
-                          className={cn('mr-1 transition-transform', adminNavOpen.more && 'rotate-180')}
-                        />
-                        <MoreHorizontal className='mr-1.5' />
-                        <span>Campus & services</span>
-                      </SidebarMenuButton>
-                      {adminNavOpen.more ? (
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'calendar'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('calendar')}
-                              >
-                                Calendrier
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'rooms'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('rooms')}
-                              >
-                                Salles
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'canteen'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('canteen')}
-                              >
-                                Cantine
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'transport'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('transport')}
-                              >
-                                Transport
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeSection === 'reports'}
-                            >
-                              <button
-                                type='button'
-                                onClick={() => setActiveSection('reports')}
-                              >
-                                Rapports
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      ) : null}
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            </>
-          ) : (
-            <SidebarGroup>
-              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {currentNavItems.map((item) => (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        tooltip={item.label}
-                        isActive={activeSection === item.id}
-                        onClick={() => setActiveSection(item.id)}
-                      >
-                        <item.icon className='mr-1.5' />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )}
+          <DashboardSidebarNav
+            role={role}
+            activeSection={activeSection}
+            onSelectSection={setActiveSection}
+          />
         </SidebarContent>
 
         <SidebarSeparator />
@@ -2635,12 +1911,16 @@ export const DashboardPage: React.FC = () => {
           <div className='dashboard-header__row'>
             <SidebarTrigger className='md:hidden' />
             <div className='dashboard-header__lead'>
-              <p className='dashboard-header__eyebrow'>{current.kicker}</p>
+              <p className='sr-only'>{current.kicker}</p>
               <h1 className='dashboard-header__title'>{current.title}</h1>
               <p className='dashboard-header__desc'>{current.description}</p>
             </div>
             <div className='dashboard-header__actions'>
               <LanguageSwitcher compact showLabel />
+              <Button type='button' variant='outline' size='sm' onClick={tour.openTour}>
+                <CircleHelp className='size-4' aria-hidden />
+                Guide
+              </Button>
               {schoolProfile ? (
                 <>
                   <Badge
@@ -2658,11 +1938,8 @@ export const DashboardPage: React.FC = () => {
                   </Badge>
                 </>
               ) : null}
-              {current.cta ? (
-                <Button
-                  size='sm'
-                  onClick={activeSection === 'teachers' ? scrollToTeacherForm : undefined}
-                >
+              {activeSection === 'teachers' && current.cta ? (
+                <Button size='sm' onClick={scrollToTeacherForm}>
                   {current.cta}
                 </Button>
               ) : null}
@@ -2671,6 +1948,7 @@ export const DashboardPage: React.FC = () => {
         </header>
 
         <main className='dashboard-content flex-1 space-y-6'>
+          <ErrorBoundary compact resetKey={activeSection}>
           {activeSection === 'system_registry' && (
             <SystemRegistrySection
               sectionConfig={sectionConfig}
@@ -2707,10 +1985,13 @@ export const DashboardPage: React.FC = () => {
               students={students}
               events={events}
               onNavigate={setActiveSection}
+              schoolProfile={schoolProfile}
+              declaredStudentCount={licensedStudentCount}
+              declaredTeacherCount={licensedTeacherCount}
               totalDue={parentFeesTotal}
               amountPaid={parentFeesPaid}
-              remindersCount={paymentReminders.length}
-              receipts={paymentReceipts}
+              remindersCount={paymentRecordsForViewer.reminders.length}
+              receipts={paymentRecordsForViewer.receipts}
               transportRoutes={transportRoutes}
             />
           )}
@@ -2719,14 +2000,12 @@ export const DashboardPage: React.FC = () => {
             <ClassesSection
               classes={classes}
               teachers={teachers}
-              newClass={newClass}
-              setNewClass={setNewClass}
+              licensedStudentCount={licensedStudentCount}
+              onGoToBilling={() => setActiveSection('billing')}
               onCreateClass={handleCreateClass}
               onUpdateClass={handleUpdateClass}
               onDeleteClass={handleDeleteClass}
               getTeacherName={getTeacherName}
-              schoolTypes={schoolTypes}
-              schoolProfile={schoolProfile}
               levelOptions={levelOptions}
             />
           )}
@@ -2735,15 +2014,13 @@ export const DashboardPage: React.FC = () => {
             <TeachersSection
               teachers={teachers}
               classes={classes}
-              newTeacher={newTeacher}
-              setNewTeacher={setNewTeacher}
-              teacherSubjectPreset={teacherSubjectPreset}
-              setTeacherSubjectPreset={setTeacherSubjectPreset}
+              matieres={matieres}
               onCreateTeacher={handleCreateTeacher}
               onUpdateTeacher={handleUpdateTeacher}
               onDeleteTeacher={handleDeleteTeacher}
               onPrintIdCard={role === 'admin' ? handlePrintTeacherIdCard : undefined}
-              subjectOptions={SUBJECT_OPTIONS}
+              onOpenMatieres={() => setActiveSection('matieres')}
+              defaultPhoneCountry={schoolProfile?.country}
               getClassName={getClassName}
               createFormRef={teacherCreateFormRef}
             />
@@ -2753,8 +2030,9 @@ export const DashboardPage: React.FC = () => {
             <StudentsSection
               students={students}
               classes={classes}
-              newStudent={newStudent}
-              setNewStudent={setNewStudent}
+              defaultPhoneCountry={schoolProfile?.country}
+              licensedStudentCount={licensedStudentCount}
+              onGoToBilling={() => setActiveSection('billing')}
               onCreateStudent={handleCreateStudent}
               onUpdateStudent={handleUpdateStudent}
               onDeleteStudent={handleDeleteStudent}
@@ -2769,8 +2047,7 @@ export const DashboardPage: React.FC = () => {
             <ParentsSection
               parents={parents}
               students={students}
-              newParent={newParent}
-              setNewParent={setNewParent}
+              defaultPhoneCountry={schoolProfile?.country}
               onCreateParent={handleCreateParent}
               onUpdateParent={handleUpdateParent}
               onDeleteParent={handleDeleteParent}
@@ -2780,11 +2057,10 @@ export const DashboardPage: React.FC = () => {
           {activeSection === 'courses' && (
             <CoursesSection
               courses={courses}
-              newCourse={newCourse}
-              setNewCourse={setNewCourse}
               onCreateCourse={handleCreateCourse}
               courseLevelOptions={courseLevelOptions}
               matieres={matieres}
+              getMatiereName={getMatiereName}
               readOnly={role === 'student'}
             />
           )}
@@ -2792,17 +2068,14 @@ export const DashboardPage: React.FC = () => {
           {activeSection === 'matieres' && (
             <MatieresSection
               matieres={matieres}
-              newMatiere={newMatiere}
-              setNewMatiere={setNewMatiere}
               onCreateMatiere={handleCreateMatiere}
+              readOnly={role !== 'admin' && role !== 'staff'}
             />
           )}
 
           {activeSection === 'rooms' && (
             <RoomsSection
               rooms={rooms}
-              newRoom={newRoom}
-              setNewRoom={setNewRoom}
               onCreateRoom={handleCreateRoom}
               roomTypeOptions={ROOM_TYPE_OPTIONS}
             />
@@ -2828,8 +2101,7 @@ export const DashboardPage: React.FC = () => {
           {activeSection === 'users' && (
             <UsersSection
               users={users}
-              newUser={newUser}
-              setNewUser={setNewUser}
+              defaultPhoneCountry={schoolProfile?.country}
               onCreateUser={handleCreateUser}
               onUpdateUser={handleUpdateUser}
               onDeleteUser={handleDeleteUser}
@@ -2839,8 +2111,7 @@ export const DashboardPage: React.FC = () => {
           {activeSection === 'fee_schedules' && (
             <FeeSchedulesSection
               installments={feeInstallments}
-              newInstallment={newFeeInstallment}
-              setNewInstallment={setNewFeeInstallment}
+              defaultAcademicYear={defaultAcademicYear}
               onCreate={handleCreateFeeInstallment}
               onUpdate={handleUpdateFeeInstallment}
               onDelete={handleDeleteFeeInstallment}
@@ -2858,6 +2129,7 @@ export const DashboardPage: React.FC = () => {
               newParentMessage={newParentMessage}
               setNewParentMessage={setNewParentMessage}
               onSendParentMessage={handleSendParentMessage}
+              sendingParentMessage={sendingParentMessage}
               classes={classes}
               emailConfigured={emailConfigured}
             />
@@ -2868,8 +2140,14 @@ export const DashboardPage: React.FC = () => {
               totalDue={parentFeesTotal}
               amountPaid={parentFeesPaid}
               isAdmin={role === 'admin'}
-              reminders={paymentReminders}
-              receipts={paymentReceipts}
+              viewerRole={role ?? undefined}
+              parents={parents}
+              students={students}
+              linkedParentContacts={linkedParentContacts}
+              selectedParentContactId={selectedParentContactId}
+              onParentContactChange={setSelectedParentContactId}
+              reminders={paymentRecordsForViewer.reminders}
+              receipts={paymentRecordsForViewer.receipts}
               newReminder={newReminder}
               setNewReminder={setNewReminder}
               onCreateReminder={handleCreateReminder}
@@ -2885,9 +2163,8 @@ export const DashboardPage: React.FC = () => {
               courses={courses}
               rooms={rooms}
               schedule={schedule}
-              newSlot={newSlot}
-              setNewSlot={setNewSlot}
               onCreateSlot={handleCreateSlot}
+              getClassName={getClassName}
               getCourseName={getCourseName}
               dayOptions={DAY_OPTIONS}
               timeSlotOptions={TIME_SLOT_OPTIONS}
@@ -2898,8 +2175,6 @@ export const DashboardPage: React.FC = () => {
           {activeSection === 'canteen' && (
             <CanteenSection
               items={canteenMenuItems}
-              newItem={newCanteenItem}
-              setNewItem={setNewCanteenItem}
               onCreateItem={handleCreateCanteenItem}
               dayOptions={DAY_OPTIONS}
               readOnly={role === 'student'}
@@ -2910,12 +2185,12 @@ export const DashboardPage: React.FC = () => {
             <TransportSection
               routes={transportRoutesForView}
               drivers={drivers}
-              newRoute={newTransportRoute}
-              setNewRoute={setNewTransportRoute}
+              classes={classes}
               onCreateRoute={handleCreateTransportRoute}
+              onDeleteRoute={handleDeleteTransportRoute}
+              onUpdateRoute={handleUpdateTransportRoute}
               onUpdateRouteStudents={handleUpdateRouteStudents}
-              newDriver={newDriver}
-              setNewDriver={setNewDriver}
+              defaultPhoneCountry={schoolProfile?.country}
               onCreateDriver={handleCreateDriver}
               onDeleteDriver={handleDeleteDriver}
               readOnly={role === 'parent' || role === 'student'}
@@ -2956,19 +2231,19 @@ export const DashboardPage: React.FC = () => {
 
           {activeSection === 'sis' && (
             <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-              <Card className='cursor-pointer transition-shadow hover:shadow-md' onClick={() => setActiveSection('students')}>
+              <Card className='cursor-pointer transition-colors hover:ring-foreground/15' onClick={() => setActiveSection('students')}>
                 <CardHeader>
                   <CardTitle className='text-base'>Élèves</CardTitle>
                   <CardDescription>Dossiers, affectations et listes par classe.</CardDescription>
                 </CardHeader>
               </Card>
-              <Card className='cursor-pointer transition-shadow hover:shadow-md' onClick={() => setActiveSection('parents')}>
+              <Card className='cursor-pointer transition-colors hover:ring-foreground/15' onClick={() => setActiveSection('parents')}>
                 <CardHeader>
                   <CardTitle className='text-base'>Parents & tuteurs</CardTitle>
                   <CardDescription>Contacts et rattachements aux élèves.</CardDescription>
                 </CardHeader>
               </Card>
-              <Card className='cursor-pointer transition-shadow hover:shadow-md' onClick={() => setActiveSection('classes')}>
+              <Card className='cursor-pointer transition-colors hover:ring-foreground/15' onClick={() => setActiveSection('classes')}>
                 <CardHeader>
                   <CardTitle className='text-base'>Classes</CardTitle>
                   <CardDescription>Structure des niveaux et effectifs.</CardDescription>
@@ -3006,15 +2281,12 @@ export const DashboardPage: React.FC = () => {
           )}
 
           {activeSection === 'billing' && (
-            <Card className='max-w-xl'>
-              <CardHeader>
-                <CardTitle className='text-base'>Facturation plateforme</CardTitle>
-                <CardDescription>
-                  Abonnement à l’application, factures et moyens de paiement — distinct des frais de scolarité gérés
-                  dans Finances.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <BillingSection
+              licensedStudentCount={licensedStudentCount}
+              classes={classes}
+              enrolledCount={students.length}
+              onCapacityUpdated={setLicensedStudentCount}
+            />
           )}
 
           {activeSection === 'reports' && (
@@ -3026,6 +2298,7 @@ export const DashboardPage: React.FC = () => {
               receipts={paymentReceipts}
             />
           )}
+          </ErrorBoundary>
         </main>
       </SidebarInset>
 
@@ -3041,6 +2314,7 @@ export const DashboardPage: React.FC = () => {
         card={teacherIdCardData}
         loading={teacherIdCardLoading}
       />
+      <GuidedTour open={tour.open} onClose={tour.closeTour} steps={tourSteps} />
     </SidebarProvider>
   );
 };

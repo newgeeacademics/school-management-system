@@ -1,6 +1,8 @@
 import type React from 'react';
 import { BASE_URL, ACCESS_TOKEN_KEY, isApiUrlFromEnv } from '@/constants';
 import { parseApiErrorResponse, wrapFetchError } from '@/lib/api-error';
+import { clearAuthSession, getStoredUser } from '@/lib/auth';
+import { SCHOOL_TYPE_API_VALUES, normalizeTypeCode } from '@/lib/school-profile';
 import type { School } from '@/types';
 import type {
   AppUser,
@@ -29,10 +31,11 @@ import type {
   Driver,
   TransportRoute,
   GradeModificationRequest,
+  CanteenMenuItem,
 } from '@/pages/dashboard/dashboardTypes';
 
 export const BACKEND_REQUIRED_MESSAGE =
-  'Connexion au serveur requise. Démarrez le backend (port 8080) ou définissez VITE_API_URL puis redémarrez le front.';
+  'Connexion au serveur impossible pour le moment. Réessayez dans un instant.';
 
 /** True when the app has a resolved API base URL (local dev default or env). */
 export function isBackendApiConfigured(): boolean {
@@ -50,6 +53,21 @@ function getToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
+export const SESSION_EXPIRED_MESSAGE = 'Votre session a expiré. Reconnectez-vous.';
+
+let sessionExpiryHandled = false;
+
+/** Token rejected by the API: drop the session once and send the user back to /login. */
+function handleExpiredSession(): void {
+  if (sessionExpiryHandled || typeof window === 'undefined') return;
+  clearAuthSession();
+  if (window.location.pathname !== '/login') {
+    // Full navigation: resets in-memory dashboard state; the flag stops parallel requests re-triggering it.
+    sessionExpiryHandled = true;
+    window.location.assign('/login?expired=1');
+  }
+}
+
 export async function adminApiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getToken();
   const headers = new Headers(init.headers);
@@ -60,11 +78,17 @@ export async function adminApiFetch<T>(path: string, init: RequestInit = {}): Pr
 
   try {
     const res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
+    if (res.status === 401 && token && !path.startsWith('/api/auth/')) {
+      handleExpiredSession();
+      throw new Error(SESSION_EXPIRED_MESSAGE);
+    }
     if (!res.ok) {
       throw new Error(await parseApiErrorResponse(res, `Erreur API ${res.status}`));
     }
     if (res.status === 204) return undefined as T;
-    return res.json() as Promise<T>;
+    // Some endpoints answer 200 with an empty body — avoid "Unexpected end of JSON input".
+    const text = await res.text();
+    return (text ? JSON.parse(text) : undefined) as T;
   } catch (err) {
     throw wrapFetchError(err, 'Erreur de communication avec le serveur');
   }
@@ -86,6 +110,14 @@ export async function loginAdmin(email: string, password: string) {
   });
 }
 
+/** Exchange a Google Identity Services ID token for a NewGee session (backend verifies it). */
+export async function loginWithGoogle(idToken: string) {
+  return adminApiFetch<AuthLoginResponse>('/api/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ idToken }),
+  });
+}
+
 function relationId(value: unknown): string | undefined {
   if (!value) return undefined;
   if (typeof value === 'string') return value;
@@ -95,8 +127,36 @@ function relationId(value: unknown): string | undefined {
   return undefined;
 }
 
+function appUserLoginId(entity: Record<string, unknown>): string | undefined {
+  const appUser = entity.appUser as Record<string, unknown> | undefined;
+  if (appUser?.loginId) return String(appUser.loginId);
+  return undefined;
+}
+
+function isSyntheticPortalEmail(email?: string): boolean {
+  if (!email) return false;
+  return email.toLowerCase().includes('@portal.classroom');
+}
+
+function relationIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === 'string') return item;
+      if (typeof item === 'object' && item !== null && 'id' in item) {
+        return String((item as { id: unknown }).id);
+      }
+      return '';
+    })
+    .filter(Boolean);
+}
+
 export function mapTeacherFromApi(t: Record<string, unknown>): Teacher {
   const appUser = t.appUser as Record<string, unknown> | undefined;
+  const contactEmail = t.email ? String(t.email) : appUser?.email ? String(appUser.email) : undefined;
+  const assignedClassIds = Array.isArray(t.assignedClassIds)
+    ? t.assignedClassIds.map(String)
+    : relationIds(t.assignedClasses);
   return {
     id: String(t.id),
     name: String(t.name ?? ''),
@@ -105,8 +165,10 @@ export function mapTeacherFromApi(t: Record<string, unknown>): Teacher {
     subject: String(t.subject ?? ''),
     staffId: t.staffId ? String(t.staffId) : undefined,
     initials: String(t.initials ?? (String(t.name ?? '').slice(0, 2).toUpperCase() || 'ED')),
-    email: t.email ? String(t.email) : appUser?.email ? String(appUser.email) : undefined,
+    email: contactEmail && !isSyntheticPortalEmail(contactEmail) ? contactEmail : undefined,
     phone: t.phone ? String(t.phone) : undefined,
+    loginId: appUserLoginId(t),
+    assignedClassIds,
   };
 }
 
@@ -178,30 +240,105 @@ export function mapClassFromApi(c: Record<string, unknown>): ClassItem {
   };
 }
 
+export function mapMatiereFromApi(m: Record<string, unknown>): Matiere {
+  return {
+    id: String(m.id),
+    name: String(m.name ?? ''),
+  };
+}
+
+export function mapCourseFromApi(c: Record<string, unknown>): Course {
+  return {
+    id: String(c.id),
+    name: String(c.name ?? ''),
+    matiereId: relationId(c.matiere) ?? '',
+    level: String(c.level ?? ''),
+  };
+}
+
+export function mapRoomFromApi(r: Record<string, unknown>): Room {
+  return {
+    id: String(r.id),
+    name: String(r.name ?? ''),
+    type: String(r.type ?? ''),
+    capacity: r.capacity != null ? Number(r.capacity) : undefined,
+  };
+}
+
+export function mapCalendarEventFromApi(e: Record<string, unknown>): CalendarEvent {
+  return {
+    id: String(e.id),
+    label: String(e.label ?? ''),
+    date: String(e.date ?? ''),
+    time: e.time ? String(e.time) : undefined,
+    location: e.location ? String(e.location) : undefined,
+    type: EVENT_FROM_API[String(e.type)] ?? 'Autre',
+  };
+}
+
+export function mapScheduleFromApi(s: Record<string, unknown>): ScheduleItem {
+  return {
+    id: String(s.id),
+    classId: relationId(s.classItem) ?? '',
+    courseId: relationId(s.course),
+    day: String(s.day ?? ''),
+    time: String(s.time ?? ''),
+    room: s.room ? String(s.room) : undefined,
+  };
+}
+
+export function mapEvaluationFromApi(e: Record<string, unknown>): Evaluation {
+  return {
+    id: String(e.id),
+    classId: relationId(e.classItem) ?? '',
+    courseId: relationId(e.course) ?? '',
+    label: String(e.label ?? ''),
+    date: String(e.date ?? ''),
+    period: PERIOD_FROM_API[String(e.period)] ?? 'Trimestre 1',
+    type: EVAL_TYPE_FROM_API[String(e.type)] ?? 'Devoir',
+    coefficient: Number(e.coefficient ?? 1),
+    maxScore: Number(e.maxScore ?? 20),
+  };
+}
+
+export function mapCanteenMenuItemFromApi(c: Record<string, unknown>): CanteenMenuItem {
+  return {
+    id: String(c.id),
+    day: String(c.day ?? ''),
+    mealType: MEAL_FROM_API[String(c.mealType)] ?? 'Déjeuner',
+    dish: String(c.dish ?? ''),
+    note: c.note ? String(c.note) : undefined,
+  };
+}
+
 export function mapStudentFromApi(s: Record<string, unknown>): Student {
   const appUser = s.appUser as Record<string, unknown> | undefined;
+  const contactEmail = s.email ? String(s.email) : appUser?.email ? String(appUser.email) : undefined;
   return {
     id: String(s.id),
     name: String(s.name ?? ''),
     firstName: s.firstName ? String(s.firstName) : undefined,
     lastName: s.lastName ? String(s.lastName) : undefined,
     classId: relationId(s.classItem),
-    email: s.email ? String(s.email) : appUser?.email ? String(appUser.email) : undefined,
+    email: contactEmail && !isSyntheticPortalEmail(contactEmail) ? contactEmail : undefined,
     phone: s.phone ? String(s.phone) : appUser?.phone ? String(appUser.phone) : undefined,
     matricule: s.matricule ? String(s.matricule) : undefined,
     idCardNumber: s.idCardNumber ? String(s.idCardNumber) : undefined,
+    loginId: appUserLoginId(s),
   };
 }
 
 export function mapParentFromApi(p: Record<string, unknown>): ParentContact {
+  const contactEmail = p.email ? String(p.email) : undefined;
   return {
     id: String(p.id),
     name: String(p.name ?? ''),
     firstName: p.firstName ? String(p.firstName) : undefined,
     lastName: p.lastName ? String(p.lastName) : undefined,
     phone: p.phone ? String(p.phone) : undefined,
-    email: p.email ? String(p.email) : undefined,
+    email: contactEmail && !isSyntheticPortalEmail(contactEmail) ? contactEmail : undefined,
     studentId: relationId(p.student),
+    loginId: appUserLoginId(p),
   };
 }
 
@@ -234,12 +371,14 @@ const FEE_CATEGORY_FROM_API: Record<string, FeeCategory> = {
 };
 
 export function mapUserFromApi(u: Record<string, unknown>): AppUser {
+  const contactEmail = u.email ? String(u.email) : '';
   return {
     id: String(u.id),
     name: String(u.name ?? ''),
-    email: String(u.email ?? ''),
+    email: contactEmail && !isSyntheticPortalEmail(contactEmail) ? contactEmail : '',
     phone: u.phone ? String(u.phone) : undefined,
     role: USER_ROLE_FROM_API[String(u.role)] ?? 'teacher',
+    loginId: u.loginId ? String(u.loginId) : undefined,
   };
 }
 
@@ -414,52 +553,12 @@ export async function loadDashboardFromBackend(setters: DashboardBackendSetters)
   setters.setTeachers(teachers.map(mapTeacherFromApi));
   setters.setClasses(classes.map(mapClassFromApi));
   setters.setStudents(students.map(mapStudentFromApi));
-  setters.setMatieres(matieres.map((m) => ({ id: String(m.id), name: String(m.name ?? '') })));
-  setters.setCourses(
-    courses.map((c) => ({
-      id: String(c.id),
-      name: String(c.name ?? ''),
-      matiereId: relationId(c.matiere) ?? '',
-      level: String(c.level ?? ''),
-    }))
-  );
-  setters.setRooms(
-    rooms.map((r) => ({
-      id: String(r.id),
-      name: String(r.name ?? ''),
-      type: String(r.type ?? ''),
-      capacity: r.capacity != null ? Number(r.capacity) : undefined,
-    }))
-  );
-  setters.setEvents(
-    events.map((e) => ({
-      id: String(e.id),
-      label: String(e.label ?? ''),
-      date: String(e.date ?? ''),
-      time: e.time ? String(e.time) : undefined,
-      location: e.location ? String(e.location) : undefined,
-      type: EVENT_FROM_API[String(e.type)] ?? 'Autre',
-    }))
-  );
-  setters.setSchedule(
-    schedule.map((s) => ({
-      id: String(s.id),
-      classId: relationId(s.classItem) ?? '',
-      courseId: relationId(s.course),
-      day: String(s.day ?? ''),
-      time: String(s.time ?? ''),
-      room: s.room ? String(s.room) : undefined,
-    }))
-  );
-  setters.setCanteenMenuItems(
-    canteen.map((c) => ({
-      id: String(c.id),
-      day: String(c.day ?? ''),
-      mealType: MEAL_FROM_API[String(c.mealType)] ?? 'Déjeuner',
-      dish: String(c.dish ?? ''),
-      note: c.note ? String(c.note) : undefined,
-    }))
-  );
+  setters.setMatieres(matieres.map(mapMatiereFromApi));
+  setters.setCourses(courses.map(mapCourseFromApi));
+  setters.setRooms(rooms.map(mapRoomFromApi));
+  setters.setEvents(events.map(mapCalendarEventFromApi));
+  setters.setSchedule(schedule.map(mapScheduleFromApi));
+  setters.setCanteenMenuItems(canteen.map(mapCanteenMenuItemFromApi));
   setters.setTransportRoutes(transport.map(mapTransportFromApi));
   setters.setDrivers(drivers.map(mapDriverFromApi));
   setters.setParents(parents.map(mapParentFromApi));
@@ -473,19 +572,7 @@ export async function loadDashboardFromBackend(setters: DashboardBackendSetters)
       status: ATTENDANCE_FROM_API[String(a.status)] ?? 'Présent',
     }))
   );
-  setters.setEvaluations(
-    evaluations.map((e) => ({
-      id: String(e.id),
-      classId: relationId(e.classItem) ?? '',
-      courseId: relationId(e.course) ?? '',
-      label: String(e.label ?? ''),
-      date: String(e.date ?? ''),
-      period: PERIOD_FROM_API[String(e.period)] ?? 'Trimestre 1',
-      type: EVAL_TYPE_FROM_API[String(e.type)] ?? 'Devoir',
-      coefficient: Number(e.coefficient ?? 1),
-      maxScore: Number(e.maxScore ?? 20),
-    }))
-  );
+  setters.setEvaluations(evaluations.map(mapEvaluationFromApi));
   setters.setGrades(
     grades.map((g) => ({
       id: String(g.id),
@@ -518,19 +605,35 @@ export async function loadDashboardFromBackend(setters: DashboardBackendSetters)
   setters.setAnnouncements?.(announcements.map(mapAnnouncementFromApi));
 }
 
+function mapApiSchoolType(raw: unknown): string {
+  const key = String(raw ?? '').toUpperCase();
+  const labels: Record<string, string> = {
+    MATERNELLE: 'maternelle',
+    PRIMAIRE: 'primaire',
+    COLLEGE: 'collège',
+    LYCEE: 'lycée',
+    UNIVERSITE: 'université',
+  };
+  return labels[key] ?? String(raw ?? '');
+}
+
+function splitCsvList(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.map(String).filter(Boolean);
+  if (typeof raw === 'string' && raw.trim()) {
+    return raw.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 export function mapSchoolFromApi(row: Record<string, unknown>): Partial<School> {
   const gps = String(row.gps ?? '');
   const parts = gps.includes(',') ? gps.split(',').map((s) => s.trim()) : ['', ''];
-  const seriesRaw = row.series;
-  const series =
-    typeof seriesRaw === 'string' && seriesRaw
-      ? seriesRaw.split(/[,;]/).map((s) => s.trim()).filter(Boolean)
-      : [];
+  const logoRemote = String(row.logoFileName ?? '').trim();
 
   return {
     id: String(row.id),
     name: String(row.name ?? ''),
-    type: String(row.type ?? ''),
+    type: mapApiSchoolType(row.type),
     system: String(row.system ?? ''),
     country: String(row.country ?? ''),
     city: String(row.city ?? ''),
@@ -545,9 +648,14 @@ export function mapSchoolFromApi(row: Record<string, unknown>): Partial<School> 
     website: String(row.website ?? ''),
     studentCount: row.studentCount != null ? Number(row.studentCount) : null,
     teacherCount: row.teacherCount != null ? Number(row.teacherCount) : null,
-    series,
-    logoUrl: '',
-    logoCldPubId: '',
+    series: splitCsvList(row.series),
+    gradingScale: row.gradingScale != null ? Number(row.gradingScale) : null,
+    evaluationTypes: splitCsvList(row.evaluationTypes),
+    evaluationPeriods: splitCsvList(row.evaluationPeriods),
+    registrationNumber: String(row.registrationNumber ?? ''),
+    languagesOffered: splitCsvList(row.languagesOffered),
+    logoUrl: logoRemote,
+    logoCldPubId: logoRemote,
     createdAt: row.createdAt ? String(row.createdAt) : new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -556,8 +664,10 @@ export function mapSchoolFromApi(row: Record<string, unknown>): Partial<School> 
 function schoolPatchToRequest(patch: Partial<School>): Record<string, unknown> {
   const gps =
     patch.gpsLat != null && patch.gpsLng != null ? `${patch.gpsLat},${patch.gpsLng}` : undefined;
+  const typeCode = patch.type ? normalizeTypeCode(patch.type) : null;
   return {
     name: patch.name,
+    type: typeCode ? SCHOOL_TYPE_API_VALUES[typeCode] : undefined,
     system: patch.system,
     country: patch.country,
     city: patch.city,
@@ -572,15 +682,32 @@ function schoolPatchToRequest(patch: Partial<School>): Record<string, unknown> {
     studentCount: patch.studentCount ?? undefined,
     teacherCount: patch.teacherCount ?? undefined,
     series: Array.isArray(patch.series) ? patch.series.join(', ') : undefined,
+    gradingScale: patch.gradingScale ?? undefined,
+    evaluationTypes: Array.isArray(patch.evaluationTypes)
+      ? patch.evaluationTypes.join(', ')
+      : undefined,
+    evaluationPeriods: Array.isArray(patch.evaluationPeriods)
+      ? patch.evaluationPeriods.join(', ')
+      : undefined,
+    registrationNumber: patch.registrationNumber || undefined,
+    languagesOffered: Array.isArray(patch.languagesOffered)
+      ? patch.languagesOffered.join(', ')
+      : undefined,
+    logoFileName: patch.logoUrl?.trim() || undefined,
   };
 }
 
 export async function fetchLatestSchoolFromBackend(): Promise<Partial<School> | null> {
   const schools = await adminApiFetch<Record<string, unknown>[]>('/api/schools');
   if (!schools.length) return null;
-  const latest = schools[schools.length - 1];
-  cachedSchoolId = String(latest.id);
-  return mapSchoolFromApi(latest);
+
+  const sessionSchoolId = getStoredUser()?.schoolId;
+  const match = sessionSchoolId
+    ? schools.find((s) => String(s.id) === sessionSchoolId) ?? schools[schools.length - 1]
+    : schools[schools.length - 1];
+
+  cachedSchoolId = String(match.id);
+  return mapSchoolFromApi(match);
 }
 
 export async function persistSchoolPatchOnBackend(patch: Partial<School>): Promise<void> {
@@ -600,8 +727,8 @@ export async function createCanteenOnBackend(item: {
   mealType: string;
   dish: string;
   note?: string;
-}) {
-  return adminApiFetch('/api/canteen', {
+}): Promise<CanteenMenuItem> {
+  const data = await adminApiFetch<Record<string, unknown>>('/api/canteen', {
     method: 'POST',
     body: JSON.stringify({
       day: item.day,
@@ -610,6 +737,7 @@ export async function createCanteenOnBackend(item: {
       note: item.note,
     }),
   });
+  return mapCanteenMenuItemFromApi(data);
 }
 
 export async function createScheduleOnBackend(item: {
@@ -618,11 +746,12 @@ export async function createScheduleOnBackend(item: {
   day: string;
   time: string;
   room?: string;
-}) {
-  return adminApiFetch('/api/schedule', {
+}): Promise<ScheduleItem> {
+  const data = await adminApiFetch<Record<string, unknown>>('/api/schedule', {
     method: 'POST',
     body: JSON.stringify(item),
   });
+  return mapScheduleFromApi(data);
 }
 
 export async function createTransportOnBackend(item: {
@@ -651,6 +780,38 @@ export async function createTransportOnBackend(item: {
     }),
   });
   return mapTransportFromApi(data);
+}
+
+/** Updates a line (stops, path, driver, times), then its pupils. */
+export async function updateTransportOnBackend(
+  routeId: string,
+  item: {
+    name: string;
+    driverName?: string;
+    driverId?: string;
+    departureTime: string;
+    returnTime?: string;
+    note?: string;
+    waypoints?: { lat: number; lng: number; name: string }[];
+    routePolyline?: [number, number][];
+    studentIds?: string[];
+  },
+): Promise<TransportRoute> {
+  const { studentIds, ...route } = item;
+  const data = await adminApiFetch<Record<string, unknown>>(`/api/transport/${routeId}`, {
+    method: 'PUT',
+    body: JSON.stringify(route),
+  });
+  if (!studentIds) return mapTransportFromApi(data);
+  const withStudents = await adminApiFetch<Record<string, unknown>>(`/api/transport/${routeId}/students`, {
+    method: 'PATCH',
+    body: JSON.stringify(studentIds),
+  });
+  return mapTransportFromApi(withStudents);
+}
+
+export async function deleteTransportOnBackend(routeId: string): Promise<void> {
+  await adminApiFetch(`/api/transport/${routeId}`, { method: 'DELETE' });
 }
 
 export async function updateTransportStudentsOnBackend(
@@ -725,8 +886,8 @@ export async function createEventOnBackend(item: {
   time?: string;
   location?: string;
   type: string;
-}) {
-  return adminApiFetch('/api/calendar', {
+}): Promise<CalendarEvent> {
+  const data = await adminApiFetch<Record<string, unknown>>('/api/calendar', {
     method: 'POST',
     body: JSON.stringify({
       label: item.label,
@@ -736,6 +897,7 @@ export async function createEventOnBackend(item: {
       type: EVENT_TO_API[item.type] ?? 'AUTRE',
     }),
   });
+  return mapCalendarEventFromApi(data);
 }
 
 export async function createClassOnBackend(item: {
@@ -790,6 +952,7 @@ export async function createTeacherOnBackend(item: {
   password?: string;
   phone?: string;
   homeroomClassIds?: string[];
+  assignedClassIds?: string[];
 }) {
   const data = await adminApiFetch<Record<string, unknown>>('/api/teachers', {
     method: 'POST',
@@ -802,6 +965,7 @@ export async function createTeacherOnBackend(item: {
       password: item.password?.trim() || undefined,
       phone: item.phone?.trim() || undefined,
       homeroomClassIds: item.homeroomClassIds?.length ? item.homeroomClassIds : undefined,
+      assignedClassIds: item.assignedClassIds?.length ? item.assignedClassIds : undefined,
     }),
   });
   return mapTeacherFromApi(data);
@@ -818,6 +982,7 @@ export async function updateTeacherOnBackend(
     password?: string;
     phone?: string;
     homeroomClassIds?: string[];
+    assignedClassIds?: string[];
   }
 ) {
   const data = await adminApiFetch<Record<string, unknown>>(`/api/teachers/${id}`, {
@@ -831,6 +996,7 @@ export async function updateTeacherOnBackend(
       password: item.password?.trim() || undefined,
       phone: item.phone?.trim() || undefined,
       homeroomClassIds: item.homeroomClassIds ?? [],
+      assignedClassIds: item.assignedClassIds ?? [],
     }),
   });
   return mapTeacherFromApi(data);
@@ -950,19 +1116,36 @@ export async function deleteStudentOnBackend(id: string) {
   await adminApiFetch(`/api/students/${id}`, { method: 'DELETE' });
 }
 
-export async function createMatiereOnBackend(name: string) {
-  return adminApiFetch('/api/matieres', { method: 'POST', body: JSON.stringify({ name }) });
+export async function createMatiereOnBackend(name: string): Promise<Matiere> {
+  const data = await adminApiFetch<Record<string, unknown>>('/api/matieres', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  });
+  return mapMatiereFromApi(data);
 }
 
-export async function createCourseOnBackend(item: { name: string; matiereId: string; level: string }) {
-  return adminApiFetch('/api/courses', {
+export async function createCourseOnBackend(item: {
+  name: string;
+  matiereId: string;
+  level: string;
+}): Promise<Course> {
+  const data = await adminApiFetch<Record<string, unknown>>('/api/courses', {
     method: 'POST',
     body: JSON.stringify(item),
   });
+  return mapCourseFromApi(data);
 }
 
-export async function createRoomOnBackend(item: { name: string; type: string; capacity?: number }) {
-  return adminApiFetch('/api/rooms', { method: 'POST', body: JSON.stringify(item) });
+export async function createRoomOnBackend(item: {
+  name: string;
+  type: string;
+  capacity?: number;
+}): Promise<Room> {
+  const data = await adminApiFetch<Record<string, unknown>>('/api/rooms', {
+    method: 'POST',
+    body: JSON.stringify(item),
+  });
+  return mapRoomFromApi(data);
 }
 
 export async function createParentOnBackend(item: {
@@ -1245,8 +1428,8 @@ export async function createEvaluationOnBackend(item: {
   type: Evaluation['type'];
   coefficient: number;
   maxScore: number;
-}) {
-  return adminApiFetch('/api/grades/evaluations', {
+}): Promise<Evaluation> {
+  const data = await adminApiFetch<Record<string, unknown>>('/api/grades/evaluations', {
     method: 'POST',
     body: JSON.stringify({
       classId: item.classId,
@@ -1259,6 +1442,7 @@ export async function createEvaluationOnBackend(item: {
       maxScore: item.maxScore,
     }),
   });
+  return mapEvaluationFromApi(data);
 }
 
 export async function createOrUpdateGradeOnBackend(item: {

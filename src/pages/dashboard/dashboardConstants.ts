@@ -2,6 +2,7 @@ import {
   DASHBOARD_SCHOOL_TYPES,
   getCourseLevelOptions,
   getLevelsForProfile,
+  cycleForLevel,
   type DashboardSchoolType,
   type SchoolProfile,
 } from '@/lib/school-profile';
@@ -25,7 +26,9 @@ export function buildClassLevelOptions(profile: SchoolProfile | null): string[] 
       LEVELS_BY_SCHOOL_TYPE[type].map((level) => `${type} - ${level}`)
     );
   }
-  return getLevelsForProfile(profile).map((level) => `${profile.type} - ${level}`);
+  return getLevelsForProfile(profile).map(
+    (level) => `${cycleForLevel(profile, level) ?? profile.type} - ${level}`
+  );
 }
 
 export const CLASS_LEVEL_OPTIONS = buildClassLevelOptions(null);

@@ -31,6 +31,8 @@ export function getUserPortalLoginUrl(): string {
   return `${getUserPortalOrigin()}/connexion`;
 }
 
+export const WHATSAPP_CONTACT_URL = 'https://wa.me/message/F4GANMX2U4RTA1';
+
 /** True when production build is missing user portal URL. */
 export function isCrossAppConfigIncomplete(): boolean {
   if (!import.meta.env.PROD) return false;

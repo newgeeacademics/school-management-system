@@ -3,6 +3,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getLevelsForProfile, getSystemLabel, type SchoolProfile } from '@/lib/school-profile';
 
 import type {
   CalendarEvent,
@@ -20,6 +21,9 @@ type OverviewSectionProps = {
   students: Student[];
   events: CalendarEvent[];
   onNavigate: (section: SectionId) => void;
+  schoolProfile?: SchoolProfile | null;
+  declaredStudentCount?: number | null;
+  declaredTeacherCount?: number | null;
   totalDue?: number;
   amountPaid?: number;
   remindersCount?: number;
@@ -27,18 +31,66 @@ type OverviewSectionProps = {
   transportRoutes?: TransportRoute[];
 };
 
+function formatCount(actual: number, declared?: number | null): string {
+  const value =
+    actual > 0 ? actual : declared != null && declared > 0 ? declared : actual;
+  return value.toString().padStart(2, '0');
+}
+
+function countHint(
+  actual: number,
+  declared: number | null | undefined,
+  declaredLabel: string,
+  activeLabel: string
+): string {
+  if (actual > 0 && declared != null && declared > 0 && actual !== declared) {
+    return `${actual} enregistré(s) · ${declared} à l'inscription`;
+  }
+  if (actual === 0 && declared != null && declared > 0) {
+    return declaredLabel;
+  }
+  return activeLabel;
+}
+
+const MONTH_FORMAT = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
+const WEEKDAY_FORMAT = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+/** Parse "YYYY-MM-DD" (or any ISO date) as a local calendar day; null when invalid. */
+function parseEventDay(value: string | undefined): Date | null {
+  if (!value) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  const date = match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export const OverviewSection: React.FC<OverviewSectionProps> = ({
   classes,
   teachers,
   students,
   events,
   onNavigate,
+  schoolProfile,
+  declaredStudentCount,
+  declaredTeacherCount,
   totalDue,
   amountPaid,
   remindersCount,
   receipts,
   transportRoutes,
 }) => {
+  const upcomingEvents = React.useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return events
+      .map((event) => ({ event, day: parseEventDay(event.date) }))
+      .filter(({ day }) => day === null || day >= today)
+      .sort((a, b) => {
+        if (!a.day || !b.day) return a.day ? -1 : b.day ? 1 : 0;
+        return a.day.getTime() - b.day.getTime() || (a.event.time ?? '').localeCompare(b.event.time ?? '');
+      })
+      .slice(0, 4);
+  }, [events]);
+
   const hasPaymentData =
     (typeof remindersCount === 'number' && remindersCount > 0) ||
     (receipts != null && receipts.length > 0);
@@ -55,53 +107,95 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
       ? receipts.reduce((sum, r) => sum + (r.amount || 0), 0)
       : undefined;
 
+  const levelCount = schoolProfile ? getLevelsForProfile(schoolProfile).length : 0;
+  const activeLevels = new Set(classes.map((c) => c.level)).size;
+
+  const classesSubtitle =
+    classes.length > 0
+      ? `Réparties sur ${activeLevels} niveau${activeLevels > 1 ? 'x' : ''}.`
+      : schoolProfile
+        ? `Cycle ${schoolProfile.type} · ${levelCount} niveau${levelCount > 1 ? 'x' : ''} disponibles.`
+        : 'Créez vos premières classes.';
+
   return (
     <>
-      <section className='grid gap-4 md:grid-cols-3 lg:grid-cols-4'>
+      <section className='grid gap-5 md:grid-cols-3 lg:grid-cols-4'>
+        {schoolProfile ? (
+          <Card>
+            <CardHeader className='flex flex-row items-center justify-between pb-2'>
+              <CardTitle className='text-sm font-medium text-muted-foreground'>
+                Cycle scolaire
+              </CardTitle>
+              <Badge variant='outline' className='text-xs'>
+                {schoolProfile.type}
+              </Badge>
+            </CardHeader>
+            <CardContent>
+              <p className='text-2xl font-semibold'>{schoolProfile.type}</p>
+              <p className='mt-1 text-xs text-muted-foreground'>
+                {levelCount > 0
+                  ? `${levelCount} niveaux · ${getSystemLabel(schoolProfile.system)}`
+                  : schoolProfile.name}
+              </p>
+              {schoolProfile.series?.length ? (
+                <p className='mt-1 text-xs text-muted-foreground'>
+                  Séries : {schoolProfile.series.join(', ')}
+                </p>
+              ) : null}
+            </CardContent>
+          </Card>
+        ) : null}
+
         <Card>
           <CardHeader className='flex flex-row items-center justify-between pb-2'>
-            <CardTitle className='text-xs font-medium text-muted-foreground'>
+            <CardTitle className='text-sm font-medium text-muted-foreground'>
               Classes actives
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className='text-2xl font-semibold'>
-              {classes.length.toString().padStart(2, '0')}
-            </p>
-            <p className='mt-1 text-xs text-muted-foreground'>
-              Réparties sur {new Set(classes.map((c) => c.level)).size} niveaux.
-            </p>
+            <p className='text-2xl font-semibold'>{formatCount(classes.length, null)}</p>
+            <p className='mt-1 text-xs text-muted-foreground'>{classesSubtitle}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className='flex flex-row items-center justify-between pb-2'>
-            <CardTitle className='text-xs font-medium text-muted-foreground'>
+            <CardTitle className='text-sm font-medium text-muted-foreground'>
               Enseignants
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className='text-2xl font-semibold'>
-              {teachers.length.toString().padStart(2, '0')}
+              {formatCount(teachers.length, declaredTeacherCount)}
             </p>
             <p className='mt-1 text-xs text-muted-foreground'>
-              {teachers.filter((t) => t.subject).length} matières renseignées.
+              {countHint(
+                teachers.length,
+                declaredTeacherCount,
+                `Effectif déclaré à l'inscription.`,
+                `${teachers.filter((t) => t.subject).length} matière(s) renseignée(s).`
+              )}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className='flex flex-row items-center justify-between pb-2'>
-            <CardTitle className='text-xs font-medium text-muted-foreground'>
+            <CardTitle className='text-sm font-medium text-muted-foreground'>
               Élèves référencés
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className='text-2xl font-semibold'>
-              {students.length.toString().padStart(2, '0')}
+              {formatCount(students.length, declaredStudentCount)}
             </p>
             <p className='mt-1 text-xs text-muted-foreground'>
-              Premier niveau pour gérer les effectifs.
+              {countHint(
+                students.length,
+                declaredStudentCount,
+                `Capacité souscrite à l'inscription.`,
+                'Effectif actuellement enregistré.'
+              )}
             </p>
           </CardContent>
         </Card>
@@ -109,7 +203,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
         {remaining !== undefined && (
           <Card>
             <CardHeader className='flex flex-row items-center justify-between pb-2'>
-              <CardTitle className='text-xs font-medium text-muted-foreground'>
+              <CardTitle className='text-sm font-medium text-muted-foreground'>
                 Paiements
               </CardTitle>
             </CardHeader>
@@ -120,12 +214,12 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
                   {remaining.toLocaleString('fr-FR')} XOF
                 </span>
               </p>
-              <p className='mt-1 text-[11px] text-muted-foreground'>
+              <p className='mt-1 text-xs text-muted-foreground'>
                 Total : {totalDue?.toLocaleString('fr-FR')} • Payé :{' '}
                 {amountPaid?.toLocaleString('fr-FR')}
               </p>
               {typeof totalReceived === 'number' && (
-                <p className='mt-1 text-[11px] text-muted-foreground'>
+                <p className='mt-1 text-xs text-muted-foreground'>
                   Montant enregistré via reçus :{' '}
                   {totalReceived.toLocaleString('fr-FR')} XOF
                 </p>
@@ -137,7 +231,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
         {transportRoutes && transportRoutes.length > 0 && (
           <Card className='md:col-span-3 lg:col-span-1'>
             <CardHeader className='flex flex-row items-center justify-between pb-2'>
-              <CardTitle className='text-xs font-medium text-muted-foreground'>
+              <CardTitle className='text-sm font-medium text-muted-foreground'>
                 Transport scolaire
               </CardTitle>
             </CardHeader>
@@ -153,7 +247,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
         )}
       </section>
 
-      <section className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'>
+      <section className='grid gap-5 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'>
         <Card>
           <CardHeader>
             <CardTitle className='text-sm font-medium'>
@@ -161,22 +255,32 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className='space-y-3 text-sm'>
-            {events.length === 0 ? (
+            {upcomingEvents.length === 0 ? (
               <p className='text-xs text-muted-foreground'>Aucun événement à venir.</p>
             ) : null}
-            {events.slice(0, 3).map((event) => (
+            {upcomingEvents.map(({ event, day }) => (
               <div
                 key={event.id}
-                className='flex items-start justify-between gap-2'
+                className='flex items-start justify-between gap-3'
               >
-                <div>
-                  <p className='font-medium'>{event.label}</p>
-                  <p className='text-xs text-muted-foreground'>
-                    {event.date}
-                    {event.time ? ` • ${event.time}` : ''}
-                  </p>
+                <div className='flex min-w-0 items-start gap-3'>
+                  {day ? (
+                    <span className='flex w-11 shrink-0 flex-col items-center rounded-xl bg-blue-50 py-1 text-blue-700'>
+                      <span className='text-[10px] font-semibold uppercase leading-tight'>
+                        {MONTH_FORMAT.format(day)}
+                      </span>
+                      <span className='text-base font-bold leading-tight'>{day.getDate()}</span>
+                    </span>
+                  ) : null}
+                  <div className='min-w-0'>
+                    <p className='truncate font-medium'>{event.label || 'Événement'}</p>
+                    <p className='text-xs text-muted-foreground'>
+                      {day ? WEEKDAY_FORMAT.format(day) : event.date || 'Date à confirmer'}
+                      {event.time ? ` • ${event.time}` : ''}
+                    </p>
+                  </div>
                 </div>
-                <Badge variant='outline' className='text-[11px]'>
+                <Badge variant='outline' className='text-xs'>
                   {event.type}
                 </Badge>
               </div>
@@ -216,7 +320,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
               Créer un emploi du temps
             </Button>
             {typeof remindersCount === 'number' && remindersCount > 0 && (
-              <p className='mt-2 text-[11px] text-muted-foreground'>
+              <p className='mt-2 text-xs text-muted-foreground'>
                 {remindersCount} rappel(s) de paiement en attente.
               </p>
             )}
@@ -226,4 +330,3 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
     </>
   );
 };
-

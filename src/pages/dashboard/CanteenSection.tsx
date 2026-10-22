@@ -1,28 +1,11 @@
 import React from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-import type {
-  CanteenMenuItem,
-  NewCanteenItemFormState,
-  SetStateAction,
-} from './dashboardTypes';
+import type { CanteenMenuItem } from './dashboardTypes';
+import { CanteenCreateWizard, type CanteenCreatePayload } from './CanteenCreateWizard';
 
-const MEAL_TYPE_OPTIONS: CanteenMenuItem['mealType'][] = [
-  'Déjeuner',
-  'Dîner',
-  'Goûter',
-];
+const MEAL_TYPE_OPTIONS: CanteenMenuItem['mealType'][] = ['Déjeuner', 'Dîner', 'Goûter'];
 
 function getItemsForCell(
   items: CanteenMenuItem[],
@@ -34,17 +17,13 @@ function getItemsForCell(
 
 type CanteenSectionProps = {
   items: CanteenMenuItem[];
-  newItem: NewCanteenItemFormState;
-  setNewItem: SetStateAction<NewCanteenItemFormState>;
-  onCreateItem: (e: React.FormEvent) => void;
+  onCreateItem: (payload: CanteenCreatePayload) => Promise<void>;
   dayOptions: string[];
   readOnly?: boolean;
 };
 
 export const CanteenSection: React.FC<CanteenSectionProps> = ({
   items,
-  newItem,
-  setNewItem,
   onCreateItem,
   dayOptions,
   readOnly = false,
@@ -54,88 +33,14 @@ export const CanteenSection: React.FC<CanteenSectionProps> = ({
       <div className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)]'>
         {!readOnly && (
         <Card>
-          <CardHeader>
-            <CardTitle className='text-sm font-medium'>
-              Ajouter un plat au menu
-            </CardTitle>
+          <CardHeader className='pb-3'>
+            <CardTitle className='text-base'>Ajouter un plat au menu</CardTitle>
+            <CardDescription className='text-xs'>
+              Parcours guidé en 2 étapes — plat puis validation.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form
-              className='space-y-3 text-xs'
-              onSubmit={onCreateItem}
-            >
-              <div className='grid gap-2 sm:grid-cols-2'>
-                <div className='grid gap-2'>
-                  <Label htmlFor='canteen-day'>Jour</Label>
-                  <Select
-                    value={newItem.day}
-                    onValueChange={(value) =>
-                      setNewItem((c) => ({ ...c, day: value }))
-                    }
-                  >
-                    <SelectTrigger id='canteen-day'>
-                      <SelectValue placeholder='Choisir un jour' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {dayOptions.map((day) => (
-                        <SelectItem key={day} value={day}>
-                          {day}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className='grid gap-2'>
-                  <Label htmlFor='canteen-meal-type'>Repas</Label>
-                  <Select
-                    value={newItem.mealType}
-                    onValueChange={(value) =>
-                      setNewItem((c) => ({
-                        ...c,
-                        mealType: value as CanteenMenuItem['mealType'],
-                      }))
-                    }
-                  >
-                    <SelectTrigger id='canteen-meal-type'>
-                      <SelectValue placeholder='Déjeuner / Dîner / Goûter' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MEAL_TYPE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt} value={opt}>
-                          {opt}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className='grid gap-2'>
-                <Label htmlFor='canteen-dish'>Plat</Label>
-                <Input
-                  id='canteen-dish'
-                  value={newItem.dish}
-                  onChange={(e) =>
-                    setNewItem((c) => ({ ...c, dish: e.target.value }))
-                  }
-                  placeholder='Ex : Riz sauce, Poulet braisé'
-                  required
-                />
-              </div>
-              <div className='grid gap-2'>
-                <Label htmlFor='canteen-note'>Note (optionnel)</Label>
-                <Input
-                  id='canteen-note'
-                  value={newItem.note}
-                  onChange={(e) =>
-                    setNewItem((c) => ({ ...c, note: e.target.value }))
-                  }
-                  placeholder='Ex : Sans gluten, végétarien'
-                />
-              </div>
-              <Button type='submit' size='sm' className='mt-1'>
-                Ajouter au menu
-              </Button>
-            </form>
+            <CanteenCreateWizard dayOptions={dayOptions} onSubmit={onCreateItem} />
           </CardContent>
         </Card>
         )}
@@ -181,8 +86,8 @@ export const CanteenSection: React.FC<CanteenSectionProps> = ({
                   const dayItems = items.filter((i) => i.day === day);
                   if (dayItems.length === 0) return null;
                   return (
-                    <div key={day} className='rounded-md border border-border/80 px-3 py-2'>
-                      <p className='text-[11px] font-semibold text-foreground mb-1.5'>
+                    <div key={day} className='dashboard-entity-card'>
+                      <p className='text-xs font-semibold text-foreground mb-1.5'>
                         {day}
                       </p>
                       {MEAL_TYPE_OPTIONS.map((mealType) => {
@@ -190,9 +95,9 @@ export const CanteenSection: React.FC<CanteenSectionProps> = ({
                         if (cellItems.length === 0) return null;
                         return (
                           <div key={mealType} className='mb-1.5 last:mb-0'>
-                            <p className='text-[10px] text-muted-foreground'>{mealType}</p>
+                            <p className='text-xs text-muted-foreground'>{mealType}</p>
                             {cellItems.map((item) => (
-                              <p key={item.id} className='text-[11px] font-medium text-foreground'>
+                              <p key={item.id} className='text-xs font-medium text-foreground'>
                                 {item.dish}
                                 {item.note ? ` · ${item.note}` : ''}
                               </p>
@@ -206,8 +111,8 @@ export const CanteenSection: React.FC<CanteenSectionProps> = ({
               </div>
 
               {/* Vue desktop : tableau jour × repas (comme l'emploi du temps) */}
-              <div className='hidden md:block overflow-x-auto rounded-lg border border-border/70 bg-card'>
-                <table className='w-full border-collapse text-[11px]'>
+              <div className='hidden md:block dashboard-table-wrap'>
+                <table>
                   <thead className='bg-muted/60'>
                     <tr>
                       <th className='min-w-[90px] border-b border-border/80 px-2 py-1.5 text-left font-medium text-muted-foreground'>
@@ -244,7 +149,7 @@ export const CanteenSection: React.FC<CanteenSectionProps> = ({
                                         {item.dish}
                                       </p>
                                       {item.note && (
-                                        <p className='text-[10px] text-muted-foreground'>
+                                        <p className='text-xs text-muted-foreground'>
                                           {item.note}
                                         </p>
                                       )}
@@ -252,7 +157,7 @@ export const CanteenSection: React.FC<CanteenSectionProps> = ({
                                   ))}
                                 </div>
                               ) : (
-                                <span className='text-[10px] text-muted-foreground'>—</span>
+                                <span className='text-xs text-muted-foreground'>—</span>
                               )}
                             </td>
                           );

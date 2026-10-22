@@ -37,6 +37,7 @@ type CommunicationsSectionProps = {
   newParentMessage: NewParentMessageFormState;
   setNewParentMessage: SetStateAction<NewParentMessageFormState>;
   onSendParentMessage: (e: React.FormEvent) => void;
+  sendingParentMessage?: boolean;
   classes: ClassItem[];
   emailConfigured: boolean | null;
 };
@@ -72,6 +73,7 @@ export const CommunicationsSection: React.FC<CommunicationsSectionProps> = ({
   newParentMessage,
   setNewParentMessage,
   onSendParentMessage,
+  sendingParentMessage = false,
   classes,
   emailConfigured,
 }) => {
@@ -288,8 +290,8 @@ export const CommunicationsSection: React.FC<CommunicationsSectionProps> = ({
                 <span>Envoyer par e-mail</span>
               </label>
             </div>
-            <Button type='submit' size='sm' className='w-fit'>
-              Envoyer
+            <Button type='submit' size='sm' className='w-fit' disabled={sendingParentMessage}>
+              {sendingParentMessage ? 'Envoi…' : 'Envoyer'}
             </Button>
           </form>
         </CardContent>

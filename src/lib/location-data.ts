@@ -1,4 +1,5 @@
-import { City, Country } from 'country-state-city';
+// Import per-module: the city database (~7.7 MB) is only fetched when a country's cities are needed.
+import Country from 'country-state-city/lib/country';
 
 export type CountryOption = {
   code: string;
@@ -19,19 +20,58 @@ export function getCountries(): CountryOption[] {
   return cachedCountries;
 }
 
-export function getCountryCodeByName(countryName: string): string {
-  if (!countryName) return '';
-  return getCountries().find((c) => c.name === countryName)?.code ?? '';
+function simplify(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z]/g, '');
 }
 
-export function getCitiesByCountryName(countryName: string): string[] {
+/**
+ * Country code for a name written in any usual way: the list's own name
+ * ("Cote D'Ivoire (Ivory Coast)"), the English or French short form
+ * ("Ivory Coast", "Côte d'Ivoire") or the ISO code ("CI").
+ */
+export function getCountryCodeByName(countryName: string): string {
+  const wanted = countryName?.trim();
+  if (!wanted) return '';
+  const countries = getCountries();
+  const exact = countries.find((c) => c.name === wanted);
+  if (exact) return exact.code;
+  if (/^[A-Za-z]{2}$/.test(wanted)) {
+    const byCode = countries.find((c) => c.code === wanted.toUpperCase());
+    if (byCode) return byCode.code;
+  }
+  const key = simplify(wanted);
+  const match = countries.find((c) => {
+    const full = simplify(c.name);
+    const parts = c.name.split(/[()]/).map(simplify).filter(Boolean);
+    return full === key || parts.includes(key);
+  });
+  return match?.code ?? '';
+}
+
+/** The list's own spelling of a country name (so selects show it), or the input unchanged. */
+export function canonicalCountryName(countryName: string): string {
+  const code = getCountryCodeByName(countryName);
+  return getCountries().find((c) => c.code === code)?.name ?? countryName;
+}
+
+const citiesCache = new Map<string, string[]>();
+
+export async function loadCitiesByCountryName(countryName: string): Promise<string[]> {
   const code = getCountryCodeByName(countryName);
   if (!code) return [];
-  return getCitiesByCountryCode(code);
+  return loadCitiesByCountryCode(code);
 }
 
-export function getCitiesByCountryCode(countryCode: string): string[] {
+export async function loadCitiesByCountryCode(countryCode: string): Promise<string[]> {
   if (!countryCode) return [];
+  const cached = citiesCache.get(countryCode);
+  if (cached) return cached;
+
+  const { default: City } = await import('country-state-city/lib/city');
   const seen = new Set<string>();
   const cities: string[] = [];
   for (const city of City.getCitiesOfCountry(countryCode) ?? []) {
@@ -40,7 +80,9 @@ export function getCitiesByCountryCode(countryCode: string): string[] {
       cities.push(city.name);
     }
   }
-  return cities.sort((a, b) => a.localeCompare(b, 'fr'));
+  cities.sort((a, b) => a.localeCompare(b, 'fr'));
+  citiesCache.set(countryCode, cities);
+  return cities;
 }
 
 export type CountryPhoneMeta = {
@@ -84,12 +126,28 @@ function formatGroupedPairs(digits: string): string {
   return parts.join(' ').trim();
 }
 
+function extractLocalPhoneDigits(countryName: string, raw: string): string {
+  let digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+
+  const meta = getCountryPhoneMeta(countryName);
+  if (meta?.phonecode && digits.startsWith(meta.phonecode) && digits.length > meta.phonecode.length) {
+    digits = digits.slice(meta.phonecode.length);
+  }
+
+  const rules = getLocalPhoneRules(countryName);
+  if (rules?.localDigits === 10 && digits.length === 9 && !digits.startsWith('0')) {
+    digits = `0${digits}`;
+  }
+
+  const max = rules?.localDigits ?? 15;
+  return digits.slice(0, max);
+}
+
 /** Strip, cap length, and apply national formatting (e.g. CI → pairs). */
 export function normalizeLocalPhoneInput(countryName: string, raw: string): string {
-  const digits = raw.replace(/\D/g, '');
+  const trimmed = extractLocalPhoneDigits(countryName, raw);
   const rules = getLocalPhoneRules(countryName);
-  const max = rules?.localDigits ?? 15;
-  const trimmed = digits.slice(0, max);
   if (rules?.localDigits === 10) {
     return formatGroupedPairs(trimmed);
   }
@@ -101,7 +159,7 @@ export function localPhoneDigitCount(value: string): number {
 }
 
 export function isValidLocalPhone(countryName: string, localNumber: string): boolean {
-  const digits = localNumber.replace(/\D/g, '');
+  const digits = extractLocalPhoneDigits(countryName, localNumber);
   if (!digits) return false;
   const rules = getLocalPhoneRules(countryName);
   if (!rules) return digits.length >= 6;
@@ -131,18 +189,8 @@ export function getCountryPhoneMeta(countryName: string): CountryPhoneMeta | nul
 
 export function formatPhoneWithCountry(countryName: string, localNumber: string): string {
   const meta = getCountryPhoneMeta(countryName);
-  let digits = localNumber.replace(/\D/g, '');
+  const digits = extractLocalPhoneDigits(countryName, localNumber);
   if (!digits) return '';
   if (!meta) return localNumber.trim();
-
-  const rules = getLocalPhoneRules(countryName);
-  if (rules && digits.length > rules.localDigits) {
-    digits = digits.slice(0, rules.localDigits);
-  }
-
-  let local = digits;
-  if (local.startsWith(meta.phonecode)) {
-    local = local.slice(meta.phonecode.length);
-  }
-  return `+${meta.phonecode}${local}`;
+  return `+${meta.phonecode}${digits}`;
 }
