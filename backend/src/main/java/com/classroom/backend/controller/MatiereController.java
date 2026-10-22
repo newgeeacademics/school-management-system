@@ -29,14 +29,15 @@ public class MatiereController {
         return ResponseEntity.ok(matiereService.findById(id));
     }
 
+    /** Admins and direction / secretariat staff; the service rules out drivers. */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<Matiere> create(@Valid @RequestBody MatiereRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(matiereService.create(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<Matiere> update(@PathVariable String id, @Valid @RequestBody MatiereRequest request) {
         return ResponseEntity.ok(matiereService.update(id, request));
     }

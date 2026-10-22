@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
  * Messages and announcements created before school scoping have no school_id.
  * When the database holds a single establishment they clearly belong to it; with several
  * establishments they stay unassigned (hidden) rather than being shown to every school.
+ * Legacy subjects are backfilled the same way; with several establishments they stay shared
+ * (visible to every school) because existing courses still point at them.
  */
 @Component
 @RequiredArgsConstructor
@@ -55,6 +57,32 @@ public class SchoolScopeMigration {
         }
     }
 
+    /**
+     * Subject names used to be unique across the whole platform, so a second school could not
+     * create "Mathématiques". Names are now unique per school (checked in MatiereService).
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void dropPlatformWideSubjectNameUnique() {
+        if (!isPostgres()) {
+            return;
+        }
+        try {
+            List<String> constraints = jdbcTemplate.queryForList(
+                    "SELECT tc.constraint_name FROM information_schema.table_constraints tc "
+                            + "JOIN information_schema.constraint_column_usage ccu "
+                            + "ON tc.constraint_name = ccu.constraint_name AND tc.table_name = ccu.table_name "
+                            + "WHERE tc.table_name = 'matieres' AND tc.constraint_type = 'UNIQUE' "
+                            + "AND ccu.column_name = 'name'",
+                    String.class);
+            for (String constraint : constraints) {
+                jdbcTemplate.execute("ALTER TABLE matieres DROP CONSTRAINT IF EXISTS \"" + constraint.replace("\"", "") + "\"");
+                log.info("Dropped platform-wide unique constraint {} on matieres.name", constraint);
+            }
+        } catch (Exception e) {
+            log.warn("Could not drop unique constraint on matieres.name: {}", e.getMessage());
+        }
+    }
+
     @EventListener(ApplicationReadyEvent.class)
     public void backfillLegacySchoolIds() {
         try {
@@ -67,6 +95,7 @@ public class SchoolScopeMigration {
                     "UPDATE school_messages SET school_id = ? WHERE school_id IS NULL", schoolId);
             int announcements = jdbcTemplate.update(
                     "UPDATE announcements SET school_id = ? WHERE school_id IS NULL", schoolId);
+            jdbcTemplate.update("UPDATE matieres SET school_id = ? WHERE school_id IS NULL", schoolId);
             if (messages + announcements > 0) {
                 log.info("Assigned {} message(s) and {} announcement(s) to school {}", messages, announcements, schoolId);
             }
