@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:newgee_portal/features/home/more_sections_sheet.dart';
+import 'package:newgee_portal/features/home/portal_tour.dart';
 import 'package:newgee_portal/features/home/portal_bottom_nav.dart';
 import 'package:newgee_portal/features/sections/announcements_screen.dart';
 import 'package:newgee_portal/features/sections/attendance_screen.dart';
@@ -21,6 +22,7 @@ import 'package:newgee_portal/services/notifications_service.dart';
 import 'package:newgee_portal/services/portal_feed_service.dart';
 import 'package:newgee_portal/theme/app_theme.dart';
 import 'package:newgee_portal/widgets/app_logo.dart';
+import 'package:newgee_portal/widgets/guided_tour.dart';
 import 'package:newgee_portal/widgets/notification_badge_icon.dart';
 import 'package:provider/provider.dart';
 
@@ -35,13 +37,36 @@ class _HomeShellState extends State<HomeShell> {
   PortalSectionId _activeSection = PortalSectionId.overview;
   int _bottomIndex = 0;
   int _sectionKey = 0;
+  final _tourStore = GuidedTourStore();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PortalFeedService>().reload();
+      _showTourOnFirstVisit();
     });
+  }
+
+  String? get _tourUserId {
+    final session = context.read<AuthService>().session;
+    if (session == null) return null;
+    final id = session.userId;
+    return (id != null && id.isNotEmpty) ? id : session.email;
+  }
+
+  Future<void> _showTourOnFirstVisit() async {
+    final userId = _tourUserId;
+    if (userId == null || await _tourStore.wasSeen(userId)) return;
+    if (!mounted) return;
+    await _openTour();
+    await _tourStore.markSeen(userId);
+  }
+
+  Future<void> _openTour() {
+    final role = context.read<AuthService>().session?.role;
+    if (role == null) return Future.value();
+    return showGuidedTour(context, portalTourSteps(role));
   }
 
   void _selectSection(PortalSectionId section, {bool fromMore = false}) {
@@ -83,9 +108,13 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   Future<void> _logout() async {
-    await context.read<NotificationsService>().deactivate();
-    context.read<PortalFeedService>().reset();
-    await context.read<AuthService>().logout();
+    // Read the services before awaiting: the screen may be gone afterwards.
+    final notifications = context.read<NotificationsService>();
+    final feed = context.read<PortalFeedService>();
+    final auth = context.read<AuthService>();
+    await notifications.deactivate();
+    feed.reset();
+    await auth.logout();
   }
 
   Widget _buildSection(PortalSession session) {
@@ -207,6 +236,7 @@ class _HomeShellState extends State<HomeShell> {
               ),
             ),
             onSelected: (value) {
+              if (value == 'guide') _openTour();
               if (value == 'logout') _logout();
             },
             itemBuilder: (context) => [
@@ -230,6 +260,16 @@ class _HomeShellState extends State<HomeShell> {
                 ),
               ),
               const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'guide',
+                child: Row(
+                  children: [
+                    Icon(Icons.help_outline_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('Guide'),
+                  ],
+                ),
+              ),
               const PopupMenuItem(
                 value: 'logout',
                 child: Row(

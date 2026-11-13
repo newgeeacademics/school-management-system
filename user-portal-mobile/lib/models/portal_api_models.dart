@@ -603,6 +603,7 @@ class PortalRollCall {
     required this.className,
     required this.date,
     required this.canEdit,
+    this.finalized = false,
     this.students = const [],
   });
 
@@ -610,6 +611,9 @@ class PortalRollCall {
   final String className;
   final String date;
   final bool canEdit;
+
+  /// Roll call closed by the teacher: attendance is locked (only the school can correct it).
+  final bool finalized;
   final List<PortalRollCallRow> students;
 
   factory PortalRollCall.fromJson(Map<String, dynamic> json) {
@@ -618,6 +622,7 @@ class PortalRollCall {
       className: json['className']?.toString() ?? '',
       date: json['date']?.toString() ?? '',
       canEdit: json['canEdit'] == true,
+      finalized: json['finalized'] == true,
       students: _list(json['students'], PortalRollCallRow.fromJson),
     );
   }

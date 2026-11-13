@@ -4,6 +4,7 @@ import 'package:newgee_portal/models/portal_role.dart';
 import 'package:newgee_portal/services/auth_service.dart';
 import 'package:newgee_portal/services/portal_api_service.dart';
 import 'package:newgee_portal/widgets/portal_async_body.dart';
+import 'package:newgee_portal/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 
 enum AttendanceVariant { presence, absences }
@@ -93,7 +94,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         children: [
           if (showPicker) ...[
             DropdownButtonFormField<String>(
-              value: _studentId,
+              key: ValueKey(_studentId),
+              initialValue: _studentId,
               decoration: const InputDecoration(labelText: 'Élève'),
               items: [
                 for (final s in _data!.students)
@@ -123,7 +125,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 _StatCard('Présences', '${stats.presentCount}', Colors.green),
                 _StatCard('Absences', '${stats.absentCount}', Colors.red),
                 _StatCard('Retards', '${stats.lateCount}', Colors.orange),
-                _StatCard('Taux', '${stats.attendanceRate}%', Colors.teal),
+                _StatCard('Taux', '${stats.attendanceRate}%', AppTheme.primary),
               ],
             ),
             const SizedBox(height: 16),

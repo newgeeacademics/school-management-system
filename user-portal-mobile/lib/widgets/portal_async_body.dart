@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:newgee_portal/theme/app_theme.dart';
 
 class PortalAsyncBody extends StatelessWidget {
   const PortalAsyncBody({
@@ -70,7 +71,7 @@ class PortalCard extends StatelessWidget {
     if (onTap == null) return card;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppTheme.cardRadius),
       child: card,
     );
   }

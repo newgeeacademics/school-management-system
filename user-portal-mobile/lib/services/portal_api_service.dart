@@ -185,6 +185,20 @@ class PortalApiService {
         .then(PortalRollCall.fromJson);
   }
 
+  /// Closes the day's roll call: attendance is locked afterwards.
+  Future<PortalRollCall> finalizeRollCall({
+    required String classId,
+    required String date,
+  }) {
+    return _api
+        .fetch<Map<String, dynamic>>(
+          '/api/portal/classes/roll-call/finalize',
+          method: 'POST',
+          body: {'classId': classId, 'date': date, 'entries': <Object>[]},
+        )
+        .then(PortalRollCall.fromJson);
+  }
+
   Future<PortalHomeworkList> fetchHomework(String classId) {
     return _api
         .fetch<Map<String, dynamic>>('/api/portal/classes/$classId/homework')
