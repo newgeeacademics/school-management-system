@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:newgee_portal/models/portal_feed.dart';
+import 'package:newgee_portal/theme/app_theme.dart';
 import 'package:newgee_portal/widgets/portal_async_body.dart';
 
 class CalendarScreen extends StatelessWidget {
@@ -37,7 +38,7 @@ class CalendarScreen extends StatelessWidget {
                 width: 48,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.teal.shade50,
+                  color: AppTheme.primarySoft,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Column(
@@ -46,12 +47,12 @@ class CalendarScreen extends StatelessWidget {
                       e.date.length >= 10 ? e.date.substring(8, 10) : '--',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.teal.shade800,
+                        color: AppTheme.primaryDark,
                       ),
                     ),
                     Text(
                       e.date.length >= 7 ? e.date.substring(5, 7) : '',
-                      style: TextStyle(fontSize: 11, color: Colors.teal.shade700),
+                      style: TextStyle(fontSize: 11, color: AppTheme.primary),
                     ),
                   ],
                 ),

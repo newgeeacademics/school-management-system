@@ -5,6 +5,7 @@ import 'package:newgee_portal/services/auth_service.dart';
 import 'package:newgee_portal/services/portal_api_service.dart';
 import 'package:newgee_portal/services/portal_feed_service.dart';
 import 'package:newgee_portal/widgets/portal_async_body.dart';
+import 'package:newgee_portal/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 
 enum MessagesTab { chat, official }
@@ -167,7 +168,7 @@ class _LiveChatTabState extends State<_LiveChatTab> {
                       maxWidth: MediaQuery.sizeOf(context).width * 0.8,
                     ),
                     decoration: BoxDecoration(
-                      color: mine ? Colors.teal.shade50 : const Color(0xFFF1F5F9),
+                      color: mine ? AppTheme.primarySoft : const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Column(
@@ -346,7 +347,8 @@ class _OfficialMessagesTabState extends State<_OfficialMessagesTab> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: _classId,
+                    key: ValueKey(_classId),
+                    initialValue: _classId,
                     decoration: const InputDecoration(labelText: 'Classe'),
                     items: [
                       for (final c in classes)

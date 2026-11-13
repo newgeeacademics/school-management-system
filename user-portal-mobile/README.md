@@ -28,6 +28,8 @@ Override for production or physical devices:
 flutter run --dart-define=API_URL=https://school-management-system-gw9s.onrender.com
 ```
 
+Release builds (`flutter build apk`, `flutter build appbundle`, `flutter build ipa`) use this production URL by default; pass `--dart-define=API_URL=...` to target another server.
+
 Optional tracking app link for transport section:
 
 ```bash

@@ -139,7 +139,7 @@ class OverviewScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             scrollDirection: Axis.horizontal,
             itemCount: quickActions.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemBuilder: (context, index) {
               final action = quickActions[index];
               return _QuickActionChip(

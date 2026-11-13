@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:newgee_portal/models/portal_api_models.dart';
 import 'package:newgee_portal/services/notifications_service.dart';
 import 'package:newgee_portal/widgets/portal_async_body.dart';
+import 'package:newgee_portal/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -90,7 +91,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             n.studentName!,
                             style: const TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF0D9488),
+                              color: AppTheme.primary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
