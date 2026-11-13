@@ -112,12 +112,36 @@ class ApiClient {
     }
   }
 
-  Future<AuthResponse> login(String email, String password) async {
+  /// Signs in with a login id, e-mail or phone. On a first sign-in after an
+  /// invitation, [password] is left empty and the response asks for a new one.
+  Future<AuthResponse> login(String identifier, String password) async {
     final data = await fetch<Map<String, dynamic>>(
       '/api/auth/login',
       method: 'POST',
-      body: {'email': email, 'password': password},
+      body: {
+        'email': identifier,
+        if (password.trim().isNotEmpty) 'password': password.trim(),
+      },
     );
     return AuthResponse.fromJson(data);
+  }
+
+  /// Completes a first sign-in: saves the chosen password and returns a session.
+  Future<AuthResponse> setupInitialPassword(String setupToken, String newPassword) async {
+    final data = await fetch<Map<String, dynamic>>(
+      '/api/auth/setup-initial-password',
+      method: 'POST',
+      body: {'setupToken': setupToken, 'newPassword': newPassword},
+    );
+    return AuthResponse.fromJson(data);
+  }
+
+  /// Sends a password reset e-mail if an account matches [identifier].
+  Future<void> requestPasswordReset(String identifier) async {
+    await fetch<Map<String, dynamic>?>(
+      '/api/auth/forgot-password',
+      method: 'POST',
+      body: {'email': identifier.trim()},
+    );
   }
 }

@@ -89,6 +89,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
   final Map<String, AttendanceStatus> _statuses = {};
   bool _loading = true;
   bool _saving = false;
+  bool _finalizing = false;
   String? _error;
 
   PortalApiService get _api =>
@@ -155,8 +156,54 @@ class _AttendanceTabState extends State<_AttendanceTab> {
     }
   }
 
+  /// Saves the current statuses, then closes the roll call (as the web portal does).
+  Future<void> _finalize() async {
+    if (_data?.canEdit != true || _data?.finalized == true) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Terminer l’appel ?'),
+        content: const Text(
+          'Les présences seront verrouillées. Seule l’administration pourra ensuite les corriger.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Terminer l’appel'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _finalizing = true);
+    try {
+      final entries = _statuses.entries
+          .map((e) => (studentId: e.key, status: e.value))
+          .toList();
+      await _api.saveRollCall(classId: widget.classId, date: _date, entries: entries);
+      final roll = await _api.finalizeRollCall(classId: widget.classId, date: _date);
+      if (!mounted) return;
+      setState(() {
+        _data = roll;
+        _finalizing = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _finalizing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final busy = _saving || _finalizing;
     return PortalAsyncBody(
       loading: _loading,
       error: _error,
@@ -211,11 +258,32 @@ class _AttendanceTabState extends State<_AttendanceTab> {
                 ],
               ),
             ),
+          if (_data?.finalized == true) ...[
+            const SizedBox(height: 16),
+            PortalCard(
+              child: Row(
+                children: [
+                  Icon(Icons.lock_outline, size: 20, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Appel terminé — les présences sont verrouillées. Contactez l’administration pour toute correction.',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           if (_data?.canEdit == true) ...[
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: _saving ? null : _save,
+              onPressed: busy ? null : _save,
               child: Text(_saving ? 'Enregistrement…' : 'Enregistrer l\'appel'),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton(
+              onPressed: busy ? null : _finalize,
+              child: Text(_finalizing ? 'Enregistrement…' : 'Terminer l’appel'),
             ),
           ],
         ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:newgee_portal/features/class_hub/class_hub_screen.dart';
 import 'package:newgee_portal/models/portal_feed.dart';
+import 'package:newgee_portal/theme/app_theme.dart';
 import 'package:newgee_portal/widgets/portal_async_body.dart';
 
 class ClassesScreen extends StatelessWidget {
@@ -66,7 +67,7 @@ class ClassesScreen extends StatelessWidget {
                   const Text(
                     'Ouvrir la classe →',
                     style: TextStyle(
-                      color: Color(0xFF0D9488),
+                      color: AppTheme.primary,
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),

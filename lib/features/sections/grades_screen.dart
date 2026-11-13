@@ -149,7 +149,8 @@ class _GradesScreenState extends State<GradesScreen> {
             children: [
               if (data.courses.isNotEmpty)
                 DropdownButtonFormField<String>(
-                  value: courseId,
+                  key: ValueKey(courseId),
+                  initialValue: courseId,
                   decoration: const InputDecoration(labelText: 'Matière'),
                   items: [
                     for (final c in data.courses)
@@ -248,7 +249,8 @@ class _GradesScreenState extends State<GradesScreen> {
                     SizedBox(
                       width: 180,
                       child: DropdownButtonFormField<String>(
-                        value: _period,
+                        key: ValueKey(_period),
+                        initialValue: _period,
                         decoration: const InputDecoration(labelText: 'Période'),
                         items: [
                           for (final p in periodOptions)
@@ -265,7 +267,8 @@ class _GradesScreenState extends State<GradesScreen> {
                       SizedBox(
                         width: 180,
                         child: DropdownButtonFormField<String>(
-                          value: _classId,
+                          key: ValueKey(_classId),
+                          initialValue: _classId,
                           decoration: const InputDecoration(labelText: 'Classe'),
                           items: [
                             for (final c in _data!.classes)
@@ -281,7 +284,8 @@ class _GradesScreenState extends State<GradesScreen> {
                       SizedBox(
                         width: 180,
                         child: DropdownButtonFormField<String>(
-                          value: _studentId,
+                          key: ValueKey(_studentId),
+                          initialValue: _studentId,
                           decoration: const InputDecoration(labelText: 'Élève'),
                           items: [
                             for (final s in _data!.students)

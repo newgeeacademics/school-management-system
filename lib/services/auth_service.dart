@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:newgee_portal/core/api_client.dart';
 import 'package:newgee_portal/core/api_exception.dart';
 import 'package:newgee_portal/core/constants.dart';
+import 'package:newgee_portal/models/auth_response.dart';
 import 'package:newgee_portal/models/portal_role.dart';
 import 'package:newgee_portal/models/portal_session.dart';
 
@@ -47,7 +48,9 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> login(String email, String password) async {
+  /// Signs in. Returns a [PasswordSetupRequest] when an invited user signs in
+  /// for the first time and must choose a password (see [completePasswordSetup]).
+  Future<PasswordSetupRequest?> login(String identifier, String password) async {
     _error = null;
     notifyListeners();
 
@@ -55,7 +58,38 @@ class AuthService extends ChangeNotifier {
       throw ApiException('Backend non configuré');
     }
 
-    final auth = await _api.login(email.trim(), password);
+    final auth = await _api.login(identifier.trim(), password);
+    if (auth.passwordSetupRequired) {
+      final setupToken = auth.setupToken;
+      if (setupToken == null || setupToken.isEmpty) {
+        throw ApiException('Impossible de préparer votre première connexion. Réessayez.');
+      }
+      return PasswordSetupRequest(
+        setupToken: setupToken,
+        name: auth.name.isNotEmpty ? auth.name : identifier.trim(),
+      );
+    }
+
+    await _startSession(auth);
+    return null;
+  }
+
+  /// Saves the password chosen on a first sign-in, then opens the portal.
+  Future<void> completePasswordSetup(String setupToken, String newPassword) async {
+    final auth = await _api.setupInitialPassword(setupToken, newPassword);
+    await _startSession(auth);
+  }
+
+  /// Sends a reset e-mail if an account matches [identifier].
+  Future<void> requestPasswordReset(String identifier) {
+    return _api.requestPasswordReset(identifier);
+  }
+
+  Future<void> _startSession(AuthResponse auth) async {
+    final token = auth.token;
+    if (token == null || token.isEmpty) {
+      throw ApiException('Connexion impossible. Réessayez.');
+    }
     final portalRole = backendRoleToPortal(auth.role);
     if (portalRole == null) {
       throw ApiException(
@@ -68,8 +102,8 @@ class AuthService extends ChangeNotifier {
       email: auth.email,
       name: auth.name,
       userId: auth.id,
-      token: auth.token,
-      emailHint: auth.email,
+      token: token,
+      emailHint: auth.loginId ?? auth.email,
     );
 
     await _persistSession(newSession);
@@ -97,4 +131,12 @@ class AuthService extends ChangeNotifier {
       await _api.setAccessToken(session.token!);
     }
   }
+}
+
+/// Returned by [AuthService.login] when an invited user must choose a password first.
+class PasswordSetupRequest {
+  const PasswordSetupRequest({required this.setupToken, required this.name});
+
+  final String setupToken;
+  final String name;
 }
