@@ -2,16 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:newgee_portal/models/portal_feed.dart';
 import 'package:newgee_portal/widgets/portal_async_body.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart';
+import 'package:newgee_portal/core/constants.dart';
 
 class TransportScreen extends StatelessWidget {
   const TransportScreen({super.key, required this.feed});
 
   final PortalFeed feed;
 
-  static const _trackingUrl = String.fromEnvironment(
-    'TRACKING_APP_URL',
-    defaultValue: 'http://localhost:5179',
-  );
+  static const _trackingUrlFromEnv = String.fromEnvironment('TRACKING_APP_URL');
+
+  /// Live tracker. Release builds open it by default, so the button works on a
+  /// real phone; development builds open the local tracker app.
+  static String get _trackingUrl {
+    if (_trackingUrlFromEnv.isNotEmpty) return _trackingUrlFromEnv;
+    return kReleaseMode ? productionTrackingUrl : 'http://localhost:5179';
+  }
 
   Future<void> _openTracking(BuildContext context) async {
     final uri = Uri.parse(_trackingUrl);

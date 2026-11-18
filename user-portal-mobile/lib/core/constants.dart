@@ -13,6 +13,9 @@ const String _apiUrlFromEnv = String.fromEnvironment(
 /// app built for the stores never points at a developer's machine.
 const String productionApiUrl = 'https://school-management-system-gw9s.onrender.com';
 
+/// Live bus tracker opened from the Transport section in release builds.
+const String productionTrackingUrl = 'https://tracker.newgeeacademy.com';
+
 String get baseUrl {
   if (_apiUrlFromEnv.isNotEmpty) {
     return _apiUrlFromEnv.replaceAll(RegExp(r'/$'), '');
