@@ -36,6 +36,8 @@ Optional tracking app link for transport section:
 flutter run --dart-define=TRACKING_APP_URL=https://your-tracking-app.vercel.app
 ```
 
+Release builds open the live tracker (`https://tracker.newgeeacademy.com`) by default.
+
 ## Test accounts
 
 | Email | Password | Role |
