@@ -1,5 +1,0 @@
-app:
-  seed:
-    enabled: true
-  jwt:
-    secret: test-jwt-secret-min-256-bits-for-unit-tests-only-xxxxxxxx

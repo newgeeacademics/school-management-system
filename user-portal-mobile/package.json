@@ -1,9 +1,0 @@
-{
-  "name": "newgee-portal-mobile",
-  "private": true,
-  "scripts": {
-    "start": "flutter run",
-    "build:apk": "flutter build apk",
-    "build:ios": "flutter build ios"
-  }
-}
