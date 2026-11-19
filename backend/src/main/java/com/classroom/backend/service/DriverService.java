@@ -1,5 +1,7 @@
 package com.classroom.backend.service;
 
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 import com.classroom.backend.dto.request.DriverRequest;
 import com.classroom.backend.model.AppUser;
 import com.classroom.backend.model.Driver;
@@ -22,18 +24,28 @@ public class DriverService {
     private final DriverRepository driverRepository;
     private final TransportRouteRepository transportRouteRepository;
     private final PortalAccountService portalAccountService;
+    private final SchoolContextService schoolContextService;
 
+    /** Drivers of the signed-in user's school (none without a school). */
     public List<Driver> findAll() {
-        return driverRepository.findAll();
+        return schoolContextService.getCurrentUserSchoolId()
+                .map(driverRepository::findBySchoolId)
+                .orElseGet(List::of);
     }
 
     public Driver findById(String id) {
-        return driverRepository.findById(id)
+        Driver driver = driverRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Driver not found: " + id));
+        String schoolId = schoolContextService.getCurrentUserSchoolId().orElse(null);
+        if (schoolId == null || !schoolId.equals(driver.getSchoolId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Chauffeur introuvable.");
+        }
+        return driver;
     }
 
     @Transactional
     public Driver create(DriverRequest request) {
+        String schoolId = schoolContextService.requireCurrentSchoolId();
         String fullName = PersonNameUtil.requireFullName(
                 request.getFirstName(), request.getLastName(), request.getName());
 
@@ -51,6 +63,7 @@ public class DriverService {
         }
 
         Driver driver = Driver.builder()
+                .schoolId(schoolId)
                 .name(fullName)
                 .firstName(PersonNameUtil.trim(request.getFirstName()))
                 .lastName(PersonNameUtil.trim(request.getLastName()))

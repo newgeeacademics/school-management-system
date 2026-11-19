@@ -1,5 +1,7 @@
 package com.classroom.backend.service;
 
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 import com.classroom.backend.dto.request.TransportRouteRequest;
 import com.classroom.backend.model.Driver;
 import com.classroom.backend.model.Student;
@@ -25,25 +27,36 @@ public class TransportService {
     private final StudentRepository studentRepository;
     private final DriverRepository driverRepository;
     private final ObjectMapper objectMapper;
+    private final SchoolContextService schoolContextService;
 
+    /** Routes of the signed-in user's school (none without a school). */
     public List<TransportRoute> findAll() {
-        return transportRouteRepository.findAll();
+        return schoolContextService.getCurrentUserSchoolId()
+                .map(transportRouteRepository::findBySchoolId)
+                .orElseGet(List::of);
     }
 
     public TransportRoute findById(String id) {
-        return transportRouteRepository.findById(id)
+        TransportRoute route = transportRouteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Transport route not found: " + id));
+        assertSameSchool(route.getSchoolId());
+        return route;
     }
 
     public List<TransportRoute> findByStudentId(String studentId) {
-        return transportRouteRepository.findByStudentId(studentId);
+        String schoolId = requireUserSchoolId();
+        return transportRouteRepository.findByStudentId(studentId).stream()
+                .filter(route -> schoolId.equals(route.getSchoolId()))
+                .toList();
     }
 
     @Transactional
     public TransportRoute create(TransportRouteRequest request) {
+        String schoolId = schoolContextService.requireCurrentSchoolId();
         String driverName = resolveDriverName(request);
 
         TransportRoute route = TransportRoute.builder()
+                .schoolId(schoolId)
                 .name(request.getName())
                 .driverName(driverName)
                 .driver(resolveDriver(request.getDriverId()))
@@ -77,7 +90,7 @@ public class TransportService {
         if (request.getStudentIds() != null) {
             route.getStudents().clear();
             if (!request.getStudentIds().isEmpty()) {
-                route.getStudents().addAll(studentRepository.findAllById(request.getStudentIds()));
+                route.getStudents().addAll(studentsOfSchool(request.getStudentIds(), schoolId));
             }
         }
 
@@ -126,7 +139,7 @@ public class TransportService {
         // Mutate the managed collection in place so Hibernate deletes join-table rows.
         route.getStudents().clear();
         if (!ids.isEmpty()) {
-            route.getStudents().addAll(studentRepository.findAllById(ids));
+            route.getStudents().addAll(studentsOfSchool(ids, route.getSchoolId()));
         }
 
         return transportRouteRepository.save(route);
@@ -134,6 +147,7 @@ public class TransportService {
 
     @Transactional
     public void delete(String id) {
+        findById(id); // school check
         transportRouteRepository.deleteById(id);
     }
 
@@ -141,15 +155,39 @@ public class TransportService {
         if (driverId == null || driverId.isBlank()) {
             return null;
         }
-        return driverRepository.findById(driverId)
+        Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new RuntimeException("Driver not found: " + driverId));
+        if (!requireUserSchoolId().equals(driver.getSchoolId())) {
+            throw new IllegalArgumentException("Ce chauffeur n'appartient pas à votre établissement.");
+        }
+        return driver;
+    }
+
+    /** Students to put on a route: all must belong to the route's school. */
+    private List<Student> studentsOfSchool(List<String> studentIds, String schoolId) {
+        List<Student> students = studentRepository.findAllById(studentIds);
+        boolean foreign = students.stream().anyMatch(s -> schoolId == null || !schoolId.equals(s.getSchoolId()));
+        if (foreign || students.size() != new java.util.HashSet<>(studentIds).size()) {
+            throw new IllegalArgumentException("Certains élèves n'appartiennent pas à votre établissement.");
+        }
+        return students;
+    }
+
+    private String requireUserSchoolId() {
+        return schoolContextService.getCurrentUserSchoolId()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "Aucun établissement associé à ce compte."));
+    }
+
+    private void assertSameSchool(String entitySchoolId) {
+        if (entitySchoolId == null || !entitySchoolId.equals(requireUserSchoolId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Trajet introuvable.");
+        }
     }
 
     private String resolveDriverName(TransportRouteRequest request) {
         if (request.getDriverId() != null && !request.getDriverId().isBlank()) {
-            return driverRepository.findById(request.getDriverId())
-                    .map(Driver::getName)
-                    .orElseThrow(() -> new RuntimeException("Driver not found: " + request.getDriverId()));
+            return resolveDriver(request.getDriverId()).getName();
         }
         if (request.getDriverName() == null || request.getDriverName().isBlank()) {
             throw new IllegalArgumentException("Driver name or driverId is required");

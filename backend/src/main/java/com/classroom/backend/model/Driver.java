@@ -30,6 +30,10 @@ public class Driver {
 
     private String phone;
 
+    /** Owning establishment. */
+    @Column(name = "school_id")
+    private String schoolId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "app_user_id")
     @JsonIgnoreProperties({"passwordHash", "hibernateLazyInitializer", "handler"})
