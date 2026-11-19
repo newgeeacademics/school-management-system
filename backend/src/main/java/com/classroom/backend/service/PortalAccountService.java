@@ -71,8 +71,12 @@ public class PortalAccountService {
         }
 
         String loginId = schoolEmailService.generateUniqueLoginId(firstName, lastName);
-        String rawPassword = java.util.UUID.randomUUID().toString();
         boolean portalAccount = requiresPortalAccount(role);
+        // A password chosen by the school is the one the person signs in with (it is also the one
+        // e-mailed to them). Without one, the account starts with a random secret and the person
+        // chooses their password at first sign-in, whatever their role (drivers and staff included).
+        boolean passwordChosen = password != null && !password.isBlank();
+        String rawPassword = passwordChosen ? password : java.util.UUID.randomUUID().toString();
 
         AppUser user = AppUser.builder()
                 .name(name)
@@ -83,7 +87,7 @@ public class PortalAccountService {
                 .role(role)
                 .schoolId(schoolContextService.getCurrentSchoolId().orElse(null))
                 .emailVerified(!hasEmail || !isRealContactEmail(contactEmail))
-                .passwordSetupRequired(portalAccount)
+                .passwordSetupRequired(!passwordChosen)
                 .build();
         AppUser saved = appUserRepository.save(user);
 

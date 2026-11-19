@@ -1,5 +1,7 @@
 package com.classroom.backend.service;
 
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 import com.classroom.backend.dto.request.PositionUpdateRequest;
 import com.classroom.backend.dto.response.LiveTrackingResponse;
 import com.classroom.backend.dto.response.LiveTrackingResponse.*;
@@ -63,6 +65,7 @@ public class TransportTrackingService {
     public LiveTrackingResponse startTrip(String routeId) {
         TransportRoute route = transportRouteRepository.findById(routeId)
                 .orElseThrow(() -> new RuntimeException("Transport route not found: " + routeId));
+        assertCanControlTrip(route);
 
         busTripRepository.findFirstByTransportRoute_IdAndStatusOrderByStartedAtDesc(routeId, BusTripStatus.ACTIVE)
                 .ifPresent(existing -> {
@@ -85,6 +88,7 @@ public class TransportTrackingService {
     public LiveTrackingResponse updatePosition(String routeId, PositionUpdateRequest request) {
         TransportRoute route = transportRouteRepository.findById(routeId)
                 .orElseThrow(() -> new RuntimeException("Transport route not found: " + routeId));
+        assertCanControlTrip(route);
 
         BusTrip trip = busTripRepository.findFirstByTransportRoute_IdAndStatusOrderByStartedAtDesc(routeId, BusTripStatus.ACTIVE)
                 .orElseGet(() -> {
@@ -113,6 +117,7 @@ public class TransportTrackingService {
     public LiveTrackingResponse stopTrip(String routeId) {
         TransportRoute route = transportRouteRepository.findById(routeId)
                 .orElseThrow(() -> new RuntimeException("Transport route not found: " + routeId));
+        assertCanControlTrip(route);
 
         busTripRepository.findFirstByTransportRoute_IdAndStatusOrderByStartedAtDesc(routeId, BusTripStatus.ACTIVE)
                 .ifPresent(trip -> {
@@ -274,6 +279,23 @@ public class TransportTrackingService {
                         .toList();
             }
         };
+    }
+
+    /**
+     * Drivers (STAFF) may only run the routes assigned to them, so one driver cannot start,
+     * move or stop another bus. Admins and teachers keep their current access.
+     */
+    private void assertCanControlTrip(TransportRoute route) {
+        AppUser user = resolveCurrentUser();
+        if (user.getRole() != UserRole.STAFF) {
+            return;
+        }
+        boolean assigned = driverRepository.findByAppUser_Id(user.getId())
+                .map(driver -> route.getDriver() != null && driver.getId().equals(route.getDriver().getId()))
+                .orElse(false);
+        if (!assigned) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ce trajet n'est pas assigné à votre compte chauffeur.");
+        }
     }
 
     private boolean canAccessRoute(AppUser user, TransportRoute route, Set<String> scopedStudentIds) {
