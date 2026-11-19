@@ -23,6 +23,9 @@ import java.util.stream.Collectors;
  * establishments they stay unassigned (hidden) rather than being shown to every school.
  * Legacy subjects are backfilled the same way; with several establishments they stay shared
  * (visible to every school) because existing courses still point at them.
+ * Legacy drivers and transport routes take their school from the driver's account, the route's
+ * driver or the route's pupils when that is unambiguous; otherwise, with a single establishment,
+ * they go to it, and with several they stay unassigned (hidden).
  */
 @Component
 @RequiredArgsConstructor
@@ -101,6 +104,36 @@ public class SchoolScopeMigration {
             }
         } catch (Exception e) {
             log.warn("Could not backfill school_id on messages/announcements: {}", e.getMessage());
+        }
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void backfillTransportSchoolIds() {
+        try {
+            int drivers = jdbcTemplate.update(
+                    "UPDATE drivers SET school_id = (SELECT u.school_id FROM app_users u WHERE u.id = drivers.app_user_id) "
+                            + "WHERE school_id IS NULL AND app_user_id IS NOT NULL");
+            int routes = jdbcTemplate.update(
+                    "UPDATE transport_routes SET school_id = (SELECT d.school_id FROM drivers d WHERE d.id = transport_routes.driver_id) "
+                            + "WHERE school_id IS NULL AND driver_id IS NOT NULL");
+            routes += jdbcTemplate.update(
+                    "UPDATE transport_routes SET school_id = ("
+                            + "SELECT MIN(s.school_id) FROM transport_route_students trs JOIN students s ON s.id = trs.student_id "
+                            + "WHERE trs.route_id = transport_routes.id) "
+                            + "WHERE school_id IS NULL AND (SELECT COUNT(DISTINCT s.school_id) FROM transport_route_students trs "
+                            + "JOIN students s ON s.id = trs.student_id WHERE trs.route_id = transport_routes.id) = 1");
+
+            List<String> schoolIds = jdbcTemplate.queryForList("SELECT id FROM schools", String.class);
+            if (schoolIds.size() == 1) {
+                String schoolId = schoolIds.get(0);
+                drivers += jdbcTemplate.update("UPDATE drivers SET school_id = ? WHERE school_id IS NULL", schoolId);
+                routes += jdbcTemplate.update("UPDATE transport_routes SET school_id = ? WHERE school_id IS NULL", schoolId);
+            }
+            if (drivers + routes > 0) {
+                log.info("Assigned a school to {} driver(s) and {} transport route(s)", drivers, routes);
+            }
+        } catch (Exception e) {
+            log.warn("Could not backfill school_id on drivers/transport routes: {}", e.getMessage());
         }
     }
 }

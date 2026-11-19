@@ -17,6 +17,10 @@ public class Driver {
     @Column(nullable = false)
     private String name;
 
+    /** Establishment that employs the driver; set from the creating admin's school. */
+    @Column(name = "school_id")
+    private String schoolId;
+
     private String firstName;
 
     private String lastName;

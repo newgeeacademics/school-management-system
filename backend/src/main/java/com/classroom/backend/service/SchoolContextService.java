@@ -74,6 +74,16 @@ public class SchoolContextService {
         });
     }
 
+    /**
+     * True when a record belongs to the logged-in user's establishment. A user without an
+     * establishment, or a record without one, never matches: unassigned legacy rows stay hidden
+     * rather than being shown to every school.
+     */
+    public boolean isInCurrentUserSchool(String entitySchoolId) {
+        return entitySchoolId != null
+                && getCurrentUserSchoolId().map(entitySchoolId::equals).orElse(false);
+    }
+
     /** Ensures two records belong to the same establishment (and to the logged-in admin's school). */
     public void assertSameSchool(String leftSchoolId, String rightSchoolId, String message) {
         if (leftSchoolId == null || leftSchoolId.isBlank()

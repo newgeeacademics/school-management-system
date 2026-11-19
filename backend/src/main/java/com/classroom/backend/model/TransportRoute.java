@@ -19,6 +19,10 @@ public class TransportRoute {
     @Column(nullable = false)
     private String name;
 
+    /** Establishment that owns the route; set from the creating admin's school. */
+    @Column(name = "school_id")
+    private String schoolId;
+
     @Column(nullable = false)
     private String driverName;
 

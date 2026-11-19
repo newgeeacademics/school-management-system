@@ -11,18 +11,29 @@ import com.classroom.backend.repository.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Live bus tracking. Admins and teachers see and drive their own school's routes, a driver
+ * (STAFF account linked to a Driver) only the routes assigned to them, parents and students the
+ * routes their children ride.
+ */
 @Service
 @RequiredArgsConstructor
 public class TransportTrackingService {
+
+    static final String ROUTE_NOT_FOUND = "Trajet introuvable.";
+    static final String ROUTE_FORBIDDEN = "Vous n'avez pas accès à ce trajet.";
+    static final String NOT_ASSIGNED_DRIVER = "Seul le chauffeur affecté à ce trajet peut piloter le bus.";
 
     private final AppUserRepository appUserRepository;
     private final AccountIdentifierService accountIdentifierService;
@@ -47,13 +58,12 @@ public class TransportTrackingService {
 
     @Transactional(readOnly = true)
     public LiveTrackingResponse getLiveRoute(String routeId) {
-        TransportRoute route = transportRouteRepository.findById(routeId)
-                .orElseThrow(() -> new RuntimeException("Transport route not found: " + routeId));
+        TransportRoute route = requireRoute(routeId);
 
         AppUser user = resolveCurrentUser();
         Set<String> scopedStudentIds = scopeStudentIds(user);
         if (!canAccessRoute(user, route, scopedStudentIds)) {
-            throw new RuntimeException("Access denied to this route");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ROUTE_FORBIDDEN);
         }
 
         return toLiveResponse(route, scopedStudentIds);
@@ -61,8 +71,7 @@ public class TransportTrackingService {
 
     @Transactional
     public LiveTrackingResponse startTrip(String routeId) {
-        TransportRoute route = transportRouteRepository.findById(routeId)
-                .orElseThrow(() -> new RuntimeException("Transport route not found: " + routeId));
+        TransportRoute route = assertCanControlTrip(routeId);
 
         busTripRepository.findFirstByTransportRoute_IdAndStatusOrderByStartedAtDesc(routeId, BusTripStatus.ACTIVE)
                 .ifPresent(existing -> {
@@ -83,8 +92,7 @@ public class TransportTrackingService {
 
     @Transactional
     public LiveTrackingResponse updatePosition(String routeId, PositionUpdateRequest request) {
-        TransportRoute route = transportRouteRepository.findById(routeId)
-                .orElseThrow(() -> new RuntimeException("Transport route not found: " + routeId));
+        TransportRoute route = assertCanControlTrip(routeId);
 
         BusTrip trip = busTripRepository.findFirstByTransportRoute_IdAndStatusOrderByStartedAtDesc(routeId, BusTripStatus.ACTIVE)
                 .orElseGet(() -> {
@@ -111,8 +119,7 @@ public class TransportTrackingService {
 
     @Transactional
     public LiveTrackingResponse stopTrip(String routeId) {
-        TransportRoute route = transportRouteRepository.findById(routeId)
-                .orElseThrow(() -> new RuntimeException("Transport route not found: " + routeId));
+        TransportRoute route = assertCanControlTrip(routeId);
 
         busTripRepository.findFirstByTransportRoute_IdAndStatusOrderByStartedAtDesc(routeId, BusTripStatus.ACTIVE)
                 .ifPresent(trip -> {
@@ -122,6 +129,46 @@ public class TransportTrackingService {
                 });
 
         return toLiveResponse(route, Set.of());
+    }
+
+    private TransportRoute requireRoute(String routeId) {
+        return transportRouteRepository.findById(routeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ROUTE_NOT_FOUND));
+    }
+
+    /**
+     * Starting, moving or stopping a bus: the assigned driver, or an admin / teacher of the
+     * route's school. Another school's route answers "not found".
+     */
+    TransportRoute assertCanControlTrip(String routeId) {
+        TransportRoute route = requireRoute(routeId);
+        AppUser user = resolveCurrentUser();
+        switch (user.getRole()) {
+            case ADMIN, TEACHER -> {
+                if (!isInUserSchool(user, route)) {
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, ROUTE_NOT_FOUND);
+                }
+            }
+            case STAFF -> {
+                if (!isAssignedDriver(user, route)) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, NOT_ASSIGNED_DRIVER);
+                }
+            }
+            default -> throw new ResponseStatusException(HttpStatus.FORBIDDEN, ROUTE_FORBIDDEN);
+        }
+        return route;
+    }
+
+    private static boolean isInUserSchool(AppUser user, TransportRoute route) {
+        return user.getSchoolId() != null
+                && !user.getSchoolId().isBlank()
+                && user.getSchoolId().equals(route.getSchoolId());
+    }
+
+    private boolean isAssignedDriver(AppUser user, TransportRoute route) {
+        return route.getDriver() != null && driverRepository.findByAppUser_Id(user.getId())
+                .map(driver -> driver.getId().equals(route.getDriver().getId()))
+                .orElse(false);
     }
 
     private LiveTrackingResponse toLiveResponse(TransportRoute route, Set<String> scopedStudentIds) {
@@ -257,12 +304,11 @@ public class TransportTrackingService {
 
     private List<TransportRoute> visibleRoutes(AppUser user, Set<String> scopedStudentIds) {
         return switch (user.getRole()) {
-            case ADMIN, TEACHER -> transportRouteRepository.findAll();
+            case ADMIN, TEACHER -> user.getSchoolId() == null || user.getSchoolId().isBlank()
+                    ? List.of()
+                    : transportRouteRepository.findBySchoolId(user.getSchoolId());
             case STAFF -> driverRepository.findByAppUser_Id(user.getId())
-                    .map(driver -> transportRouteRepository.findAll().stream()
-                            .filter(route -> route.getDriver() != null
-                                    && driver.getId().equals(route.getDriver().getId()))
-                            .toList())
+                    .map(driver -> transportRouteRepository.findByDriver_Id(driver.getId()))
                     .orElse(List.of());
             default -> {
                 if (scopedStudentIds.isEmpty()) {
@@ -278,10 +324,8 @@ public class TransportTrackingService {
 
     private boolean canAccessRoute(AppUser user, TransportRoute route, Set<String> scopedStudentIds) {
         return switch (user.getRole()) {
-            case ADMIN, TEACHER -> true;
-            case STAFF -> driverRepository.findByAppUser_Id(user.getId())
-                    .map(driver -> route.getDriver() != null && driver.getId().equals(route.getDriver().getId()))
-                    .orElse(false);
+            case ADMIN, TEACHER -> isInUserSchool(user, route);
+            case STAFF -> isAssignedDriver(user, route);
             default -> route.getStudents() != null && route.getStudents().stream()
                     .anyMatch(s -> scopedStudentIds.contains(s.getId()));
         };

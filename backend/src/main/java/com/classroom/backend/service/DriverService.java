@@ -10,30 +10,40 @@ import com.classroom.backend.repository.TransportRouteRepository;
 import com.classroom.backend.util.IdCardNumberUtil;
 import com.classroom.backend.util.PersonNameUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+/** Drivers belong to one establishment; another school's drivers answer "not found". */
 @Service
 @RequiredArgsConstructor
 public class DriverService {
 
+    static final String DRIVER_NOT_FOUND = "Chauffeur introuvable.";
+
     private final DriverRepository driverRepository;
     private final TransportRouteRepository transportRouteRepository;
     private final PortalAccountService portalAccountService;
+    private final SchoolContextService schoolContextService;
 
     public List<Driver> findAll() {
-        return driverRepository.findAll();
+        return schoolContextService.getCurrentUserSchoolId()
+                .map(driverRepository::findBySchoolId)
+                .orElseGet(List::of);
     }
 
     public Driver findById(String id) {
         return driverRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Driver not found: " + id));
+                .filter(driver -> schoolContextService.isInCurrentUserSchool(driver.getSchoolId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, DRIVER_NOT_FOUND));
     }
 
     @Transactional
     public Driver create(DriverRequest request) {
+        String schoolId = schoolContextService.requireCurrentSchoolId();
         String fullName = PersonNameUtil.requireFullName(
                 request.getFirstName(), request.getLastName(), request.getName());
 
@@ -52,6 +62,7 @@ public class DriverService {
 
         Driver driver = Driver.builder()
                 .name(fullName)
+                .schoolId(schoolId)
                 .firstName(PersonNameUtil.trim(request.getFirstName()))
                 .lastName(PersonNameUtil.trim(request.getLastName()))
                 .staffId(request.getStaffId() != null && !request.getStaffId().isBlank()
