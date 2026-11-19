@@ -83,6 +83,39 @@ public class SchoolScopeMigration {
         }
     }
 
+    /**
+     * Transport routes and drivers were not tied to a school. Existing rows get one from what
+     * they are linked to: a driver from their login account, a route from its driver or students.
+     * Rows with no clear link stay unassigned (hidden) unless the database holds a single school.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void backfillTransportSchoolIds() {
+        try {
+            int drivers = jdbcTemplate.update(
+                    "UPDATE drivers SET school_id = (SELECT u.school_id FROM app_users u WHERE u.id = drivers.app_user_id) "
+                            + "WHERE school_id IS NULL AND app_user_id IS NOT NULL");
+            int byDriver = jdbcTemplate.update(
+                    "UPDATE transport_routes SET school_id = (SELECT d.school_id FROM drivers d WHERE d.id = transport_routes.driver_id) "
+                            + "WHERE school_id IS NULL AND driver_id IS NOT NULL");
+            int byStudents = jdbcTemplate.update(
+                    "UPDATE transport_routes SET school_id = (SELECT MIN(s.school_id) FROM transport_route_students rs "
+                            + "JOIN students s ON s.id = rs.student_id WHERE rs.route_id = transport_routes.id) "
+                            // Only when every student on the route belongs to the same school.
+                            + "WHERE school_id IS NULL AND (SELECT COUNT(DISTINCT s.school_id) FROM transport_route_students rs "
+                            + "JOIN students s ON s.id = rs.student_id WHERE rs.route_id = transport_routes.id) = 1");
+            List<String> schoolIds = jdbcTemplate.queryForList("SELECT id FROM schools", String.class);
+            if (schoolIds.size() == 1) {
+                jdbcTemplate.update("UPDATE drivers SET school_id = ? WHERE school_id IS NULL", schoolIds.get(0));
+                jdbcTemplate.update("UPDATE transport_routes SET school_id = ? WHERE school_id IS NULL", schoolIds.get(0));
+            }
+            if (drivers + byDriver + byStudents > 0) {
+                log.info("Assigned a school to {} driver(s) and {} transport route(s)", drivers, byDriver + byStudents);
+            }
+        } catch (Exception e) {
+            log.warn("Could not backfill school_id on drivers/transport routes: {}", e.getMessage());
+        }
+    }
+
     @EventListener(ApplicationReadyEvent.class)
     public void backfillLegacySchoolIds() {
         try {

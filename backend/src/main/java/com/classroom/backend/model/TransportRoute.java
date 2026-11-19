@@ -22,6 +22,10 @@ public class TransportRoute {
     @Column(nullable = false)
     private String driverName;
 
+    /** Owning establishment; routes are only visible and editable within it. */
+    @Column(name = "school_id")
+    private String schoolId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "driver_id")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "appUser"})

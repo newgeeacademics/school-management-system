@@ -1,5 +1,6 @@
 package com.classroom.backend.repository;
 
+import java.util.List;
 import com.classroom.backend.model.Driver;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -10,4 +11,6 @@ public interface DriverRepository extends JpaRepository<Driver, String> {
     Optional<Driver> findByAppUser_Id(String appUserId);
 
     Optional<Driver> findByEmailIgnoreCase(String email);
+
+    List<Driver> findBySchoolId(String schoolId);
 }

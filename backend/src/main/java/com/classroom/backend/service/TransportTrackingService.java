@@ -262,7 +262,9 @@ public class TransportTrackingService {
 
     private List<TransportRoute> visibleRoutes(AppUser user, Set<String> scopedStudentIds) {
         return switch (user.getRole()) {
-            case ADMIN, TEACHER -> transportRouteRepository.findAll();
+            case ADMIN, TEACHER -> user.getSchoolId() == null
+                    ? List.of()
+                    : transportRouteRepository.findBySchoolId(user.getSchoolId());
             case STAFF -> driverRepository.findByAppUser_Id(user.getId())
                     .map(driver -> transportRouteRepository.findAll().stream()
                             .filter(route -> route.getDriver() != null
@@ -283,11 +285,14 @@ public class TransportTrackingService {
 
     /**
      * Drivers (STAFF) may only run the routes assigned to them, so one driver cannot start,
-     * move or stop another bus. Admins and teachers keep their current access.
+     * move or stop another bus. Admins and teachers may run the buses of their own school only.
      */
     private void assertCanControlTrip(TransportRoute route) {
         AppUser user = resolveCurrentUser();
         if (user.getRole() != UserRole.STAFF) {
+            if (!sameSchool(user, route)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ce trajet n'appartient pas à votre établissement.");
+            }
             return;
         }
         boolean assigned = driverRepository.findByAppUser_Id(user.getId())
@@ -298,9 +303,13 @@ public class TransportTrackingService {
         }
     }
 
+    private static boolean sameSchool(AppUser user, TransportRoute route) {
+        return user.getSchoolId() != null && user.getSchoolId().equals(route.getSchoolId());
+    }
+
     private boolean canAccessRoute(AppUser user, TransportRoute route, Set<String> scopedStudentIds) {
         return switch (user.getRole()) {
-            case ADMIN, TEACHER -> true;
+            case ADMIN, TEACHER -> sameSchool(user, route);
             case STAFF -> driverRepository.findByAppUser_Id(user.getId())
                     .map(driver -> route.getDriver() != null && driver.getId().equals(route.getDriver().getId()))
                     .orElse(false);
