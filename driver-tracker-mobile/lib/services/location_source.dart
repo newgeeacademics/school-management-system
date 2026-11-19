@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart' show Permission, PermissionActions;
 
 /// One GPS reading, independent of the plugin (so tests can feed fake positions).
 class GpsFix {
@@ -28,6 +30,7 @@ class LocationUnavailable implements Exception {
 
 abstract class LocationSource {
   /// Asks for permission if needed; throws [LocationUnavailable] when it cannot be used.
+  /// On Android it also asks to show notifications, for the « Trajet en cours » reminder.
   Future<void> ensureReady();
 
   /// Continuous fixes. On Android this runs a foreground service, so it keeps
@@ -55,6 +58,15 @@ class GeolocatorSource implements LocationSource {
       throw LocationUnavailable(
           'L’accès à la position est refusé. Autorisez-le dans les réglages de l’application.',
           openSettings: true);
+    }
+    // Android 13+ hides the « Trajet en cours » notification until notifications are
+    // allowed. Sharing works either way, so a refusal does not stop the trip.
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        await Permission.notification.request();
+      } on PlatformException {
+        // Another permission request was still open; the trip starts anyway.
+      }
     }
   }
 
