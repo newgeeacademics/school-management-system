@@ -150,6 +150,32 @@ if ($LASTEXITCODE -ne 0) {
 } else { Write-Host "user-portal-mobile: no changes" }
 Pop-Location
 
+# --- driver-tracker-mobile (Flutter driver app at repo root on branch driver-tracker-mobile) ---
+if (git show-ref --verify --quiet refs/heads/driver-tracker-mobile) {
+    git worktree add (Join-Path $WtRoot "driver-tracker-mobile") driver-tracker-mobile
+} else {
+    git branch driver-tracker-mobile feature/transport-tracking
+    git worktree add (Join-Path $WtRoot "driver-tracker-mobile") driver-tracker-mobile
+}
+$DriverFiles = @(
+    "lib", "android", "ios", "test", "assets",
+    "pubspec.yaml", "pubspec.lock", "analysis_options.yaml", "README.md",
+    ".metadata", ".gitignore"
+)
+Copy-AppFiles -Source (Join-Path $RepoRoot "driver-tracker-mobile") -Dest (Join-Path $WtRoot "driver-tracker-mobile") -Files $DriverFiles
+@("admin-app", "user-portal-app", "finance-app", "tracking-app", "user-portal-mobile", "driver-tracker-mobile", "backend", "src", "shared", "public", "render.yaml", "DEPLOYMENT.md", "scripts", "dist", "node_modules", "package.json", "package-lock.json", "vite.config.ts") | ForEach-Object {
+    $p = Join-Path (Join-Path $WtRoot "driver-tracker-mobile") $_
+    if (Test-Path $p) { Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue }
+}
+Push-Location (Join-Path $WtRoot "driver-tracker-mobile")
+git add -A
+git diff --cached --quiet
+if ($LASTEXITCODE -ne 0) {
+    git commit -m "Sync driver tracker mobile app from monorepo"
+    git push -u origin driver-tracker-mobile
+} else { Write-Host "driver-tracker-mobile: no changes" }
+Pop-Location
+
 # cleanup worktrees
 git worktree remove (Join-Path $WtRoot "classroom-app") --force
 git worktree remove (Join-Path $WtRoot "admin") --force
@@ -157,6 +183,7 @@ git worktree remove (Join-Path $WtRoot "user-portal") --force
 git worktree remove (Join-Path $WtRoot "finance") --force
 git worktree remove (Join-Path $WtRoot "tracking") --force
 git worktree remove (Join-Path $WtRoot "user-portal-mobile") --force
+git worktree remove (Join-Path $WtRoot "driver-tracker-mobile") --force
 Remove-Item $WtRoot -Recurse -Force -ErrorAction SilentlyContinue
 
 Pop-Location
